@@ -1,0 +1,85 @@
+{
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "http://microfunctions.org/mfn-event-schema.json",
+    "type": "object",
+    "title": "MfnMessage",
+    "required": [
+      "__mfnmetadata",
+      "__mfnuserdata"
+    ],
+    "properties": {
+      "__mfnmetadata": {
+        "$id": "#/properties/__mfnmetadata",
+        "type": "object",
+        "title": "Metadata",
+        "required": [
+          "__execution_id",
+          "__async_execution",
+          "__function_execution_id",
+          "__timestamp_frontend_entry"
+        ],
+        "properties": {
+          "__execution_id": {
+            "$id": "#/properties/__mfnmetadata/properties/__execution_id",
+            "type": "string",
+            "title": "ExecutionID",
+            "default": "",
+            "examples": [
+              "executionId"
+            ],
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "__async_execution": {
+            "$id": "#/properties/__mfnmetadata/properties/__async_execution",
+            "type": "boolean",
+            "title": "AsynchExecution",
+            "default": false,
+            "examples": [
+              true,
+              false
+            ]
+          },
+          "__function_execution_id": {
+            "$id": "#/properties/__mfnmetadata/properties/__function_execution_id",
+            "type": "string",
+            "title": "FunctionExecutionID",
+            "default": "",
+            "examples": [
+              "UUID"
+            ],
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "__timestamp_frontend_entry": {
+            "$id": "#/properties/__mfnmetadata/properties/__timestamp_frontend_entry",
+            "type": "number",
+            "title": "Timestamp",
+            "default": 0.0,
+            "examples": [
+                1581000865.123
+            ]
+          },
+          "__state_action": {
+            "$id": "#/properties/__mfnmetadata/properties/__state_action",
+            "type": "string",
+            "title": "StateAction",
+            "default": "",
+            "examples": [
+              "post_parallel_processing"
+            ],
+            "pattern": "^(.*)$"
+          }
+        }
+      },
+      "__mfnuserdata": {
+        "$id": "#/properties/__mfnuserdata",
+        "type": "string",
+        "title": "Userdata",
+        "default": "",
+        "examples": [
+          "{\"JSON\":\"encoded String\"}"
+        ],
+        "pattern": "^(.*)$"
+      }
+    }
+  }

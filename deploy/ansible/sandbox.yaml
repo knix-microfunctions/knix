@@ -1,0 +1,317 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+  # run as follows: ansible-playbook -K -e "@settings.json" init_once.yml
+  # or as: ./run.sh init_once.yml
+- hosts: all
+
+  vars:
+    container_dir: "../"
+    container_image: "sandbox.tar"
+    container_image_java: "sandbox_java.tar"
+    container_tag: "microfn/sandbox"
+    container_java_tag: "microfn/sandbox_java"
+    install_dir: "{{ mfn_server_installation_folder }}/sandbox"
+    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}:8087"
+
+  tasks:
+  - debug:
+      msg:
+      - inventory_hostname = {{ inventory_hostname }}
+      - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+      - mfn_server_installation_folder = {{ mfn_server_installation_folder }}
+      - container build directory = {{ container_dir }}
+      - container tag = {{ container_tag }}
+      - container_java_tag = {{ container_java_tag }}
+      - container image = {{ container_image }}
+      - container image_java = {{ container_image_java }}
+      - sandbox installation directory {{ install_dir }}
+      - riak_connect = {{ riak_connect }}
+
+  - name: ensure docker is at the latest version
+    apt: name=docker-ce update_cache=yes
+    register: dockerupdate
+    ignore_errors: True
+
+  - name: get http_proxy
+    shell: "su - -c 'echo $http_proxy'"
+    become: true
+    register: http_proxy
+
+  - name: get https_proxy
+    shell: "su - -c 'echo $http_proxy'"
+    become: true
+    register: https_proxy
+
+  - name: get no_proxy
+    shell: "su - -c 'echo $no_proxy'"
+    become: true
+    register: no_proxy
+
+  - set_fact:
+      http_proxy: "{{ http_proxy.stdout }}"
+      https_proxy: "{{ https_proxy.stdout }}"
+      no_proxy: "{{ no_proxy.stdout }}"
+
+  - debug:
+      msg:
+      - http_proxy = {{ http_proxy }}
+      - https_proxy = {{ https_proxy }}
+      - no_proxy = {{ no_proxy }}
+
+  - name: pip install riak
+    pip:
+      name: riak
+      executable: pip3
+    environment:
+      http_proxy: "{{ http_proxy }}"
+    when: dockerupdate.failed
+
+  - name: Remove old docker
+    apt:
+      name:
+        - docker
+        - docker-engine
+        - docker.io
+        - runc
+      state: absent
+    when: dockerupdate.failed
+
+  - name: get docker key
+    get_url:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      dest: /etc/apt/docker.gpg.key
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+    when: dockerupdate.failed
+
+  - name: install docker key
+    shell: "apt-key add /etc/apt/docker.gpg.key"
+    when: dockerupdate.failed
+
+  - name: add docker repo
+    apt_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+      state: present
+    when: dockerupdate.failed
+
+  - name: ensure docker is at the latest version
+    apt: name=docker-ce update_cache=yes
+    when: dockerupdate.failed
+
+  # The below approach risks when updating the docker using regular software updates.
+  # a better way probably is just to override the configuration with a new file
+  #- name: fix docker service command line
+  #  lineinfile:
+  #    path: /lib/systemd/system/docker.service
+  #    backrefs: yes
+  #    regex: "^ExecStart=(.*)-H fd://(.*)$"
+  #    line: "ExecStart=\\1\\2"
+  #  when: dockerupdate.failed
+
+  #- name: configure docker daemon
+  #  copy:
+  #    dest: /etc/docker/daemon.json
+  #    content: |
+  #      {
+  #        "hosts": ["fd://","unix:///var/run/docker.sock","tcp://0.0.0.0"]
+  #      }
+  #################
+
+  # see the following links why this approach might be better
+  # https://stackoverflow.com/questions/44052054/unable-to-start-docker-after-configuring-hosts-in-daemon-json
+  # https://success.docker.com/article/how-do-i-enable-the-remote-api-for-dockerd
+  - name: docker service configuration directory
+    file:
+      path: /etc/systemd/system/docker.service.d
+      state: directory
+
+  - name: add override configuration for docker start
+    copy:
+      dest: /etc/systemd/system/docker.service.d/startup_options.conf
+      content: |
+        [Service]
+        ExecStart=
+        ExecStart=/usr/bin/dockerd -H unix:// -H tcp://0.0.0.0:2375
+
+  - name: override configuration for docker daemon to disable tls
+    copy:
+      dest: /etc/docker/daemon.json
+      content: |
+        {
+          "tls": false
+        }
+
+  - name: configure docker proxy
+    copy:
+      dest: /etc/systemd/system/docker.service.d/proxy.conf
+      content: |
+        [Service]
+        Environment=HTTP_PROXY={{ http_proxy }}
+        Environment=HTTPS_PROXY={{ https_proxy }}
+        Environment=NO_PROXY={{ no_proxy }}
+    when: http_proxy != "" and dockerupdate.failed
+
+  - name: systemd restart docker
+    systemd:
+      daemon_reload: yes
+      name: docker
+      enabled: true
+      state: restarted
+    when: dockerupdate.failed
+
+  #################
+  - name: create sandbox folder
+    file: path="{{ install_dir }}" state=directory
+
+  # Container Image: copy to host then build
+  - name: build sandboxagent.tar.gz
+    command: make sandboxagent.tar.gz
+    args:
+      chdir: "{{ container_dir }}"
+    delegate_to: 127.0.0.1
+    run_once: true
+
+  - name: extract sandboxagent.tar.gz to host install directory
+    unarchive:
+      src: "{{ container_dir }}/sandboxagent.tar.gz"
+      dest: "{{ install_dir }}/"
+
+  - name: build sandbox on host with proxy configuration
+    command: docker -D -l debug build --network host --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${HTTP_PROXY} --build-arg https_proxy=${HTTPS_PROXY} -t "{{ container_tag }}" -f Dockerfile .
+    args:
+      chdir: "{{ install_dir }}/"
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+      HTTP_PROXY: "{{ http_proxy }}"
+      HTTPS_PROXY: "{{ https_proxy }}"
+    when: http_proxy != "" or https_proxy != ""
+
+  - name: build sandbox on host without proxy configuration
+    command: docker -D -l debug build --network host -t "{{ container_tag }}" -f Dockerfile .
+    args:
+      chdir: "{{ install_dir }}/"
+    when: http_proxy == "" and https_proxy == ""
+
+  - name: build sandbox (java) on host with proxy configuration
+    command: docker -D -l debug build --network host --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${HTTP_PROXY} --build-arg https_proxy=${HTTPS_PROXY} -t "{{ container_java_tag }}" -f Dockerfile_java .
+    args:
+      chdir: "{{ install_dir }}/"
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+      HTTP_PROXY: "{{ http_proxy }}"
+      HTTPS_PROXY: "{{ https_proxy }}"
+    when: http_proxy != "" or https_proxy != ""
+
+  - name: build sandbox (java) on host without proxy configuration
+    command: docker -D -l debug build --network host -t "{{ container_java_tag }}" -f Dockerfile_java .
+    args:
+      chdir: "{{ install_dir }}/"
+    when: http_proxy == "" and https_proxy == ""
+
+  #################
+  # Container Image Alternative: build locally, then distribute by copying and loading
+  #
+  #- name: build sandbox.tar container image file locally
+  #  command: make sandbox.tar
+  #  args:
+  #    chdir: "{{ container_dir }}"
+  #  delegate_to: 127.0.0.1
+  #  run_once: true
+  #- name: sync sandbox container image
+  #  synchronize:
+  #    src: "{{ container_dir }}/{{ container_image }}"
+  #    dest: "{{ install_dir }}/"
+  #- name: load sandbox container image
+  #  shell: >
+  #    docker -D load -i {{ install_dir }}/{{ container_image }}
+
+  #- name: build sandbox_java.tar container image file locally
+  #  command: make sandbox_java.tar
+  #  args:
+  #    chdir: "{{ container_dir }}"
+  #  delegate_to: 127.0.0.1
+  #  run_once: true
+  #- name: sync sandbox_java.tar container image file
+  #  synchronize:
+  #    src: "{{ container_dir }}/{{ container_image_java }}"
+  #    dest: "{{ install_dir }}/"
+  #- name: load sandbox (java) container image
+  #  shell: >
+  #    docker -D load -i {{ install_dir }}/{{ container_image_java }}
+
+  # Add the host to available hosts
+  - name: copy available_hosts script
+    copy:
+      src: "./scripts/available_hosts.py"
+      dest: "{{ install_dir }}/"
+
+  - name: create .env file
+    copy:
+      dest: "{{ install_dir }}/.env"
+      content: |
+        MFN_HOSTNAME={{ inventory_hostname }}
+        RIAK_CONNECT={{ riak_connect }}
+        http_proxy={{ http_proxy }}
+        https_proxy={{ https_proxy }}
+        no_proxy={{ no_proxy }}
+        HTTP_PROXY={{ http_proxy }}
+        HTTPS_PROXY={{ https_proxy }}
+      mode: '0755'
+
+  - name: create available_hosts.sh
+    copy:
+      dest: "{{ install_dir }}/available_hosts.sh"
+      content: |
+        #!/bin/sh
+        set -x
+        cd {{ install_dir }}
+        cat <<END >>dockerrun.sh
+        set -x
+        pip3 install riak
+        python3 available_hosts.py add
+        END
+        chmod 775 dockerrun.sh
+        docker run -it --rm --network host --ulimit nofile=262144:262144 --env-file .env -v $(pwd):/code -w /code python:3.6 bash -c './dockerrun.sh'
+        rm dockerrun.sh
+        cd -
+      mode: '0775'
+
+  - name: run available_hosts.sh script
+    shell: ./available_hosts.sh
+    args:
+      chdir: "{{ install_dir }}"
+    environment:
+      MFN_HOSTNAME: "{{ inventory_hostname }}"
+      RIAK_CONNECT: "{{ riak_connect }}"
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+      no_proxy: "{{ no_proxy }}"
+      HTTP_PROXY: "{{ http_proxy }}"
+      HTTPS_PROXY: "{{ https_proxy }}"
+    register: availablehosts
+
+  #- name: Add to available hosts
+  #  command: "python3 available_hosts.py add"
+  #  args:
+  #    chdir: "{{ install_dir }}"
+  #  register: availablehosts
+
+  - debug:
+      msg:
+      - "{{ availablehosts.stdout }}"

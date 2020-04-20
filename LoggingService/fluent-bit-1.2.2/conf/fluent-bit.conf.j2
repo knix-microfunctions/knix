@@ -1,0 +1,83 @@
+[SERVICE]
+    # Flush
+    # =====
+    # Set an interval of seconds before to flush records to a destination
+    Flush 1
+
+    # Daemon
+    # ======
+    # Instruct Fluent Bit to run in foreground or background mode.
+    Daemon On
+
+    # Log_Level
+    # =========
+    # Set the verbosity level of the service, values can be:
+    #
+    # - error
+    # - warning
+    # - info
+    # - debug
+    # - trace
+    #
+    # By default 'info' is set, that means it includes 'error' and 'warning'.
+    Log_Level    info
+    Log_File     /opt/mfn/LoggingService/fluent-bit/fluent-bit.log
+
+    # Parsers_File
+    # ============
+    # Specify an optional 'Parsers' configuration file
+    Parsers_File parsers.conf
+
+[INPUT]
+    Name  tail
+    Path  /opt/mfn/logs/function*.log
+    DB  /opt/mfn/logs/function.db
+    Mem_Buf_Limit 5MB
+    Refresh_Interval  2
+    Multiline On
+    Multiline_Flush 2
+    Parser_Firstline mfnwflog
+    Tag workflow
+
+[INPUT]
+    Name  tail
+    Path  /opt/mfn/logs/frontend.log
+    DB  /opt/mfn/logs/frontend.db
+    Mem_Buf_Limit 5MB
+    Refresh_Interval  2
+    Multiline On
+    Multiline_Flush 2
+    Parser_Firstline mfngolog
+    Tag frontend
+
+[OUTPUT]
+    Name  es
+    Match workflow
+    Host  {{ ELASTICSEARCH_HOST }}
+    Port  {{ ELASTICSEARCH_PORT }}
+    Index {{ INDEX_NAME_WF }}
+    Type  _doc
+    Pipeline indexed
+
+[OUTPUT]
+    Name  es
+    Match frontend
+    Host  {{ ELASTICSEARCH_HOST }}
+    Port  {{ ELASTICSEARCH_PORT }}
+    Index {{ INDEX_NAME_FE }}
+    Type  _doc
+    Pipeline indexed
+
+[OUTPUT]
+    Name  file
+    Match *
+    Path /opt/mfn/logs/workflow.log
+    Format csv 
+    Delimiter ','
+
+[OUTPUT]
+    Name  file
+    Match *
+    Path /proc/1/fd/1
+    Format csv
+    Delimiter ','

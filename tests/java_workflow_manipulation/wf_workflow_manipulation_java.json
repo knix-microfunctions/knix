@@ -1,0 +1,16 @@
+{
+        "name": "workflow_manipulation_java",
+        "entry": "TestWorkflowManipulation",
+        "functions": [
+                {
+                        "name": "TestWorkflowManipulation",
+                        "next": [],
+                        "potentialNext": ["final"]
+                },
+                {
+                        "name": "final",
+                        "next": ["end"],
+                        "potentialNext": []
+                }
+        ]
+}

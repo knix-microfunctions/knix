@@ -1,0 +1,469 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+  # run as follows: ansible-playbook -K -e "@settings.json" riak.yml
+  # or as: ./run.sh riak.yml
+- hosts: riak
+
+  vars:
+    coordinator_name: "{{ groups['riak'][0] }}"
+    coordinator_ip: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}"
+
+    # location of mfn's riak deployment package on local machine
+    mfn_riak_deployment_package_dir: ".."
+    riak_dist_url_ubuntu: "https://files.tiot.jp/riak/kv/2.9/2.9.0/ubuntu/xenial64/riak_2.9.0-1_amd64.deb"
+    riak_dist_url_debian: "https://files.tiot.jp/riak/kv/2.9/2.9.0/debian/9/riak_2.9.0-1_amd64.deb"
+    riak_dist_url: "{{ riak_dist_url_ubuntu }}"
+    mfn_riak_dist_filename: "riak_2.9.0-1_amd64.deb"
+    mfn_riak_deployment_package_archive_filename: knix_riak_deployment_package.tar.gz
+    mfn_riak_deployment_package_fullpath: "{{ mfn_riak_deployment_package_dir }}/{{ mfn_riak_deployment_package_archive_filename }}"
+
+    # apt-get installation path on target machine
+    riak_server_dir: /usr/lib/riak
+
+    # config file path on target machine
+    riak_server_config_filepath: /etc/riak/riak.conf
+    riak_server_config_advanced_filepath: /etc/riak/advanced.config
+
+    # path for mfn specific riak stuff on target machine
+    mfn_riak_server_dir: "{{ mfn_server_installation_folder }}/riak"
+
+    # riak service path on target machine
+    riak_server_service_name: mfn-riak
+    riak_server_service_path: "/lib/systemd/system/{{ riak_server_service_name }}.service"
+    alreadypart: ""
+
+  tasks:
+
+  - name: get http_proxy
+    shell: "su - -c 'echo $http_proxy'"
+    register: http_proxy
+
+  - name: get https_proxy
+    shell: "su - -c 'echo $https_proxy'"
+    register: https_proxy
+
+  - set_fact:
+      http_proxy: "{{ http_proxy.stdout }}"
+      https_proxy: "{{ https_proxy.stdout }}"
+
+  - name: Check if the target linux distribution is Ubuntu or Debian
+    shell: |
+      lsb_release -i | awk '{print $3}'
+    register: distro_output
+    failed_when: not (distro_output.stdout == 'Ubuntu' or distro_output.stdout == 'Debian')
+
+  - set_fact:
+      target_linux_distribution: "{{ distro_output.stdout }}"
+
+  - set_fact:
+      riak_dist_url: "{{ riak_dist_url_debian }}"
+    when: target_linux_distribution == 'Debian'
+
+  - debug:
+      msg:
+        - inventory_hostname = {{ inventory_hostname }}
+        - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+        - mfn_server_installation_folder = {{ mfn_server_installation_folder }}    # e.g. /opt/mfn
+        - coordinator_name = {{ coordinator_name }}
+        - coordinator_ip = {{ coordinator_ip }}
+        - target_linux_distribution = {{ target_linux_distribution }}
+        - riak_dist_url = {{ riak_dist_url }}
+        - mfn_riak_dist_filename = {{ mfn_riak_dist_filename }}
+        - mfn_riak_deployment_package_dir = {{ mfn_riak_deployment_package_dir }}
+        - mfn_riak_deployment_package_archive_filename = {{ mfn_riak_deployment_package_archive_filename }}
+        - mfn_riak_deployment_package_fullpath = {{ mfn_riak_deployment_package_fullpath }}
+        - mfn_riak_server_dir = {{ mfn_riak_server_dir }}
+        - riak_server_dir = {{ riak_server_dir }}
+        - riak_server_config_filepath = {{ riak_server_config_filepath }}
+        - riak_server_config_advanced_filepath = {{ riak_server_config_advanced_filepath }}
+        - riak_server_service_name = {{ riak_server_service_name }}
+        - riak_server_service_path = {{ riak_server_service_path }}
+        - http_proxy = {{ http_proxy }}
+        - https_proxy = {{ https_proxy }}
+
+  - name: check if service exists
+    stat: path={{ riak_server_service_path }}
+    register: service_status
+
+  - name: stop service
+    service: name={{ riak_server_service_name }} state=stopped
+    when: service_status.stat.exists
+    register: service_stopped
+
+  - name: ensure riak folder exists
+    file: path={{ mfn_riak_server_dir }} state=directory mode='775'
+
+  - name: copy mfn riak deployment package
+    copy:
+      src: "{{ mfn_riak_deployment_package_fullpath }}"
+      dest: "{{ mfn_riak_server_dir }}/{{ mfn_riak_deployment_package_archive_filename }}"
+
+  - name: unpack deployment package
+    unarchive:
+      remote_src: yes
+      src: "{{ mfn_riak_server_dir }}/{{ mfn_riak_deployment_package_archive_filename }}"
+      dest: "{{ mfn_riak_server_dir }}"
+
+  - name: Download riak distribution package
+    get_url:
+      url: "{{ riak_dist_url }}"
+      dest: "{{ mfn_riak_server_dir }}/{{ mfn_riak_dist_filename }}"
+      mode: 0775
+      force: no
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ http_proxy }}"
+
+  - name: check if riak is installed
+    command: dpkg-query -W riak
+    register: riak_package_exists
+    failed_when: riak_package_exists.rc > 1
+    changed_when: riak_package_exists.rc == 1
+
+  - name: install riak if not present
+    apt: deb="{{ mfn_riak_server_dir }}/{{ mfn_riak_dist_filename }}"
+    when: riak_package_exists.rc == 1
+
+  - name: check if folder exists "{{ riak_server_dir }}/lib"
+    stat:
+      path: "{{ riak_server_dir }}/lib"
+    register: folder_exists
+    failed_when: folder_exists.stat.exists == False
+
+  - name: copy erlang module for json parsing (jiffy) to riak lib folder
+    copy:
+      remote_src: yes
+      src: "{{ mfn_riak_server_dir }}/jiffy.tgz"
+      dest: "{{ riak_server_dir }}/lib"
+
+  - name: unpack erlang module for json parsing (jiffy)
+    unarchive:
+      remote_src: yes
+      src: "{{ riak_server_dir }}/lib/jiffy.tgz"
+      dest: "{{ riak_server_dir }}/lib/"
+
+  - name: ensure mfn_counter_triggers folder exists in the riak libs folder
+    file: path={{ riak_server_dir }}/lib/mfn_counter_triggers state=directory mode='775'
+
+  - name: copy erlang trigger code to the mfn_counter_triggers lib folder
+    copy:
+      remote_src: yes
+      src: "{{ mfn_riak_server_dir }}/mfn_counter_triggers.erl"
+      dest: "{{ riak_server_dir }}/lib/mfn_counter_triggers"
+
+  - name: compile mfn counter triggers
+    shell: "cd {{ riak_server_dir }}/lib/mfn_counter_triggers; {{ riak_server_dir }}/erts-5.10.3/bin/erlc mfn_counter_triggers.erl"
+
+
+  - name: ensure workflow_triggers folder exists in the riak libs folder
+    file: path={{ riak_server_dir }}/lib/workflow_triggers state=directory mode='775'
+
+  - name: copy erlang workflow_triggers code to the triggers lib folder
+    copy:
+      remote_src: yes
+      src: "{{ mfn_riak_server_dir }}/workflow_triggers.erl"
+      dest: "{{ riak_server_dir }}/lib/workflow_triggers"
+
+  - name: compile workflow_triggers
+    shell: "cd {{ riak_server_dir }}/lib/workflow_triggers; {{ riak_server_dir }}/erts-5.10.3/bin/erlc workflow_triggers.erl"
+
+
+  - name: configure riak nodename
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^nodename = "
+      line: "nodename = riak@{{ ansible_default_ipv4.address }}"
+
+  - name: configure riak distributed_cookie
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^distributed_cookie = "
+      line: "distributed_cookie = riak"
+
+  - name: configure riak protobuf listener
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^listener.protobuf.internal = "
+      line: "listener.protobuf.internal = {{ ansible_default_ipv4.address }}:8087"
+
+  - name: configure riak http listener
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^listener.http.internal = "
+      line: "listener.http.internal = {{ ansible_default_ipv4.address }}:8098"
+
+  - name: configure riak erlang.distribution.port_range.minimum
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^erlang.distribution.port_range.minimum = "
+      line: "erlang.distribution.port_range.minimum = 6000"
+
+  - name: configure riak erlang.distribution.port_range.maximum
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^erlang.distribution.port_range.maximum = "
+      line: "erlang.distribution.port_range.maximum = 6999"
+
+  - name: configure riak object.size.maximum = 1GB
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^object.size.maximum = "
+      line: "object.size.maximum = 1GB"
+
+  - name: configure riak object.size.warning_threshold = 100MB
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^object.size.warning_threshold = "
+      line: "object.size.warning_threshold = 100MB"
+
+  - name: configure riak bitcask.merge.policy = always
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^bitcask.merge.policy = "
+      line: "bitcask.merge.policy = always"
+
+  - name: configure riak bitcask.merge_check_interval = 10m
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^bitcask.merge_check_interval = "
+      line: "bitcask.merge_check_interval = 10m"
+
+  - name: configure riak bitcask.merge.triggers.fragmentation = 60
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^bitcask.merge.triggers.fragmentation = "
+      line: "bitcask.merge.triggers.fragmentation = 60"
+
+  - name: configure riak bitcask.merge.triggers.dead_bytes = 128MB
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^bitcask.merge.triggers.dead_bytes = "
+      line: "bitcask.merge.triggers.dead_bytes = 128MB"
+
+  - name: configure riak bitcask.merge.thresholds.fragmentation = 40
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^bitcask.merge.thresholds.fragmentation = "
+      line: "bitcask.merge.thresholds.fragmentation = 40"
+
+  - name: configure riak bitcask.merge.thresholds.dead_bytes = 32MB
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^bitcask.merge.thresholds.dead_bytes = "
+      line: "bitcask.merge.thresholds.dead_bytes = 32MB"
+
+  - name: configure riak bitcask.merge.thresholds.small_file = 20MB
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^bitcask.merge.thresholds.small_file = "
+      line: "bitcask.merge.thresholds.small_file = 20MB"
+
+  - name: configure riak bitcask.max_file_size = 500MB
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^bitcask.max_file_size = "
+      line: "bitcask.max_file_size = 500MB"
+
+  - name: configure /etc/security/limits.conf  riak soft nofile 65536
+    lineinfile:
+      path: "/etc/security/limits.conf"
+      regexp: "^riak soft nofile"
+      line: "riak soft nofile 65536"
+
+  - name: configure /etc/security/limits.conf  riak hard nofile 200000
+    lineinfile:
+      path: "/etc/security/limits.conf"
+      regexp: "^riak hard nofile"
+      line: "riak hard nofile 200000"
+
+  - name: pip install riak
+    pip:
+      name: riak
+      executable: pip3
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ http_proxy }}"
+
+  - name: create service mfn-riak
+    copy:
+      dest: "{{ riak_server_service_path }}"
+      content: |
+        [Unit]
+        Description=Distributed key/value store from Basho Technologies
+        After=network.target
+        [Service]
+        LimitNOFILE=infinity
+        LimitMEMLOCK=infinity
+        User=riak
+        Type=forking
+        ExecStart=/usr/sbin/riak start
+        ExecStop=/usr/sbin/riak stop
+        TimeoutStartSec=90
+        [Install]
+        WantedBy=multi-user.target
+
+  - name: systemd restart mfn-riak
+    systemd:
+      daemon_reload: yes
+      name: "{{ riak_server_service_name }}"
+      state: restarted
+
+  - name: create riak start script
+    copy:
+      mode: '775'
+      dest: "{{ mfn_riak_server_dir }}/start.sh"
+      content: |
+        #!/bin/sh
+        # config file path: {{ riak_server_config_filepath }}
+        sudo systemctl start {{ riak_server_service_name }}
+        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:8087 -t 45
+        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:8098 -t 45
+
+  - name: create riak stop script
+    copy:
+      mode: '775'
+      dest: "{{ mfn_riak_server_dir }}/stop.sh"
+      content: |
+        #!/bin/sh
+        # config file path: {{ riak_server_config_filepath }}
+        sudo systemctl stop {{ riak_server_service_name }}
+
+  - name: create riak purge script
+    copy:
+      mode: '775'
+      dest: "{{ mfn_riak_server_dir }}/purge.sh"
+      content: |
+        #!/bin/sh
+        ./stop.sh
+        sudo apt-get remove -y riak
+        sudo apt-get purge -y riak
+        sudo rm -rf /var/lib/riak
+        sudo rm -rf /usr/lib/riak
+        sudo rm -rf /etc/riak
+        sudo rm -rf /var/log/riak
+
+  - name: wait for riak
+    command: /usr/sbin/riak-admin wait-for-service riak_kv
+
+  - name: check if already part of cluster
+    shell: |
+      /usr/sbin/riak-admin cluster status | egrep {{ coordinator_ip }}
+    register: alreadypart
+    when: ansible_default_ipv4.address != coordinator_ip
+    failed_when: alreadypart.rc == 1 and alreadypart.stdout != ""
+
+  - debug:
+      msg:
+        - already part of cluster cmd = {{ alreadypart.cmd }}
+        - already part of cluster cmd stdout = {{ alreadypart.stdout }}
+        - already part of cluster cmd stderr = {{ alreadypart.stderr }}
+        - already part of cluster cmd rc = {{ alreadypart.rc }}
+    when: ansible_default_ipv4.address != coordinator_ip
+
+  - name: join cluster
+    shell: |
+      /usr/sbin/riak-admin cluster join riak@{{ coordinator_ip }}
+    register: clusterout
+    when: ansible_default_ipv4.address != coordinator_ip and alreadypart.stdout == ""
+
+  - debug:
+      msg:
+        - join cluster cmd = {{ clusterout.cmd }}
+        - join cluster cmd stdout = {{ clusterout.stdout }}
+        - join cluster cmd stderr = {{ clusterout.stderr }}
+        - join cluster rc = {{ clusterout.rc }}
+    when: ansible_default_ipv4.address != coordinator_ip and alreadypart.stdout == ""
+
+  - name: set mfn_counter_trigger bucket
+    shell: |
+      /usr/sbin/riak-admin bucket-type create mfn_counter_trigger '{"props":{"postcommit":[{"mod":"mfn_counter_triggers","fun":"counter_trigger"}],"datatype":"counter"}}'
+    register: output
+    failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
+
+  - name: activate mfn_counter_trigger bucket
+    shell: |
+      /usr/sbin/riak-admin bucket-type activate mfn_counter_trigger
+
+  - name: set triggers bucket type
+    shell: |
+      /usr/sbin/riak-admin bucket-type create triggers '{"props":{"postcommit":[{"mod":"workflow_triggers","fun":"workflow_trigger"}]}}'
+    register: output
+    failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
+
+  - name: activate triggers bucket type
+    shell: |
+      /usr/sbin/riak-admin bucket-type activate triggers
+
+  - name: set strong bucket type
+    shell: |
+      /usr/sbin/riak-admin bucket-type create strong '{"props":{"consistent":true}}'
+    register: output
+    failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
+
+  - name: activate strong bucket type
+    shell: |
+      /usr/sbin/riak-admin bucket-type activate strong
+
+  - name: riak-admin bucket-type create counters
+    shell: |
+      /usr/sbin/riak-admin bucket-type create counters '{"props":{"datatype":"counter"}}'
+    register: output
+    failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
+
+  - name: riak-admin bucket-type activate counters
+    shell: |
+      /usr/sbin/riak-admin bucket-type activate counters
+
+  - name: riak-admin bucket-type create sets
+    shell: |
+      /usr/sbin/riak-admin bucket-type create sets '{"props":{"datatype":"set"}}'
+    register: output
+    failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
+
+  - name: riak-admin bucket-type activate sets
+    shell: |
+      /usr/sbin/riak-admin bucket-type activate sets
+
+  - name: riak-admin bucket-type create maps
+    shell: |
+      /usr/sbin/riak-admin bucket-type create maps '{"props":{"datatype":"map"}}'
+    register: output
+    failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
+
+  - name: riak-admin bucket-type activate maps
+    shell: |
+      /usr/sbin/riak-admin bucket-type activate maps
+
+  - name: wait for riak 8087
+    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:8087 -t 45"
+    register: wait_result1
+
+  - name: wait for riak 8098
+    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:8098 -t 45"
+    register: wait_result2
+
+  - name: waiting result
+    debug:
+      msg:
+        - "{{ wait_result1.stderr_lines[-1] }}"
+        - "{{ wait_result2.stderr_lines[-1] }}"
+- hosts: riak
+  tasks:
+  - name: create ring
+    shell: |
+      /usr/sbin/riak-admin cluster plan
+      /usr/sbin/riak-admin cluster commit
+    when: hostvars[groups['riak'][0]].ansible_default_ipv4.address == ansible_default_ipv4.address

@@ -1,0 +1,11 @@
+{
+        "name": "return_values_java",
+        "entry": "TestReturnValues",
+        "functions": [
+                {
+                        "name": "TestReturnValues",
+                        "next": ["end"],
+                        "potentialNext": []
+                }
+        ]
+}

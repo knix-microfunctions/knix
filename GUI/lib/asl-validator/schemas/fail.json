@@ -1,0 +1,28 @@
+{
+  "$id": "http://asl-validator.cloud/fail#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "Type": {
+      "type": "string",
+      "pattern": "^Fail$"
+    },
+    "Comment": {
+      "type": "string"
+    },
+    "OutputPath": {
+      "type": ["string", "null"]
+    },
+    "InputPath": {
+      "type": ["string", "null"]
+    },
+    "Cause": {
+      "type": "string"
+    },
+    "Error": {
+      "type": "string"
+    }
+  },
+  "required": ["Type"],
+  "additionalProperties": false
+}

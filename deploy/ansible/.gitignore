@@ -1,0 +1,4 @@
+*.log
+ansible.cfg
+inventory.cfg
+local_inventory.cfg

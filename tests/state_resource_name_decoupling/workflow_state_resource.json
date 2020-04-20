@@ -1,0 +1,36 @@
+{
+        "name": "workflow_state_resource",
+        "entry": "state_0",
+        "functions": [
+                {
+                        "name": "state_0",
+                        "next": ["state_1"],
+                        "resource": "my_function"
+                },
+                {
+                        "name": "state_1",
+                        "next": ["state_2"],
+                        "resource": "my_function"
+                },
+                {
+                        "name": "state_2",
+                        "next": ["state_3"],
+                        "resource": "my_function"
+                },
+                {
+                        "name": "state_3",
+                        "next": ["state_4"],
+                        "resource": "my_function"
+                },
+                {
+                        "name": "state_4",
+                        "next": ["state_5"],
+                        "resource": "my_function"
+                },
+                {
+                        "name": "state_5",
+                        "next": ["end"],
+                        "resource": "my_function"
+                }
+        ]
+}

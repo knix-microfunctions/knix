@@ -1,0 +1,10 @@
+{
+    "__mfnmetadata": {
+        "__result_topic": "topicname",
+        "__execution_id": "executionId",
+        "__async_execution": true,
+        "__function_execution_id": "UUID",
+        "__timestamp_frontend_entry": 12345
+    },
+    "__mfnuserdata": "{\"JSON\":\"encoded String\"}"
+}

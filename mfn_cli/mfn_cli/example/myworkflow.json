@@ -1,0 +1,11 @@
+{
+	"Comment": "My Workflow",
+	"StartAt": "state0",
+	"States": {
+		"state0": {
+			"Type": "Task",
+			"Resource": "my_function",
+			"End": true
+		}
+	}
+}

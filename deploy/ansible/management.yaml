@@ -1,0 +1,198 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+  # run as follows: ansible-playbook -K -e "@settings.json" management.yml
+  # or as: ./run.sh management.yml
+- hosts: management
+  serial: 1
+
+  vars:
+    management_service_dir: "../../ManagementService"
+    management_archive_filename: management.tar.gz
+
+    install_dir: "{{ mfn_server_installation_folder }}/management"
+    datalayer_connect: "{{ ansible_default_ipv4.address }}:4998" # same host
+    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}:8087"
+    elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_default_ipv4.address }}:9200"
+    nginx_http_listen_port: "{{ nginx_http_listen_port }}"
+    nginx_connect: "{{ hostvars[groups['nginx'][0]].ansible_default_ipv4.address }}:{{ nginx_http_listen_port }}"
+
+  tasks:
+
+  - name: get http_proxy
+    shell: "su - -c 'echo $http_proxy'"
+    register: http_proxy
+
+  - name: get https_proxy
+    shell: "su - -c 'echo $https_proxy'"
+    register: https_proxy
+
+  - name: get no_proxy
+    shell: "su - -c 'echo $no_proxy'"
+    register: no_proxy
+
+  - set_fact:
+      http_proxy: "{{ http_proxy.stdout }}"
+      https_proxy: "{{ https_proxy.stdout }}"
+      no_proxy: "{{ no_proxy.stdout }}"
+
+  - debug:
+      msg:
+      - inventory_hostname = {{ inventory_hostname }}
+      - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+      - mfn_server_installation_folder = {{ mfn_server_installation_folder }}    # e.g. /opt/mfn
+      - management_service_dir = {{ management_service_dir }}
+      - management_archive_filename = {{ management_archive_filename }}
+      - install_dir = {{ install_dir }}
+      - datalayer connect string = {{ datalayer_connect }}
+      - riak_connect = {{ riak_connect }}
+      - elasticsearch_connect = {{ elasticsearch_connect }}
+      - nginx_connect = {{ nginx_connect }}
+      - http_proxy = {{ http_proxy }}
+      - https_proxy = {{ https_proxy }}
+      - no_proxy = {{ no_proxy }}
+
+
+  # Prerequisites to run the management init script
+  - name: pip install docker
+    pip:
+      name:
+      - docker
+      - riak
+      executable: pip3
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+      no_proxy: "{{ no_proxy }}"
+      HTTP_PROXY: "{{ http_proxy }}"
+      HTTPS_PROXY: "{{ https_proxy }}"
+
+  - name: remove old management folder
+    file:
+      state: absent
+      path: "{{ install_dir }}"
+
+  - name: create management folder
+    file: path="{{ install_dir }}" state=directory
+
+  # Run the management init script that uploads the workflow and brings up the container
+  #- name: synchronize management service directory
+    # synchronize module requires becoming su without a password (add your user to the sudoers with no pass on the target machine and optionally restrict it to the execution of rsync)
+    #synchronize:
+    #copy: - alternative to synchronize, but much slower
+    #copy:
+    #  src: "{{ management_service_dir }}/"
+    #  dest: "{{ install_dir }}/"
+
+  - name: update management archive
+    command: make {{ management_archive_filename }}
+    args:
+      chdir: "{{ management_service_dir }}"
+    delegate_to: 127.0.0.1
+    run_once: true
+
+  - name: copy the management archive
+    copy:
+      src: "{{ management_service_dir }}/{{ management_archive_filename }}"
+      dest: "{{ install_dir }}"
+
+  - name: unpack management archive
+    unarchive:
+      remote_src: yes
+      src: "{{ install_dir }}/{{ management_archive_filename }}"
+      dest: "{{ install_dir }}/"
+
+  - name: update management service exposed port
+    lineinfile:
+      path: "{{ install_dir }}/management_init.py"
+      regexp: "^MANAGEMENT_SERVICE_EXPOSED_PORT =.*$"
+      line: "MANAGEMENT_SERVICE_EXPOSED_PORT = {{ management_service_exposed_port }}"
+
+  - name: create .management env file
+    copy:
+      dest: "{{ install_dir }}/.management"
+      content: |
+        MFN_HOSTNAME={{ inventory_hostname }}
+        DATALAYER_CONNECT={{ datalayer_connect }}
+        ELASTICSEARCH_CONNECT={{ elasticsearch_connect }}
+        NGINX_CONNECT={{ nginx_connect }}
+        http_proxy={{ http_proxy }}
+        https_proxy={{ https_proxy }}
+        no_proxy={{ no_proxy }}
+        NO_PROXY={{ no_proxy }}
+        HTTP_PROXY={{ http_proxy }}
+        HTTPS_PROXY={{ https_proxy }}
+      mode: '0755'
+
+  - name: create management_init.sh
+    copy:
+      dest: "{{ install_dir }}/management_init.sh"
+      content: |
+        #!/bin/sh
+        set -x
+        cat <<END >>dockerrun.sh
+        set -x
+        pip3 install docker thrift
+        python3 management_init.py start
+        END
+        chmod 775 dockerrun.sh
+        docker run -it --rm --network host --ulimit nofile=262144:262144 --env-file .management -v $(pwd):/code -w /code python:3.6 bash -c './dockerrun.sh'
+        rm dockerrun.sh
+        [ "$(docker ps | grep Management)" ] && docker stop Management || true
+        [ "$(docker ps -a | grep Management)" ] && docker rm Management || true
+        ./start_management.sh
+      mode: '0775'
+
+  - name: create management start script
+    copy:
+      mode: '775'
+      dest: "{{ install_dir }}/start.sh"
+      content: |
+        #!/bin/sh
+        cd {{ install_dir }}
+        sudo ./management_init.sh
+        cd -
+
+  - name: create management stop script
+    copy:
+      mode: '775'
+      dest: "{{ install_dir }}/stop.sh"
+      content: |
+        #!/bin/sh
+        sudo docker stop Management || true
+        sudo docker rm Management || true
+
+  # already calls the management_init.sh
+  - name: run start.sh script
+    shell: ./start.sh
+    args:
+      chdir: "{{ install_dir }}"
+    environment:
+      MFN_HOSTNAME: "{{ inventory_hostname }}"
+      DATALAYER_CONNECT: "{{ datalayer_connect }}"
+      RIAK_CONNECT: "{{ riak_connect }}"
+      ELASTICSEARCH_CONNECT: "{{ elasticsearch_connect }}"
+      NGINX_CONNECT: "{{ nginx_connect }}"
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+      no_proxy: "{{ no_proxy }}"
+      NO_PROXY: "{{ no_proxy }}"
+      HTTP_PROXY: "{{ http_proxy }}"
+      HTTPS_PROXY: "{{ https_proxy }}"
+    register: run_command
+
+  - debug:
+      var: run_command.stdout
+

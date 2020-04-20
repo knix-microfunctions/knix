@@ -1,0 +1,273 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+
+<style type="text/css">
+
+.codeErrorHighlighter {
+  position:absolute;
+  background:#f7a8a8;
+  z-index:20
+}
+
+</style>
+
+<div class="modal-content" style="margin-top:50px;">
+  <div ng-app="MfnWebConsole" ng-controller="WorkflowEditorCtrl">
+  <div class="modal-header">
+    <button type="button" class="close" ng-click="closeDialog()" aria-label="Close">
+      <em class="ion-ios-close-empty sn-link-close"></em>
+    </button>
+    <h4 class="modal-title">Workflow Editor - {{ getWorkflowName() }}</h4>
+  </div>
+  <div style="margin-left:15px;margin-right:15px">
+    <div ba-panel-class="horizontal-tabs tabs-panel medium-panel" style="height:600px;">
+      <uib-tabset active="activeTab">
+        <uib-tab heading="JSON Editor" index="0" select="setFocus()">
+
+
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'json',
+            onLoad: aceLoaded,
+            onChange: aceChanged
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab id="visEditor" ng-show="true" index="1" heading="Visualization">
+            <div style="width:100%;height:505px;background-color: #f9f9f9;" id="workflowGraph"></div>
+        </uib-tab>
+        <uib-tab heading="Upload JSON" index="2">
+          <br>
+          <input type="file" onchange="angular.element(this).scope().file_changed(this)"/>
+
+        </uib-tab>
+        <uib-tab ng-show="true" index="3" heading="{{ getFunctionName(0); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction0Loaded,
+            onChange: aceFunction0Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[1]" index="4" heading="{{ getFunctionName(1); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction1Loaded,
+            onChange: aceFunction1Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[2]" index="5" heading="{{ getFunctionName(2); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction2Loaded,
+            onChange: aceFunction2Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[3]" index="6" heading="{{ getFunctionName(3); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction3Loaded,
+            onChange: aceFunction3Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[4]" index="7" heading="{{ getFunctionName(4); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction4Loaded,
+            onChange: aceFunction4Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[5]" index="8" heading="{{ getFunctionName(5); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction5Loaded,
+            onChange: aceFunction5Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[6]" index="9" heading="{{ getFunctionName(6); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction6Loaded,
+            onChange: aceFunction6Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[7]" index="10" heading="{{ getFunctionName(7); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction7Loaded,
+            onChange: aceFunction7Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[8]" index="11" heading="{{ getFunctionName(8); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction8Loaded,
+            onChange: aceFunction8Changed
+            }" >
+          </div>
+        </uib-tab>
+        <uib-tab ng-show="showFunctionCodeTab[9]" index="12" heading="{{ getFunctionName(9); }}">
+          <div style="width:100%;height:505px;" ui-ace="{
+            require: ['ace/ext/language_tools'],
+            advanced: {
+              enableSnippets: true,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true
+            },
+            width: '100%',
+            height: '100%',
+            useWrapMode : true,
+            showGutter: true,
+            theme:'tomorrow',
+            mode: 'python',
+            onLoad: aceFunction9Loaded,
+            onChange: aceFunction9Changed
+            }" >
+          </div>
+        </uib-tab>
+
+      </uib-tabset>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-info" ng-click="saveChanges(false);">Save changes</button>
+    <button type="button" class="btn btn-info" ng-click="deployAndExecute();">{{ deployLabel() }}</button>
+    <button type="button" class="btn btn-info" ng-click="execute();">Execute</button>
+
+    <button type="button" class="btn btn-primary" ng-click="closeDialog()">Close</button>
+    <button id="switchTabButton" style="display:none" type="button" class="btn btn-primary" ng-click="activeTab=gTab;setTabFocus(gTab);">TT</button>
+    <button id="closeButton" style="display:none" type="button" class="btn btn-primary" ng-click="$dismiss()">CB</button>
+  </div>
+</div>
+
+</div>

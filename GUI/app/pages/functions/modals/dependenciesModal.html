@@ -1,0 +1,60 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<div class="modal-content" style="margin-top:50px;">
+  <div ng-app="MfnWebConsole" ng-controller="DependenciesCtrl">
+  <div class="modal-header">
+    <button type="button" class="close" ng-click="$dismiss()" aria-label="Close">
+      <em class="ion-ios-close-empty sn-link-close"></em>
+    </button>
+    <h4 class="modal-title">Function Code Requirements - {{ getGrainName() }}<span ng-show="getGrainStatus()">&nbsp;&nbsp;<i>(undeploy workflow to edit)</i></span></h4>
+  </div>
+  <div style="margin-left:15px;margin-right:15px;">
+  <div style="width:100%;height:500px;"  ui-ace="{
+    width: '100%',
+    height: '100%',
+    useWrapMode : true,
+    showGutter: true,
+    theme:'tomorrow',
+    mode: 'text',
+    onLoad: aceLoaded,
+    onChange: aceChanged
+}" ></div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary" ng-click="saveChanges();$dismiss()">Save changes</button>
+  </div>
+</div>
+</div>
+<script>
+ // trigger extension
+/*
+ ace.require("ace/ext/language_tools");
+ ace.require("ace/mode/python");
+
+ var editor = ace.edit("editor");
+
+
+ editor.setTheme("ace/theme/tomorrow");
+ // enable autocompletion and snippets
+ editor.setOptions({
+     enableBasicAutocompletion: true,
+     enableSnippets: true,
+     enableLiveAutocompletion: false
+ });
+ //editor.getSession().setMode("ace/mode/python");
+ editor.getSession().setMode("ace/mode/python");
+ */
+</script>

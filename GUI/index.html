@@ -1,0 +1,194 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en" ng-app="MfnWebConsole">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KNIX MicroFunctions</title>
+
+  <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900&subset=latin,greek,greek-ext,vietnamese,cyrillic-ext,latin-ext,cyrillic' rel='stylesheet' type='text/css'>
+
+
+  <link rel="stylesheet" href="lib/ionicons.css" >
+  <link rel="stylesheet" href="lib/angular-toastr.css" >
+  <link rel="stylesheet" href="lib/animate.css" >
+  <link rel="stylesheet" href="lib/bootstrap.css" >
+  <link rel="stylesheet" href="lib/bootstrap-select.css" >
+  <link rel="stylesheet" href="lib/bootstrap-switch.css" >
+  <link rel="stylesheet" href="lib/bootstrap-tagsinput.css" >
+  <link rel="stylesheet" href="lib/font-awesome.css" >
+  <link rel="stylesheet" href="lib/leaflet.css" >
+  <link rel="stylesheet" href="lib/angular-progress-button-styles.min.css" >
+  <link rel="stylesheet" href="lib/ion.rangeSlider.css" >
+  <link rel="stylesheet" href="lib/ion.rangeSlider.skinFlat.css" >
+  <link rel="stylesheet" href="lib/textAngular.css" >
+  <link rel="stylesheet" href="lib/xeditable.css" >
+  <link rel="stylesheet" href="lib/style.css" >
+  <link rel="stylesheet" href="lib/select.css" >
+  <link rel="stylesheet" href="lib/vis.min.css">
+
+  <link rel="stylesheet" href="app/main.css">
+</head>
+<body>
+<div class="body-bg"></div>
+<main ng-if="$pageFinishedLoading" ng-class="{ 'menu-collapsed': $baSidebarService.isMenuCollapsed() }">
+
+  <ba-sidebar></ba-sidebar>
+  <page-top></page-top>
+
+  <div class="al-main">
+    <div class="al-content">
+      <content-top></content-top>
+      <div ui-view autoscroll="true" autoscroll-body-top></div>
+    </div>
+  </div>
+
+  <footer class="al-footer clearfix">
+    <div class="al-footer-right"></div>
+    <div class="al-footer-main clearfix">
+      <div class="al-copy"></div>
+    </div>
+  </footer>
+
+  <back-top></back-top>
+</main>
+
+<div id="preloader" ng-show="!$pageFinishedLoading">
+  <div></div>
+</div>
+
+<script src="lib/jquery.js"></script>
+<script src="lib/jquery-ui.js"></script>
+<script src="lib/jquery.easing.js"></script>
+<script src="lib/angular.js"></script>
+<script src="lib/angular-cookies.js"></script>
+<script src="lib/angular-route.js"></script>
+<script src="lib/jquery.slimscroll.js"></script>
+<script src="lib/angular-slimscroll.js"></script>
+<script src="lib/smart-table.js"></script>
+<script src="lib/angular-toastr.tpls.js"></script>
+<script src="lib/angular-touch.js"></script>
+<script src="lib/sortable.js"></script>
+<script src="lib/dropdown.js"></script>
+<script src="lib/bootstrap-select.js"></script>
+<script src="lib/bootstrap-switch.js"></script>
+<script src="lib/bootstrap-tagsinput.js"></script>
+<script src="lib/moment.js"></script>
+<script src="lib/angular-progress-button-styles.min.js"></script>
+<script src="lib/angular-ui-router.js"></script>
+<script src="lib/eve.js"></script>
+<script src="lib/raphael.min.js"></script>
+<script src="lib/mocha.js"></script>
+<script src="lib/ion.rangeSlider.js"></script>
+<script src="lib/ui-bootstrap-tpls.js"></script>
+<script src="lib/angular-animate.js"></script>
+<script src="lib/rangy-core.js"></script>
+<script src="lib/rangy-classapplier.js"></script>
+<script src="lib/rangy-highlighter.js"></script>
+<script src="lib/rangy-selectionsaverestore.js"></script>
+<script src="lib/rangy-serializer.js"></script>
+<script src="lib/rangy-textrange.js"></script>
+<script src="lib/textAngular.js"></script>
+<script src="lib/textAngular-sanitize.js"></script>
+<script src="lib/textAngularSetup.js"></script>
+<script src="lib/xeditable.js"></script>
+<script src="lib/select.js"></script>
+<script src="lib/clipboard.min.js"></script>
+<script src="lib/ngclipboard.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<script src="lib/jszip-utils.min.js"></script>
+<script src="lib/vis.min.js"></script>
+<script src="lib/ajv.min.js"></script>
+<script src="lib/showdown.min.js"></script>
+<script src="lib/highlight.pack.js"></script>
+
+
+<script src="app/pages/functions/functions.module.js"></script>
+<script src="app/pages/workflows/workflows.module.js"></script>
+<script src="app/pages/docs/docs.module.js"></script>
+<script src="app/pages/storage/storage.module.js"></script>
+<script src="app/pages/pages.module.js"></script>
+<script src="app/theme/theme.module.js"></script>
+<script src="app/pages/dashboard/dashboard.module.js"></script>
+<script src="app/theme/components/components.module.js"></script>
+<script src="app/theme/inputs/inputs.module.js"></script>
+
+<script src="app/endpoint.js"></script>
+<script src="app/app.js"></script>
+<script src="app/theme/theme.config.js"></script>
+<script src="app/theme/theme.configProvider.js"></script>
+<script src="app/theme/theme.constants.js"></script>
+<script src="app/theme/theme.run.js"></script>
+<script src="app/theme/theme.service.js"></script>
+
+<script src="app/pages/functions/FunctionTableCtrl.js"></script>
+<script src="app/pages/functions/CodeEditorCtrl.js"></script>
+<script src="app/pages/workflows/WorkflowEditorCtrl.js"></script>
+<script src="app/pages/workflows/ExecutionCtrl.js"></script>
+<script src="app/pages/workflows/WorkflowTableCtrl.js"></script>
+<script src="app/pages/workflows/WorkflowImportCtrl.js"></script>
+<script src="app/pages/storage/StorageTableCtrl.js"></script>
+<script src="app/pages/dashboard/DashboardCtrl.js"></script>
+<script src="app/pages/storage/UploadObjectCtrl.js"></script>
+
+<script src="app/theme/components/toastrLibConfig.js"></script>
+<script src="app/theme/directives/animatedChange.js"></script>
+<script src="app/theme/directives/autoExpand.js"></script>
+<script src="app/theme/directives/autoFocus.js"></script>
+<script src="app/theme/directives/includeWithScope.js"></script>
+<script src="app/theme/directives/ionSlider.js"></script>
+<script src="app/theme/directives/ngFileSelect.js"></script>
+<script src="app/theme/directives/scrollPosition.js"></script>
+<script src="app/theme/directives/trackWidth.js"></script>
+<script src="app/theme/directives/zoomIn.js"></script>
+<script src="app/theme/services/baProgressModal.js"></script>
+<script src="app/theme/services/baUtil.js"></script>
+<script src="app/theme/services/fileReader.js"></script>
+<script src="app/theme/services/preloader.js"></script>
+
+<script src="app/theme/components/backTop/backTop.directive.js"></script>
+<script src="app/theme/components/baPanel/baPanel.directive.js"></script>
+<script src="app/theme/components/baPanel/baPanel.service.js"></script>
+<script src="app/theme/components/baPanel/baPanelBlur.directive.js"></script>
+<script src="app/theme/components/baPanel/baPanelBlurHelper.service.js"></script>
+<script src="app/theme/components/baPanel/baPanelSelf.directive.js"></script>
+<script src="app/theme/components/baSidebar/baSidebar.directive.js"></script>
+<script src="app/theme/components/baSidebar/baSidebar.service.js"></script>
+<script src="app/theme/components/baSidebar/BaSidebarCtrl.js"></script>
+<script src="app/theme/components/baSidebar/baSidebarHelpers.directive.js"></script>
+<script src="app/theme/components/baWizard/baWizard.directive.js"></script>
+<script src="app/theme/components/baWizard/baWizardCtrl.js"></script>
+<script src="app/theme/components/baWizard/baWizardStep.directive.js"></script>
+<script src="app/theme/components/contentTop/contentTop.directive.js"></script>
+<script src="app/theme/components/msgCenter/msgCenter.directive.js"></script>
+<script src="app/theme/components/msgCenter/MsgCenterCtrl.js"></script>
+<script src="app/theme/components/pageTop/pageTop.directive.js"></script>
+<script src="app/theme/components/progressBarRound/progressBarRound.directive.js"></script>
+<script src="app/theme/components/widgets/widgets.directive.js"></script>
+<script src="app/theme/inputs/baSwitcher/baSwitcher.js"></script>
+
+
+<script src="app/theme/components/backTop/lib/jquery.backTop.min.js"></script>
+
+<script src="lib/ace/ace-builds/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="lib/ace/ace-builds/src-min-noconflict/ext-language_tools.js" type="text/javascript" charset="utf-8"></script>
+<script src="lib/ui-ace/ui-ace.js" type="text/javascript" charset="utf-8"></script>
+
+</body>
+</html>

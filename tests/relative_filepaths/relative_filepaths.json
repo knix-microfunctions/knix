@@ -1,0 +1,10 @@
+{
+"name": "relative_filepaths",
+"entry": "function",
+"functions": [
+	{
+	"name": "function",
+	"next": ["end"]
+	}]
+}
+

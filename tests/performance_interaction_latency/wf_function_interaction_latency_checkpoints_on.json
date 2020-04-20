@@ -1,0 +1,15 @@
+{
+"name": "wf_function_interaction_latency_checkpoints_on",
+"enable_checkpoints": true,
+"entry": "function1",
+"functions": [
+    {
+    "name": "function1",
+    "next": ["function2"]
+    },
+    {
+    "name": "function2",
+    "next": ["end"]
+    }
+    ]
+}

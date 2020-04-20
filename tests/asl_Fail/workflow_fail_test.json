@@ -1,0 +1,13 @@
+
+{ 
+  "Comment": "fail state test",
+	"StartAt": "FailingState",
+	"States": {
+	"FailingState": {
+            "Comment": "Test Comment",
+	    "Type": "Fail",
+	    "Cause": "Invalid response.",
+ 	    "Error": "ErrorA"
+	    }
+        }
+}

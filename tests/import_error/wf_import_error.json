@@ -1,0 +1,10 @@
+{
+"name": "wf_import_error",
+"entry": "func",
+"functions": [
+	{
+	"name": "func",
+	"next": ["end"]
+	}]
+}
+

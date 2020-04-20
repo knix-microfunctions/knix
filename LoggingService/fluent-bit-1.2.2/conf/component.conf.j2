@@ -1,0 +1,24 @@
+
+[INPUT]
+    Name  tail
+    Path  {{ logfile }}
+    DB    {{ logfile }}.db
+    Tag   {{ tagname }}
+    Mem_Buf_Limit 5MB
+    Refresh_Interval  10
+    Multiline On
+    Multiline_Flush 2
+    Parser_Firstline {{ parsername }}
+
+
+[OUTPUT]
+    Name  es
+    Match {{ tagname }}
+    Host  {{ elasticsearch_host }}
+    Port  {{ elasticsearch_port }}
+    Index {{ indexname }}
+    Type  _doc
+    Pipeline indexed
+    Include_Tag_Key On
+    Tag_Key component
+

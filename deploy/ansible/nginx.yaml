@@ -1,0 +1,177 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+  # run as follows: ansible-playbook -K -e "@settings.json" nginx.yml
+  # or as: ./run.sh nginx.yml
+- hosts: nginx
+  serial: 1
+
+  vars:
+    # location of mfn gui
+    #mfn_gui_path: ../../GUI
+    mfn_gui_archive_path: ../
+    mfn_gui_archive_filename: knix_gui.tar.gz
+
+    # installation path for GUI on target machine
+    install_dir: "{{ mfn_server_installation_folder }}/nginx"
+
+    # Nginx configuration
+    mfn_nginx_config_template: ../../HttpFrontend/nginx_config/mfn.conf.j2
+    # nginx_http_listen_port is set in settings.json
+    # nginx_https_listen_port is set in settings.json
+    frontend_http_listen_port: "51000"
+
+  tasks:
+  - name: get http_proxy
+    shell: "su - -c 'echo $http_proxy'"
+    register: http_proxy
+
+  - name: get https_proxy
+    shell: "su - -c 'echo $https_proxy'"
+    register: https_proxy
+
+  - set_fact:
+      http_proxy: "{{ http_proxy.stdout }}"
+      https_proxy: "{{ https_proxy.stdout }}"
+
+  - debug:
+      msg: 
+        - inventory_hostname = {{ inventory_hostname }}
+        - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+        - mfn_server_installation_folder = {{ mfn_server_installation_folder }}    # e.g. /opt/mfn
+        - install_dir = {{ install_dir }}
+        - frontend_http_listen_port = {{ frontend_http_listen_port }}
+        - nginx_http_listen_port = {{ nginx_http_listen_port }}
+        - nginx_https_listen_port = {{ nginx_https_listen_port }}
+        - http_proxy = {{ http_proxy }}
+        - https_proxy = {{ https_proxy }}
+        - management_service_exposed_port = {{ management_service_exposed_port }}
+
+  - name: ensure nginx is at the latest version
+    apt: name=nginx state=present
+
+  - name: Stop Nginx
+    systemd: name=nginx state=stopped
+    ignore_errors: yes
+
+  - name: create GUI folder
+    file: path="{{ install_dir }}/gui" state=directory
+
+  #- name: copy the GUI
+    # synchronize module seems to have several bugs related to becoming su
+    #synchronize:
+  #  copy:
+  #    src: "{{ mfn_gui_path }}"
+  #    dest: "{{ install_dir }}"
+
+  - name: build {{ mfn_gui_archive_path }}/{{ mfn_gui_archive_filename }}
+    command: make {{ mfn_gui_archive_filename }}
+    args:
+      chdir: "{{ mfn_gui_archive_path }}"
+    delegate_to: 127.0.0.1
+    run_once: true
+
+  - name: copy the GUI archive
+    copy:
+      src: "{{ mfn_gui_archive_path }}/{{ mfn_gui_archive_filename }}"
+      dest: "{{ install_dir }}"
+
+  - name: unpack GUI archive
+    unarchive:
+      remote_src: yes
+      src: "{{ install_dir }}/{{ mfn_gui_archive_filename}}"
+      dest: "{{ install_dir }}/gui/"
+
+  - name: update management endpoint
+    lineinfile:
+      path: "{{ install_dir }}/gui/app/endpoint.js"
+      regexp: "^var managementServiceEndpoint.*$"
+      line: "var managementServiceEndpoint = \"http://{{ groups['management']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join(':{{ management_service_exposed_port }}/\";') }}:{{ management_service_exposed_port }}/\";"
+
+  - name: create logs directory
+    file:
+      path: "{{ install_dir }}/logs"
+      state: directory
+      mode: '777'
+
+  - name: change nginx workers to auto
+    lineinfile:
+      path: "/etc/nginx/nginx.conf"
+      regexp: "^worker_processes.*;$"
+      line: "worker_processes auto;"
+
+  - name: Create certificate folder
+    file: path="{{ install_dir }}/cert" state=directory
+
+  - name: Generate an OpenSSL key
+    openssl_privatekey:
+      path: "{{ install_dir }}/cert/key.pem"
+
+  - name: Generate an OpenSSL certificate request
+    openssl_csr:
+      path: "{{ install_dir }}/cert/request.csr"
+      privatekey_path: "{{ install_dir }}/cert/key.pem"
+      organization_name: Nokia Bell Labs
+      organizational_unit_name: microfunctions.org
+      country_name: DE
+      state_or_province_name: Baden-Wuerttemberg
+      locality_name: Stuttgart
+      email_address: 
+      common_name: "{{ ansible_fqdn }}"
+      subject_alt_name:
+        - "DNS:{{ ansible_fqdn }}"
+        - "DNS:{{ ansible_hostname }}"
+        - "{{ inventory_hostname | ipaddr() | ternary( 'IP:', 'DNS:') }}{{ inventory_hostname }}"
+        - "IP:{{ ansible_default_ipv4.address }}"
+
+  - name: Generate a Self Signed OpenSSL certificate
+    openssl_certificate:
+      path: "{{ install_dir }}/cert/certificate.crt"
+      privatekey_path: "{{ install_dir }}/cert/key.pem"
+      csr_path: "{{ install_dir }}/cert/request.csr"
+      provider: selfsigned
+
+  - name: Disable default site
+    file: path=/etc/nginx/sites-enabled/default state=absent
+
+  - name: Configure microfunctions site
+    template:
+      dest: "/etc/nginx/sites-available/microfunctions"
+      src: "{{ mfn_nginx_config_template }}"
+
+  - name: Enable microfunctions site
+    file:
+      src: "/etc/nginx/sites-available/microfunctions"
+      dest: "/etc/nginx/sites-enabled/microfunctions"
+      state: link
+
+  - name: Start Nginx
+    systemd: name=nginx enabled=true state=restarted
+
+  - name: create nginx systemctl start script
+    copy:
+      mode: '775'
+      dest: "{{ install_dir }}/start.sh"
+      content: |
+        #!/bin/sh
+        sudo systemctl start nginx
+
+  - name: create nginx systemctl stop script
+    copy:
+      mode: '775'
+      dest: "{{ install_dir }}/stop.sh"
+      content: |
+        #!/bin/sh
+        sudo systemctl stop nginx

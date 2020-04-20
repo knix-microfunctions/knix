@@ -1,0 +1,93 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+FROM ubuntu:16.04
+
+ENV OS_FAMILY Debian
+ENV OS_VERSION xenial
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN true
+
+# Install essentials
+RUN apt-get update --allow-unauthenticated -y
+RUN apt-get dist-upgrade --allow-unauthenticated -y
+RUN apt-get install -y apt-transport-https
+RUN apt-get install -y python python-six python-pkg-resources python-openssl
+RUN apt-get install -y curl
+RUN apt-get install -y libapr1 realpath jq unzip
+RUN apt-get install -y iproute iputils-ping netcat
+
+# Install OpenJDK 8
+#RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys DA1A4A13543B466853BAF164EB9B1D8886F44E2A
+#RUN echo "deb http://ppa.launchpad.net/openjdk-r/ppa/ubuntu {{os_flavor}} main" >/etc/apt/sources.list.d/openjdk.list
+#RUN echo "deb-src http://ppa.launchpad.net/openjdk-r/ppa/ubuntu {{os_flavor}} main" >>/etc/apt/sources.list.d/openjdk.list
+#RUN echo "deb http://http.debian.net/debian jessie-backports main" >/etc/apt/sources.list.d/openjdk.list
+#RUN apt-get update
+RUN apt-get install -y openjdk-8-jre-headless openjdk-8-jdk-headless
+
+# Install Riak
+RUN curl https://packagecloud.io/gpg.key | apt-key add -
+RUN apt-get install -y apt-transport-https
+COPY script/basho.list /etc/apt/sources.list.d/basho.list
+
+RUN apt-get update
+RUN groupadd -o -g 1000 -r riak && useradd -d /var/lib/riak -u 1000 -c 'Riak user' -M -r -g riak riak
+RUN apt-get install --allow-unauthenticated -y riak
+
+ENV RIAK_VERSION 2.2.3
+ENV RIAK_HOME /usr/lib/riak
+
+# Install the Python client
+#RUN apt-get install -y build-essential libssl-dev libffi-dev python-dev python-pip
+#RUN pip install --upgrade pip cryptography pyparsing appdirs riak
+
+# Clean up APT cache
+RUN rm -rf /var/lib/apt/lists/* /tmp/*
+
+# Install Jiffy - Json parser for Erlang
+ADD lib/jiffy.tgz /usr/lib/riak/lib/
+
+# Copy mfn counter triggers source (compiled by prestart script)
+RUN mkdir /usr/lib/riak/lib/mfn_counter_triggers
+COPY src/mfn_counter_triggers.erl /usr/lib/riak/lib/mfn_counter_triggers
+
+# Copy workflow_triggers source (compiled by prestart script)
+RUN mkdir /usr/lib/riak/lib/workflow_triggers
+COPY src/workflow_triggers.erl /usr/lib/riak/lib/workflow_triggers
+
+
+# Install custom start script
+COPY script/riak-cluster.sh $RIAK_HOME/riak-cluster.sh
+RUN chmod a+x $RIAK_HOME/riak-cluster.sh
+RUN echo "riak soft nofile 65536\nriak hard nofile 200000" >>/etc/security/limits.conf
+
+# Install custom hooks
+COPY script/prestart.d /etc/riak/prestart.d
+COPY script/poststart.d /etc/riak/poststart.d
+
+# Prepare for bootstrapping schemas
+RUN mkdir -p /etc/riak/schemas
+
+RUN chown riak:riak -R /etc/riak
+RUN chown riak:riak -R /usr/lib/riak/lib/mfn_counter_triggers
+RUN chown riak:riak -R /usr/lib/riak/lib/workflow_triggers
+USER riak
+WORKDIR /var/lib/riak
+
+# Expose default ports
+EXPOSE 8087
+EXPOSE 8098
+
+CMD ["/usr/lib/riak/riak-cluster.sh"]

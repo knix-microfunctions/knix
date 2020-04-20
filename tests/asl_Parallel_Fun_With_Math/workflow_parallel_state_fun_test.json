@@ -1,0 +1,32 @@
+{
+  "Comment":"Parallel Test Workflow",
+  "States":{
+    "FunWithMath":{
+      "Type":"Parallel",
+      "End":true,
+      "Branches":[
+        {
+          "States":{
+            "Add":{
+              "Type":"Task",
+              "End":true,
+              "Resource":"Add"
+            }
+          },
+          "StartAt":"Add"
+        },
+        {
+          "States":{
+            "Subtract":{
+              "Type":"Task",
+              "End":true,
+              "Resource":"Subtract"
+            }
+          },
+          "StartAt":"Subtract"
+        }
+      ]
+    }
+  },
+  "StartAt":"FunWithMath"
+}

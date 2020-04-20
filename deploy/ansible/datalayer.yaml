@@ -1,0 +1,114 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+  # run as follows: ansible-playbook -K -e "@settings.json" datalayer.yaml
+  # or as: ./run.sh datalayer.yaml
+- hosts: all
+  
+  vars:
+    # location of sand hostagent deployment package on local machine
+    datalayer_dist: "../../DataLayerService/target"
+    datalayer_jar: "datalayerservice.jar"
+
+    install_dir: "{{ mfn_server_installation_folder }}/datalayer"
+
+    service_name: mfn-datalayer
+    service_script: "/lib/systemd/system/{{ service_name }}.service"
+    datalayer_bind: "{{ ansible_default_ipv4.address }}:4998"
+    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}:8087"
+    all_datalayer_hosts_bind: "{{ groups['all']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join(':4998,') }}:4998"
+
+  tasks:
+
+  - debug:
+      msg: 
+        - inventory_hostname = {{ inventory_hostname }}
+        - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+        - install_dir = {{ install_dir }}    # e.g. /opt/mfn
+        - "datalayer package = {{ datalayer_dist }}/{{ datalayer_jar }}"
+
+  - name: stop service
+    systemd:
+      name: "{{ service_name }}"
+      state: stopped
+    ignore_errors: yes
+
+  - name: create installation directory
+    file: path={{ install_dir }} state=directory
+
+  - name: copy jar
+    copy:
+      src: "{{ datalayer_dist }}/{{ datalayer_jar }}"
+      dest: "{{ install_dir }}/"
+
+  - name: provide separate log configuration
+    copy:
+      dest: "{{ install_dir }}/log4j2.properties"
+      src: "{{ datalayer_dist }}/classes/log4j2.properties"
+
+  - name: change log folder for bare metal installation
+    replace:
+      path: "{{ install_dir }}/log4j2.properties"
+      regexp: '^(appender.rolling.file\w+) = (\S+)$'
+      replace: '\1 = ../\2'
+
+  - name: create run script
+    copy:
+      mode: '775'
+      dest: "{{ install_dir }}/run_datalayer.sh"
+      content: |
+        #!/bin/sh
+        exec java -Dlog4j.configurationFile={{ install_dir }}/log4j2.properties -jar {{ datalayer_jar }}
+
+  - name: create service script
+    copy:
+      dest: "{{ service_script }}"
+      content: |
+        [Unit]
+        Description=Microfunctions Datalayer
+        After=network.target
+        Requires=mfn-riak.service
+        [Service]
+        Type=simple
+        WorkingDirectory={{ install_dir }}
+        Environment=DATALAYER_BIND={{ datalayer_bind }}
+        Environment=RIAK_CONNECT={{ riak_connect }}
+        Environment=ALL_DATALAYER_BIND={{ all_datalayer_hosts_bind }}
+        ExecStart={{ install_dir }}/run_datalayer.sh
+        [Install]
+        WantedBy=multi-user.target
+
+  - name: systemd start datalayer service
+    systemd:
+      daemon_reload: yes
+      name: "{{ service_name }}"
+      enabled: true
+      state: restarted
+
+  - name: create start script
+    copy:
+      mode: '775'
+      dest: "{{ install_dir }}/start.sh"
+      content: |
+        #!/bin/sh
+        sudo systemctl start {{ service_name }}
+
+  - name: create stop script
+    copy:
+      mode: '775'
+      dest: "{{ install_dir }}/stop.sh"
+      content: |
+        #!/bin/sh
+        sudo systemctl stop {{ service_name }}

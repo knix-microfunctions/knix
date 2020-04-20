@@ -1,0 +1,17 @@
+{
+   "Comment": "A Hello World example of the Amazon States Language using an AWS Lambda function",
+   "StartAt": "FailFunction",
+   "States": {
+      "FailFunction": {
+         "Type": "Task",
+         "Resource": "FailFunctionRetryJava",
+         "Retry": [ {
+            "ErrorEquals": ["States.All"],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 2,
+            "BackoffRate": 2.0
+         } ],
+      "End": true
+      }
+   }
+}

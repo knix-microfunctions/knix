@@ -1,0 +1,311 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+  # run as follows: ansible-playbook -K -e "@settings.json" elasticsearch.yml
+  # or as: ./run.sh elasticsearch.yml
+- hosts: elasticsearch
+  serial: 1
+  
+  vars:
+    # Paths on local machine, such as, the location of the elasticsearch tar archive
+    es_service_dir: "../../LoggingService/elasticsearch"
+    es_dist_url: "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.2.0-linux-x86_64.tar.gz"
+    es_installer_archive_version: elasticsearch-7.2.0
+    es_installer_archive_filename: "{{ es_installer_archive_version }}-linux-x86_64.tar.gz"
+
+    es_master_name: "{{ groups['elasticsearch'][0] }}"
+    es_master_ip: "{{ hostvars[groups['elasticsearch'][0]].ansible_default_ipv4.address }}"
+
+    # Paths on target machine (where elasticsearch will be installed)
+    es_server_dir: "{{ mfn_server_installation_folder }}/elasticsearch"
+
+    # config file path on target machine
+    es_server_dir_config: "{{ es_server_dir }}/config"
+    es_server_config_filename: elasticsearch.yml
+    es_server_config_filepath: "{{ es_server_dir_config }}/{{ es_server_config_filename }}"
+
+    # data, logs, and bin dir path on target machine
+    es_server_dir_data: "{{ es_server_dir }}/data"
+    es_server_dir_logs: "{{ es_server_dir }}/logs"
+    es_server_dir_bin: "{{ es_server_dir }}/{{ es_installer_archive_version }}/bin"
+
+    # elasticsearch service path on target machine
+    es_server_service_name: mfn-elasticsearch
+    es_server_service_path: "/lib/systemd/system/{{ es_server_service_name }}.service"
+    es_server_cluster_name: mfn-elasticsearch
+
+    elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_default_ipv4.address }}:9200"
+
+  tasks:
+  - name: get http_proxy
+    shell: "su - -c 'echo $http_proxy'"
+    register: http_proxy
+
+  - name: get https_proxy
+    shell: "su - -c 'echo $https_proxy'"
+    register: https_proxy
+
+  - name: get no_proxy
+    shell: "su - -c 'echo $no_proxy'"
+    register: no_proxy
+
+  - set_fact:
+      http_proxy: "{{ http_proxy.stdout }}"
+      https_proxy: "{{ https_proxy.stdout }}"
+      no_proxy: "{{ no_proxy.stdout }}"
+
+  # Print debug data
+  - debug:
+      msg: 
+        - inventory_hostname = {{ inventory_hostname }}
+        - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+        - mfn_server_installation_folder = {{ mfn_server_installation_folder }}      # e.g. /opt/mfn
+        - es_server_dir = {{ es_server_dir }}                                        # e.g. /opt/mfn/elasticsearch
+        - es_server_config_filename = {{ es_server_config_filename }}                # e.g. elasticsearch.yml
+        - es_server_dir_config = {{ es_server_dir_config }}                          # e.g. /opt/mfn/elasticsearch/config
+        - es_server_config_filepath = {{ es_server_config_filepath }}                # e.g. /opt/mfn/elasticsearch/config/elasticsearch.yml
+        - es_server_dir_bin = {{ es_server_dir_bin }}                                # e.g. /opt/mfn/elasticsearch/elasticsearch-7.2.0/bin
+        - es_server_dir_data = {{ es_server_dir_data }}                              # e.g. /opt/mfn/elasticsearch/data
+        - es_server_dir_logs = {{ es_server_dir_logs }}                              # e.g. /opt/mfn/elasticsearch/logs
+        - es_server_service_name = {{ es_server_service_name }}                      # e.g. mfn-elasticsearch
+        - es_server_service_path = {{ es_server_service_path }}                      # e.g. /lib/systemd/system/mfn-elasticsearch.service
+        - es_dist_url = {{ es_dist_url }}                                            # e.g. https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.2.0-linux-x86_64.tar.gz
+        - es_installer_archive_version = {{ es_installer_archive_version }}          # e.g. elasticsearch-7.2.0
+        - es_installer_archive_filename = {{ es_installer_archive_filename }}        # e.g. elasticsearch-7.2.0-linux-x86_64.tar.gz
+        - es_server_cluster_name = {{ es_server_cluster_name }}                      # e.g. es_server_cluster_name
+        - http_proxy = {{ http_proxy }}
+        - https_proxy = {{ https_proxy }}
+        - no_proxy = {{ no_proxy }}
+
+  - name: check if service exists
+    stat: path={{ es_server_service_path }}
+    register: service_status
+
+  - name: stop service
+    service: name={{ es_server_service_name }} state=stopped
+    when: service_status.stat.exists
+    register: service_stopped
+
+  - name: ensure elasticsearch folder exists
+    file: path={{ es_server_dir }} state=directory mode='755'
+
+  - name: Download elasticsearch distribution package
+    get_url:
+      url: "{{ es_dist_url }}"
+      dest: "{{ es_server_dir }}/{{ es_installer_archive_filename }}"
+      mode: 0775
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ http_proxy }}"
+
+  - name: unpack elasticsearch
+    unarchive:
+      remote_src: yes
+      src: "{{ es_server_dir }}/{{ es_installer_archive_filename }}"
+      dest: "{{ es_server_dir }}"
+
+  - name: copy esconfig.py
+    copy: 
+      src: "{{ es_service_dir }}/esconfig.py"
+      dest: "{{ es_server_dir }}"
+      mode: '0755'
+
+  - name: copy esconfig.sh
+    copy: 
+      src: "{{ es_service_dir }}/esconfig.sh"
+      dest: "{{ es_server_dir }}"
+      mode: '0755'
+
+  - name: copy wftail.py
+    copy: 
+      src: "{{ es_service_dir }}/wftail.py"
+      dest: "{{ es_server_dir }}"
+      mode: '0755'
+
+  - name: "Duplicate default config directory, {{ es_server_dir }}/{{ es_installer_archive_version }}/config to {{ es_server_dir }}/ "
+    synchronize:
+      src: "{{ es_server_dir }}/{{ es_installer_archive_version }}/config"
+      dest: "{{ es_server_dir }}/"
+    delegate_to: "{{ inventory_hostname }}"
+
+  - name: "Update {{ es_server_config_filepath }}   cluster.name: {{ es_server_cluster_name }}"
+    lineinfile:
+      path: "{{ es_server_config_filepath }}"
+      regexp: "cluster.name:"
+      line: "cluster.name: {{ es_server_cluster_name }}"
+
+  - name: "Update {{ es_server_config_filepath }}   node.name: {{ inventory_hostname }}"
+    lineinfile:
+      path: "{{ es_server_config_filepath }}"
+      regexp: "node.name:"
+      line: "node.name: {{ inventory_hostname }}"
+
+  - name: "Update {{ es_server_config_filepath }}   network.host: {{ ansible_default_ipv4.address }}"
+    lineinfile:
+      path: "{{ es_server_config_filepath }}"
+      regexp: "network.host:"
+      line: "network.host: {{ ansible_default_ipv4.address }}"
+
+  - name: "Update {{ es_server_config_filepath }}   path.data: {{ es_server_dir_data }}"
+    lineinfile:
+      path: "{{ es_server_config_filepath }}"
+      regexp: "path.data:"
+      line: "path.data: {{ es_server_dir_data }}"
+
+  - name: "Update {{ es_server_config_filepath }}   path.logs: {{ es_server_dir_logs }}"
+    lineinfile:
+      path: "{{ es_server_config_filepath }}"
+      regexp: "path.logs:"
+      line: "path.logs: {{ es_server_dir_logs }}"
+
+
+  # these could be the names of all the hosts in the cluster
+  - name: "Update {{ es_server_config_filepath }}   discovery.seed_hosts: [\"{{ groups['elasticsearch']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join('\", \"')}}\"]"
+    lineinfile:
+      path: "{{ es_server_config_filepath }}"
+      regexp: "discovery.seed_hosts:"
+      line: "discovery.seed_hosts: [\"{{ groups['elasticsearch']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join('\", \"')}}\"]"
+  
+  # always points to the master node
+  - name: "Update {{ es_server_config_filepath }}   cluster.initial_master_nodes: [\"{{ es_master_name }}\"]"
+    lineinfile:
+      path: "{{ es_server_config_filepath }}"
+      regexp: "cluster.initial_master_nodes:"
+      line: "cluster.initial_master_nodes: [\"{{ es_master_name }}\"]"
+
+  - name: create data dir, {{ es_server_dir_data }}
+    file: path={{ es_server_dir_data }} state=directory mode='775'
+
+  - name: create logs dir, {{ es_server_dir_logs }}
+    file: path={{ es_server_dir_logs }} state=directory mode='775'
+
+  - name: Make sure the user 'elasticsearch' and group 'elasticsearch' exists
+    user:
+      name: elasticsearch
+      comment: Elasticsearch user
+
+  - name: Recursively change ownership of {{ es_server_dir }} directory
+    file:
+      path: "{{ es_server_dir }}"
+      state: directory
+      recurse: yes
+      owner: elasticsearch
+      group: elasticsearch
+      mode: '0775'
+
+  - name: configure /etc/security/limits.conf  elasticsearch soft nofile 65536
+    lineinfile: 
+      path: "/etc/security/limits.conf"
+      regexp: "^elasticsearch soft nofile"
+      line: "elasticsearch soft nofile 65536"
+
+  - name: configure /etc/security/limits.conf  elasticsearch hard nofile 65536
+    lineinfile: 
+      path: "/etc/security/limits.conf"
+      regexp: "^elasticsearch hard nofile"
+      line: "elasticsearch hard nofile 65536"
+
+  - name: configure /etc/security/limits.conf  elasticsearch memlock unlimited
+    lineinfile: 
+      path: "/etc/security/limits.conf"
+      regexp: "^elasticsearch memlock unlimited"
+      line: "elasticsearch memlock unlimited"
+
+  # https://unix.stackexchange.com/questions/345595/how-to-set-ulimits-on-service-with-systemd
+  - name: create service with appropriate limits
+    copy:
+      dest: "{{ es_server_service_path }}"
+      content: |
+        [Unit]
+        Description=MFN elasticsearch
+        After=network.target
+        [Service]
+        OOMScoreAdjust=-1000
+        LimitNOFILE=65536
+        LimitMEMLOCK=unlimited
+        Type=simple
+        User=elasticsearch
+        Group=elasticsearch
+        PIDFile=/run/mfn-elasticsearch.pid
+        Environment=ES_PATH_CONF={{ es_server_dir_config }} 
+        ExecStart={{ es_server_dir_bin }}/elasticsearch
+        KillMode=process
+        [Install]
+        WantedBy=multi-user.target
+
+  - name: systemd start mfn-elasticsearch
+    systemd:
+      daemon_reload: yes
+      name: "{{ es_server_service_name }}"
+      state: restarted
+    become: yes
+
+  - name: create elasticsearch start script
+    copy:
+      mode: '775'
+      dest: "{{ es_server_dir }}/start.sh"
+      content: |
+        #!/bin/sh
+        #config file path: {{ es_server_dir_config }}
+        cd {{ es_server_dir }}
+        sudo systemctl start {{ es_server_service_name }}
+        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:9200 -t 60
+        ./esconfig.sh
+        cd -
+
+  - name: create elasticsearch stop script
+    copy:
+      mode: '775'
+      dest: "{{ es_server_dir }}/stop.sh"
+      content: |
+        #!/bin/sh
+        #config file path: {{ es_server_dir_config }}
+        sudo systemctl stop {{ es_server_service_name }}
+
+  - name: create elasticsearch purge script
+    copy:
+      mode: '775'
+      dest: "{{ es_server_dir }}/purge.sh"
+      content: |
+        #!/bin/sh
+        ./stop.sh
+        sudo rm -rf data/*
+        sudo rm -rf logs/*
+
+  - name: wait for elasticsearch
+    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:9200 -t 180"
+    register: wait_result
+
+  - name: waiting result
+    debug:
+      msg:
+        - "{{ wait_result.stderr_lines[-1] }}"
+
+  - name: running esconfig.sh
+    shell: ./esconfig.sh
+    args:
+      chdir: "{{ es_server_dir }}"
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+      no_proxy: "{{ no_proxy }}"
+      HTTP_PROXY: "{{ http_proxy }}"
+      HTTPS_PROXY: "{{ https_proxy }}"
+    register: esconfig_command
+    when: ansible_default_ipv4.address == es_master_ip
+  
+  - debug:
+      var: esconfig_command.stdout
+    when: ansible_default_ipv4.address == es_master_ip

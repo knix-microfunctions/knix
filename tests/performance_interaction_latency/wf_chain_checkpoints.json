@@ -1,0 +1,32 @@
+{
+"name": "wf_chain_checkpoints_on",
+"enable_checkpoints": true,
+"entry": "function1",
+"functions": [
+    {
+    "name": "function1",
+    "next": ["function2"]
+    },
+    {
+    "name": "function2",
+    "next": ["function3"]
+    },
+    {
+    "name": "function3",
+    "next": ["function4"]
+    },
+    {
+    "name": "function4",
+    "next": ["function5"]
+    },
+    {
+    "name": "function5",
+    "next": ["function6"]
+    },
+    {
+    "name": "function6",
+    "next": ["end"]
+    }
+    ]
+}
+

@@ -1,0 +1,15 @@
+[riak]
+knix-test
+
+[elasticsearch]
+knix-test
+
+[management]
+knix-test
+
+[frontend]
+knix-test
+
+[nginx]
+knix-test
+

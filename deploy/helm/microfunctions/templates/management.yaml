@@ -1,0 +1,258 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+{{ if (.Values.manager.createServiceAccounts) }}
+---
+# ------------------- MFN Management Account ------------------- #
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "{{ template "manager.fullname" . }}"
+  namespace: "{{.Release.Namespace}}"
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "{{ template "manager.fullname" . }}-role"
+  namespace: "{{.Release.Namespace}}"
+rules:
+  # Allow reading/writing "knative services" 
+  - apiGroups: ["serving.knative.dev"]
+    resources: ["services"]
+    verbs: ["get", "list", "create", "update", "delete"]
+  - apiGroups: ["serving.knative.dev"]
+    resources: ["configurations", "routes", "revisions"]
+    verbs: ["get", "list"]
+  # Allow reading/writing "pods" 
+  - apiGroups: [""]
+    resources: ["pods", "pods/status", "pods/log"]
+    verbs: ["*"]
+---
+# Role binding for the management account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: "{{ template "manager.fullname" . }}-role-binding"
+  namespace: "{{.Release.Namespace}}"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: "{{ template "manager.fullname" . }}-role"
+subjects:
+- kind: ServiceAccount
+  name: "{{ template "manager.fullname" . }}"
+  namespace: "{{.Release.Namespace}}"
+---
+# ------------------- MFN Workflow Account ------------------- #
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "wf-{{ .Release.Name }}"
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "wf-{{ .Release.Name }}-role"
+  namespace: "{{.Release.Namespace}}"
+rules:
+  # Allow reading "endpoints" 
+  - apiGroups: [""]
+    resources: ["endpoints","pods"]
+    verbs: ["get","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: "wf-{{ .Release.Name }}-role-binding"
+  namespace: "{{.Release.Namespace}}"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: "wf-{{ .Release.Name }}-role"
+subjects:
+- kind: ServiceAccount
+  name: "wf-{{ .Release.Name }}"
+  namespace: "{{.Release.Namespace}}"
+- kind: ServiceAccount
+  name: "{{ template "manager.fullname" . }}"
+  namespace: "{{.Release.Namespace}}"
+{{ end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "manager.fullname" .  }}-new-workflow-conf
+  labels:
+    app: {{ include "manager.name" . | quote }}
+    release: {{ .Release.Name | quote }}
+data:
+  kservice.json: |-
+    {
+      "apiVersion": "serving.knative.dev/v1",
+      "kind": "Service",
+      "metadata": {
+        "name": null,
+        "namespace": null,
+        "labels": {
+          "app": "microfunctions-workflow",
+          "release": {{ .Release.Name | quote }},
+          "user": null,
+          "workflow": null,
+          "workflowid": null
+        }
+      },
+      "spec": {
+        "template": {
+          "metadata": {
+            "annotations": {
+              {{- /* Knative concurrency-based autoscaling (default). */ -}}
+              "autoscaling.knative.dev/class": "kpa.autoscaling.knative.dev",
+              "autoscaling.knative.dev/metric": "concurrency",
+              {{- /* Target 10 requests in-flight per pod. */ -}}
+              "autoscaling.knative.dev/target": "20",
+              {{- /* Disable scale to zero with a minScale of 1. */ -}}
+              "autoscaling.knative.dev/minScale": "1",
+              {{- /* Limit scaling to 100 pods. */ -}}
+              "autoscaling.knative.dev/maxScale": "5"
+            },
+            "labels": {
+              "app": "microfunctions-workflow",
+              "release": {{ .Release.Name | quote }},
+              "user": null,
+              "workflow": null,
+              "workflowid": null
+            }
+          },
+          "spec": {
+            {{/* not allowed in KNative
+            "affinity": { 
+              "podAffinity": { 
+                "preferredDuringSchedulingIgnoredDuringExecution": [{
+                  "weight": 100, 
+                  "podAffinityTerm": {
+                    "topologyKey":"kubernetes.io/hostname",
+                    "labelSelector": {
+                      "matchLabels": {
+                        "app": "microfunctions-datalayer"
+                      }
+                    }
+                  }
+                }]
+              }
+            },
+            */}}
+    {{- if (.Values.manager.createServiceAccounts) -}}
+            "serviceAccountName": "wf-{{ .Release.Name }}",
+    {{- else -}}
+            "serviceAccountName": "default",
+    {{- end -}}
+            "containers": [
+              {
+                "securityContext": { "runAsUser": 1000 },
+                "name": "sandbox",
+                "image": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePath }}:{{ .Values.manager.sandbox.imageTag }}",
+                "imagePullPolicy": "Always",
+                "env": [
+                {{/* not allowed in KNative
+                  {"name": "MFN_HOSTNAME", "valueFrom": { "fieldRef": { "fieldPath": "spec.nodeName" }}},
+                */}}
+                  {"name": "MFN_DATALAYER", "value": "datalayer.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.datalayer.port }}" },
+                  {"name": "MFN_ELASTICSEARCH", "value": {{ include "esConnect.url" . | quote }} }
+                ],
+                {{/* not allowed in KNative
+                "lifecycle": {"preStop": {"exec":{"command":["python3","/sand/SandboxAgent/shutdown.py"]}}},
+                */}}
+                "resources": {{ toJson .Values.manager.sandbox.resources }},
+                "ports": [
+                  {"containerPort":8080}
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  new_workflow.conf: |-
+    {
+      "app.fullname.prefix": "wf-{{ .Release.Name }}",
+      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}",
+      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}",
+    {{- if (.Values.manager.createServiceAccounts) -}}
+      "mgmtserviceaccount": "{{ template "manager.fullname" . }}",
+    {{- else -}}
+      "mgmtserviceaccount": "default",
+    {{- end -}}
+      "configmap": "{{ include "manager.fullname" .  }}-new-workflow-conf",
+      "HTTP_GATEWAYPORT": "{{ .Values.manager.httpGatewayPort }}",
+      "HTTPS_GATEWAYPORT": "{{ .Values.manager.httpsGatewayPort }}"
+    }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "manager.fullname" . }}
+  labels:
+    app: {{ include "manager.name" . | quote }}
+    release: {{ .Release.Name | quote }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "manager.name" . | quote }}
+        release: {{ .Release.Name | quote }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+{{ if (.Values.manager.createServiceAccounts) }}
+      serviceAccountName: "{{ template "manager.fullname" . }}"
+{{ else }}
+      serviceAccountName: "default"
+{{ end }}
+      containers:
+      - name: management
+        image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag }}"
+        imagePullPolicy: "{{ .Values.manager.setup.imagePullPolicy }}"
+        env:
+        - name: MFN_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: "spec.nodeName"
+        - name: MFN_DATALAYER
+          value: datalayer.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.datalayer.port }}
+        - name: MFN_ELASTICSEARCH
+          value: {{ include "esConnect.url" . | quote }}
+        - name: HTTP_PROXY
+          value: "{{ .Values.manager.httpProxy }}"
+        - name: HTTPS_PROXY
+          value: "{{ .Values.manager.httpsProxy }}"
+        - name: http_proxy
+          value: "{{ .Values.manager.httpProxy }}"
+        - name: https_proxy
+          value: "{{ .Values.manager.httpsProxy }}"
+        - name: HTTP_GATEWAYPORT
+          value: "{{ .Values.manager.httpGatewayPort }}"
+        - name: HTTPS_GATEWAYPORT
+          value: "{{ .Values.manager.httpsGatewayPort }}"
+        volumeMounts:
+        - name: new-workflow-conf
+          mountPath: /opt/mfn/SandboxAgent/conf
+        resources:
+{{ toYaml .Values.manager.setup.resources | indent 10}}
+      restartPolicy: Never
+      volumes:
+      - name: new-workflow-conf
+        configMap:
+          name: {{ include "manager.fullname" .  }}-new-workflow-conf

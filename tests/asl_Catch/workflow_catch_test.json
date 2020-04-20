@@ -1,0 +1,21 @@
+{
+   "Comment": "A Hello World example of the Amazon States Language using an AWS Lambda function",
+   "StartAt": "FailFunction",
+   "States": {
+      "FailFunction": {
+         "Type": "Task",
+         "Resource": "FailFunction",
+         "Catch": [ {
+            "ErrorEquals": ["ValueError", "ZeroDivisionError", "TypeError", "States.All"],
+            "Next": "fallback",
+	    "ResultPath": "$.error" 
+         } ],
+         "End": true
+      },
+      "fallback": {
+         "Type": "Pass",
+         "Result": "Hello, AWS Step Functions!",
+         "End": true
+      }
+   }
+}

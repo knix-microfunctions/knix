@@ -1,0 +1,21 @@
+{
+    "Comment": "Task Chain State Machine Example",
+    "StartAt": "ChainEntry",
+    "States": {
+            "ChainTerminal":{
+              "Resource":"ChainTerminal",
+              "End":true,
+              "Type":"Task"
+            },
+            "ChainEntry":{
+              "Resource":"ChainEntry",
+              "Type":"Task",
+              "Next":"ChainTask"
+            },
+            "ChainTask":{
+              "Resource":"ChainTask",
+              "Type":"Task",
+              "Next":"ChainTerminal"
+            }
+   }
+}

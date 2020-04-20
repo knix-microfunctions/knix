@@ -1,0 +1,93 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<table st-safe-src="functions" st-table="displayFunctions" class="table table-bordered table-hover table-condensed" style="border:0;">
+
+  <thead>
+  <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
+    <button class="btn btn-primary" ng-click="addFunction()">Add Function</button>
+  </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/></td></tr>
+
+
+    <th st-sort="name" style="text-align:left;border:0;"><b>Name</b></th>
+    <th st-sort="runtime" style="border:0;"><b>Runtime</b></th>
+    <th id="sortHeader" style="border:0;" st-sort="modified" st-sort-default="reverse"><b>Last Modified</b></th>
+    <th style="border:0;"><b>Actions</b></th>
+  </tr>
+  </thead>
+  <tbody>
+
+  <tr ng-show="displayFunctions.length==0"><td ng-show="displayFunctions.length==0" colspan=4><hr ng-show="displayFunctions.length==0" style="display: inline;height: 1px;border: 0;border-top: 1px solid #ccc;margin: 1em 0; padding: 0;"></td></tr>
+
+  <tr ng-repeat="mFunction in displayFunctions" class="editable-row">
+
+    <td style="text-align:left;">
+        <span editable-text="mFunction.name" e-name="name" e-form="rowform" e-required e-ng-keydown="navigate($event,rowform,mFunction)">
+          {{ mFunction.name || 'empty' }}
+        </span>
+    </td>
+    <td class="select-td">
+        <span editable-select="mFunction.runtime" e-name="runtime" e-form="rowform" e-selectpicker
+              e-ng-options="s.value as s.text for s in runtimes">
+          {{ showRuntime(mFunction) }}
+        </span>
+    </td>
+    <td>
+        <span e-name="modified" e-form="rowform">
+          {{ showLastModified(mFunction) }}
+        </span>
+    </td>
+    <td>
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveFunction(mFunction);" class="form-buttons form-inline"
+            shown="inserted == mFunction">
+        <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
+          Save
+        </button>
+
+<!--
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-danger editable-table-button btn-xs" data-toggle="modal" ng-click="open('app/pages/functions/modals/codeEditorModal.html', 'lg', functions[$index].id)">Edit Code</button>
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-info editable-table-button btn-xs" ng-click="open('app/pages/functions/modals/dependenciesModal.html', 'lg', functions[$index].id)">Libraries</button>
+-->
+        <button type="button" ng-disabled="rowform.$waiting" ng-click="rowform.$cancel();reloadFunctions();" class="btn btn-default editable-table-button btn-xs">
+          Cancel
+        </button>
+      </form>
+      <div class="buttons" ng-show="!rowform.$visible">
+        <button class="btn btn-primary editable-table-button btn-xs" ng-click="rowform.$show()">Rename</button>
+
+
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:85px; background-color: #757a74; border-color: #757a74;" data-toggle="modal" ng-click="open('app/pages/functions/modals/codeEditorModal.html', 'lg', functions[getIndex(mFunction)].id, functions[getIndex(mFunction)].name, functions[getIndex(mFunction)].status, functions[getIndex(mFunction)].runtime)">Code Editor</button>
+        <!--<button type="button" ng-disabled="rowform.$waiting" class="btn btn-info editable-table-button btn-xs" style="width:115px;" ng-click="open('app/pages/functions/modals/dependenciesModal.html', 'lg', functions[$index].id, functions[$index].name, functions[$index].status)">Dependency Editor</button>-->
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-info editable-table-button btn-xs" ng-click="testFunction(getIndex(mFunction))">Test</button>
+        <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeFunction(getIndex(mFunction))">Delete</button>
+
+
+      </div>
+    </td>
+  </tr>
+  </tbody>
+  <tfoot>
+			<tr style="border: 0;">
+				<td colspan="5" class="text-center" style="border: 0;">
+          <br>
+					<div id="functionPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
+          <br>
+				</td>
+
+			</tr>
+
+	</tfoot>
+</table>

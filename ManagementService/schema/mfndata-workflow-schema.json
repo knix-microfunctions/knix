@@ -1,0 +1,64 @@
+{
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "http://microfunctions.org/mfndata-workflow-schema.json",
+    "type": "object",
+    "title": "Management",
+    "required": [
+      "workflow"
+    ],
+    "properties": {
+      "workflow": {
+        "$id": "#/properties/workflow",
+        "type": "object",
+        "title": "Workflow",
+        "required": [
+          "name",
+          "status",
+          "modified",
+          "id"
+        ],
+        "properties": {
+          "name": {
+            "$id": "#/properties/workflow/properties/name",
+            "type": "string",
+            "title": "Name",
+            "default": "",
+            "examples": [
+              "myName"
+            ],
+            "pattern": "^(.*)$"
+          },
+          "status": {
+            "$id": "#/properties/workflow/properties/status",
+            "type": "string",
+            "title": "Status",
+            "enum": ["DEPLOYED","DEPLOYING","UNDEPLOYED","UNDEPLOYING"],
+            "examples": [
+              "DEPLOYED"
+            ],
+            "pattern": "^(.*)$"
+          },
+          "modified": {
+            "$id": "#/properties/workflow/properties/modified",
+            "type": "number",
+            "title": "Modified",
+            "default": 0.0,
+            "examples": [
+              1581498771.096527
+            ]
+          },
+          "id": {
+            "$id": "#/properties/workflow/properties/id",
+            "type": "string",
+            "title": "ID",
+            "default": "",
+            "examples": [
+              "7533a4cc-6fa7-4725-998b-1b7ef2b9b90c"
+            ],
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        }
+      }
+    }
+  }

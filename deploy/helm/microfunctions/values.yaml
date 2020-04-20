@@ -1,0 +1,160 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+# Default values for MicroFunctions.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+#------------------------------------------------------------------------------
+# MicroFunction management workflow
+#------------------------------------------------------------------------------
+imageRepo: "registry.kube-system.svc.cluster.local"
+manager:
+  #httpProxy: "http://<host>:<port>"
+  #httpsProxy: "http://<host>:<port>"
+  httpGatewayPort: 80
+  httpsGatewayPort: 443
+  endpoint: http://wf-mfn1-management.svc.cluster.local:31380
+  nameOverride: "microfunctions"
+  newWorkflow:
+    hpa:
+      targetCPUUtilizationPercentage: 80
+      minReplicas: 1
+      maxReplicas: 1
+  setup:
+    imagePath: "/microfn/management"
+    imageTag: "latest"
+    imagePullPolicy: "Always"
+    initialDelaySeconds: 60
+    resources:
+      limits:
+        cpu: 200m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 1Gi
+  sandbox:
+    imagePathPython: "/microfn/sandbox"
+    imagePathJava: "/microfn/sandbox_java"
+    imageTag: "latest"
+    imagePullPolicy: "Always"
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 1
+        memory: 1Gi
+  createServiceAccounts: true
+
+#------------------------------------------------------------------------------
+# MicroFunction Datalayer
+#------------------------------------------------------------------------------
+datalayer:
+  replicas: 3
+  imagePath: "/microfn/datalayer"
+  imageTag: "latest"
+  imagePullPolicy: "Always"
+  port: 4998
+  initialDelaySeconds: 0
+  resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+
+#------------------------------------------------------------------------------
+# Riak global data storage
+#------------------------------------------------------------------------------
+riak:
+  replicas: 3
+  imagePath: "/microfn/riak"
+  imageTag: "latest"
+  imagePullPolicy: "Always"
+  nameOverride: "microfunctions-riak"
+  ClientPortHttp: 8098
+  ClientPortProtobuf: 8087
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+     cpu: 1
+     memory: 1Gi
+  DataStorage: 2Gi
+  ClusterName: "riak"
+  WaitForErlang: 180
+  ErlangDistributionPortRangeMinimum: 6000
+  ErlangDistributionPortRangeMaximum: 6999
+  LogConsoleLevel: "debug"
+  BitcaskMergePolicy: "always"
+  BitcaskMergeTriggersFragmentation: 20
+  BitcaskMergeTriggersDeadBytes: "2MB"
+  BitcaskMergeThresholdsFragmentation: 10
+  BitcaskMergeThresholdsDeadBytes: "1MB"
+  BitcaskMergeThresholdsSmallFile: "512GB"
+  BitcaskMergeCheckInterval: "1m"
+  BitcaskMaxFileSize: "100MB"
+
+#------------------------------------------------------------------------------
+# ElasticSearch for all components and MicroFunction logs
+#------------------------------------------------------------------------------
+elastic:
+  imageRepo: "docker.elastic.co"
+  imagePath: "/elasticsearch/elasticsearch-oss"
+  imageTag: "7.3.2"
+  clientPort: 9200
+  masterPort: 9300
+  resources:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 2Gi
+
+#------------------------------------------------------------------------------
+# Nginx with MicroFunctions web GUI and Storage API
+#------------------------------------------------------------------------------
+nginx:
+  Replicas: 1
+  nameOverride: "microfunctions-nginx"
+  frontendImagePath: "/microfn/frontend"
+  frontendImageTag: "latest"
+  imagePath: "/microfn/nginx"
+  imageTag: "latest"
+  httpPort: 32180
+  location: "/"
+# If httpsPort is defined, the Base64 encoded certificate authority, certificate and key are required to serve securely from the Pod
+#  httpsPort: 32443
+#  httpsCa: base64
+#  httpsCert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVGVENDQXYyZ0F3SUJBZ0lVUUdsRHJUWDJXRXBRaDlDSjhtT3kzTXBXY0tZd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZURVRNQkVHQTFVRUF4TUthM1ZpWlhKdVpYUmxjekFlRncweE9UQTRNekF4TWpReU1EQmFGdzB5TURBNApNamt4TWpReU1EQmFNSUdpTVFzd0NRWURWUVFHRXdKRVJURWJNQmtHQTFVRUNCTVNRbUZrWlc0dFYzVmxjblIwClpXMWlaWEpuTVJJd0VBWURWUVFIRXdsVGRIVjBkR2RoY25ReEhEQWFCZ05WQkFvVEUwVjRZVzF3YkdVZ1EyOXkKY0c5eVlYUnBiMjR4R3pBWkJnTlZCQXNURWtWNFpXMXdiR0Z5ZVNCVFpYSjJhV05sY3pFbk1DVUdBMVVFQXhNZQpibmd0YldadU1TNXpZVzVrTG5OMll5NWpiSFZ6ZEdWeUxteHZZMkZzTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGCkFBT0NBUThBTUlJQkNnS0NBUUVBNk5OSllUd0t4MWFJRXFVckVxaE9PMEVmMzlDU3AwQTVyOUhQbXJWWVRTUVYKbUpndTdiU25GdUFkeTNlM045Szc0L2YrYnU0ZzVTS3pqd0Nud1JzSWIwUzNWdUZ1VGYrV3dlcGdCbkNHdkdFcQoyS1IyZnErMmd3QlFFbUw5anFvUmsvbEZrdzFRbVZYNEsxWnN6U09DT29YS01MUXQyNXVIb0xFOWdhV1pSVE9jCkRLZnRWOENjZ09JTlhuKzk3V1VSUjJkSGVpSFZHWDB2WS9JK3BXS1hzVDdiZ2c2UjF2My9PeTlkcFBCWHlPa1EKODB5eGVDZjJrWmpacHlZdlN4QUgzdXhmalowRkgxZXVRUWg5Y0hkdHdadXg2NnovUFo3MzY3WjR5YXZrMWYwNQpWK2hpTzVnRDhPSHVhTFBsaEYvSDNZSEpSSVlyUGtuaWgxd1M1b0pFdHdJREFRQUJvNEhPTUlITE1BNEdBMVVkCkR3RUIvd1FFQXdJRm9EQVRCZ05WSFNVRUREQUtCZ2dyQmdFRkJRY0RBVEFNQmdOVkhSTUJBZjhFQWpBQU1CMEcKQTFVZERnUVdCQlNiRFI4NWVBSW1HOUJtWEowZWU1UFYrblk0dURCM0JnTlZIUkVFY0RCdWdoNXVlQzF0Wm00eApMbk5oYm1RdWMzWmpMbU5zZFhOMFpYSXViRzlqWVd5Q0huTnNabWM1TWk1eVkzTXVZV3hqWVhSbGJDMXlaWE5sCllYSmphQzVrWllJZ2MyeG1aemt5TG5KamN5NWtaUzVoYkdOaGRHVnNMV3gxWTJWdWRDNWpiMjJIQk1Db0FBS0gKQkpYTVg3MHdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBTDBodkFTYVU0UExkQWJQMnFvVHlHWXBMSTlzakpXNApzQXZySi9PRGJvM05JbUx2R1F4eUpocHhyMG1HOTBsbHM3MlFmc0w0aVVCRktHMUpuVEF1OWc5ZUdwWC9OYnZWClQ4Ny9XMGZuRXpUTlVrWDF4WEYxSE4rdzlWTytOb0NBdUhNVmZZT2RiMnNLUkRUcUFZbTZlWHVrV2JkTnBFek0KUTZUSkhrVGg5UThCcmJtcmR1aVdFNG01cFpsaEw1TEZzelFzMEZDNjh6NmJ5Tks4QnJwQUJWU24rRkVsMy9hMwpDMWhMWGNVMzB6VVFRUGxpU01zQzZudjg5eGdXS1FQSjVHaWgwWXhzKzcxem5zSkJ4Zk9FekFmaWt2Rk5LblVFClppWUJxUUVPL2RCUE15YkpBT1dHYUpoU3luY0pwV3FIc2dvYWw1UGR5RjBBc3VOUEhTbUV4ZFE9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRFNU1ESXlNVEV6TVRVeU9Wb1hEVEk1TURJeE9ERXpNVFV5T1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBUG5LCmduc2RMN1lzTW85NzEyV1RXOUh6OTlFY1dnbkd0VzN2K244dXZLdnpvUlcyZ1ZBSExkeC8xZkdtOEFLcElwK2sKZ1VUYi94R1MyLzRuaVc3OC9CSU5BWmsxZ005Ti9ZSlMvMXFZek5mL3lWL1hGVE5TVTFOeG5QQmswZ2VBcjBuUgpuVXFkd1hLeXpiUU9HT2FhcWtoaFhacnlrc3plSjBzcmtGMWtVSjBRSUpjMUhmcTc3cmJyeUU1RENSYmZmRE56ClFKTzdDT3g0SkVVamJncnRWUng5RTZVOEZadDJPbGROQTVna3lpM0k2NytkV3AwRzJjYU9vUjI2elpDaTFhMC8KMmF3OUJpZ2trSGlhTzJqakYrSFhnd00vWUM5ZS9EVk5jTlczbHB0SWxuRjJYbmpOT2ZmekpLdzlJTjFEVnk2MwpQYWdqSjFxMTRKWi8xVTd5SEJrQ0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFEWTk2MTlqekFQMkxpNUZ4WVNzd2grYk1PVVAKM29GdXN1cXp3ejlTU0JZMEFkakNNUlpmZ09PZnZhQlI3bk5vWmZtZWhVVHZHSjIrT0dSVXJ1N21UaUhJejcwbgo3ME54ZjVocWpjZmpJaFhwR0x1cXE4NXdIUEdCSXN2cEV4cmVTRU1kdTdNcnJUSjEwbkdQall6cDdyNkRQa3hNCnJIYldYRnNaeE1zWUZkTlFMaTcvUjlndGhMYUFTMnk1MjFOWUpENmoralBtcEJhOXdUalhXdU1QNWliSnFVT3AKRVNGeitKb3lHcG5MNWVON0dEZjcrNENocHYwLzd3U2RLaXhpWW1BOXUvMnYyRE8xWjcyT0xidG5URHVkZ2hZMQpmaHdMUnJKajR2dFN3VHJTeWhXZUo0SUhhOGQ3anJKSytMeVExWnZZck14aU1RcVRIMDRmclZ4QjYxcz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+#  httpsKey: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBNk5OSllUd0t4MWFJRXFVckVxaE9PMEVmMzlDU3AwQTVyOUhQbXJWWVRTUVZtSmd1CjdiU25GdUFkeTNlM045Szc0L2YrYnU0ZzVTS3pqd0Nud1JzSWIwUzNWdUZ1VGYrV3dlcGdCbkNHdkdFcTJLUjIKZnErMmd3QlFFbUw5anFvUmsvbEZrdzFRbVZYNEsxWnN6U09DT29YS01MUXQyNXVIb0xFOWdhV1pSVE9jREtmdApWOENjZ09JTlhuKzk3V1VSUjJkSGVpSFZHWDB2WS9JK3BXS1hzVDdiZ2c2UjF2My9PeTlkcFBCWHlPa1E4MHl4CmVDZjJrWmpacHlZdlN4QUgzdXhmalowRkgxZXVRUWg5Y0hkdHdadXg2NnovUFo3MzY3WjR5YXZrMWYwNVYraGkKTzVnRDhPSHVhTFBsaEYvSDNZSEpSSVlyUGtuaWgxd1M1b0pFdHdJREFRQUJBb0lCQUFrUjJnVHdxdGJURngvcQowVCs3MExoY05CcXE3RnVaaytXMmZhamdNWjFucjNPdlVmeXVrZWZCT1VmbzFQbFd1ejBKTng4cEpaem5laWt5CjlGWUFjSmF0RFp0VDB0RTFDTEZyS094M1M3aGc3S05kM01QWW9ucDk4NkNUdko3bkh5SXRqcmxJeG9BQ3FsVTkKMjZVdUllK1hzS1d2RHk1RDQ4ZXR2K0NpQzlOM09TMUFxWUtMZjJHT1FLVTYyaWVlR3VOejhGVXRCbU5hZVUxWApETFpRaWNIT1Ard3R2djcxWUJqVGpoWTZNSDZLNDJZQlA0YkRJWHVScDJLdlhJRzBGeFNTREF3aUp0Y1Y4Mzh2CnAvWFFIcjA2OTNLRjZTangrQVdORlhYdTB0T25CWTdzbWJNa1c3eTJoTEtwcVcveStXM2dUbkszMWwvZkNCV1EKa05VWitWa0NnWUVBLzlsUlpoWUhwSGowOGNmL0I4b1Zxc2g1ZzVzbzNOVUpNY0VMbHNwTTZVOTNRaTJGdkQ4KwowVXNDQURhVkhWcUdYdHVqN0ovczQ3Sk1TbldGaWJEdWRsbmRmNlEvWVFGa2pHNTRtRjFUMEF3QTRPWTl1OUxwCkJvc081b05OZ0VhUlgzZjYzbmJMdFEwOWxMUGpmLzBNdmdTK1RBbkdQNmhUSlhDdGsxU2NoKzBDZ1lFQTZQWjgKMjEyeXdtRUJwTkNjcGo5Y1lxRWp1L0FWWkIvZDZqT3BZZ2RIejZOMVpyL0N4bnNocEtTQlRad052b1RvcXZ2UgpodmwwdFBJSllWV212cEJZUFZMTzFuZThNOGs5TFNQRTB5M04wNFdBclYveVFOTDdvd0xqTzd5UVFOQ2RYWXBICkdPYjhXZ016NXQvTHJIWWkzbkZvVHJNbWZkQ1ZZSG5Kb2Y5UTRyTUNnWUF2ZXFMU2NSQW1BNVJoTWg0djBkN0gKZk1DZ0hiRXRtaE5FdW5CdUlVaTRtMWlrWFZKT0p1Wi9iSTRJZ0JpWUErNmZ0OTdwMEp2amZYa084RlJCd3lYZApyTHVnTGxqY3BhZUZNQk1OSTNTa1RUWDBob1c2VDErVEtVY3dtL2xMN3N5WGpPcHZVbGhuVnZld210bURMUENxCmFyTHQ1WHAyNGNQY1ZOYkJXcGhaMlFLQmdCbFhYc09hRUt6MlVuQjBST1lNdEdjQ01sbnFSdGxxWWdCcytEcnkKb2N3amNzem5oUytFQzJmV2dUNUpBSEcrRVhVd0NWM09XdlNuODM5RUN1eGwxVU51YzVOKzJOa2xSZU5ZSmJ2MwpHcEdzencrTkJWUXAzemVmUThxbXUyWmhpd3kyMHY4UmVWZnRTME1OQ3lIS2hBYUFmYUU1K2JEcjlLUFcrNmtFCmxlN2pBb0dBRC9HZFlaWXpreDMxK1ZrV1VvTm9XWnRSVWIyeSs2cEovMUxieEJtNzRMcHI5aHUycWpMZU1keEUKa0plMWdLTWhDck53TEFTa0tTR25JWXlRVEFLNWxiZG9tWnZBcFZLM0wwSjNuV3lqZUxKdXA1bk0rZ0dib3VlegpKZCtQcjFEWGcvT1JPd1h0NEZvN0tYeDc2d0VZdWEyb2tvOTY5dkpkTWhXclNabU9lNlU9Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+  imagePullPolicy: "Always"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+  frontendResources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi

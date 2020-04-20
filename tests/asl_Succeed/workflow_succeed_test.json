@@ -1,0 +1,9 @@
+{
+	"Comment": "succeed state test",
+	"StartAt": "SuccessState",
+	"States": {
+  	   "SuccessState": {
+           "Type": "Succeed"
+           }
+       }
+}

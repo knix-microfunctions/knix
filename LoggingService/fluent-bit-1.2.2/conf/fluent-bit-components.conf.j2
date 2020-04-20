@@ -1,0 +1,38 @@
+[SERVICE]
+    # Flush
+    # =====
+    # Set an interval of seconds before to flush records to a destination
+    Flush 3
+
+    # Daemon
+    # ======
+    # Instruct Fluent Bit to run in foreground or background mode.
+    Daemon Off
+
+    # Log_Level
+    # =========
+    # Set the verbosity level of the service, values can be:
+    #
+    # - error
+    # - warning
+    # - info
+    # - debug
+    # - trace
+    #
+    # By default 'info' is set, that means it includes 'error' and 'warning'.
+    Log_Level    info
+    Log_File     {{ install_dir }}/fluentbit.log
+
+    # Parsers_File
+    # ============
+    # Specify an optional 'Parsers' configuration file
+    Parsers_File parsers.conf
+
+@INCLUDE component_*.conf
+
+#[OUTPUT]
+#    Name  file
+#    Match *
+#    Path {{ install_dir }}/components.log
+#    Format csv 
+#    Delimiter ','

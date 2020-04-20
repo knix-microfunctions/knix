@@ -1,0 +1,156 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+  # run as follows: ansible-playbook -K -e "@settings.json" init_once.yml
+  # or as: ./run.sh init_once.yml
+- hosts: all
+  serial: 1
+
+  tasks:
+
+  - name: get http_proxy
+    shell: "su - -c 'echo $http_proxy'"
+    register: http_proxy
+
+  - name: get https_proxy
+    shell: "su - -c 'echo $https_proxy'"
+    register: https_proxy
+
+  - set_fact:
+      http_proxy: "{{ http_proxy.stdout }}"
+      https_proxy: "{{ https_proxy.stdout }}"
+
+  - debug:
+      msg: 
+      - inventory_hostname = {{ inventory_hostname }}
+      - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+      - mfn_server_installation_folder = {{ mfn_server_installation_folder }}
+      - set_http_proxy = {{ set_http_proxy }}
+      - proxy settings files = ./proxy/
+      - http_proxy = {{ http_proxy }}
+      - https_proxy = {{ https_proxy }}
+
+  - name: ensure other prerequisite packages exist
+    apt:
+      name:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+        - python-thrift
+        - python3-pip
+        - netcat
+        - rsync
+        - python-dev 
+        - libffi-dev 
+        - libssl-dev 
+        - libxml2-dev 
+        - libxslt1-dev
+        - zlib1g-dev
+      state: latest
+
+  - name: pip install pyOpenSSL
+    pip:
+      name: pyOpenSSL 
+      executable: pip3
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+
+  - name: Ensure mfn root folder exists
+    file:
+      path: "{{ mfn_server_installation_folder }}"
+      state: directory
+      mode: '775'
+
+  - name: Remove proxy folder
+    file:
+      state: absent
+      path: "{{ mfn_server_installation_folder }}/proxy/"
+    when: set_http_proxy == 'true'
+
+  - name: Copy proxy package
+    copy:
+      mode: '775'
+      src: "./proxy"
+      dest: "{{ mfn_server_installation_folder }}/"
+    when: set_http_proxy == 'true'
+
+  - name: set proxy for bash
+    shell: "cd {{ mfn_server_installation_folder }}/proxy; ./enable-bash-proxy.sh"
+    when: set_http_proxy == 'true'
+
+  - name: set proxy for apt
+    shell: "cd {{ mfn_server_installation_folder }}/proxy; ./enable-apt-proxy.sh"
+    when: set_http_proxy == 'true'
+
+  - name: ensure java is at the latest version
+    apt: 
+      name: openjdk-8-jre-headless
+      state: latest
+      update_cache: yes
+
+  - name: get http_proxy
+    shell: "su - -c 'echo $http_proxy'"
+    register: http_proxy
+
+  - name: get https_proxy
+    shell: "su - -c 'echo $https_proxy'"
+    register: https_proxy
+
+  - set_fact:
+      http_proxy: "{{ http_proxy.stdout }}"
+      https_proxy: "{{ https_proxy.stdout }}"
+
+  - debug:
+      msg:
+        - http_proxy = {{ http_proxy }}
+        - https_proxy = {{ https_proxy }}
+
+  - name: Copy start-all.sh script
+    copy:
+      mode: '775'
+      src: "./scripts/start-all.sh"
+      dest: "{{ mfn_server_installation_folder }}/"      
+
+  - name: Copy stop-all.sh script
+    copy:
+      mode: '775'
+      src: "./scripts/stop-all.sh"
+      dest: "{{ mfn_server_installation_folder }}/"
+
+  - name: copy wait-for-it.sh script
+    copy: 
+      mode: '775'
+      src: "./scripts/wait-for-it.sh"
+      dest: "{{ mfn_server_installation_folder }}/"
+
+  - name: copy tail-service-logs.sh script
+    copy: 
+      mode: '775'
+      src: "./scripts/tail-service-logs.sh"
+      dest: "{{ mfn_server_installation_folder }}/"
+
+  - name: copy purge-riak.sh script
+    copy: 
+      mode: '775'
+      src: "./scripts/purge-riak.sh"
+      dest: "{{ mfn_server_installation_folder }}/"
+
+   #https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+  - name: configure /etc/sysctl.conf  vm.max_map_count=262144 
+    sysctl: 
+      name: "vm.max_map_count"
+      value: "262144"

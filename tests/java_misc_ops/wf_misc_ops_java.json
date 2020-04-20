@@ -1,0 +1,11 @@
+{
+        "name": "misc_ops_java",
+        "entry": "TestMiscOperations",
+        "functions": [
+                {
+                        "name": "TestMiscOperations",
+                        "next": ["end"],
+                        "potentialNext": []
+                }
+        ]
+}

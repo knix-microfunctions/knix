@@ -1,0 +1,16 @@
+{
+    "Comment": "Iterator State Machine Example",
+    "StartAt": "wait_five_seconds",
+    "States": {
+    "wait_five_seconds": {
+       "Type": "Wait",
+       "Seconds": 1,
+       "Next": "wait_until"
+    },
+    "wait_until" : {
+       "Type": "Wait",
+       "TimestampPath": "$.expirydate",
+       "End": true
+    }
+   }
+}

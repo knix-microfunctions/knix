@@ -1,0 +1,12 @@
+{
+        "name": "workflow_jar_maven_java",
+        "entry": "dummyExampleMaven",
+        "functions": [
+                {
+                        "name": "dummyExampleMaven",
+                        "next": ["end"],
+                        "resource": "actual.DummyExampleMaven",
+                        "potentialNext": []
+                }
+        ]
+}

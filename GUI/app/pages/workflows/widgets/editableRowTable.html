@@ -1,0 +1,111 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<table class="table table-bordered table-hover table-condensed">
+<table st-safe-src="workflows" st-table="displayWorkflows" class="table table-bordered table-hover table-condensed" style="border:0;">
+
+    <thead>
+    <tr style="padding: 0;border: 0;"><td colspan=5 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
+      <button class="btn btn-primary" ng-click="addWorkflow()">Add Workflow</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="importWorkflow()">Import Workflow</button>
+    </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/></td></tr>
+    <tr>
+
+  <tr>
+
+    <th style="text-align:left;border:0;" st-sort="name"><b>Name</b></th>
+    <th style="border:0;" st-sort="status" st-sort-default="false"><b>Status</b></th>
+    <th style="border:0;"><b>Endpoint</b></th>
+    <th id="sortHeader" style="border:0;" st-sort="modified" st-sort-default="reverse"><b>Last Modified</b></th>
+    <th style="border:0;"><b>Actions</b></th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr ng-show="displayWorkflows.length==0"><td ng-show="displayWorkflows.length==0" colspan=5><hr ng-show="displayWorkflows.length==0" style="display: inline;height: 1px;border: 0;border-top: 1px solid #ccc;margin: 1em 0; padding: 0;"></td></tr>
+  <tr ng-repeat="workflow in displayWorkflows" class="editable-row">
+
+    <td style="text-align:left;">
+        <span editable-text="workflow.name" e-name="name" e-form="rowform" e-required e-ng-keydown="navigate($event,rowform,workflow)">
+          {{ workflow.name || 'empty' }}
+        </span>
+    </td>
+    <td class="select-td">
+        <span e-name="status" e-form="rowform" e-selectpicker
+              e-ng-options="s.value as s.text for s in statuses">
+          {{showStatus(workflow)}}
+        </span>
+        <span ng-show="workflowBeingDeployed(getIndex(workflow)) || workflowBeingUndeployed(getIndex(workflow))">
+          <img style="display: inline;margin:0px;" width="20%" height="auto" src="assets/img/preloader-dots.gif">
+        </span>
+    </td>
+    <td>
+        <span e-name="endpoint" e-form="rowform">
+          <input ng-show="workflow.endpoints && workflow.status=='deployed'" type="text" name="wflowurl" size="35" style="border:0;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" value="{{ showEndpoint(workflow) }}">
+          <div ng-show="workflow.status!='deployed'" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Not set</div>
+          <span ng-show="workflow.endpoints && workflow.status=='deployed'">&nbsp;</span><button type="button" ngclipboard data-clipboard-text="{{ showEndpoint(workflow) }}" ng-show="workflow.endpoints && workflow.status=='deployed'" class="btn btn-info editable-table-button btn-xs">Copy URL</button>
+
+        </span>
+    </td>
+    <td>
+        <span e-name="modified" e-form="rowform">
+          {{ showLastModified(workflow) }}
+        </span>
+    </td>
+    <td>
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveWorkflow(workflow)" class="form-buttons form-inline"
+            shown="inserted == workflow">
+        <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
+          Save
+        </button>
+<!--
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-danger editable-table-button btn-xs" data-toggle="modal" ng-click="open('app/pages/workflows/modals/workflowEditorModal.html', 'lg', workflows[$index].id)">Functions</button>
+-->
+        <button type="button" ng-disabled="rowform.$waiting" ng-click="rowform.$cancel();reloadWorkflows();" class="btn btn-default editable-table-button btn-xs">
+          Cancel
+        </button>
+      </form>
+      <div class="buttons" ng-show="!rowform.$visible">
+        <button class="btn btn-primary editable-table-button btn-xs" ng-show="!workflowDeployed(getIndex(workflow)) && !workflowBeingDeployed(getIndex(workflow)) && !workflowBeingUndeployed(getIndex(workflow))" ng-click="rowform.$show()">Rename</button>
+        <button class="btn btn-primary editable-table-button btn-xs" ng-show="workflowDeployed(getIndex(workflow)) || workflowBeingDeployed(getIndex(workflow)) || workflowBeingUndeployed(getIndex(workflow))" ng-click="" style="background-color: #e8e8e8; border-color: #e8e8e8;">Rename</button>
+        <button type="button" ng-disabled="rowform.$waiting" ng-show="!workflowBeingDeployed(getIndex(workflow)) && !workflowBeingUndeployed(getIndex(workflow))" class="btn btn-primary editable-table-button btn-xs" style="width:102px; background-color: #757a74; border-color: #757a74;" data-toggle="modal" ng-click="open('app/pages/workflows/modals/workflowEditorModal.html', 'lg', workflows[getIndex(workflow)].id, workflows[getIndex(workflow)].name, workflows[getIndex(workflow)].status, workflows[getIndex(workflow)].endpoints[0], '')">Workflow Editor</button>
+        <button type="button" ng-disabled="rowform.$waiting" ng-show="workflowBeingDeployed(getIndex(workflow)) || workflowBeingUndeployed(getIndex(workflow))" class="btn btn-primary editable-table-button btn-xs" style="width:102px; background-color: #e8e8e8; border-color: #e8e8e8;" data-toggle="modal" ng-click="">Workflow Editor</button>
+
+        <button type="button" ng-disabled="rowform.$waiting" ng-show="!workflowDeployed(getIndex(workflow)) && !workflowBeingDeployed(getIndex(workflow)) && !workflowBeingUndeployed(getIndex(workflow))" class="btn btn-info editable-table-button btn-xs" ng-click="deployWorkflow(getIndex(workflow), 'deploy')">{{ showButtonLabel(workflow) }}</button>
+        <button type="button" ng-disabled="rowform.$waiting" ng-show="workflowDeployed(getIndex(workflow))" class="btn btn-info editable-table-button btn-xs" ng-click="deployWorkflow(getIndex(workflow), 'undeploy')">{{ showButtonLabel(workflow) }}</button>
+        <button type="button" ng-disabled="rowform.$waiting" ng-show="workflowBeingDeployed(getIndex(workflow))" class="btn btn-danger editable-table-button btn-xs" style="" ng-click="deployWorkflow(getIndex(workflow), 'undeploy')">Cancel</button>
+
+        <button type="button" ng-disabled="rowform.$waiting" ng-show="workflowDeployed(getIndex(workflow))" class="btn btn-primary editable-table-button btn-xs" style="background-color: #50c95d; border-color: #50c95d;" ng-click="open('app/pages/workflows/modals/workflowExecutionModal.html', 'lg', workflows[getIndex(workflow)].id, workflows[getIndex(workflow)].name, workflows[getIndex(workflow)].status, workflows[getIndex(workflow)].endpoints[0], '')">Execute</button>
+        <button type="button" ng-disabled="rowform.$waiting" ng-show="!workflowDeployed(getIndex(workflow))" class="btn btn-primary editable-table-button btn-xs" style="background-color: #e8e8e8; border-color: #e8e8e8;" ng-click="">Execute</button>
+        <!--<button type="button" class="btn btn-primary editable-table-button btn-xs" style="background-color: #246c85; border-color: #246c85;" ng-click="exportWorkflow(getIndex(workflow))">Export</button>-->
+        <button class="btn btn-danger editable-table-button btn-xs" ng-show="!workflowDeployed(getIndex(workflow))  && !workflowBeingDeployed(getIndex(workflow)) && !workflowBeingUndeployed(getIndex(workflow))" ng-click="removeWorkflow(getIndex(workflow))">Delete</button>
+        <button class="btn btn-danger editable-table-button btn-xs" ng-show="workflowDeployed(getIndex(workflow)) || workflowBeingDeployed(getIndex(workflow)) || workflowBeingUndeployed(getIndex(workflow))" style="background-color: #e8e8e8; border-color: #e8e8e8;" ng-click="">Delete</button>
+
+
+      </div>
+    </td>
+  </tr>
+  </tbody>
+  <tfoot>
+			<tr style="border: 0;">
+				<td colspan="5" class="text-center" style="border: 0;">
+          <br>
+					<div id="workflowPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
+          <br>
+				</td>
+
+			</tr>
+
+	</tfoot>
+</table>

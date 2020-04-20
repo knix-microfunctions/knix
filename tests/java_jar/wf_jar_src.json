@@ -1,0 +1,12 @@
+{
+        "name": "workflow_jar_src_java",
+        "entry": "actual.DummyExampleSrc",
+        "functions": [
+                {
+                        "name": "actual.DummyExampleSrc",
+                        "next": ["end"],
+                        "resource": "actual.DummyExampleSrc",
+                        "potentialNext": []
+                }
+        ]
+}

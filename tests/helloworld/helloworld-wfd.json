@@ -1,0 +1,10 @@
+{
+"name": "helloworld_wfd",
+"entry": "helloworld",
+"functions": [
+	{
+	"name": "helloworld",
+	"next": ["end"]
+	}]
+}
+

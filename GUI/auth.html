@@ -1,0 +1,106 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MicroFunctions</title>
+
+  <script src="app/endpoint.js"></script>
+
+  <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900&subset=latin,greek,greek-ext,vietnamese,cyrillic-ext,latin-ext,cyrillic' rel='stylesheet' type='text/css'>
+  
+  <link rel="stylesheet" href="lib/bootstrap.css" >
+  <link rel="stylesheet" href="lib/font-awesome.css" >
+  <link rel="stylesheet" href="lib/textAngular.css" >
+  <link rel="stylesheet" href="lib/style.css" >
+
+  <link rel="stylesheet" href="app/auth.css">
+  <script>
+  
+    function auth() {
+
+      var xhr = new XMLHttpRequest();
+      var url = managementServiceEndpoint; // from app/endpoint.js
+
+      if (url=="") {
+        document.getElementById('message').innerHTML = '<a href="#" class="auth-link" style="color:#2dacd1;font-size:20px;">Error: Management service URL not set</a>';
+      } else {
+        xhr.open("POST", url, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                            
+                var json = JSON.parse(xhr.responseText.toString());
+                
+                if (json.status==='success') {
+                  document.cookie = "token=" + json.data.token + "; path=/";
+                  document.cookie = "email=" + document.getElementById('inputEmail').value + "; path=/";
+                  console.log(json.data.token);
+                  document.location.href="index.html";
+                } else {
+                  document.getElementById('message').innerHTML = '<a href="#" class="auth-link" style="color:#2dacd1;font-size:20px;">No match! Please try again.</a>';
+                }
+
+            }
+        };
+        var jsonData = '{"action" : "logIn", "data" : { "user" : { "email" : "' + document.getElementById('inputEmail').value + '", "password" : "' + document.getElementById('inputPassword').value + '" } }}';
+
+        xhr.setRequestHeader("Content-type", "application/json;charset=UTF-8");
+
+        xhr.send(jsonData);
+      }
+    }
+  </script>
+</head>
+<body>
+<main class="auth-main">
+  <div class="auth-block">
+    <center><h1>Sign in to <b>KNIX</b> Micro<b>Functions</b></h1></center>
+    <div id="message" style="color:#2dacd1;font-size:20px;">
+      <a href="reg.html" class="auth-link" style="color:#2dacd1;font-size:20px;">New to <b>KNIX</b> MicroFunctions? Sign up!</a>
+    </div>
+
+    <form id="auth" class="form-horizontal">
+      <div class="form-group">
+        <label for="inputEmail" class="col-sm-2 control-label">Email</label>
+
+        <div class="col-sm-10">
+          <input type="email" class="form-control" id="inputEmail" placeholder="Email">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="inputPassword" class="col-sm-2 control-label">Password</label>
+
+        <div class="col-sm-10">
+          <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+          <button type="button" onclick="javascript:auth();" class="btn btn-info btn-auth">Sign in</button>
+          <!--<a href class="forgot-pass" style="color:#fff">Forgot password?</a>-->
+        </div>
+      </div>
+    </form>
+
+  </div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+   "Comment": "A Hello World example of the Amazon States Language using an AWS Lambda function",
+   "StartAt": "FailFunction",
+   "States": {
+      "FailFunction": {
+         "Type": "Task",
+         "Resource": "FailFunctionCatchJava",
+         "Catch": [ {
+            "ErrorEquals": ["java.lang.StringIndexOutOfBoundsException", "java.lang.NumberFormatException", "java.lang.ArithmeticException", "States.All"],
+            "Next": "fallback",
+        "ResultPath": "$.error"
+         } ],
+         "End": true
+      },
+      "fallback": {
+         "Type": "Pass",
+         "Result": "Hello, AWS Step Functions!",
+         "End": true
+      }
+   }
+}

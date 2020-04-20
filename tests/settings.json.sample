@@ -1,0 +1,12 @@
+{
+    "mfn_url": "<http://host:port>",
+    "mfn_user": "<email>",
+    "mfn_password": "<password>",
+    "mfn_name": "<full name>",
+    "proxies":
+    {
+        "http_proxy": "http://<proxyhost>:<port>",
+        "https_proxy": "http://<proxyhost>:<port>"
+    },
+    "timeout":  <seconds>
+}

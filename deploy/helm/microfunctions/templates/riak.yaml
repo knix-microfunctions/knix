@@ -1,0 +1,2119 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "riak.fullname" . }}
+  labels:
+    app: {{ include "riak.name" . | quote }}
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.riak.ClientPortHttp }}
+      name: http
+    - port: {{ .Values.riak.ClientPortProtobuf }}
+      name: protobuf
+  selector:
+    app: {{ include "riak.name" . | quote }}
+    release: {{ .Release.Name | quote }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ template "riak.fullname" . }}
+  labels:
+    app: {{ include "riak.name" . | quote }}
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+
+spec:
+  serviceName: {{ template "riak.fullname" . }}
+  replicas: {{ default 3 .Values.riak.replicas }}
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: {{ include "riak.name" . | quote }}
+      release: {{ .Release.Name | quote }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "riak.name" . | quote }}
+        release: {{ .Release.Name | quote }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: riak
+        image: "{{ .Values.imageRepo }}{{ .Values.riak.imagePath }}:{{ .Values.riak.imageTag }}"
+        imagePullPolicy: "{{ .Values.riak.imagePullPolicy }}"    
+        env:     
+          - name: COORDINATOR_NODE
+            value: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc"
+          - name: WAIT_FOR_ERLANG
+            value: "{{ .Values.riak.WaitForErlang }}"
+          - name: CLUSTER_NAME
+            value: "{{ .Values.riak.ClusterName }}"
+          - name: PB_PORT
+            value: "{{ .Values.riak.ClientPortProtobuf }}"
+          - name: HTTP_PORT
+            value: "{{ .Values.riak.ClientPortHttp }}"
+          - name: ERLANG_DISTRIBUTION_PORT_RANGE_MINIMUM
+            value: "{{ .Values.riak.ErlangDistributionPortRangeMinimum }}"
+          - name: ERLANG_DISTRIBUTION_PORT_RANGE_MAXIMUM
+            value: "{{ .Values.riak.ErlangDistributionPortRangeMaximum }}"
+          - name: LOG_CONSOLE_LEVEL
+            value: "{{ .Values.riak.LogConsoleLevel }}"
+          - name: BITCASK_MERGE_POLICY
+            value: "{{ .Values.riak.BitcaskMergePolicy }}"
+          - name: BITCASK_MERGE_TRIGGERS_FRAGMENTATION
+            value: "{{ .Values.riak.BitcaskMergeTriggersFragmentation }}"
+          - name: BITCASK_MERGE_TRIGGERS_DEAD_BYTES
+            value: "{{ .Values.riak.BitcaskMergeTriggersDeadBytes }}"
+          - name: BITCASK_MERGE_THRESHOLDS_FRAGMENTATION
+            value: "{{ .Values.riak.BitcaskMergeThresholdsFragmentation }}"
+          - name: BITCASK_MERGE_THRESHOLDS_DEAD_BYTES
+            value: "{{ .Values.riak.BitcaskMergeThresholdsDeadBytes }}"
+          - name: BITCASK_MERGE_THRESHOLDS_SMALL_FILE
+            value: "{{ .Values.riak.BitcaskMergeThresholdsSmallFile }}"
+          - name: BITCASK_MERGE_CHECK_INTERVAL
+            value: "{{ .Values.riak.BitcaskMergeCheckInterval }}"
+          - name: BITCASK_MAX_FILE_SIZE
+            value: "{{ .Values.riak.BitcaskMaxFileSize }}"
+        readinessProbe:
+          exec:
+            command:
+            - /usr/sbin/riak-admin
+            - test
+          initialDelaySeconds: 45
+          timeoutSeconds: 30
+          failureThreshold: 10
+        resources:
+{{ toYaml .Values.riak.resources | indent 10 }}
+        ports:
+        - containerPort: {{ .Values.riak.ClientPortHttp }}
+          name: http
+        - containerPort: {{ .Values.riak.ClientPortProtobuf }}
+          name: protobuf
+        - containerPort: 4369
+          name: epmd
+        - containerPort: 8099
+          name: handoff
+        - containerPort: 6000
+          name: internode6000
+        - containerPort: 6001
+          name: internode6001
+        - containerPort: 6002
+          name: internode6002
+        - containerPort: 6003
+          name: internode6003
+        - containerPort: 6004
+          name: internode6004
+        - containerPort: 6005
+          name: internode6005
+        - containerPort: 6006
+          name: internode6006
+        - containerPort: 6007
+          name: internode6007
+        - containerPort: 6008
+          name: internode6008
+        - containerPort: 6009
+          name: internode6009
+        - containerPort: 6010
+          name: internode6010
+        - containerPort: 6011
+          name: internode6011
+        - containerPort: 6012
+          name: internode6012
+        - containerPort: 6013
+          name: internode6013
+        - containerPort: 6014
+          name: internode6014
+        - containerPort: 6015
+          name: internode6015
+        - containerPort: 6016
+          name: internode6016
+        - containerPort: 6017
+          name: internode6017
+        - containerPort: 6018
+          name: internode6018
+        - containerPort: 6019
+          name: internode6019
+        - containerPort: 6020
+          name: internode6020
+        - containerPort: 6021
+          name: internode6021
+        - containerPort: 6022
+          name: internode6022
+        - containerPort: 6023
+          name: internode6023
+        - containerPort: 6024
+          name: internode6024
+        - containerPort: 6025
+          name: internode6025
+        - containerPort: 6026
+          name: internode6026
+        - containerPort: 6027
+          name: internode6027
+        - containerPort: 6028
+          name: internode6028
+        - containerPort: 6029
+          name: internode6029
+        - containerPort: 6030
+          name: internode6030
+        - containerPort: 6031
+          name: internode6031
+        - containerPort: 6032
+          name: internode6032
+        - containerPort: 6033
+          name: internode6033
+        - containerPort: 6034
+          name: internode6034
+        - containerPort: 6035
+          name: internode6035
+        - containerPort: 6036
+          name: internode6036
+        - containerPort: 6037
+          name: internode6037
+        - containerPort: 6038
+          name: internode6038
+        - containerPort: 6039
+          name: internode6039
+        - containerPort: 6040
+          name: internode6040
+        - containerPort: 6041
+          name: internode6041
+        - containerPort: 6042
+          name: internode6042
+        - containerPort: 6043
+          name: internode6043
+        - containerPort: 6044
+          name: internode6044
+        - containerPort: 6045
+          name: internode6045
+        - containerPort: 6046
+          name: internode6046
+        - containerPort: 6047
+          name: internode6047
+        - containerPort: 6048
+          name: internode6048
+        - containerPort: 6049
+          name: internode6049
+        - containerPort: 6050
+          name: internode6050
+        - containerPort: 6051
+          name: internode6051
+        - containerPort: 6052
+          name: internode6052
+        - containerPort: 6053
+          name: internode6053
+        - containerPort: 6054
+          name: internode6054
+        - containerPort: 6055
+          name: internode6055
+        - containerPort: 6056
+          name: internode6056
+        - containerPort: 6057
+          name: internode6057
+        - containerPort: 6058
+          name: internode6058
+        - containerPort: 6059
+          name: internode6059
+        - containerPort: 6060
+          name: internode6060
+        - containerPort: 6061
+          name: internode6061
+        - containerPort: 6062
+          name: internode6062
+        - containerPort: 6063
+          name: internode6063
+        - containerPort: 6064
+          name: internode6064
+        - containerPort: 6065
+          name: internode6065
+        - containerPort: 6066
+          name: internode6066
+        - containerPort: 6067
+          name: internode6067
+        - containerPort: 6068
+          name: internode6068
+        - containerPort: 6069
+          name: internode6069
+        - containerPort: 6070
+          name: internode6070
+        - containerPort: 6071
+          name: internode6071
+        - containerPort: 6072
+          name: internode6072
+        - containerPort: 6073
+          name: internode6073
+        - containerPort: 6074
+          name: internode6074
+        - containerPort: 6075
+          name: internode6075
+        - containerPort: 6076
+          name: internode6076
+        - containerPort: 6077
+          name: internode6077
+        - containerPort: 6078
+          name: internode6078
+        - containerPort: 6079
+          name: internode6079
+        - containerPort: 6080
+          name: internode6080
+        - containerPort: 6081
+          name: internode6081
+        - containerPort: 6082
+          name: internode6082
+        - containerPort: 6083
+          name: internode6083
+        - containerPort: 6084
+          name: internode6084
+        - containerPort: 6085
+          name: internode6085
+        - containerPort: 6086
+          name: internode6086
+        - containerPort: 6087
+          name: internode6087
+        - containerPort: 6088
+          name: internode6088
+        - containerPort: 6089
+          name: internode6089
+        - containerPort: 6090
+          name: internode6090
+        - containerPort: 6091
+          name: internode6091
+        - containerPort: 6092
+          name: internode6092
+        - containerPort: 6093
+          name: internode6093
+        - containerPort: 6094
+          name: internode6094
+        - containerPort: 6095
+          name: internode6095
+        - containerPort: 6096
+          name: internode6096
+        - containerPort: 6097
+          name: internode6097
+        - containerPort: 6098
+          name: internode6098
+        - containerPort: 6099
+          name: internode6099
+        - containerPort: 6100
+          name: internode6100
+        - containerPort: 6101
+          name: internode6101
+        - containerPort: 6102
+          name: internode6102
+        - containerPort: 6103
+          name: internode6103
+        - containerPort: 6104
+          name: internode6104
+        - containerPort: 6105
+          name: internode6105
+        - containerPort: 6106
+          name: internode6106
+        - containerPort: 6107
+          name: internode6107
+        - containerPort: 6108
+          name: internode6108
+        - containerPort: 6109
+          name: internode6109
+        - containerPort: 6110
+          name: internode6110
+        - containerPort: 6111
+          name: internode6111
+        - containerPort: 6112
+          name: internode6112
+        - containerPort: 6113
+          name: internode6113
+        - containerPort: 6114
+          name: internode6114
+        - containerPort: 6115
+          name: internode6115
+        - containerPort: 6116
+          name: internode6116
+        - containerPort: 6117
+          name: internode6117
+        - containerPort: 6118
+          name: internode6118
+        - containerPort: 6119
+          name: internode6119
+        - containerPort: 6120
+          name: internode6120
+        - containerPort: 6121
+          name: internode6121
+        - containerPort: 6122
+          name: internode6122
+        - containerPort: 6123
+          name: internode6123
+        - containerPort: 6124
+          name: internode6124
+        - containerPort: 6125
+          name: internode6125
+        - containerPort: 6126
+          name: internode6126
+        - containerPort: 6127
+          name: internode6127
+        - containerPort: 6128
+          name: internode6128
+        - containerPort: 6129
+          name: internode6129
+        - containerPort: 6130
+          name: internode6130
+        - containerPort: 6131
+          name: internode6131
+        - containerPort: 6132
+          name: internode6132
+        - containerPort: 6133
+          name: internode6133
+        - containerPort: 6134
+          name: internode6134
+        - containerPort: 6135
+          name: internode6135
+        - containerPort: 6136
+          name: internode6136
+        - containerPort: 6137
+          name: internode6137
+        - containerPort: 6138
+          name: internode6138
+        - containerPort: 6139
+          name: internode6139
+        - containerPort: 6140
+          name: internode6140
+        - containerPort: 6141
+          name: internode6141
+        - containerPort: 6142
+          name: internode6142
+        - containerPort: 6143
+          name: internode6143
+        - containerPort: 6144
+          name: internode6144
+        - containerPort: 6145
+          name: internode6145
+        - containerPort: 6146
+          name: internode6146
+        - containerPort: 6147
+          name: internode6147
+        - containerPort: 6148
+          name: internode6148
+        - containerPort: 6149
+          name: internode6149
+        - containerPort: 6150
+          name: internode6150
+        - containerPort: 6151
+          name: internode6151
+        - containerPort: 6152
+          name: internode6152
+        - containerPort: 6153
+          name: internode6153
+        - containerPort: 6154
+          name: internode6154
+        - containerPort: 6155
+          name: internode6155
+        - containerPort: 6156
+          name: internode6156
+        - containerPort: 6157
+          name: internode6157
+        - containerPort: 6158
+          name: internode6158
+        - containerPort: 6159
+          name: internode6159
+        - containerPort: 6160
+          name: internode6160
+        - containerPort: 6161
+          name: internode6161
+        - containerPort: 6162
+          name: internode6162
+        - containerPort: 6163
+          name: internode6163
+        - containerPort: 6164
+          name: internode6164
+        - containerPort: 6165
+          name: internode6165
+        - containerPort: 6166
+          name: internode6166
+        - containerPort: 6167
+          name: internode6167
+        - containerPort: 6168
+          name: internode6168
+        - containerPort: 6169
+          name: internode6169
+        - containerPort: 6170
+          name: internode6170
+        - containerPort: 6171
+          name: internode6171
+        - containerPort: 6172
+          name: internode6172
+        - containerPort: 6173
+          name: internode6173
+        - containerPort: 6174
+          name: internode6174
+        - containerPort: 6175
+          name: internode6175
+        - containerPort: 6176
+          name: internode6176
+        - containerPort: 6177
+          name: internode6177
+        - containerPort: 6178
+          name: internode6178
+        - containerPort: 6179
+          name: internode6179
+        - containerPort: 6180
+          name: internode6180
+        - containerPort: 6181
+          name: internode6181
+        - containerPort: 6182
+          name: internode6182
+        - containerPort: 6183
+          name: internode6183
+        - containerPort: 6184
+          name: internode6184
+        - containerPort: 6185
+          name: internode6185
+        - containerPort: 6186
+          name: internode6186
+        - containerPort: 6187
+          name: internode6187
+        - containerPort: 6188
+          name: internode6188
+        - containerPort: 6189
+          name: internode6189
+        - containerPort: 6190
+          name: internode6190
+        - containerPort: 6191
+          name: internode6191
+        - containerPort: 6192
+          name: internode6192
+        - containerPort: 6193
+          name: internode6193
+        - containerPort: 6194
+          name: internode6194
+        - containerPort: 6195
+          name: internode6195
+        - containerPort: 6196
+          name: internode6196
+        - containerPort: 6197
+          name: internode6197
+        - containerPort: 6198
+          name: internode6198
+        - containerPort: 6199
+          name: internode6199
+        - containerPort: 6200
+          name: internode6200
+        - containerPort: 6201
+          name: internode6201
+        - containerPort: 6202
+          name: internode6202
+        - containerPort: 6203
+          name: internode6203
+        - containerPort: 6204
+          name: internode6204
+        - containerPort: 6205
+          name: internode6205
+        - containerPort: 6206
+          name: internode6206
+        - containerPort: 6207
+          name: internode6207
+        - containerPort: 6208
+          name: internode6208
+        - containerPort: 6209
+          name: internode6209
+        - containerPort: 6210
+          name: internode6210
+        - containerPort: 6211
+          name: internode6211
+        - containerPort: 6212
+          name: internode6212
+        - containerPort: 6213
+          name: internode6213
+        - containerPort: 6214
+          name: internode6214
+        - containerPort: 6215
+          name: internode6215
+        - containerPort: 6216
+          name: internode6216
+        - containerPort: 6217
+          name: internode6217
+        - containerPort: 6218
+          name: internode6218
+        - containerPort: 6219
+          name: internode6219
+        - containerPort: 6220
+          name: internode6220
+        - containerPort: 6221
+          name: internode6221
+        - containerPort: 6222
+          name: internode6222
+        - containerPort: 6223
+          name: internode6223
+        - containerPort: 6224
+          name: internode6224
+        - containerPort: 6225
+          name: internode6225
+        - containerPort: 6226
+          name: internode6226
+        - containerPort: 6227
+          name: internode6227
+        - containerPort: 6228
+          name: internode6228
+        - containerPort: 6229
+          name: internode6229
+        - containerPort: 6230
+          name: internode6230
+        - containerPort: 6231
+          name: internode6231
+        - containerPort: 6232
+          name: internode6232
+        - containerPort: 6233
+          name: internode6233
+        - containerPort: 6234
+          name: internode6234
+        - containerPort: 6235
+          name: internode6235
+        - containerPort: 6236
+          name: internode6236
+        - containerPort: 6237
+          name: internode6237
+        - containerPort: 6238
+          name: internode6238
+        - containerPort: 6239
+          name: internode6239
+        - containerPort: 6240
+          name: internode6240
+        - containerPort: 6241
+          name: internode6241
+        - containerPort: 6242
+          name: internode6242
+        - containerPort: 6243
+          name: internode6243
+        - containerPort: 6244
+          name: internode6244
+        - containerPort: 6245
+          name: internode6245
+        - containerPort: 6246
+          name: internode6246
+        - containerPort: 6247
+          name: internode6247
+        - containerPort: 6248
+          name: internode6248
+        - containerPort: 6249
+          name: internode6249
+        - containerPort: 6250
+          name: internode6250
+        - containerPort: 6251
+          name: internode6251
+        - containerPort: 6252
+          name: internode6252
+        - containerPort: 6253
+          name: internode6253
+        - containerPort: 6254
+          name: internode6254
+        - containerPort: 6255
+          name: internode6255
+        - containerPort: 6256
+          name: internode6256
+        - containerPort: 6257
+          name: internode6257
+        - containerPort: 6258
+          name: internode6258
+        - containerPort: 6259
+          name: internode6259
+        - containerPort: 6260
+          name: internode6260
+        - containerPort: 6261
+          name: internode6261
+        - containerPort: 6262
+          name: internode6262
+        - containerPort: 6263
+          name: internode6263
+        - containerPort: 6264
+          name: internode6264
+        - containerPort: 6265
+          name: internode6265
+        - containerPort: 6266
+          name: internode6266
+        - containerPort: 6267
+          name: internode6267
+        - containerPort: 6268
+          name: internode6268
+        - containerPort: 6269
+          name: internode6269
+        - containerPort: 6270
+          name: internode6270
+        - containerPort: 6271
+          name: internode6271
+        - containerPort: 6272
+          name: internode6272
+        - containerPort: 6273
+          name: internode6273
+        - containerPort: 6274
+          name: internode6274
+        - containerPort: 6275
+          name: internode6275
+        - containerPort: 6276
+          name: internode6276
+        - containerPort: 6277
+          name: internode6277
+        - containerPort: 6278
+          name: internode6278
+        - containerPort: 6279
+          name: internode6279
+        - containerPort: 6280
+          name: internode6280
+        - containerPort: 6281
+          name: internode6281
+        - containerPort: 6282
+          name: internode6282
+        - containerPort: 6283
+          name: internode6283
+        - containerPort: 6284
+          name: internode6284
+        - containerPort: 6285
+          name: internode6285
+        - containerPort: 6286
+          name: internode6286
+        - containerPort: 6287
+          name: internode6287
+        - containerPort: 6288
+          name: internode6288
+        - containerPort: 6289
+          name: internode6289
+        - containerPort: 6290
+          name: internode6290
+        - containerPort: 6291
+          name: internode6291
+        - containerPort: 6292
+          name: internode6292
+        - containerPort: 6293
+          name: internode6293
+        - containerPort: 6294
+          name: internode6294
+        - containerPort: 6295
+          name: internode6295
+        - containerPort: 6296
+          name: internode6296
+        - containerPort: 6297
+          name: internode6297
+        - containerPort: 6298
+          name: internode6298
+        - containerPort: 6299
+          name: internode6299
+        - containerPort: 6300
+          name: internode6300
+        - containerPort: 6301
+          name: internode6301
+        - containerPort: 6302
+          name: internode6302
+        - containerPort: 6303
+          name: internode6303
+        - containerPort: 6304
+          name: internode6304
+        - containerPort: 6305
+          name: internode6305
+        - containerPort: 6306
+          name: internode6306
+        - containerPort: 6307
+          name: internode6307
+        - containerPort: 6308
+          name: internode6308
+        - containerPort: 6309
+          name: internode6309
+        - containerPort: 6310
+          name: internode6310
+        - containerPort: 6311
+          name: internode6311
+        - containerPort: 6312
+          name: internode6312
+        - containerPort: 6313
+          name: internode6313
+        - containerPort: 6314
+          name: internode6314
+        - containerPort: 6315
+          name: internode6315
+        - containerPort: 6316
+          name: internode6316
+        - containerPort: 6317
+          name: internode6317
+        - containerPort: 6318
+          name: internode6318
+        - containerPort: 6319
+          name: internode6319
+        - containerPort: 6320
+          name: internode6320
+        - containerPort: 6321
+          name: internode6321
+        - containerPort: 6322
+          name: internode6322
+        - containerPort: 6323
+          name: internode6323
+        - containerPort: 6324
+          name: internode6324
+        - containerPort: 6325
+          name: internode6325
+        - containerPort: 6326
+          name: internode6326
+        - containerPort: 6327
+          name: internode6327
+        - containerPort: 6328
+          name: internode6328
+        - containerPort: 6329
+          name: internode6329
+        - containerPort: 6330
+          name: internode6330
+        - containerPort: 6331
+          name: internode6331
+        - containerPort: 6332
+          name: internode6332
+        - containerPort: 6333
+          name: internode6333
+        - containerPort: 6334
+          name: internode6334
+        - containerPort: 6335
+          name: internode6335
+        - containerPort: 6336
+          name: internode6336
+        - containerPort: 6337
+          name: internode6337
+        - containerPort: 6338
+          name: internode6338
+        - containerPort: 6339
+          name: internode6339
+        - containerPort: 6340
+          name: internode6340
+        - containerPort: 6341
+          name: internode6341
+        - containerPort: 6342
+          name: internode6342
+        - containerPort: 6343
+          name: internode6343
+        - containerPort: 6344
+          name: internode6344
+        - containerPort: 6345
+          name: internode6345
+        - containerPort: 6346
+          name: internode6346
+        - containerPort: 6347
+          name: internode6347
+        - containerPort: 6348
+          name: internode6348
+        - containerPort: 6349
+          name: internode6349
+        - containerPort: 6350
+          name: internode6350
+        - containerPort: 6351
+          name: internode6351
+        - containerPort: 6352
+          name: internode6352
+        - containerPort: 6353
+          name: internode6353
+        - containerPort: 6354
+          name: internode6354
+        - containerPort: 6355
+          name: internode6355
+        - containerPort: 6356
+          name: internode6356
+        - containerPort: 6357
+          name: internode6357
+        - containerPort: 6358
+          name: internode6358
+        - containerPort: 6359
+          name: internode6359
+        - containerPort: 6360
+          name: internode6360
+        - containerPort: 6361
+          name: internode6361
+        - containerPort: 6362
+          name: internode6362
+        - containerPort: 6363
+          name: internode6363
+        - containerPort: 6364
+          name: internode6364
+        - containerPort: 6365
+          name: internode6365
+        - containerPort: 6366
+          name: internode6366
+        - containerPort: 6367
+          name: internode6367
+        - containerPort: 6368
+          name: internode6368
+        - containerPort: 6369
+          name: internode6369
+        - containerPort: 6370
+          name: internode6370
+        - containerPort: 6371
+          name: internode6371
+        - containerPort: 6372
+          name: internode6372
+        - containerPort: 6373
+          name: internode6373
+        - containerPort: 6374
+          name: internode6374
+        - containerPort: 6375
+          name: internode6375
+        - containerPort: 6376
+          name: internode6376
+        - containerPort: 6377
+          name: internode6377
+        - containerPort: 6378
+          name: internode6378
+        - containerPort: 6379
+          name: internode6379
+        - containerPort: 6380
+          name: internode6380
+        - containerPort: 6381
+          name: internode6381
+        - containerPort: 6382
+          name: internode6382
+        - containerPort: 6383
+          name: internode6383
+        - containerPort: 6384
+          name: internode6384
+        - containerPort: 6385
+          name: internode6385
+        - containerPort: 6386
+          name: internode6386
+        - containerPort: 6387
+          name: internode6387
+        - containerPort: 6388
+          name: internode6388
+        - containerPort: 6389
+          name: internode6389
+        - containerPort: 6390
+          name: internode6390
+        - containerPort: 6391
+          name: internode6391
+        - containerPort: 6392
+          name: internode6392
+        - containerPort: 6393
+          name: internode6393
+        - containerPort: 6394
+          name: internode6394
+        - containerPort: 6395
+          name: internode6395
+        - containerPort: 6396
+          name: internode6396
+        - containerPort: 6397
+          name: internode6397
+        - containerPort: 6398
+          name: internode6398
+        - containerPort: 6399
+          name: internode6399
+        - containerPort: 6400
+          name: internode6400
+        - containerPort: 6401
+          name: internode6401
+        - containerPort: 6402
+          name: internode6402
+        - containerPort: 6403
+          name: internode6403
+        - containerPort: 6404
+          name: internode6404
+        - containerPort: 6405
+          name: internode6405
+        - containerPort: 6406
+          name: internode6406
+        - containerPort: 6407
+          name: internode6407
+        - containerPort: 6408
+          name: internode6408
+        - containerPort: 6409
+          name: internode6409
+        - containerPort: 6410
+          name: internode6410
+        - containerPort: 6411
+          name: internode6411
+        - containerPort: 6412
+          name: internode6412
+        - containerPort: 6413
+          name: internode6413
+        - containerPort: 6414
+          name: internode6414
+        - containerPort: 6415
+          name: internode6415
+        - containerPort: 6416
+          name: internode6416
+        - containerPort: 6417
+          name: internode6417
+        - containerPort: 6418
+          name: internode6418
+        - containerPort: 6419
+          name: internode6419
+        - containerPort: 6420
+          name: internode6420
+        - containerPort: 6421
+          name: internode6421
+        - containerPort: 6422
+          name: internode6422
+        - containerPort: 6423
+          name: internode6423
+        - containerPort: 6424
+          name: internode6424
+        - containerPort: 6425
+          name: internode6425
+        - containerPort: 6426
+          name: internode6426
+        - containerPort: 6427
+          name: internode6427
+        - containerPort: 6428
+          name: internode6428
+        - containerPort: 6429
+          name: internode6429
+        - containerPort: 6430
+          name: internode6430
+        - containerPort: 6431
+          name: internode6431
+        - containerPort: 6432
+          name: internode6432
+        - containerPort: 6433
+          name: internode6433
+        - containerPort: 6434
+          name: internode6434
+        - containerPort: 6435
+          name: internode6435
+        - containerPort: 6436
+          name: internode6436
+        - containerPort: 6437
+          name: internode6437
+        - containerPort: 6438
+          name: internode6438
+        - containerPort: 6439
+          name: internode6439
+        - containerPort: 6440
+          name: internode6440
+        - containerPort: 6441
+          name: internode6441
+        - containerPort: 6442
+          name: internode6442
+        - containerPort: 6443
+          name: internode6443
+        - containerPort: 6444
+          name: internode6444
+        - containerPort: 6445
+          name: internode6445
+        - containerPort: 6446
+          name: internode6446
+        - containerPort: 6447
+          name: internode6447
+        - containerPort: 6448
+          name: internode6448
+        - containerPort: 6449
+          name: internode6449
+        - containerPort: 6450
+          name: internode6450
+        - containerPort: 6451
+          name: internode6451
+        - containerPort: 6452
+          name: internode6452
+        - containerPort: 6453
+          name: internode6453
+        - containerPort: 6454
+          name: internode6454
+        - containerPort: 6455
+          name: internode6455
+        - containerPort: 6456
+          name: internode6456
+        - containerPort: 6457
+          name: internode6457
+        - containerPort: 6458
+          name: internode6458
+        - containerPort: 6459
+          name: internode6459
+        - containerPort: 6460
+          name: internode6460
+        - containerPort: 6461
+          name: internode6461
+        - containerPort: 6462
+          name: internode6462
+        - containerPort: 6463
+          name: internode6463
+        - containerPort: 6464
+          name: internode6464
+        - containerPort: 6465
+          name: internode6465
+        - containerPort: 6466
+          name: internode6466
+        - containerPort: 6467
+          name: internode6467
+        - containerPort: 6468
+          name: internode6468
+        - containerPort: 6469
+          name: internode6469
+        - containerPort: 6470
+          name: internode6470
+        - containerPort: 6471
+          name: internode6471
+        - containerPort: 6472
+          name: internode6472
+        - containerPort: 6473
+          name: internode6473
+        - containerPort: 6474
+          name: internode6474
+        - containerPort: 6475
+          name: internode6475
+        - containerPort: 6476
+          name: internode6476
+        - containerPort: 6477
+          name: internode6477
+        - containerPort: 6478
+          name: internode6478
+        - containerPort: 6479
+          name: internode6479
+        - containerPort: 6480
+          name: internode6480
+        - containerPort: 6481
+          name: internode6481
+        - containerPort: 6482
+          name: internode6482
+        - containerPort: 6483
+          name: internode6483
+        - containerPort: 6484
+          name: internode6484
+        - containerPort: 6485
+          name: internode6485
+        - containerPort: 6486
+          name: internode6486
+        - containerPort: 6487
+          name: internode6487
+        - containerPort: 6488
+          name: internode6488
+        - containerPort: 6489
+          name: internode6489
+        - containerPort: 6490
+          name: internode6490
+        - containerPort: 6491
+          name: internode6491
+        - containerPort: 6492
+          name: internode6492
+        - containerPort: 6493
+          name: internode6493
+        - containerPort: 6494
+          name: internode6494
+        - containerPort: 6495
+          name: internode6495
+        - containerPort: 6496
+          name: internode6496
+        - containerPort: 6497
+          name: internode6497
+        - containerPort: 6498
+          name: internode6498
+        - containerPort: 6499
+          name: internode6499
+        - containerPort: 6500
+          name: internode6500
+        - containerPort: 6501
+          name: internode6501
+        - containerPort: 6502
+          name: internode6502
+        - containerPort: 6503
+          name: internode6503
+        - containerPort: 6504
+          name: internode6504
+        - containerPort: 6505
+          name: internode6505
+        - containerPort: 6506
+          name: internode6506
+        - containerPort: 6507
+          name: internode6507
+        - containerPort: 6508
+          name: internode6508
+        - containerPort: 6509
+          name: internode6509
+        - containerPort: 6510
+          name: internode6510
+        - containerPort: 6511
+          name: internode6511
+        - containerPort: 6512
+          name: internode6512
+        - containerPort: 6513
+          name: internode6513
+        - containerPort: 6514
+          name: internode6514
+        - containerPort: 6515
+          name: internode6515
+        - containerPort: 6516
+          name: internode6516
+        - containerPort: 6517
+          name: internode6517
+        - containerPort: 6518
+          name: internode6518
+        - containerPort: 6519
+          name: internode6519
+        - containerPort: 6520
+          name: internode6520
+        - containerPort: 6521
+          name: internode6521
+        - containerPort: 6522
+          name: internode6522
+        - containerPort: 6523
+          name: internode6523
+        - containerPort: 6524
+          name: internode6524
+        - containerPort: 6525
+          name: internode6525
+        - containerPort: 6526
+          name: internode6526
+        - containerPort: 6527
+          name: internode6527
+        - containerPort: 6528
+          name: internode6528
+        - containerPort: 6529
+          name: internode6529
+        - containerPort: 6530
+          name: internode6530
+        - containerPort: 6531
+          name: internode6531
+        - containerPort: 6532
+          name: internode6532
+        - containerPort: 6533
+          name: internode6533
+        - containerPort: 6534
+          name: internode6534
+        - containerPort: 6535
+          name: internode6535
+        - containerPort: 6536
+          name: internode6536
+        - containerPort: 6537
+          name: internode6537
+        - containerPort: 6538
+          name: internode6538
+        - containerPort: 6539
+          name: internode6539
+        - containerPort: 6540
+          name: internode6540
+        - containerPort: 6541
+          name: internode6541
+        - containerPort: 6542
+          name: internode6542
+        - containerPort: 6543
+          name: internode6543
+        - containerPort: 6544
+          name: internode6544
+        - containerPort: 6545
+          name: internode6545
+        - containerPort: 6546
+          name: internode6546
+        - containerPort: 6547
+          name: internode6547
+        - containerPort: 6548
+          name: internode6548
+        - containerPort: 6549
+          name: internode6549
+        - containerPort: 6550
+          name: internode6550
+        - containerPort: 6551
+          name: internode6551
+        - containerPort: 6552
+          name: internode6552
+        - containerPort: 6553
+          name: internode6553
+        - containerPort: 6554
+          name: internode6554
+        - containerPort: 6555
+          name: internode6555
+        - containerPort: 6556
+          name: internode6556
+        - containerPort: 6557
+          name: internode6557
+        - containerPort: 6558
+          name: internode6558
+        - containerPort: 6559
+          name: internode6559
+        - containerPort: 6560
+          name: internode6560
+        - containerPort: 6561
+          name: internode6561
+        - containerPort: 6562
+          name: internode6562
+        - containerPort: 6563
+          name: internode6563
+        - containerPort: 6564
+          name: internode6564
+        - containerPort: 6565
+          name: internode6565
+        - containerPort: 6566
+          name: internode6566
+        - containerPort: 6567
+          name: internode6567
+        - containerPort: 6568
+          name: internode6568
+        - containerPort: 6569
+          name: internode6569
+        - containerPort: 6570
+          name: internode6570
+        - containerPort: 6571
+          name: internode6571
+        - containerPort: 6572
+          name: internode6572
+        - containerPort: 6573
+          name: internode6573
+        - containerPort: 6574
+          name: internode6574
+        - containerPort: 6575
+          name: internode6575
+        - containerPort: 6576
+          name: internode6576
+        - containerPort: 6577
+          name: internode6577
+        - containerPort: 6578
+          name: internode6578
+        - containerPort: 6579
+          name: internode6579
+        - containerPort: 6580
+          name: internode6580
+        - containerPort: 6581
+          name: internode6581
+        - containerPort: 6582
+          name: internode6582
+        - containerPort: 6583
+          name: internode6583
+        - containerPort: 6584
+          name: internode6584
+        - containerPort: 6585
+          name: internode6585
+        - containerPort: 6586
+          name: internode6586
+        - containerPort: 6587
+          name: internode6587
+        - containerPort: 6588
+          name: internode6588
+        - containerPort: 6589
+          name: internode6589
+        - containerPort: 6590
+          name: internode6590
+        - containerPort: 6591
+          name: internode6591
+        - containerPort: 6592
+          name: internode6592
+        - containerPort: 6593
+          name: internode6593
+        - containerPort: 6594
+          name: internode6594
+        - containerPort: 6595
+          name: internode6595
+        - containerPort: 6596
+          name: internode6596
+        - containerPort: 6597
+          name: internode6597
+        - containerPort: 6598
+          name: internode6598
+        - containerPort: 6599
+          name: internode6599
+        - containerPort: 6600
+          name: internode6600
+        - containerPort: 6601
+          name: internode6601
+        - containerPort: 6602
+          name: internode6602
+        - containerPort: 6603
+          name: internode6603
+        - containerPort: 6604
+          name: internode6604
+        - containerPort: 6605
+          name: internode6605
+        - containerPort: 6606
+          name: internode6606
+        - containerPort: 6607
+          name: internode6607
+        - containerPort: 6608
+          name: internode6608
+        - containerPort: 6609
+          name: internode6609
+        - containerPort: 6610
+          name: internode6610
+        - containerPort: 6611
+          name: internode6611
+        - containerPort: 6612
+          name: internode6612
+        - containerPort: 6613
+          name: internode6613
+        - containerPort: 6614
+          name: internode6614
+        - containerPort: 6615
+          name: internode6615
+        - containerPort: 6616
+          name: internode6616
+        - containerPort: 6617
+          name: internode6617
+        - containerPort: 6618
+          name: internode6618
+        - containerPort: 6619
+          name: internode6619
+        - containerPort: 6620
+          name: internode6620
+        - containerPort: 6621
+          name: internode6621
+        - containerPort: 6622
+          name: internode6622
+        - containerPort: 6623
+          name: internode6623
+        - containerPort: 6624
+          name: internode6624
+        - containerPort: 6625
+          name: internode6625
+        - containerPort: 6626
+          name: internode6626
+        - containerPort: 6627
+          name: internode6627
+        - containerPort: 6628
+          name: internode6628
+        - containerPort: 6629
+          name: internode6629
+        - containerPort: 6630
+          name: internode6630
+        - containerPort: 6631
+          name: internode6631
+        - containerPort: 6632
+          name: internode6632
+        - containerPort: 6633
+          name: internode6633
+        - containerPort: 6634
+          name: internode6634
+        - containerPort: 6635
+          name: internode6635
+        - containerPort: 6636
+          name: internode6636
+        - containerPort: 6637
+          name: internode6637
+        - containerPort: 6638
+          name: internode6638
+        - containerPort: 6639
+          name: internode6639
+        - containerPort: 6640
+          name: internode6640
+        - containerPort: 6641
+          name: internode6641
+        - containerPort: 6642
+          name: internode6642
+        - containerPort: 6643
+          name: internode6643
+        - containerPort: 6644
+          name: internode6644
+        - containerPort: 6645
+          name: internode6645
+        - containerPort: 6646
+          name: internode6646
+        - containerPort: 6647
+          name: internode6647
+        - containerPort: 6648
+          name: internode6648
+        - containerPort: 6649
+          name: internode6649
+        - containerPort: 6650
+          name: internode6650
+        - containerPort: 6651
+          name: internode6651
+        - containerPort: 6652
+          name: internode6652
+        - containerPort: 6653
+          name: internode6653
+        - containerPort: 6654
+          name: internode6654
+        - containerPort: 6655
+          name: internode6655
+        - containerPort: 6656
+          name: internode6656
+        - containerPort: 6657
+          name: internode6657
+        - containerPort: 6658
+          name: internode6658
+        - containerPort: 6659
+          name: internode6659
+        - containerPort: 6660
+          name: internode6660
+        - containerPort: 6661
+          name: internode6661
+        - containerPort: 6662
+          name: internode6662
+        - containerPort: 6663
+          name: internode6663
+        - containerPort: 6664
+          name: internode6664
+        - containerPort: 6665
+          name: internode6665
+        - containerPort: 6666
+          name: internode6666
+        - containerPort: 6667
+          name: internode6667
+        - containerPort: 6668
+          name: internode6668
+        - containerPort: 6669
+          name: internode6669
+        - containerPort: 6670
+          name: internode6670
+        - containerPort: 6671
+          name: internode6671
+        - containerPort: 6672
+          name: internode6672
+        - containerPort: 6673
+          name: internode6673
+        - containerPort: 6674
+          name: internode6674
+        - containerPort: 6675
+          name: internode6675
+        - containerPort: 6676
+          name: internode6676
+        - containerPort: 6677
+          name: internode6677
+        - containerPort: 6678
+          name: internode6678
+        - containerPort: 6679
+          name: internode6679
+        - containerPort: 6680
+          name: internode6680
+        - containerPort: 6681
+          name: internode6681
+        - containerPort: 6682
+          name: internode6682
+        - containerPort: 6683
+          name: internode6683
+        - containerPort: 6684
+          name: internode6684
+        - containerPort: 6685
+          name: internode6685
+        - containerPort: 6686
+          name: internode6686
+        - containerPort: 6687
+          name: internode6687
+        - containerPort: 6688
+          name: internode6688
+        - containerPort: 6689
+          name: internode6689
+        - containerPort: 6690
+          name: internode6690
+        - containerPort: 6691
+          name: internode6691
+        - containerPort: 6692
+          name: internode6692
+        - containerPort: 6693
+          name: internode6693
+        - containerPort: 6694
+          name: internode6694
+        - containerPort: 6695
+          name: internode6695
+        - containerPort: 6696
+          name: internode6696
+        - containerPort: 6697
+          name: internode6697
+        - containerPort: 6698
+          name: internode6698
+        - containerPort: 6699
+          name: internode6699
+        - containerPort: 6700
+          name: internode6700
+        - containerPort: 6701
+          name: internode6701
+        - containerPort: 6702
+          name: internode6702
+        - containerPort: 6703
+          name: internode6703
+        - containerPort: 6704
+          name: internode6704
+        - containerPort: 6705
+          name: internode6705
+        - containerPort: 6706
+          name: internode6706
+        - containerPort: 6707
+          name: internode6707
+        - containerPort: 6708
+          name: internode6708
+        - containerPort: 6709
+          name: internode6709
+        - containerPort: 6710
+          name: internode6710
+        - containerPort: 6711
+          name: internode6711
+        - containerPort: 6712
+          name: internode6712
+        - containerPort: 6713
+          name: internode6713
+        - containerPort: 6714
+          name: internode6714
+        - containerPort: 6715
+          name: internode6715
+        - containerPort: 6716
+          name: internode6716
+        - containerPort: 6717
+          name: internode6717
+        - containerPort: 6718
+          name: internode6718
+        - containerPort: 6719
+          name: internode6719
+        - containerPort: 6720
+          name: internode6720
+        - containerPort: 6721
+          name: internode6721
+        - containerPort: 6722
+          name: internode6722
+        - containerPort: 6723
+          name: internode6723
+        - containerPort: 6724
+          name: internode6724
+        - containerPort: 6725
+          name: internode6725
+        - containerPort: 6726
+          name: internode6726
+        - containerPort: 6727
+          name: internode6727
+        - containerPort: 6728
+          name: internode6728
+        - containerPort: 6729
+          name: internode6729
+        - containerPort: 6730
+          name: internode6730
+        - containerPort: 6731
+          name: internode6731
+        - containerPort: 6732
+          name: internode6732
+        - containerPort: 6733
+          name: internode6733
+        - containerPort: 6734
+          name: internode6734
+        - containerPort: 6735
+          name: internode6735
+        - containerPort: 6736
+          name: internode6736
+        - containerPort: 6737
+          name: internode6737
+        - containerPort: 6738
+          name: internode6738
+        - containerPort: 6739
+          name: internode6739
+        - containerPort: 6740
+          name: internode6740
+        - containerPort: 6741
+          name: internode6741
+        - containerPort: 6742
+          name: internode6742
+        - containerPort: 6743
+          name: internode6743
+        - containerPort: 6744
+          name: internode6744
+        - containerPort: 6745
+          name: internode6745
+        - containerPort: 6746
+          name: internode6746
+        - containerPort: 6747
+          name: internode6747
+        - containerPort: 6748
+          name: internode6748
+        - containerPort: 6749
+          name: internode6749
+        - containerPort: 6750
+          name: internode6750
+        - containerPort: 6751
+          name: internode6751
+        - containerPort: 6752
+          name: internode6752
+        - containerPort: 6753
+          name: internode6753
+        - containerPort: 6754
+          name: internode6754
+        - containerPort: 6755
+          name: internode6755
+        - containerPort: 6756
+          name: internode6756
+        - containerPort: 6757
+          name: internode6757
+        - containerPort: 6758
+          name: internode6758
+        - containerPort: 6759
+          name: internode6759
+        - containerPort: 6760
+          name: internode6760
+        - containerPort: 6761
+          name: internode6761
+        - containerPort: 6762
+          name: internode6762
+        - containerPort: 6763
+          name: internode6763
+        - containerPort: 6764
+          name: internode6764
+        - containerPort: 6765
+          name: internode6765
+        - containerPort: 6766
+          name: internode6766
+        - containerPort: 6767
+          name: internode6767
+        - containerPort: 6768
+          name: internode6768
+        - containerPort: 6769
+          name: internode6769
+        - containerPort: 6770
+          name: internode6770
+        - containerPort: 6771
+          name: internode6771
+        - containerPort: 6772
+          name: internode6772
+        - containerPort: 6773
+          name: internode6773
+        - containerPort: 6774
+          name: internode6774
+        - containerPort: 6775
+          name: internode6775
+        - containerPort: 6776
+          name: internode6776
+        - containerPort: 6777
+          name: internode6777
+        - containerPort: 6778
+          name: internode6778
+        - containerPort: 6779
+          name: internode6779
+        - containerPort: 6780
+          name: internode6780
+        - containerPort: 6781
+          name: internode6781
+        - containerPort: 6782
+          name: internode6782
+        - containerPort: 6783
+          name: internode6783
+        - containerPort: 6784
+          name: internode6784
+        - containerPort: 6785
+          name: internode6785
+        - containerPort: 6786
+          name: internode6786
+        - containerPort: 6787
+          name: internode6787
+        - containerPort: 6788
+          name: internode6788
+        - containerPort: 6789
+          name: internode6789
+        - containerPort: 6790
+          name: internode6790
+        - containerPort: 6791
+          name: internode6791
+        - containerPort: 6792
+          name: internode6792
+        - containerPort: 6793
+          name: internode6793
+        - containerPort: 6794
+          name: internode6794
+        - containerPort: 6795
+          name: internode6795
+        - containerPort: 6796
+          name: internode6796
+        - containerPort: 6797
+          name: internode6797
+        - containerPort: 6798
+          name: internode6798
+        - containerPort: 6799
+          name: internode6799
+        - containerPort: 6800
+          name: internode6800
+        - containerPort: 6801
+          name: internode6801
+        - containerPort: 6802
+          name: internode6802
+        - containerPort: 6803
+          name: internode6803
+        - containerPort: 6804
+          name: internode6804
+        - containerPort: 6805
+          name: internode6805
+        - containerPort: 6806
+          name: internode6806
+        - containerPort: 6807
+          name: internode6807
+        - containerPort: 6808
+          name: internode6808
+        - containerPort: 6809
+          name: internode6809
+        - containerPort: 6810
+          name: internode6810
+        - containerPort: 6811
+          name: internode6811
+        - containerPort: 6812
+          name: internode6812
+        - containerPort: 6813
+          name: internode6813
+        - containerPort: 6814
+          name: internode6814
+        - containerPort: 6815
+          name: internode6815
+        - containerPort: 6816
+          name: internode6816
+        - containerPort: 6817
+          name: internode6817
+        - containerPort: 6818
+          name: internode6818
+        - containerPort: 6819
+          name: internode6819
+        - containerPort: 6820
+          name: internode6820
+        - containerPort: 6821
+          name: internode6821
+        - containerPort: 6822
+          name: internode6822
+        - containerPort: 6823
+          name: internode6823
+        - containerPort: 6824
+          name: internode6824
+        - containerPort: 6825
+          name: internode6825
+        - containerPort: 6826
+          name: internode6826
+        - containerPort: 6827
+          name: internode6827
+        - containerPort: 6828
+          name: internode6828
+        - containerPort: 6829
+          name: internode6829
+        - containerPort: 6830
+          name: internode6830
+        - containerPort: 6831
+          name: internode6831
+        - containerPort: 6832
+          name: internode6832
+        - containerPort: 6833
+          name: internode6833
+        - containerPort: 6834
+          name: internode6834
+        - containerPort: 6835
+          name: internode6835
+        - containerPort: 6836
+          name: internode6836
+        - containerPort: 6837
+          name: internode6837
+        - containerPort: 6838
+          name: internode6838
+        - containerPort: 6839
+          name: internode6839
+        - containerPort: 6840
+          name: internode6840
+        - containerPort: 6841
+          name: internode6841
+        - containerPort: 6842
+          name: internode6842
+        - containerPort: 6843
+          name: internode6843
+        - containerPort: 6844
+          name: internode6844
+        - containerPort: 6845
+          name: internode6845
+        - containerPort: 6846
+          name: internode6846
+        - containerPort: 6847
+          name: internode6847
+        - containerPort: 6848
+          name: internode6848
+        - containerPort: 6849
+          name: internode6849
+        - containerPort: 6850
+          name: internode6850
+        - containerPort: 6851
+          name: internode6851
+        - containerPort: 6852
+          name: internode6852
+        - containerPort: 6853
+          name: internode6853
+        - containerPort: 6854
+          name: internode6854
+        - containerPort: 6855
+          name: internode6855
+        - containerPort: 6856
+          name: internode6856
+        - containerPort: 6857
+          name: internode6857
+        - containerPort: 6858
+          name: internode6858
+        - containerPort: 6859
+          name: internode6859
+        - containerPort: 6860
+          name: internode6860
+        - containerPort: 6861
+          name: internode6861
+        - containerPort: 6862
+          name: internode6862
+        - containerPort: 6863
+          name: internode6863
+        - containerPort: 6864
+          name: internode6864
+        - containerPort: 6865
+          name: internode6865
+        - containerPort: 6866
+          name: internode6866
+        - containerPort: 6867
+          name: internode6867
+        - containerPort: 6868
+          name: internode6868
+        - containerPort: 6869
+          name: internode6869
+        - containerPort: 6870
+          name: internode6870
+        - containerPort: 6871
+          name: internode6871
+        - containerPort: 6872
+          name: internode6872
+        - containerPort: 6873
+          name: internode6873
+        - containerPort: 6874
+          name: internode6874
+        - containerPort: 6875
+          name: internode6875
+        - containerPort: 6876
+          name: internode6876
+        - containerPort: 6877
+          name: internode6877
+        - containerPort: 6878
+          name: internode6878
+        - containerPort: 6879
+          name: internode6879
+        - containerPort: 6880
+          name: internode6880
+        - containerPort: 6881
+          name: internode6881
+        - containerPort: 6882
+          name: internode6882
+        - containerPort: 6883
+          name: internode6883
+        - containerPort: 6884
+          name: internode6884
+        - containerPort: 6885
+          name: internode6885
+        - containerPort: 6886
+          name: internode6886
+        - containerPort: 6887
+          name: internode6887
+        - containerPort: 6888
+          name: internode6888
+        - containerPort: 6889
+          name: internode6889
+        - containerPort: 6890
+          name: internode6890
+        - containerPort: 6891
+          name: internode6891
+        - containerPort: 6892
+          name: internode6892
+        - containerPort: 6893
+          name: internode6893
+        - containerPort: 6894
+          name: internode6894
+        - containerPort: 6895
+          name: internode6895
+        - containerPort: 6896
+          name: internode6896
+        - containerPort: 6897
+          name: internode6897
+        - containerPort: 6898
+          name: internode6898
+        - containerPort: 6899
+          name: internode6899
+        - containerPort: 6900
+          name: internode6900
+        - containerPort: 6901
+          name: internode6901
+        - containerPort: 6902
+          name: internode6902
+        - containerPort: 6903
+          name: internode6903
+        - containerPort: 6904
+          name: internode6904
+        - containerPort: 6905
+          name: internode6905
+        - containerPort: 6906
+          name: internode6906
+        - containerPort: 6907
+          name: internode6907
+        - containerPort: 6908
+          name: internode6908
+        - containerPort: 6909
+          name: internode6909
+        - containerPort: 6910
+          name: internode6910
+        - containerPort: 6911
+          name: internode6911
+        - containerPort: 6912
+          name: internode6912
+        - containerPort: 6913
+          name: internode6913
+        - containerPort: 6914
+          name: internode6914
+        - containerPort: 6915
+          name: internode6915
+        - containerPort: 6916
+          name: internode6916
+        - containerPort: 6917
+          name: internode6917
+        - containerPort: 6918
+          name: internode6918
+        - containerPort: 6919
+          name: internode6919
+        - containerPort: 6920
+          name: internode6920
+        - containerPort: 6921
+          name: internode6921
+        - containerPort: 6922
+          name: internode6922
+        - containerPort: 6923
+          name: internode6923
+        - containerPort: 6924
+          name: internode6924
+        - containerPort: 6925
+          name: internode6925
+        - containerPort: 6926
+          name: internode6926
+        - containerPort: 6927
+          name: internode6927
+        - containerPort: 6928
+          name: internode6928
+        - containerPort: 6929
+          name: internode6929
+        - containerPort: 6930
+          name: internode6930
+        - containerPort: 6931
+          name: internode6931
+        - containerPort: 6932
+          name: internode6932
+        - containerPort: 6933
+          name: internode6933
+        - containerPort: 6934
+          name: internode6934
+        - containerPort: 6935
+          name: internode6935
+        - containerPort: 6936
+          name: internode6936
+        - containerPort: 6937
+          name: internode6937
+        - containerPort: 6938
+          name: internode6938
+        - containerPort: 6939
+          name: internode6939
+        - containerPort: 6940
+          name: internode6940
+        - containerPort: 6941
+          name: internode6941
+        - containerPort: 6942
+          name: internode6942
+        - containerPort: 6943
+          name: internode6943
+        - containerPort: 6944
+          name: internode6944
+        - containerPort: 6945
+          name: internode6945
+        - containerPort: 6946
+          name: internode6946
+        - containerPort: 6947
+          name: internode6947
+        - containerPort: 6948
+          name: internode6948
+        - containerPort: 6949
+          name: internode6949
+        - containerPort: 6950
+          name: internode6950
+        - containerPort: 6951
+          name: internode6951
+        - containerPort: 6952
+          name: internode6952
+        - containerPort: 6953
+          name: internode6953
+        - containerPort: 6954
+          name: internode6954
+        - containerPort: 6955
+          name: internode6955
+        - containerPort: 6956
+          name: internode6956
+        - containerPort: 6957
+          name: internode6957
+        - containerPort: 6958
+          name: internode6958
+        - containerPort: 6959
+          name: internode6959
+        - containerPort: 6960
+          name: internode6960
+        - containerPort: 6961
+          name: internode6961
+        - containerPort: 6962
+          name: internode6962
+        - containerPort: 6963
+          name: internode6963
+        - containerPort: 6964
+          name: internode6964
+        - containerPort: 6965
+          name: internode6965
+        - containerPort: 6966
+          name: internode6966
+        - containerPort: 6967
+          name: internode6967
+        - containerPort: 6968
+          name: internode6968
+        - containerPort: 6969
+          name: internode6969
+        - containerPort: 6970
+          name: internode6970
+        - containerPort: 6971
+          name: internode6971
+        - containerPort: 6972
+          name: internode6972
+        - containerPort: 6973
+          name: internode6973
+        - containerPort: 6974
+          name: internode6974
+        - containerPort: 6975
+          name: internode6975
+        - containerPort: 6976
+          name: internode6976
+        - containerPort: 6977
+          name: internode6977
+        - containerPort: 6978
+          name: internode6978
+        - containerPort: 6979
+          name: internode6979
+        - containerPort: 6980
+          name: internode6980
+        - containerPort: 6981
+          name: internode6981
+        - containerPort: 6982
+          name: internode6982
+        - containerPort: 6983
+          name: internode6983
+        - containerPort: 6984
+          name: internode6984
+        - containerPort: 6985
+          name: internode6985
+        - containerPort: 6986
+          name: internode6986
+        - containerPort: 6987
+          name: internode6987
+        - containerPort: 6988
+          name: internode6988
+        - containerPort: 6989
+          name: internode6989
+        - containerPort: 6990
+          name: internode6990
+        - containerPort: 6991
+          name: internode6991
+        - containerPort: 6992
+          name: internode6992
+        - containerPort: 6993
+          name: internode6993
+        - containerPort: 6994
+          name: internode6994
+        - containerPort: 6995
+          name: internode6995
+        - containerPort: 6996
+          name: internode6996
+        - containerPort: 6997
+          name: internode6997
+        - containerPort: 6998
+          name: internode6998
+        - containerPort: 6999
+          name: internode6999

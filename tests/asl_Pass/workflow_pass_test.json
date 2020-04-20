@@ -1,0 +1,16 @@
+{
+    "Comment": "Test the Pass state implementation",
+    "StartAt": "No-op",
+    "States": {
+    "No-op": {
+        "Type": "Pass",
+        "Result": {
+            "x-datum": 0.381018,
+            "y-datum": 622.2269926397355
+        },
+    "ResultPath": "$.coords",
+    "End": true
+}
+}
+}
+

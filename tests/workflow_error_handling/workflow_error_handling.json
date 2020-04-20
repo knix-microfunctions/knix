@@ -1,0 +1,41 @@
+{
+        "name": "workflow_error_handling",
+        "entry": "state_0",
+        "functions": [
+                {
+                        "name": "state_0",
+                        "next": ["state_2", "state_1"],
+                        "resource": "function0"
+                },
+                {
+                        "name": "state_1",
+                        "next": [],
+                        "resource": "function1"
+                },
+                {
+                        "name": "state_2",
+                        "next": ["state_3"],
+                        "resource": "function2"
+                },
+                {
+                        "name": "state_3",
+                        "next": ["state_4"],
+                        "resource": "function3"
+                },
+                {
+                        "name": "state_4",
+                        "next": ["state_5"],
+                        "resource": "function4"
+                },
+                {
+                        "name": "state_5",
+                        "next": ["state_6"],
+                        "resource": "function5"
+                },
+                {
+                        "name": "state_6",
+                        "next": ["end"],
+                        "resource": "function6"
+                }
+        ]
+}

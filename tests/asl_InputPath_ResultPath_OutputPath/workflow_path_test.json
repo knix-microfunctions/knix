@@ -1,0 +1,15 @@
+
+{
+  "Comment": "A Hello World example of the Amazon States Language using an AWS Lambda function",
+  "StartAt": "HelloWorld",
+  "States": {
+    "HelloWorld": {
+      "Type": "Task",
+      "Resource": "HelloWorld",
+      "InputPath": "$.lambda",
+      "ResultPath": "$.data.lambdaresult",
+      "OutputPath": "$.data",
+      "End": true
+    }
+  }
+}

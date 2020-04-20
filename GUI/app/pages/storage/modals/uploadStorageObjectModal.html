@@ -1,0 +1,73 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+
+<div class="modal-content" style="margin-top:50px;">
+  <div ng-app="MfnWebConsole" ng-controller="UploadObjectCtrl">
+  <div class="modal-header">
+    <button type="button" class="close" ng-click="$dismiss()" aria-label="Close">
+      <em class="ion-ios-close-empty sn-link-close"></em>
+    </button>
+    <h4 class="modal-title">Edit Object - {{ getKey() }}</h4>
+  </div>
+  <div style="margin-left:15px;margin-right:15px">
+    <div ba-panel-class="horizontal-tabs tabs-panel medium-panel" style="height:600px;">
+      <uib-tabset active="1">
+        <uib-tab heading="Object Data" select="setFocus()">
+
+            <div style="width:100%;height:480px;" ui-ace="{
+              require: ['ace/ext/language_tools'],
+              advanced: {
+                enableSnippets: true,
+                enableBasicAutocompletion: true,
+                enableLiveAutocompletion: true
+              },
+              useWrapMode : true,
+              showGutter: true,
+              theme:'tomorrow',
+              mode: 'json',
+              onLoad: aceLoaded,
+              onChange: aceChanged
+          }" ></div>
+          <br>
+          <button type="button" class="btn btn-primary" ng-click="saveChanges();$dismiss()">Save changes</button>
+        </uib-tab>
+        <uib-tab heading="Upload">
+          <p><br>
+          <input type="file" onchange="angular.element(this).scope().file_changed(this)"/>
+          <br>
+          (uploaded files are automatically base64-encoded)
+          <p><br>
+          <div style="max-width:870px;display:none;" id="progBar">
+            <span id="uploadStatus"></span>
+            <div class="progress" style="width:75%;">
+              <div class="progress-bar progress-bar-info progress-bar-striped active" role="progressbar" aria-valuenow="{{progressBar}}" aria-valuemin="0" aria-valuemax="100" style="width: {{progressBar}}%">
+                <span>{{progressCounter}}% Complete</span>
+              </div>
+            </div>
+          </div>
+
+
+        </uib-tab>
+
+      </uib-tabset>
+    </div>
+  </div>
+  <div class="modal-footer">
+     <button type="button" class="btn btn-primary" ng-click="$dismiss()">Close</button>
+  </div>
+</div>
+</div>

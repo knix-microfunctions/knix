@@ -1,0 +1,93 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://microfunctions.org/mfn-workflow-schema.json",
+  "type": "object",
+  "title": "MicroFunctions workflow spec",
+  "required": [
+    "name",
+    "entry",
+    "functions"
+  ],
+  "properties": {
+    "name": {
+      "$id": "#/properties/name",
+      "type": "string",
+      "title": "Workflow ID",
+      "default": "",
+      "examples": [
+        "wf_test"
+      ],
+      "pattern": "^([A-Za-z0-9_]*)$"
+    },
+    "entry": {
+      "$id": "#/properties/entry",
+      "type": "string",
+      "title": "Workflow entry point",
+      "default": "",
+      "examples": [
+        "my_function"
+      ],
+      "pattern": "^([A-Za-z0-9_]*)$"
+    },
+    "functions": {
+      "$id": "#/properties/functions",
+      "type": "array",
+      "title": "Workflow function graph",
+      "items": {
+        "$id": "#/properties/functions/items",
+        "type": "object",
+        "title": "Workflow step",
+        "required": [
+          "name",
+          "next",
+          "potentialNext"
+        ],
+        "properties": {
+          "name": {
+            "$id": "#/properties/functions/items/properties/name",
+            "type": "string",
+            "title": "Function name",
+            "default": "",
+            "examples": [
+              "my_function"
+            ],
+            "pattern": "^([A-Za-z0-9_]*)$"
+          },
+          "next": {
+            "$id": "#/properties/functions/items/properties/next",
+            "type": "array",
+            "title": "Functions invoked with the output of this step",
+            "items": {
+              "$id": "#/properties/functions/items/properties/next/items",
+              "type": "string",
+              "title": "Function name or end",
+              "default": "",
+              "examples": [
+                "my_second_function",
+                "end"
+              ],
+              "pattern": "^([A-Za-z0-9_]*)$"
+            }
+          },
+          "potentialNext": {
+            "$id": "#/properties/functions/items/properties/potentialNext",
+            "type": "array",
+            "title": "Functions that may be triggered by this step",
+            "items": {
+              "$id": "#/properties/functions/items/properties/potentialNext/items",
+              "type": "string",
+              "title": "Function name",
+              "default": "",
+              "examples": [
+                "my_second_function",
+                "optionalFunction"
+              ],
+              "pattern": "^([A-Za-z0-9_]*)$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

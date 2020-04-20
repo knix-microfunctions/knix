@@ -1,0 +1,12 @@
+{
+  "Comment": "Hello World Workflow",
+  "StartAt": "helloworld",
+  "States": {
+    "helloworld": {
+      "Type": "Task",
+      "Resource": "helloworld",
+      "End": true
+    }
+  }
+}
+

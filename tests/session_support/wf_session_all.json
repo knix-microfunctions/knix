@@ -1,0 +1,56 @@
+{
+        "name": "wf_session_all",
+        "entry": "entryFunction",
+        "functions": [
+                {
+                        "name": "entryFunction",
+                        "next": ["end"],
+                        "potentialNext": ["sessionFunction1", "sessionFunction2", "finalFunction", "telemetryHandler"]
+                },
+                {
+                        "name": "heartbeatHandler",
+                        "next": [],
+                        "potentialNext": ["healthChecker"]
+                },
+                {
+                        "name": "healthChecker",
+                        "next": [],
+                        "potentialNext": ["sessionFunction1", "sessionFunction2", "telemetryHandler", "entryFunction"]
+                },
+                {
+                        "name": "telemetryHandler",
+                        "next": [],
+                        "potentialNext": ["finalFunction"]
+                },
+                {
+                        "name": "sessionFunction1",
+                        "isSessionFunction": true,
+                        "sessionFunctionParameters":
+                                {
+                                "heartbeat_method": "function",
+                                "heartbeat_function": "heartbeatHandler",
+                                "heartbeat_interval_ms": 15000
+                                },
+                        "next": ["finalFunction"],
+                        "potentialNext": ["telemetryHandler"]
+                },
+                {
+                        "name": "sessionFunction2",
+                        "isSessionFunction": true,
+                        "sessionFunctionParameters":
+                                {
+                                "heartbeat_method": "function",
+                                "heartbeat_function": "heartbeatHandler",
+                                "heartbeat_interval_ms": 15000
+                                },
+                        "next": ["finalFunction"],
+                        "potentialNext": ["telemetryHandler"]
+                },
+                {
+                        "name": "finalFunction",
+                        "next": ["end"],
+                        "potentialNext": []
+                }
+
+        ]
+}

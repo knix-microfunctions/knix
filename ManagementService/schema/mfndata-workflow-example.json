@@ -1,0 +1,163 @@
+{
+    "buckets": {
+        "storage_adminATsand":[
+            "defaultTable",
+            "defaultMapTable",
+            "defaultSetTable",
+            "defaultCounterTable"
+        ],
+        "sbox_SandService":[
+            "sbox_default_SandService",
+            "sbox_maps_SandService",
+            "sbox_sets_SandService",
+            "sbox_counters_SandService",
+            "wf_Management",
+            "wf_maps_Management",
+            "wf_sets_Management",
+            "wf_counters_Management"
+        ],
+        "storage_manuel_steinATnokia_bell_labs_com":[
+            "defaultTable",
+            "defaultMapTable",
+            "defaultSetTable",
+            "defaultCounterTable"
+        ],
+        "sbox_11111111-1111-1111-1111-111111111111":[
+            "sbox_default_11111111-1111-1111-1111-111111111111",
+            "sbox_maps_11111111-1111-1111-1111-111111111111",
+            "sbox_sets_11111111-1111-1111-1111-111111111111",
+            "sbox_counters_11111111-1111-1111-1111-111111111111",
+            "wf_11111111-1111-1111-1111-111111111111",
+            "wf_maps_11111111-1111-1111-1111-111111111111",
+            "wf_sets_11111111-1111-1111-1111-111111111111",
+            "wf_counters_11111111-1111-1111-1111-111111111111"
+        ],
+    },
+    "storage_adminATsand;defaultTable": {
+        "workflow_Management": {
+            "name": "Management",
+            "status": "DEPLOYED",
+            "modified": 1581498771.096527,
+            "id": "Management"
+        },
+        "workflow_json_Management": "base64(workflow_management_service.json)",
+        "workflow_requirements_Management": "base64(requirements.txt)",
+        "list_grains": {
+            "ManagementServiceEntry": {
+                "name": "ManagementServiceEntry",
+                "runtime": "Python 3.7",
+                "id": "00000000-0000-0000-0000-111111111111",
+                "modified": 1581498771.096527
+            },
+            "addFunction": {
+                "name": "addFunction",
+                "runtime": "Python 3.7",
+                "id": "00000000-0000-0000-0000-222222222222",
+                "modified": 1581498771.096527
+            }
+        },
+        "grain_source_00000000-0000-0000-0000-111111111111": "base64(python/ManagementServiceEntry.py)",
+        "grain_requirements_00000000-0000-0000-0000-111111111111": "",
+        "grain_source_00000000-0000-0000-0000-222222222222": "base64(python/addFunction.py)",
+        "grain_requirements_00000000-0000-0000-0000-222222222222": ""
+    },
+    "storage_adminATsand;defaultMapTable": {},
+    "storage_adminATsand;defaultSetTable": {},
+    "storage_adminATsand;defaultCounterTable": {},
+    "sbox_SandService;sbox_default_SandService": {},
+    "sbox_SandService;sbox_maps_SandService": {},
+    "sbox_SandService;sbox_sets_SandService": {},
+    "sbox_SandService;sbox_counters_SandService": {},
+    "sbox_SandService;wf_Management": {
+        "deployment_info_workflow_Management": {
+            "workflow": {
+                "sandboxId": "SandService",
+                "workflowId": "Management",
+                "workflowName": "Management",
+                "workflowType": 0,
+                "json_ref": "workflow_json_Management",
+                "sandbox_requirements": {
+                    "installer": "pip"
+                }
+            },
+            "resources": {
+                "ManagementServiceEntry": {
+                    "name":"ManagementServiceEntry",
+                    "id":"00000000-0000-0000-0000-111111111111",
+                    "runtime":"Python 3.7",
+                    "type": "code",
+                    "ref": "grain_source_00000000-0000-0000-0000-111111111111"
+                },
+                "addFunction": {
+                    "name":"addFunction",
+                    "id":"00000000-0000-0000-0000-222222222222",
+                    "runtime":"Python 3.7",
+                    "type": "code",
+                    "ref": "grain_source_00000000-0000-0000-0000-222222222222"
+                }
+            },
+            "username": "admin@sand"
+        }
+    },
+    "sbox_SandService;wf_maps_Management": {},
+    "sbox_SandService;wf_sets_Management": {},
+    "sbox_SandService;wf_counters_Management": {},
+    "storage_manuel_steinATnokia_bell_labs_com;defaultTable": {
+        "workflow_11111111-1111-1111-1111-111111111111": {
+            "name": "myWorkflow",
+            "status": "DEPLOYED",
+            "modified": 1581498771.096527,
+            "id": "11111111-1111-1111-1111-111111111111"
+        },
+        "workflow_json_11111111-1111-1111-1111-111111111111": "base64(workflow.json)",
+        "workflow_requirements_11111111-1111-1111-1111-111111111111": "base64(requirements.txt)",
+        "list_grains": {
+            "function_name": {
+                "name": "function_name",
+                "runtime": "Python 3.7",
+                "id": "11111111-1111-1111-1111-222222222222",
+                "modified": 1581498771.096527
+            }
+        },
+        "grain_source_11111111-1111-1111-1111-222222222222": "base64(function_name.py)",
+        "grain_source_zip_11111111-1111-1111-1111-222222222222_chunk_0": "base64(function_name.zip)[0:1024*1024]",
+        "grain_source_zip_11111111-1111-1111-1111-222222222222_chunk_1": "base64(function_name.zip)[1024*1024:2*1024*1024]",
+        "grain_source_zip_11111111-1111-1111-1111-222222222222_chunk_2": "base64(function_name.zip)[2*1024*1024:]",
+        "grain_source_zip_num_chunks_11111111-1111-1111-1111-222222222222": 3,
+        "grain_source_zip_metadata_11111111-1111-1111-1111-222222222222": "base64(HTML that describes content)",
+        "grain_requirements_11111111-1111-1111-1111-222222222222": "base64(function_name_requirements.txt)"
+    },
+    "storage_manuel_steinATnokia_bell_labs_com;defaultMapTable": {},
+    "storage_manuel_steinATnokia_bell_labs_com;defaultSetTable": {},
+    "storage_manuel_steinATnokia_bell_labs_com;defaultCounterTable": {},
+    "sbox_11111111-1111-1111-1111-111111111111;sbox_default_11111111-1111-1111-1111-111111111111": {},
+    "sbox_11111111-1111-1111-1111-111111111111;sbox_maps_11111111-1111-1111-1111-111111111111": {},
+    "sbox_11111111-1111-1111-1111-111111111111;sbox_sets_11111111-1111-1111-1111-111111111111": {},
+    "sbox_11111111-1111-1111-1111-111111111111;sbox_counters_11111111-1111-1111-1111-111111111111": {},
+    "sbox_11111111-1111-1111-1111-111111111111;wf_11111111-1111-1111-1111-111111111111": {
+        "deployment_info_workflow_11111111-1111-1111-1111-111111111111": {
+            "workflow": {
+                "sandboxId": "11111111-1111-1111-1111-111111111111",
+                "workflowId": "11111111-1111-1111-1111-111111111111",
+                "workflowName": "myWorkflow",
+                "workflowType": [0,1],
+                "json_ref": "workflow_json_11111111-1111-1111-1111-111111111111",
+                "sandbox_requirements": {
+                    "installer": "pip"
+                }
+            },
+            "resources": {
+                "function_name": {
+                    "name":"function_name",
+                    "id":"11111111-1111-1111-1111-222222222222",
+                    "runtime":"Python 3.7",
+                    "type": "zip",
+                    "ref": "grain_source_zip_num_chunks_11111111-1111-1111-1111-222222222222"
+                }
+            },
+            "username": "manuel.stein@nokia-bell-labs.com"
+        },
+    "sbox_11111111-1111-1111-1111-111111111111;wf_maps_11111111-1111-1111-1111-111111111111": {},
+    "sbox_11111111-1111-1111-1111-111111111111;wf_sets_11111111-1111-1111-1111-111111111111": {},
+    "sbox_11111111-1111-1111-1111-111111111111;wf_counters_11111111-1111-1111-1111-111111111111": {}
+}

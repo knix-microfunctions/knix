@@ -1,0 +1,10 @@
+{
+"name": "wf_triggerable_tables",
+"entry": "triggerable_table",
+"functions": [
+    {
+    "name": "triggerable_table",
+    "next": ["end"]
+    }]
+}
+

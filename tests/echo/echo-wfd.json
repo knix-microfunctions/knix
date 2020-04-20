@@ -1,0 +1,10 @@
+{
+"name": "echo_wfd",
+"entry": "echo",
+"functions": [
+	{
+	"name": "echo",
+	"next": ["end"]
+	}]
+}
+

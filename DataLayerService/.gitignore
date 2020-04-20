@@ -1,0 +1,6 @@
+/PythonClient/data_layer/
+/PythonClient/__init__.py
+/bin/
+/target/
+/.settings
+/.factorypath
