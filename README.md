@@ -50,7 +50,7 @@ A namespace can be chosen with --namespace my-ns. The --debug option will provid
 
 KNIX MicroFunctions can also be installed using Ansible playbooks on bare metal or virtual machines. You'll need a user with sudo access.
 
-Please refer to the installation [README](https://github.com/knix-microfunctions/knix/deploy/ansible/README.md).
+Please refer to the installation [README](https://github.com/knix-microfunctions/knix/blob/master/deploy/ansible/README.md).
 
 ### Connecting to the KNIX web GUI to create functions and workflows
 Nginx is exposed through the Service nx- (e.g. nx-mfn-test) by default on port 20080 (optionally, nginx can be configured with an SSL port).
