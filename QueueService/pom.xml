@@ -55,7 +55,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<mainClass>org.microfunctions.queue.service.MainQueueService</mainClass>
+							<mainClass>org.microfunctions.queue.local.MainQueueService</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

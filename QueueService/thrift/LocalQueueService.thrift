@@ -33,23 +33,6 @@ service LocalQueueService {
 
     list<LocalQueueMessage> getAndRemoveMultiMessages (1: string topic, 2: i32 maxCount, 3: i64 timeout),
 
-    //list<LocalQueueMessage> getMultiMessages (1: string topic, 2: i32 maxCount, 3: i64 timeout),
-    
-	//list<bool> addMultiMessages (1: string topic, 2: list<LocalQueueMessage> messages),
-	//oneway void addMultiMessagesNoack (1: string topic, 2: list<LocalQueueMessage> messages),
-	
-	//bool commitMessage (1: string topic, 2: i64 index),
-	//list<bool> commitMultiMessages (1: string topic, 2: list<i64> indices),
-	
-	//oneway void commitMessageNoack (1: string topic, 2: i64 index),
-	//oneway void commitMultiMessagesNoack (1: string topic, 2: list<i64> indices),
-	
-	//bool reAddMessage (1: string topic, 2: i64 index),
-	//list<bool> reAddMultiMessages (1: string topic, 2: list<i64> indices),
-	
-	//oneway void reAddMessageNoack (1: string topic, 2: i64 index),
-	//oneway void reAddMultiMessagesNoack (1: string topic, 2: list<i64> indices),
-	
 	i64 totalMemory (),
 	i64 freeMemory ()
 }

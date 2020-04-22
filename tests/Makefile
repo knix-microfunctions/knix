@@ -36,6 +36,6 @@ settings:
 	sed 's#"http_proxy": .*#"http_proxy": "",#' -i settings.json; \
 	sed 's#"https_proxy": .*#"https_proxy": ""#' -i settings.json; \
 	sed 's/"timeout": .*/"timeout": 60/' -i settings.json; fi
-	URL="127.0.0.1"; \
+	URL="http://127.0.0.1"; \
 	if [ $$? == 0 ]; then sed 's#"mfn_url": .*#"mfn_url": "'$${URL}'",#' -i settings.json; fi
 

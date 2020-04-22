@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package org.microfunctions.queue.service;
+package org.microfunctions.queue.local;
 
 import java.io.FileInputStream;
 import java.net.InetAddress;
@@ -26,7 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 public class MainQueueService
 {
-    private static final Logger LOGGER = LogManager.getLogger(QueueService.class);
+    private static final Logger LOGGER = LogManager.getLogger(LocalQueueServer.class);
 
     public static void usage() {
 		System.err.println("Usage: please provide configuration options either \n"
@@ -87,13 +87,21 @@ public class MainQueueService
 			config.put("portNumber", "" + portNumber);
 		}
 
-		final QueueService qs = new QueueService(config);
-        
+        String hostname = config.get("hostname").toString();
+        portNumber = Integer.parseInt(config.get("portNumber").toString());
+        LOGGER.info("Using config:");
+        LOGGER.info("hostname = " + hostname);
+        LOGGER.info("port number = " + portNumber);
+
+        LocalQueueServer localQueueServer = new LocalQueueServer(portNumber);
+        Thread localQueueServerThread = new Thread(localQueueServer);
+        localQueueServerThread.start();
+
         Runtime.getRuntime().addShutdownHook(new Thread() {
              @Override
              public void run() {
                 LOGGER.info("Shutting down queue service...");
-                qs.shutdown();
+                localQueueServer.stop();
              }
           });
         

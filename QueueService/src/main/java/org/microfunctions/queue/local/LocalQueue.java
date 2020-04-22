@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class LocalQueue {
     
@@ -28,19 +27,13 @@ public class LocalQueue {
     public static final LocalQueueMessage NO_MESSAGE = new LocalQueueMessage(ByteBuffer.allocate(0)).setIndex(NO_MESSAGE_INDEX);
     
     private ConcurrentHashMap<String, LinkedBlockingQueue<LocalQueueMessage>> topicToNewMessages = new ConcurrentHashMap<String, LinkedBlockingQueue<LocalQueueMessage>>();
-    //private ConcurrentHashMap<String, AtomicLong> topicToIndex = new ConcurrentHashMap<String, AtomicLong>();
-    //private ConcurrentHashMap<String, ConcurrentHashMap<Long, LocalQueueMessage>> topicToOldMessages = new ConcurrentHashMap<String, ConcurrentHashMap<Long, LocalQueueMessage>>();
     
     public void addTopic (String topic) {
         topicToNewMessages.putIfAbsent(topic, new LinkedBlockingQueue<LocalQueueMessage>());
-        //topicToIndex.putIfAbsent(topic, new AtomicLong());
-        //topicToOldMessages.putIfAbsent(topic, new ConcurrentHashMap<Long, LocalQueueMessage>());
     }
     
     public void removeTopic (String topic) {
         topicToNewMessages.remove(topic);
-        //topicToIndex.remove(topic);
-        //topicToOldMessages.remove(topic);
     }
     
     public boolean addMessage (String topic, LocalQueueMessage message) {
@@ -72,11 +65,6 @@ public class LocalQueue {
             return NO_MESSAGE;
         }
         
-//        AtomicLong indexGenerator = topicToIndex.get(topic);
-//        if (indexGenerator == null) {
-//            return NO_MESSAGE;
-//        }
-//        message.setIndex(indexGenerator.incrementAndGet());
         message.setIndex(VALID_MESSAGE_INDEX);
         return message;
     }
@@ -89,38 +77,7 @@ public class LocalQueue {
             return NO_MESSAGE;
         }
         
-        /*
-        ConcurrentHashMap<Long, LocalQueueMessage> oldMessages = topicToOldMessages.get(topic);
-        if (oldMessages == null) {
-            return NO_MESSAGE;
-        }
-        oldMessages.put(index, message);
-        */
         return message;
     }
-    /*
-    public boolean commitMessage (String topic, long index) {
-        ConcurrentHashMap<Long, LocalQueueMessage> oldMessages = topicToOldMessages.get(topic);
-        if (oldMessages == null) {
-            return false;
-        }
-        
-        return (oldMessages.remove(index) != null)? true: false;
-    }
-    
-    public boolean reAddMessage (String topic, long index) {
-        ConcurrentHashMap<Long, LocalQueueMessage> oldMessages = topicToOldMessages.get(topic);
-        if (oldMessages == null) {
-            return false;
-        }
-        
-        LocalQueueMessage message = oldMessages.remove(index);
-        if (message == null) {
-            return false;
-        }
-        
-        return this.addMessage(topic, message);
-    }
-    */
 }
 
