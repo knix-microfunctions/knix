@@ -345,10 +345,10 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
             status = resp.json().get("status",{})
             if "url" in status:
                 url = status["url"]
-                if url.startswith("https://") and "HTTPS_GATEWAYPORT" in os.environ:
-                    url += ":" + os.environ["HTTPS_GATEWAYPORT"]
-                elif url.startswith("http://") and "HTTP_GATEWAYPORT" in os.environ:
-                    url += ":" + os.environ["HTTP_GATEWAYPORT"]
+                if "HTTPS_GATEWAYPORT" in os.environ:
+                    url = "https://" + url.split("://",1)[1] + ":" + os.environ["HTTPS_GATEWAYPORT"]
+                elif "HTTP_GATEWAYPORT" in os.environ:
+                    url = "http://" + url.split("://",1)[1] + ":" + os.environ["HTTP_GATEWAYPORT"]
                 break
             time.sleep(2)
         except requests.exceptions.HTTPError as e:

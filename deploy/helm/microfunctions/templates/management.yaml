@@ -193,9 +193,13 @@ data:
     {{- else -}}
       "mgmtserviceaccount": "default",
     {{- end -}}
-      "configmap": "{{ include "manager.fullname" .  }}-new-workflow-conf",
+    {{- if (.Values.manager.httpGatewayPort) -}}
       "HTTP_GATEWAYPORT": "{{ .Values.manager.httpGatewayPort }}",
-      "HTTPS_GATEWAYPORT": "{{ .Values.manager.httpsGatewayPort }}"
+    {{- end -}}
+    {{- if (.Values.manager.httpsGatewayPort) -}}
+      "HTTPS_GATEWAYPORT": "{{ .Values.manager.httpsGatewayPort }}",
+    {{- end -}}
+      "configmap": "{{ include "manager.fullname" .  }}-new-workflow-conf"
     }
 ---
 apiVersion: batch/v1
