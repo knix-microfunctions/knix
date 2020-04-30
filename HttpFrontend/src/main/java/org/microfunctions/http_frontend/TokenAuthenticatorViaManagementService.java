@@ -25,6 +25,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,6 +38,7 @@ public class TokenAuthenticatorViaManagementService {
 	private String datalayerServerHost = null;
 	private int datalayerServerPort = 0;
     private int requestTimeoutMs = 0;
+    private boolean runningInsideKubernetes = false;
     private ArrayList<String> managementEndpoints = null;
     Random rand = new Random();
 
@@ -43,6 +47,11 @@ public class TokenAuthenticatorViaManagementService {
 		this.datalayerServerPort = datalayerServerPort;
         this.requestTimeoutMs = requestTimeoutMs;
         this.managementEndpoints = new ArrayList<String>();
+        this.runningInsideKubernetes = false;
+        Map<String, String> env = System.getenv();
+        if (env.containsKey("KUBERNETES_PORT")) {
+            this.runningInsideKubernetes = true;
+        }
     }
     private void populateManagementServiceUrls() {
         // DLCLIENT_MANAGEMENT = DataLayerClient(1,sid="Management",wid="Management",is_wf_private=True,for_mfn=False, connect=connect, init_tables=True)
@@ -97,14 +106,50 @@ public class TokenAuthenticatorViaManagementService {
         return endpoint;
     }
 
-    private JSONObject invokeManagementService(String httpurl, JSONObject data) {
+    private String getHostName(String httpurl) {
+        String hostname = null;
+        Pattern p1 = Pattern.compile("https?://([^:]+).*");
+        Matcher m1 = p1.matcher(httpurl);
+        if (m1.find()) {
+            hostname = m1.group(1);
+        }
+        return hostname;
+    }
+
+    private String getHostNameFirstPart(String hostname) {
+        String hostname_part1 = null;
+        Pattern p2 = Pattern.compile("([^\\.]+)+");
+        Matcher m2 = p2.matcher(hostname);
+        if (m2.find()) {
+            hostname_part1 = m2.group(1);
+        }
+        return hostname_part1;
+    }
+
+    private JSONObject invokeManagementService(String httpurl, JSONObject data, String endpointHostname, String endpointHostnameFirstPartAsUrl) {
+        if (runningInsideKubernetes == true) {
+            if (endpointHostname != null && endpointHostnameFirstPartAsUrl != null) {
+                httpurl = endpointHostnameFirstPartAsUrl;
+            }
+            else {
+                logger.error("invokeManagementService error: endpointHostname or endpointHostnameFirstPartAsUrl are null");
+                logger.error("invokeManagementService error: endpointHostname: " + endpointHostname);
+                logger.error("invokeManagementService error: endpointHostnameFirstPartAsUrl: " + endpointHostnameFirstPartAsUrl);
+                return null;
+            }
+        }
+
         JSONObject responseObject = null;
         try {
+
             URL url = new URL (httpurl);
             HttpURLConnection con = (HttpURLConnection)url.openConnection();
             con.setRequestMethod("POST");
             con.setRequestProperty("Content-Type", "application/json; utf-8");
             con.setRequestProperty("Accept", "application/json");
+            if (runningInsideKubernetes == true) {
+                con.setRequestProperty("Host", endpointHostname);
+            }
             con.setDoOutput(true);
             String jsonInputString = data.toString();
             OutputStream os = con.getOutputStream();
@@ -126,6 +171,9 @@ public class TokenAuthenticatorViaManagementService {
 
         } catch (Exception e) {
             logger.error("invokeManagementService error: " + e.getMessage());
+            logger.error("invokeManagementService error: httpurl: " + httpurl);
+            logger.error("invokeManagementService error: endpointHostname: " + endpointHostname);
+            logger.error("invokeManagementService error: endpointHostnameFirstPartAsUrl: " + endpointHostnameFirstPartAsUrl);
             return null;
         }
         return responseObject;
@@ -133,12 +181,29 @@ public class TokenAuthenticatorViaManagementService {
 
 
     public String verifyUser(String token, String email) {
-        String statusmessage = "unset";
+        String statusmessage = "Connection error";
 
         String endpoint = selectManagementServiceEndpoint();
         if (endpoint == null || (!endpoint.startsWith("http"))) {
             logger.error("verifyUser error: " + "Missing Management service endpoint url");
             return "Missing Management service endpoint url";
+        }
+
+        // String endpoint="https://wf-mfn1-management.mfn.knix.io:443";
+        // String endpointHostname="wf-mfn1-management.mfn.knix.io";
+        // String endpointHostnameFirstPart="wf-mfn1-management"; // this used for kubernetes only
+        String endpointHostname = null;
+        String endpointHostnameFirstPartAsUrl = null;
+        if (runningInsideKubernetes == true) {
+            endpointHostname = this.getHostName(endpoint);
+            if (endpointHostname != null) {
+                //System.out.println("endpointHostname: " + hostname);
+                String endpointHostnameFirstPart = this.getHostNameFirstPart(endpointHostname);
+                if (endpointHostnameFirstPart != null) {
+                    //System.out.println("endpointHostnameFirstPart: " + endpointHostnameFirstPart);
+                    endpointHostnameFirstPartAsUrl = "http://" + endpointHostnameFirstPart; // this used for kubernetes only
+                }
+            }
         }
 
         /*
@@ -161,7 +226,7 @@ public class TokenAuthenticatorViaManagementService {
         request.put("data", data);
         //logger.info("verifyUser: " + " endpoint: " + endpoint + ", request: " + request.toString());
 
-        JSONObject response = invokeManagementService(endpoint, request);
+        JSONObject response = invokeManagementService(endpoint, request, endpointHostname, endpointHostnameFirstPartAsUrl);
         /*
         {
             "status": "success"  or "failure", 
