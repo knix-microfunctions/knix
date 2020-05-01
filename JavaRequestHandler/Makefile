@@ -50,6 +50,7 @@ src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: \
 
 # all source files except DataLayerService.java (would be mentioned explicitly)
 JAVA_SOURCES=$(shell find src/ -type f|grep -v src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java)
+GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 target/javaworker.jar: $(JAVA_SOURCES) \
 		src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java \
 		~/.m2/settings-docker.xml
@@ -59,7 +60,7 @@ target/javaworker.jar: $(JAVA_SOURCES) \
 	-v ~/.m2:/usr/share/maven/ref \
 	-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
 	maven:3.6.1-jdk-8 \
-	mvn -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e package
+	mvn -Drevision=$(GIT_REVISION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e package
 
 clean:
 	rm -rf target/

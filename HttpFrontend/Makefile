@@ -41,6 +41,7 @@ src/main/java/data_layer:
 	else sed "s#<proxy><id>https</id>.*##" -i $@.tmp; fi;
 	mv $@.tmp $@
 
+GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 target/frontend.jar: src/main/java/data_layer ~/.m2/settings-docker.xml
 	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
 	docker run --rm --name frontend-maven \
@@ -48,7 +49,7 @@ target/frontend.jar: src/main/java/data_layer ~/.m2/settings-docker.xml
 	-v ~/.m2:/usr/share/maven/ref \
 	-v $(CURDIR):/usr/src/frontend -w /usr/src/frontend \
 	maven:3.6.1-jdk-8 \
-	mvn -Dargline="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+	mvn -Drevision=$(GIT_REVISION) -Dargline="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
 
 clean:
 	rm -rf ./target

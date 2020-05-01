@@ -9,17 +9,15 @@ As for everything else in the project, the contributions to KNIX are governed by
 
 ## Using the issue tracker
 
-First things first: **Do NOT report security vulnerabilities in public issues!** Please disclose responsibly by letting [the KNIX admin team](mailto:admin@knix.io) know upfront. 
+First things first: **Do NOT report security vulnerabilities in public issues!** Please disclose responsibly by letting [the KNIX admin team](mailto:admin@knix.io) know upfront.
 
 Join our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw).
-
-Subscribe to our developer mailing list 'knix-dev@list.nokia.com': Please [send an email](mailto:listserv@list.nokia.com) with 'subscribe knix-dev FirstName LastName' in the message body.
 
 We will assess the issue as soon as possible on a best-effort basis and will give you an estimate for when we have a fix and release available for an eventual public disclosure.
 
 The GitHub issue tracker is the preferred channel for [bug reports](#bugs), [features requests](#features) and [submitting pull requests](#pull-requests), but please respect the following restrictions:
 
-* Please **do not** use the issue tracker for personal support requests. Join our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw) instead. Alternately, you can post on our users mailing list 'knix-users@list.nokia.com' (to subscribe please [send an email](mailto:listserv@list.nokia.com) with 'subscribe knix-users FirstName LastName' in the message body).
+* Please **do not** use the issue tracker for personal support requests. Join our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw) instead.
 
 * Please **do not** derail or troll issues. Keep the discussion on topic and respect the opinions of others.
 
@@ -41,7 +39,7 @@ Example:
 
 > Short and descriptive example bug report title
 >
-> A summary of the issue and the browser/OS environment in which it occurs. If 
+> A summary of the issue and the browser/OS environment in which it occurs. If
 > suitable, include the steps required to reproduce the bug.
 >
 > 1. This is the first step
@@ -65,7 +63,8 @@ Feature requests are welcome. But take a moment to find out whether your idea fi
 
 Good pull requests - patches, improvements, new features - are a fantastic help. They should remain focused in scope and avoid containing unrelated commits.
 
-**Please ask first** before embarking on any significant pull request (e.g. implementing features, refactoring code), otherwise you risk spending a lot of time working on something that the project's developers might not want to merge into the project. You can talk to the community in our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw) or on the [developer mailing list](mailto:knix-dev@list.nokia.com).  We're always open to suggestions and will get back to you as soon as we can!
+**Please ask first** before embarking on any significant pull request (e.g. implementing features, refactoring code), otherwise you risk spending a lot of time working on something that the project's developers might not want to merge into the project. You can talk to the community in our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw).
+We're always open to suggestions and will get back to you as soon as we can!
 
 
 ### For new Contributors
@@ -113,13 +112,13 @@ on how to send one :)
 
 ### For KNIX Committers
 
-1. Be sure to set up [GitHub two-factor authentication](https://help.github.com/articles/about-two-factor-authentication/). 
+1. Be sure to set up [GitHub two-factor authentication](https://help.github.com/articles/about-two-factor-authentication/).
 
 2. Clone the repo and create a branch.
 
    ```bash
    git clone https://github.com/knix-microfunctions/knix
-   
+
    cd knix
    git checkout -b <topic-branch-name>
    ```
@@ -182,15 +181,15 @@ If you have commit access, please follow this process for merging patches and cu
 8. If the commit messages follow [our conventions](https://conventionalcommits.org)
 
    1. If the pull request fixes one or more open issues, please include the
-      text "Fixes #4711" or "Fixes knix#4711". 
+      text "Fixes #4711" or "Fixes knix#4711".
    2. Use the "Rebase and merge" button to merge the pull request.
-   3. Done! You are awesome! Thanks so much for your help! 
+   3. Done! You are awesome! Thanks so much for your help!
 
 9. If the commit messages _do not_ follow our conventions:
 
-   1. Use the "squash and merge" button to clean up the commits and merge at the same time. 
+   1. Use the "squash and merge" button to clean up the commits and merge at the same time.
    2. If the pull request fixes one or more open issues, please include the
-      text "Fixes #4711" or "Fixes knix#4711". 
+      text "Fixes #4711" or "Fixes knix#4711".
 
 Sometimes there might be a good reason to merge changes locally. The process looks like this:
 

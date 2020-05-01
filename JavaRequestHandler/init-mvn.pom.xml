@@ -6,7 +6,7 @@
 
   <groupId>io.knix</groupId>
   <artifactId>maven_repo_initializer</artifactId>
-  <version>0.8.0</version>
+  <version>0.0.1-SNAPSHOT</version>
 
   <name>MavenRepoInitializer</name>
   <url>https://knix.io/</url>

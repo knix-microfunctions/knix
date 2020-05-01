@@ -53,6 +53,7 @@ PythonClient/data_layer:
 
 # all source files except DataLayerService.java (would be mentioned explicitly)
 JAVA_SOURCES=$(shell find src/ -type f|grep -v src/main/java/org/microfunctions/data_layer/DataLayerService.java)
+GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 target/datalayerservice.jar: $(JAVA_SOURCES) \
 		src/main/java/org/microfunctions/data_layer/DataLayerService.java \
 		thrift/DataLayerMessage.thrift \
@@ -64,7 +65,7 @@ target/datalayerservice.jar: $(JAVA_SOURCES) \
 		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
 		maven:3.6.1-jdk-8 \
-		mvn -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+		mvn -Drevision=$(GIT_REVISION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
 
 clean:
 	rm -rf ./target

@@ -6,7 +6,7 @@
 
   <groupId>org.microfunctions</groupId>
   <artifactId>javaworker</artifactId>
-  <version>0.8.0</version>
+  <version>${revision}</version>
 
   <name>JavaWorker</name>
   <url>https://knix.io/</url>

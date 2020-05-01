@@ -44,6 +44,7 @@ src/main/java/org/microfunctions/queue/local/LocalQueueService.java: \
 
 # all source files except LocalQueueService.java (would be mentioned explicitly)
 JAVA_SOURCES=$(shell find src/ -type f|grep -v src/main/java/org/microfunctions/queue/local/LocalQueueService.java)
+GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 target/queueservice.jar: $(JAVA_SOURCES) \
 		src/main/java/org/microfunctions/queue/local/LocalQueueService.java \
 		thrift/LocalQueueService.thrift \
@@ -54,7 +55,7 @@ target/queueservice.jar: $(JAVA_SOURCES) \
 		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \
 		maven:3.6.1-jdk-8 \
-		mvn -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+		mvn -Drevision=$(GIT_REVISION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
 
 clean:
 	rm -rf ./target
