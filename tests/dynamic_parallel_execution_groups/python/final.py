@@ -12,26 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-# Makefile
-SHELL := /bin/bash
--include ../proxy.mk
+def handle(event, context):
 
-default: image
+    print("Executing regular function (final.py) with input: " + str(event)[:100] + " ...")
 
-include ../docker.mk
+    return event
 
-lib/jiffy.tgz: Dockerfile
-	mkdir -p lib
-	echo "Building jiffy"
-	$(call build_image,Dockerfile,riak_libs_build)
-	docker run -it --rm -u $$(id -u):$$(id -g) -v $(CURDIR):/temp -w /temp --ulimit nofile=262144:262144 riak_libs_build cp /build/jiffy.tgz ./lib/.
-
-image: Dockerfile-riak \
-		lib/jiffy.tgz \
-		src/mfn_counter_triggers.erl \
-		src/workflow_triggers.erl \
-		$(shell find script/ -type f)
-	$(call build_image,Dockerfile-riak,microfn/riak)
-
-push: image
-	$(call push_image,microfn/riak)

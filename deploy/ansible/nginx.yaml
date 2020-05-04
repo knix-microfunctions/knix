@@ -21,8 +21,8 @@
   vars:
     # location of mfn gui
     #mfn_gui_path: ../../GUI
-    mfn_gui_archive_path: ../
-    mfn_gui_archive_filename: knix_gui.tar.gz
+    mfn_gui_archive_path: "../../GUI"
+    mfn_gui_archive_filename: "knix_gui_deployment_package.tar.gz"
 
     # installation path for GUI on target machine
     install_dir: "{{ mfn_server_installation_folder }}/nginx"
@@ -75,13 +75,6 @@
   #  copy:
   #    src: "{{ mfn_gui_path }}"
   #    dest: "{{ install_dir }}"
-
-  - name: build {{ mfn_gui_archive_path }}/{{ mfn_gui_archive_filename }}
-    command: make {{ mfn_gui_archive_filename }}
-    args:
-      chdir: "{{ mfn_gui_archive_path }}"
-    delegate_to: 127.0.0.1
-    run_once: true
 
   - name: copy the GUI archive
     copy:

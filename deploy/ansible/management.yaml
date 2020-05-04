@@ -20,7 +20,7 @@
 
   vars:
     management_service_dir: "../../ManagementService"
-    management_archive_filename: management.tar.gz
+    management_archive_filename: management_deployment_package.tar.gz
 
     install_dir: "{{ mfn_server_installation_folder }}/management"
     datalayer_connect: "{{ ansible_default_ipv4.address }}:4998" # same host
@@ -95,13 +95,6 @@
     #copy:
     #  src: "{{ management_service_dir }}/"
     #  dest: "{{ install_dir }}/"
-
-  - name: update management archive
-    command: make {{ management_archive_filename }}
-    args:
-      chdir: "{{ management_service_dir }}"
-    delegate_to: 127.0.0.1
-    run_once: true
 
   - name: copy the management archive
     copy:

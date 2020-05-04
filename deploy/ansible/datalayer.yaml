@@ -18,7 +18,6 @@
 - hosts: all
   
   vars:
-    # location of sand hostagent deployment package on local machine
     datalayer_dist: "../../DataLayerService/target"
     datalayer_jar: "datalayerservice.jar"
 
