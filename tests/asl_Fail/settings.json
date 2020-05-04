@@ -1,0 +1,4 @@
+{
+    "workflow_name": "__fail_test",
+    "workflow_description_file": "workflow_fail_test.json"
+}

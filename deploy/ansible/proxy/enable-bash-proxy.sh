@@ -15,9 +15,9 @@
 
 set -ex
 
-MY_PROXY_URL='"http://192.109.76.93:8080"'
+MY_PROXY_URL='""'
 MY_HOSTIP=`hostname -i | awk '{print $1}'`
-MY_NO_PROXY='"127.0.0.1,localhost,alcatel-lucent.com,gitlabe1.ext.net.nokia.com,149.204.63.97/8,bls-calendar.rcs.alcatel-research.de,nok.it,149.204.179.178,"$(hostname)",$MY_HOSTIP"'
+MY_NO_PROXY='"127.0.0.1,localhost,"$(hostname)",$MY_HOSTIP"'
 
 CONF="/etc/bash.bashrc"
 # Delete lines

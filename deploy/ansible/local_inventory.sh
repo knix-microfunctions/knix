@@ -13,12 +13,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
-sed -i -r 's/^inventory = .*$/inventory = local_inventory.cfg/' ansible.cfg
-
 HOSTNAME=$(/bin/hostname -f)
 
-cat <<END >local_inventory.cfg
+cat <<END >inventory.cfg
 [riak]
 $HOSTNAME
 

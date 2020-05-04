@@ -1,0 +1,4 @@
+{
+    "workflow_name": "__wait_test",
+    "workflow_description_file": "workflow_wait_test.json"
+}

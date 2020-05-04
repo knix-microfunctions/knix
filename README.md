@@ -60,7 +60,7 @@ There's no default Ingress created.
 
 # Hosted Service
 
-Nokia Bell Labs provides a hosted service for hands-on experimentation with the **KNIX MicroFunctions** platform. Please find more details at [https://bell-labs.com/knix](https://bell-labs.com/knix).
+More info on hosted services for hands-on experimentation with the **KNIX MicroFunctions** platform can be found at: [https://knix.io](https://knix.io).
 
 # Getting Involved
 

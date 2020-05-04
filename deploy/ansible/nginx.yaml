@@ -116,8 +116,8 @@
     openssl_csr:
       path: "{{ install_dir }}/cert/request.csr"
       privatekey_path: "{{ install_dir }}/cert/key.pem"
-      organization_name: Nokia Bell Labs
-      organizational_unit_name: microfunctions.org
+      organization_name: KNIX MicroFunctions
+      organizational_unit_name: knix.io
       country_name: DE
       state_or_province_name: Baden-Wuerttemberg
       locality_name: Stuttgart
