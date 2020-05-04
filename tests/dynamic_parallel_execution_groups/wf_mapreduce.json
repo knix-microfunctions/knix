@@ -1,0 +1,28 @@
+{
+        "name": "mapreduce",
+        "entry": "driver",
+        "functions": [
+                {
+                        "name": "driver",
+                        "next": [],
+                        "potentialNext": ["mapper", "reducer"]
+                },
+                {
+                        "name": "mapper",
+                        "next": [],
+                        "potentialNext": ["mapper", "reducer"]
+                },
+                {
+                        "name": "reducer",
+                        "isSessionFunction": true,
+                        "next": [],
+                        "potentialNext": ["reducer", "final"]
+                },
+                {
+                        "name": "final",
+                        "next": ["end"],
+                        "potentialNext": []
+                }
+
+        ]
+}

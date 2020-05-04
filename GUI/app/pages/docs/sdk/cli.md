@@ -15,13 +15,13 @@
 -->
 # MicroFunctions Command Line Interface
 
-The package provides the mfn command based on the [`SDK`](https://knix.io/devtools/).
+The package provides the mfn command based on the [SDK](https://github.com/knix-microfunctions/knix/mfn_sdk/).
 
-The latest version of the CLI is hosted at [`https://knix.io/devtools/`](https://knix.io/devtools/).
+The latest version of the CLI can be obtained with [KNIX releases](https://github.com/knix-microfunctions/knix/releases/).
 After downloading, one can install it:
 ``` sh
-pip install --user mfn_sdk-0.8.0-py3-none-any.whl
-pip install --user mfn_cli-0.8.0-py3-none-any.whl
+pip3 install --user <mfn_sdk_path>
+pip3 install --user <mfn_cli_path>
 ```
 
 ## Using the cli
@@ -39,5 +39,5 @@ mfn login [--url <url>] [--user <username>] [--password <password>]
 $ mfn login --url https://knix.io/mfn --user test@test
 Logging into https://knix.io/mfn as user test@test
 Please enter the password: ************
-$ 
+$
 ```

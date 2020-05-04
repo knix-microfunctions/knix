@@ -1,4 +1,3 @@
-#!/bin/sh
 #   Copyright 2020 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,21 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-HOSTNAME=$(/bin/hostname -f)
+def handle(event, context):
 
-cat <<END >inventory.cfg
-[riak]
-$HOSTNAME
+    print("Executing regular function (final.py) with input: " + str(event)[:100] + " ...")
 
-[elasticsearch]
-$HOSTNAME
+    return event
 
-[management]
-$HOSTNAME
-
-[frontend]
-$HOSTNAME
-
-[nginx]
-$HOSTNAME
-END

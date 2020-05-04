@@ -18,6 +18,8 @@
 - hosts: all
 
   vars:
+    sandbox_deployment_package_directory: "../../Sandbox"
+    sandbox_deployment_package_name: "sandbox_deployment_package.tar.gz"
     container_dir: "../"
     container_image: "sandbox.tar"
     container_image_java: "sandbox_java.tar"
@@ -32,7 +34,8 @@
       - inventory_hostname = {{ inventory_hostname }}
       - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
       - mfn_server_installation_folder = {{ mfn_server_installation_folder }}
-      - container build directory = {{ container_dir }}
+      - sandbox deployment directory = {{ sandbox_deployment_package_directory }}
+      - sandbox deployment package name = {{ sandbox_deployment_package_name }}
       - container tag = {{ container_tag }}
       - container_java_tag = {{ container_java_tag }}
       - container image = {{ container_image }}
@@ -178,16 +181,9 @@
     file: path="{{ install_dir }}" state=directory
 
   # Container Image: copy to host then build
-  - name: build sandboxagent.tar.gz
-    command: make sandboxagent.tar.gz
-    args:
-      chdir: "{{ container_dir }}"
-    delegate_to: 127.0.0.1
-    run_once: true
-
-  - name: extract sandboxagent.tar.gz to host install directory
+  - name: extract sandbox deployment package to host install directory
     unarchive:
-      src: "{{ container_dir }}/sandboxagent.tar.gz"
+      src: "{{ sandbox_deployment_package_directory }}/{{ sandbox_deployment_package_name }}"
       dest: "{{ install_dir }}/"
 
   - name: build sandbox on host with proxy configuration

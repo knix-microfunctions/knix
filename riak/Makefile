@@ -21,7 +21,7 @@ default: image
 include ../docker.mk
 
 lib/jiffy.tgz: Dockerfile
-	-mkdir lib
+	mkdir -p lib
 	echo "Building jiffy"
 	$(call build_image,Dockerfile,riak_libs_build)
 	docker run -it --rm -u $$(id -u):$$(id -g) -v $(CURDIR):/temp -w /temp --ulimit nofile=262144:262144 riak_libs_build cp /build/jiffy.tgz ./lib/.

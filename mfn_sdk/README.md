@@ -18,10 +18,10 @@
 Easy-to use package to access the management interface of MicroFunctions as well as
 deployed workflows.
 
-The latest version of the SDK is hosted at [`https://knix.io/devtools/`](https://knix.io/devtools/).
+The latest version of the SDK can be obtained with [KNIX releases](https://github.com/knix-microfunctions/knix/releases/).
 After downloading, one can install it:
 ``` sh
-pip install --user mfn_sdk-0.8.0-py3-none-any.whl
+pip3 install --user <mfn_sdk_path>
 ```
 
 ## Setup the client

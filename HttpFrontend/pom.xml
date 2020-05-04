@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.knix</groupId>
   <artifactId>frontend</artifactId>
-  <version>0.8.0</version>
+  <version>${revision}</version>
 
   <name>HttpFrontendServer</name>
   <url>https://knix.io/</url>

@@ -19,11 +19,22 @@ LOGS := $(YAML:%.yaml=%.log)
 NAMES := $(YAML:%.yaml=%)
 
 .PHONY: $(NAMES)
-default: init_once riak elasticsearch fluentbit datalayer frontend sandbox management nginx
+default: prepare_packages install
+
+install: init_once riak elasticsearch fluentbit datalayer frontend sandbox management nginx
 	echo "Installed KNIX MicroFunctions"
 
 clean:
 	rm -f $(LOGS)
+
+prepare_packages: ../../riak/knix_riak_deployment_package.tar.gz \
+	../../LoggingService/fluentbit \
+	../../DataLayerService/target/datalayerservice.jar \
+	../../HttpFrontend/target/frontend.jar \
+	../../Sandbox/sandbox_deployment_package.tar.gz \
+	../../ManagementService/management_deployment_package.tar.gz \
+	../../GUI/knix_gui_deployment_package.tar.gz
+
 
 $(NAMES): %: %.log
 
@@ -31,24 +42,18 @@ $(LOGS): %.log: %.yaml settings.json ansible.cfg inventory.cfg
 	ansible-playbook -e "@settings.json" $< 2>&1 >$@.tmp
 	mv $@.tmp $@
 
-nginx.yaml: ../knix_gui.tar.gz
+############################
+# riak.yaml and dependencies
+RIAK_SRC:=../../riak
+RIAKFILES:=$(shell find $(RIAK_SRC) | grep -v knix_riak_deployment_package.tar.gz)
+../../riak/knix_riak_deployment_package.tar.gz:
+	cd $(RIAK_SRC) && make lib/jiffy.tgz && cd -
+	tar -czf $@ -C $(RIAK_SRC) ./lib/jiffy.tgz ./src
+
+riak.yaml: ../../riak/knix_riak_deployment_package.tar.gz
 	touch $@
 
-../knix_gui.tar.gz:
-	cd ..; make $(@:../%=%); cd -
-
-../../DataLayerService/target/datalayerservice.jar:
-	cd ../../DataLayerService/; make; cd -
-
-datalayer.yaml: ../../DataLayerService/target/datalayerservice.jar
-	touch $@
-
-riak.yaml: ../mfn_riak_deployment_package.tar.gz
-	touch $@
-
-../knix_riak_deployment_package.tar.gz:
-	cd ..; make $(@:../%=%); cd -
-
+# fluentbit.yaml and dependencies
 FLUENTBITFILES=$(shell find ../../LoggingService/)
 ../../LoggingService/fluentbit: $(FLUENTBITFILES)
 	cd ../../LoggingService; make; cd -
@@ -56,3 +61,47 @@ FLUENTBITFILES=$(shell find ../../LoggingService/)
 fluentbit.yaml: ../../LoggingService/fluentbit
 	cd ..; make fluentbit; cd -
 	touch $@
+
+# datalayer.yaml and dependencies
+../../DataLayerService/target/datalayerservice.jar:
+	cd ../../DataLayerService/; make; cd -
+
+datalayer.yaml: ../../DataLayerService/target/datalayerservice.jar
+	touch $@
+
+# frontend.yaml and dependencies
+../../HttpFrontend/target/frontend.jar:
+	cd ../../HttpFrontend/; make; cd -
+
+frontend.yaml: ../../HttpFrontend/target/frontend.jar
+	touch $@
+
+# sandbox.yaml and dependencies
+../../Sandbox/sandbox_deployment_package.tar.gz:
+	cd ../../Sandbox/; make build; cd -
+	tar -czf $@ -C ../../Sandbox \
+                Dockerfile \
+                Dockerfile_java \
+                build/ \
+                frontend/frontend
+
+sandbox.yaml: ../../Sandbox/sandbox_deployment_package.tar.gz
+	touch $@
+
+# management.yaml and dependencies
+../../ManagementService/management_deployment_package.tar.gz:
+	cd ../../ManagementService/; make; cd -
+
+management.yaml: ../../ManagementService/management_deployment_package.tar.gz
+	touch $@
+
+# nginx.yaml and dependencies
+GUI_SRC:=../../GUI
+GUIFILES:=$(shell find $(GUI_SRC) | grep -v "knix_gui_deployment_package.tar.gz")
+../../GUI/knix_gui_deployment_package.tar.gz: $(GUIFILES)
+	touch $@
+	tar --exclude=knix_gui_deployment_package.tar.gz -czf $@ -C $(GUI_SRC) .
+
+nginx.yaml: ../../GUI/knix_gui_deployment_package.tar.gz
+	touch $@
+

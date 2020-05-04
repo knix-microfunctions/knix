@@ -17,7 +17,7 @@ Compared with existing serverless computing platforms, **KNIX MicroFunctions** h
 
 ![](GUI/app/pages/docs/intro/mfn.gif?raw=true)
 
-![](GUI/app/pages/docs/intro/wf_exec.gif?raw=true)   
+![](GUI/app/pages/docs/intro/wf_exec.gif?raw=true)
 
 
 # Installation
@@ -60,7 +60,7 @@ There's no default Ingress created.
 
 # Hosted Service
 
-Nokia Bell Labs provides a hosted service for hands-on experimentation with the **KNIX MicroFunctions** platform. Please find more details at [https://bell-labs.com/knix](https://bell-labs.com/knix).
+More info on hosted services for hands-on experimentation with the **KNIX MicroFunctions** platform can be found at: [https://knix.io](https://knix.io).
 
 # Getting Involved
 
@@ -71,8 +71,6 @@ Before you attempt to make a contribution please read the [Code of Conduct](http
 * [View current Issues](https://github.com/knix-microfunctions/knix/issues) or [view current Pull Requests](https://github.com/knix-microfunctions/knix/pulls).
 
 * Join our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw)
-
-* Subscribe to our developer mailing list 'knix-dev@list.nokia.com': Please [send an email](mailto:listserv@list.nokia.com) to listserv@list.nokia.com with 'subscribe knix-dev FirstName LastName' in the message body.
 
 # License
 

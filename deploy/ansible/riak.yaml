@@ -22,7 +22,7 @@
     coordinator_ip: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}"
 
     # location of mfn's riak deployment package on local machine
-    mfn_riak_deployment_package_dir: ".."
+    mfn_riak_deployment_package_dir: "../../riak"
     riak_dist_url_ubuntu: "https://files.tiot.jp/riak/kv/2.9/2.9.0/ubuntu/xenial64/riak_2.9.0-1_amd64.deb"
     riak_dist_url_debian: "https://files.tiot.jp/riak/kv/2.9/2.9.0/debian/9/riak_2.9.0-1_amd64.deb"
     riak_dist_url: "{{ riak_dist_url_ubuntu }}"
@@ -146,7 +146,7 @@
   - name: copy erlang module for json parsing (jiffy) to riak lib folder
     copy:
       remote_src: yes
-      src: "{{ mfn_riak_server_dir }}/jiffy.tgz"
+      src: "{{ mfn_riak_server_dir }}/lib/jiffy.tgz"
       dest: "{{ riak_server_dir }}/lib"
 
   - name: unpack erlang module for json parsing (jiffy)
@@ -161,7 +161,7 @@
   - name: copy erlang trigger code to the mfn_counter_triggers lib folder
     copy:
       remote_src: yes
-      src: "{{ mfn_riak_server_dir }}/mfn_counter_triggers.erl"
+      src: "{{ mfn_riak_server_dir }}/src/mfn_counter_triggers.erl"
       dest: "{{ riak_server_dir }}/lib/mfn_counter_triggers"
 
   - name: compile mfn counter triggers
@@ -174,7 +174,7 @@
   - name: copy erlang workflow_triggers code to the triggers lib folder
     copy:
       remote_src: yes
-      src: "{{ mfn_riak_server_dir }}/workflow_triggers.erl"
+      src: "{{ mfn_riak_server_dir }}/src/workflow_triggers.erl"
       dest: "{{ riak_server_dir }}/lib/workflow_triggers"
 
   - name: compile workflow_triggers

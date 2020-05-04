@@ -16,7 +16,7 @@
 SHELL := /bin/bash
 -include ../proxy.mk
 
-default: management.tar.gz
+default: management_deployment_package.tar.gz
 
 DataLayerClient.py: ../FunctionWorker/python/DataLayerClient.py
 	cp $< $@
@@ -27,14 +27,14 @@ THRIFT=$(-shell find data_layer/ -type f -size +1c) data_layer
 thrift: $(THRIFT)
 
 $(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerService/thrift/DataLayerService.thrift
-	-mkdir data_layer
+	mkdir -p data_layer
 	docker run --rm -v $(CURDIR)/..:/root -w /root thrift:0.12.0 bash -c '\
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerMessage.thrift; \
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerService.thrift'
 
 SOURCES=$(shell find python/ -type f) $(shell ls *.py *.json)
 
-management.tar.gz: $(SOURCES) DataLayerClient.py $(THRIFT)
+management_deployment_package.tar.gz: $(SOURCES) DataLayerClient.py $(THRIFT)
 	mkdir -p build/
 	for FILE in $^; do \
 		mkdir -p build/$$(dirname $$FILE); \
@@ -49,7 +49,7 @@ include ../docker.mk
 
 image: \
 	Dockerfile \
-	management.tar.gz
+	management_deployment_package.tar.gz
 	$(call build_image,Dockerfile,microfn/management)
 
 push: image

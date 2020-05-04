@@ -116,7 +116,7 @@ pass_resource = click.make_pass_decorator(Resource)
 @click.command(cls=Aliased,context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('-q', count=True, help='Quiet, (Log level -q: ERROR, -qq: no output).')
 @click.option('-v', count=True, help='Verbose, reduces log levels (-v: INFO, -vv: DEBUG).')
-@click.version_option('0.8.0')
+@click.version_option('0.8.1')
 @click.pass_context
 def cli(ctx, q, v):
     directory = os.path.realpath(os.environ["HOME"])+"/.mfn"

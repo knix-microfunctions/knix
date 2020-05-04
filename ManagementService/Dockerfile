@@ -34,7 +34,7 @@ RUN /usr/bin/python3 -m pip install retry
 RUN /usr/bin/python3 -m pip install docker
 
 RUN groupadd -o -g 1000 -r mfn && useradd -b /opt -d /opt/mfn -u 1000 -m -r -g mfn mfn
-ADD management.tar.gz /opt/mfn/ManagementService/
+ADD management_deployment_package.tar.gz /opt/mfn/ManagementService/
 RUN chown mfn:mfn -R /opt/mfn/ManagementService/
 USER mfn
 

@@ -40,9 +40,10 @@ This chart will do the following:
 ## Installing the Chart
 
 To install the chart with the release name `mfn1` in the default namespace:
-
+1. Download the release package from: https://github.com/knix-microfunctions/knix/releases/
+2. Install the downloaded release package via:
 ```
-$ helm install --name mfn1 https://github.com/knix-microfunctions/knix/releases/download/0.8.0/MicroFunctions-0.8.0.tgz
+$ helm install --name mfn1 knix-<release_version>.tar.gz
 ```
 
 To remove the deployment named mfn1:
@@ -64,9 +65,9 @@ There's no default Ingress created.
 
 | Service       | Pods | Containers  | CPU<br>request / limit | RAM<br>request / limit | PersistentVolume |
 | ------------- | ---- | ----------- |:----------------------:|:----------------------:| ----------------:|
-| Riak | 3 | server | 1 / 1 | 1Gi / 2Gi |  | 
-| Elasticsearch | 1 | server | 100m / 500m | 2Gi / 2Gi |  | 
-| Datalayer | 3 | datalayer | 100m / 500m | 200Mi / 500Mi |  | 
-| Management | 1 | init job<br>sandbox | 100m / 200m<br>1 / 1 | 1Gi / 1Gi<br>1Gi / 2Gi |  | 
-| Nginx | 1 | server<br>frontend | 100m / 500m<br>100m / 500m | 1Gi / 1Gi<br>1Gi / 1Gi |  | 
-| TOTAL |  |  | 4.7 / 7.2CPUs | 9.6 / 14.5GB RAM | 0.0GB persistent storage | 
+| Riak | 3 | server | 1 / 1 | 1Gi / 2Gi |  |
+| Elasticsearch | 1 | server | 100m / 500m | 2Gi / 2Gi |  |
+| Datalayer | 3 | datalayer | 100m / 500m | 200Mi / 500Mi |  |
+| Management | 1 | init job<br>sandbox | 100m / 200m<br>1 / 1 | 1Gi / 1Gi<br>1Gi / 2Gi |  |
+| Nginx | 1 | server<br>frontend | 100m / 500m<br>100m / 500m | 1Gi / 1Gi<br>1Gi / 1Gi |  |
+| TOTAL |  |  | 4.7 / 7.2CPUs | 9.6 / 14.5GB RAM | 0.0GB persistent storage |
