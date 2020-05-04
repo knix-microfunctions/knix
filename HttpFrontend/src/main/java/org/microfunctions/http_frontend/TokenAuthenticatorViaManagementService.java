@@ -51,6 +51,7 @@ public class TokenAuthenticatorViaManagementService {
         Map<String, String> env = System.getenv();
         if (env.containsKey("KUBERNETES_PORT")) {
             this.runningInsideKubernetes = true;
+            System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
         }
     }
     private void populateManagementServiceUrls() {
@@ -170,7 +171,7 @@ public class TokenAuthenticatorViaManagementService {
             
 
         } catch (Exception e) {
-            logger.error("invokeManagementService error: " + e.getMessage());
+            logger.error("invokeManagementService error: " + e.getClass() + " " + e.getMessage());
             logger.error("invokeManagementService error: httpurl: " + httpurl);
             logger.error("invokeManagementService error: endpointHostname: " + endpointHostname);
             logger.error("invokeManagementService error: endpointHostnameFirstPartAsUrl: " + endpointHostnameFirstPartAsUrl);
