@@ -38,7 +38,8 @@
                 "prepareWorkflowLog",
                 "addTriggerableTable",
                 "addStorageTriggerForWorkflow",
-                "getTriggerableTables"
+                "getTriggerableTables",
+                "deleteAccount"
             ]
         },
         {
@@ -198,6 +199,11 @@
         },
         {
             "name": "getTriggerableTables",
+            "next": ["ManagementServiceExit"],
+            "potentialNext": []
+        },
+        {
+            "name": "deleteAccount",
             "next": ["ManagementServiceExit"],
             "potentialNext": []
         }

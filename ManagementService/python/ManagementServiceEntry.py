@@ -235,6 +235,7 @@ def actionOther(action, data, sapi):
     possibleActions["addTriggerableTable"] = True
     possibleActions["addStorageTriggerForWorkflow"] = True
     possibleActions["getTriggerableTables"] = True
+    possibleActions["deleteAccount"] = True
 
     if action in possibleActions:
         user = data["user"]

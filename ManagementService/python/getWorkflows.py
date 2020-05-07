@@ -28,7 +28,7 @@ def handle(value, sapi):
     workflows = sapi.get(email + "_list_workflows", True)
 
     if workflows is not None and workflows != "":
-        sapi.log(workflows)
+        #sapi.log(workflows)
         workflows = json.loads(workflows)
         wf_list = []
         for w in workflows:
