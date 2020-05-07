@@ -15,7 +15,7 @@
 -->
 # MicroFunctions Command Line Interface
 
-The package provides the mfn command based on the [SDK](https://github.com/knix-microfunctions/knix/mfn_sdk/).
+The package provides the mfn command based on the [SDK](../mfn_sdk/).
 
 The latest version of the CLI can be obtained with [KNIX releases](https://github.com/knix-microfunctions/knix/releases/).
 After downloading, one can install it:
