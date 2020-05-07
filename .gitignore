@@ -3,3 +3,6 @@ LoggingService/fluent-bit-1.2.2/fluent-bit-1.2.2.tar.gz
 LoggingService/fluent-bit-1.2.2/fluent-bit/
 LoggingService/fluent-bit/
 proxy.mk
+.classpath
+.project
+.metadata
