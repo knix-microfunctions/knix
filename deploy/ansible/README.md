@@ -31,7 +31,7 @@ The **KNIX MicroFunctions** platform can also be installed using Ansible.
 
 * settings.json: configuration file for the Ansible installation with the following default values:
 
-  - "mfn_server_installation_folder": "/opt/mfn"
+  - "mfn_server_installation_folder": "/opt/knix"
   - "nginx_http_listen_port": "80"
   - "nginx_https_listen_port": "443"
   - "set_http_proxy": "false"
