@@ -249,7 +249,7 @@ class MFNTest():
                 with open(resource_req_filename, "r") as f:
                     reqs = f.read().strip()
                     g.requirements = reqs
-                    print("set requirements for function: " + resource_name + " " + reqs)
+                    #print("set requirements for function: " + resource_name + " " + reqs)
 
             # resource environment variables
             # upload the resource environment variables
@@ -257,7 +257,7 @@ class MFNTest():
                 with open(resource_env_filename, "r") as f:
                     env_vars = f.read().strip()
                     g.environment_variables = env_vars
-                    print("set environment variables for function: " + resource_name + " " + env_vars)
+                    #print("set environment variables for function: " + resource_name + " " + env_vars)
 
         except Exception as e:
             print("ERROR: Could not create resource.")

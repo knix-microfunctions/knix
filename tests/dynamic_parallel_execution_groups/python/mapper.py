@@ -95,7 +95,7 @@ def wordcount(data):
     return result
 
 def mergesort(data):
-    # TODO: also cover longer inputs
+    # also cover longer inputs
     ret = None
     size = len(data)
     if size == 1:
