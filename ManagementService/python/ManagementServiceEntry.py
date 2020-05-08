@@ -124,6 +124,56 @@ def actionLogin(user, sapi):
     sapi.add_dynamic_workflow(output)
     return None
 
+def actionChangePassword(user, sapi):
+    response = {}
+    response_data = {}
+
+    success = False
+
+    if "email" in user and "password" in user:
+        email = user["email"]
+        password = user["password"]
+        new_password = user["new_password"]
+
+        cur_user = sapi.get(email, True)
+
+        sapi.log(cur_user)
+
+        if cur_user is not None and cur_user != "":
+            cur_user = json.loads(cur_user)
+            if cur_user["passwordHash"] == hashlib.sha256(password.encode()).hexdigest():
+                cur_user["passwordHash"] = hashlib.sha256(new_password.encode()).hexdigest()
+
+                sapi.put(email, json.dumps(cur_user), True, True)
+
+                timestamp = time.time()
+                token = hashlib.sha256((email + " " + new_password + " " + str(timestamp)).encode()).hexdigest()
+
+                authenticated_user = {}
+                authenticated_user["email"] = email
+                authenticated_user["timestamp"] = timestamp
+                authenticated_user["storage_userid"] = cur_user["storage_userid"]
+
+                sapi.put(token, json.dumps(authenticated_user), True, True)
+
+                response["status"] = "success"
+                response_data["message"] = "Password changed successfully."
+                response_data["token"] = token
+                response_data["storageEndpoint"] = cur_user["storageEndpoint"]
+                response["data"] = response_data
+
+                output = {"next": "ManagementServiceExit", "value": response}
+                sapi.add_dynamic_workflow(output)
+                success = True
+
+    if not success:
+        response_data["message"] = "Authentication failed; wrong username and/or password."
+
+        response["status"] = "failure"
+        response["data"] = response_data
+
+        output = {"next": "ManagementServiceExit", "value": response}
+        sapi.add_dynamic_workflow(output)
 
 def actionResetPassword(user, sapi):
     # TODO: send email to user
@@ -288,6 +338,9 @@ def handle(event, context):
 
             elif action == "logIn":
                 return actionLogin(user, context)
+
+            elif action == "changePassword":
+                return actionChangePassword(user, context)
 
             elif action == "resetPassword":
                 return actionResetPassword(user, context)
