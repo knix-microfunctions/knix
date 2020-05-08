@@ -1,0 +1,21 @@
+{
+  "StartAt": "PassTest1",
+  "States": {
+    "PassTest2": {"Type":"Pass", "End": true},
+    "PassTest1": {"Type":"Pass", "Next":"ExampleMapState"},
+    "ExampleMapState": {
+      "Next": "PassTest2",
+      "Type": "Map",
+      "MaxConcurrency": 1, 
+      "Iterator": {
+         "StartAt": "PassTest5",
+        "States": {
+            "PassTest5": {"Type": "Pass", "Next":"PassTest3"},
+            "PassTest3": {"Type": "Pass", "Next":"CallLambda"},
+            "CallLambda": {"Type": "Task", "Resource": "CallLambda", "Next": "PassTest4"},
+            "PassTest4": {"Type": "Pass", "End": true}
+}
+}
+}
+}
+}
