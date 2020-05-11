@@ -149,8 +149,17 @@ def handle(value, sapi):
 
     delete_functions(email, sapi)
 
-
     delete_user(email, storage_userid, sapi)
+
+    # finally, delete the authenticated tokens that belong to all sessions of this user
+    session_tokens = sapi.retrieveSet(email + "_session_tokens", is_private=True)
+    print(session_tokens)
+    for token in session_tokens:
+        sapi.delete(token, True, True)
+
+    sapi.delete(data["usertoken"], True, True)
+
+    sapi.deleteSet(email + "_session_tokens", is_private=True)
 
     success = True
 

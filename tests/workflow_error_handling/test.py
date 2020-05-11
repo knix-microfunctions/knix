@@ -93,6 +93,7 @@ class WorkflowErrorHandlingTest(unittest.TestCase):
             test.report(True, "workflow_stop_with_error", True, True)
 
         test.undeploy_workflow()
+        test.cleanup()
 
     ## internal methods
     def _get_log_lines(self, test, contained_text):

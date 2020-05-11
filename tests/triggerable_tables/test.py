@@ -56,3 +56,4 @@ class TriggerableTablesTest(unittest.TestCase):
                 print(line)
 
         test.undeploy_workflow()
+        test.cleanup()

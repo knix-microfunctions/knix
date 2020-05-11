@@ -97,6 +97,8 @@ def actionLogin(user, sapi):
 
                 sapi.put(token, json.dumps(authenticated_user), True, True)
 
+                sapi.addSetEntry(email + "_session_tokens", token, is_private=True)
+
                 storage_userid = cur_user["storage_userid"]
                 global_dlc = sapi.get_privileged_data_layer_client(storage_userid, init_tables=True)
                 global_dlc.shutdown()
