@@ -2,6 +2,5 @@
     "mfn_server_installation_folder": "/opt/knix",
     "nginx_http_listen_port": "80",
     "nginx_https_listen_port": "443",
-    "set_http_proxy": "false",
     "management_service_exposed_port": "8080"
 }
