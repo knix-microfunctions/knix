@@ -89,7 +89,9 @@ sandbox.yaml: ../../Sandbox/sandbox_deployment_package.tar.gz
 	touch $@
 
 # management.yaml and dependencies
-../../ManagementService/management_deployment_package.tar.gz:
+MANAGEMENT_SRC:=../../ManagementService
+MANAGEMENTFILES:=$(shell find $(MANAGEMENT_SRC) | grep -v "management_deployment_package.tar.gz")
+../../ManagementService/management_deployment_package.tar.gz: $(MANAGEMENTFILES)
 	cd ../../ManagementService/; make; cd -
 
 management.yaml: ../../ManagementService/management_deployment_package.tar.gz
