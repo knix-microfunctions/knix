@@ -32,19 +32,19 @@ class LocalQueueClient:
 
     '''
     def __init__(self, connect="127.0.0.1:4999"):
-        host, port = connect.split(':')
-        self.socket = TSocket.TSocket(host, int(port))
-        self.transport = TTransport.TFramedTransport(self.socket)
-        self.protocol = TCompactProtocol.TCompactProtocol(self.transport)
-        self.queue = LocalQueueService.Client(self.protocol)
-
+        self.qaddress = connect
         self.connect()
 
     def connect(self):
         retry = 0.5 #s
         while True:
             try:
+                host, port = self.qaddress.split(':')
+                self.socket = TSocket.TSocket(host, int(port))
+                self.transport = TTransport.TFramedTransport(self.socket)
                 self.transport.open()
+                self.protocol = TCompactProtocol.TCompactProtocol(self.transport)
+                self.queue = LocalQueueService.Client(self.protocol)
                 break
             except Thrift.TException as exc:
                 if retry < 60:
@@ -66,7 +66,6 @@ class LocalQueueClient:
         except TTransport.TTransportException as exc:
             print("[LocalQueueClient] Reconnecting because of failed addMessage: " + str(exc))
             status = False
-            self.shutdown()
             self.connect()
         except Exception as exc:
             print("[LocalQueueClient] failed addMessage: " + str(exc))
@@ -81,7 +80,6 @@ class LocalQueueClient:
                 return lqm
         except TTransport.TTransportException as exc:
             print("[LocalQueueClient] Reconnecting because of failed getMessage: " + str(exc))
-            self.shutdown()
             self.connect()
         except Exception as exc:
             print("[LocalQueueClient] failed getMessage: " + str(exc))
@@ -95,7 +93,6 @@ class LocalQueueClient:
         except TTransport.TTransportException as exc:
             print("[LocalQueueClient] Reconnecting because of failed getMultipleMessages: " + str(exc))
             lqm_list = []
-            self.shutdown()
             self.connect()
         except Exception as exc:
             print("[LocalQueueClient] failed getMultipleMessages: " + str(exc))
