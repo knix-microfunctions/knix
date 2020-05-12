@@ -12,11 +12,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-VERSION=$(shell git describe --long --tags --dirty --always)
+VERSION?=$(shell git describe --long --tags --dirty --always)
 PKG=MicroFunctions-$(VERSION).tgz
 FILES=$(shell find microfunctions/)
 
 default: $(PKG)
+	-rm -f MicroFunctions.tgz
+	ln -s $(PKG) MicroFunctions.tgz
 
 $(PKG): $(FILES)
 	sed 's/^version:.*/version: $(VERSION)/' -i microfunctions/Chart.yaml

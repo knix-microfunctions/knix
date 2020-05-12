@@ -26,25 +26,9 @@ This section covers installing KNIX.
 
 ### Installing KNIX MicroFunctions on Kubernetes
 
-To install KNIX, you’ll need a running Kubernetes cluster with Knative and root privileges to install KNIX into its own namespace. In particular, KNIX has been tested with the following:
-
-* [Kubernetes:](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) version 1.17.5 with storage class for persistent volume claims
-* [Helm:](https://github.com/kubernetes/helm) version 3.1.2
-* [Knative:](https://knative.dev) version 0.13.0
-
 KNIX can be installed using helm charts. Assuming you have a Kubernetes cluster and Knative running, simply run the following command:
 
-```bash
-# Install KNIX
-# This assumes that you do not have a KNIX deployment yet.
-helm install --name mfn1 <helm-chart-url>
-```
-To remove the deployment named mfn1:
-
-```bash
-helm delete --purge mfn1
-```
-A namespace can be chosen with --namespace my-ns. The --debug option will provide detailed output of what is being deployed.
+Please refer to the Helm package deployment [README](deploy/helm/microfunctions/README.md).
 
 ### Installing KNIX MicroFunctions on Bare Metal or Virtual Machines
 
