@@ -39,7 +39,7 @@ This chart will do the following:
 
 ## Installing the Chart
 
-Our helm chart by default installs container images from a [private registry](https://github.com/kubernetes-sigs/kubespray/tree/master/roles/kubernetes-apps/registry). To build the components and push images to a private registry at localhost:5000 (see kube forwarder), use the following commands:
+Our helm chart by default installs container images from a [private registry](https://github.com/kubernetes-sigs/kubespray/tree/master/roles/kubernetes-apps/registry). To build the components and push images to a private registry at localhost:5000 (use kube forwarder), use the following commands:
 ```
 [user@vm knix]# make -C Sandbox push
 [user@vm knix]# make -C ManagementService push
@@ -49,12 +49,22 @@ Our helm chart by default installs container images from a [private registry](ht
 [user@vm knix]# make -C GUI push
 ```
 
-The `REGISTRY` environment variable can be used to have make tag and push container images to a custom registry, e.g. `$ REGISTRY=my-registry.com make -C Sandbox push`
-
-Use the following commands to package the Helm chart and install it with the release name `mfn` in the default namespace:
+The push target in deploy/helm/Makefile can be used to build and push all container images:
 ```
-[user@vm knix]# make -C deploy/helm/
-[user@vm knix]# helm install --name mfn deploy/helm/MicroFunctions.tar.gz
+[user@vm knix]# make -C deploy/helm push
+```
+
+The `REGISTRY` environment variable can be used to have make tag and push container images to a custom registry, e.g. `$ REGISTRY=my-registry.com make -C deploy/helm push` or it can be modified in ./docker.mk.
+
+To deploy the Helm chart with a release name `mfn` to the default namespace from the Helm chart sources, use:
+```
+[user@vm knix]# helm install --name mfn deploy/helm/microfunctions/
+```
+
+The deploy target in deploy/helm/Makefile can be used to build and push container images and deploy the Helm package in one step:
+```
+[user@vm knix]# cd deploy/helm
+[user@vm knix]# make deploy
 ```
 
 * a namespace can be chosen with --namespace my-ns
