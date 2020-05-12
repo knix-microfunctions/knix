@@ -161,6 +161,17 @@ class Deployment:
 
         self._local_queue_client.shutdown()
 
+    def force_shutdown(self):
+        # called when the queue service has crashed and we need to shut down the function workers
+        for state in self._functionworker_process_map:
+            p = self._functionworker_process_map[state]
+            process_utils.terminate_and_wait_child(p, "FunctionWorker", 5, self._logger)
+
+        for jrh_process in self._javarequesthandler_process_list:
+            process_utils.terminate_and_wait_child(jrh_process, "JavaRequestHandler", 5, self._logger)
+
+        self._local_queue_client.shutdown()
+
     def _wait_for_child_processes(self):
         output, error = process_utils.run_command_return_output('pgrep -P ' + str(self._process_id), self._logger)
         if error is not None:
