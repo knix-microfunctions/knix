@@ -9,7 +9,7 @@ Compared with existing serverless computing platforms, **KNIX MicroFunctions** h
 * Low function startup latency & high resource efficiency
 * Fast locality-aware storage access
 * Python and Java function runtimes
-* Workflow support and compatibility with Amazon States Language (ASL)
+* Workflow support and compatibility with [Amazon States Language (ASL)](https://states-language.net/spec.html)
 * Support for long-running functions for continuous data processing applications
 * Powerful web UI, SDK and CLI for effective serverless application development
 
