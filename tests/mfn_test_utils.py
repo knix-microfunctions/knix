@@ -49,7 +49,7 @@ class MFNTest():
         if new_user:
             random_str = str(random.randint(0, 10000)) + "_" + str(time.time())
             random_user = hashlib.sha256(random_str.encode()).hexdigest()
-            random_user = "test_" + random_user[0:31] + "@microfunctions.org"
+            random_user = "test_" + random_user[0:31] + "@knix.io"
             print("User: " + random_user)
             self._client = MfnClient(mfn_user=random_user)
         else:
