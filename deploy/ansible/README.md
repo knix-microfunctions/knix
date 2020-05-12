@@ -64,11 +64,11 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 7. Remove any old installation of KNIX
 
     ```bash
-    cd /opt/mfn
+    cd /opt/knix
     ./stop-all.sh
     ./purge-riak.sh
     cd ..
-    sudo rm -rf mfn
+    sudo rm -rf knix
     ```
 
 ## Installation Steps (to be executed on host machine)
