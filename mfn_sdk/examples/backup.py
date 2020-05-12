@@ -28,15 +28,16 @@ c = MfnClient()
 
 data = dict()
 
-with open("backup.p","w") as backup:
+with open("backup.p","wb") as backup:
     fns = c.functions
     for f in fns:
-        f.source
+        f.source # to retrieve _code _zip and _metadata
         fobj = {
-            'name':f.name,
-            'code':f.code,
-            'metadata':f.metadata,
-            'zip':f.zip
+            '_runtime':f._runtime,
+            '_name':f._name,
+            '_modified':f._modified,
+            'requirements':f.requirements,
+            'source':f.source
             }
         pickle.dump(fobj,backup)
     ws = c.workflows

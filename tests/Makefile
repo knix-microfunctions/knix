@@ -33,8 +33,8 @@ settings:
 	sed 's/"mfn_user": .*/"mfn_user": "test@knix",/' -i settings.json; \
 	sed 's/"mfn_password": .*/"mfn_password": "test",/' -i settings.json; \
 	sed 's/"mfn_name": .*/"mfn_name": "KNIX tests",/' -i settings.json; \
-	sed 's#"http_proxy": .*#"http_proxy": "",#' -i settings.json; \
-	sed 's#"https_proxy": .*#"https_proxy": ""#' -i settings.json; \
+	sed 's#"http": .*#"http": "",#' -i settings.json; \
+	sed 's#"https": .*#"https": ""#' -i settings.json; \
 	sed 's/"timeout": .*/"timeout": 60/' -i settings.json; fi
 	URL="http://127.0.0.1"; \
 	if [ $$? == 0 ]; then sed 's#"mfn_url": .*#"mfn_url": "'$${URL}'",#' -i settings.json; fi

@@ -5,7 +5,7 @@
     "mfn_name": "<full name>",
     "proxies":
     {
-        "http_proxy": "http://<proxyhost>:<port>",
-        "https_proxy": "http://<proxyhost>:<port>"
+        "http": "http://<proxyhost>:<port>",
+        "https": "http://<proxyhost>:<port>"
     }
 }
