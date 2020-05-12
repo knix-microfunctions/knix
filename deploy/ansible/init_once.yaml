@@ -37,7 +37,6 @@
       - inventory_hostname = {{ inventory_hostname }}
       - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
       - mfn_server_installation_folder = {{ mfn_server_installation_folder }}
-      - set_http_proxy = {{ set_http_proxy }}
       - proxy settings files = ./proxy/
       - http_proxy = {{ http_proxy }}
       - https_proxy = {{ https_proxy }}
@@ -74,27 +73,6 @@
       path: "{{ mfn_server_installation_folder }}"
       state: directory
       mode: '775'
-
-  - name: Remove proxy folder
-    file:
-      state: absent
-      path: "{{ mfn_server_installation_folder }}/proxy/"
-    when: set_http_proxy == 'true'
-
-  - name: Copy proxy package
-    copy:
-      mode: '775'
-      src: "./proxy"
-      dest: "{{ mfn_server_installation_folder }}/"
-    when: set_http_proxy == 'true'
-
-  - name: set proxy for bash
-    shell: "cd {{ mfn_server_installation_folder }}/proxy; ./enable-bash-proxy.sh"
-    when: set_http_proxy == 'true'
-
-  - name: set proxy for apt
-    shell: "cd {{ mfn_server_installation_folder }}/proxy; ./enable-apt-proxy.sh"
-    when: set_http_proxy == 'true'
 
   - name: ensure java is at the latest version
     apt: 
