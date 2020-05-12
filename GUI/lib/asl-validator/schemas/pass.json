@@ -25,6 +25,9 @@
     "ResultPath": {
       "type": "string"
     },
+    "Parameters": {
+      "type": "object"
+    },
     "Result": {}
   },
   "oneOf": [{

@@ -332,7 +332,21 @@ class FunctionWorker:
                 timestamp_map["t_start_inputpath"] = time.time() * 1000.0
                 if not has_error:
                     try:
-                        function_input = self._state_utils.applyInputPath(raw_state_input)
+                        if "Action" not in metadata or (metadata["Action"] != "post_map_processing" and metadata["Action"] != "post_parallel_processing"):
+                             self._logger.info("[FunctionWorker] User code input(Before InputPath processing):" + str(type(raw_state_input)) + ":" + str(raw_state_input))
+                             function_input = self._state_utils.applyInputPath(raw_state_input)
+                             self._logger.info("[FunctionWorker] User code input(Before applyParameter processing):" + str(type(function_input)) + ":" + str(function_input))
+                             function_input = self._state_utils.applyParameters(function_input)
+                             self._logger.info("[FunctionWorker] User code input(Before ItemsPath processing):" + str(type(function_input)) + ":" + str(function_input))
+                             function_input = self._state_utils.applyItemsPath(function_input) # process map items path
+
+                        #elif "Action" not in metadata or metadata["Action"] != "post_parallel_processing": 
+                        #     function_input = self._state_utils.applyInputPath(raw_state_input)
+
+                        else:
+                             function_input = raw_state_input
+                        #self._logger.info("[FunctionWorker] User code input(After InputPath processing):" + str(type(function_input)) + ":" + str(function_input))
+                        #function_input = self._state_utils.applyInputPath(raw_state_input)
                         #self._logger.debug("[FunctionWorker] User code input(After InputPath processing):" + str(type(function_input)) + ":" + str(function_input))
                     except Exception as exc:
                         self._logger.exception("InputPath processing exception: %s\n%s", str(instance_pid), str(exc))

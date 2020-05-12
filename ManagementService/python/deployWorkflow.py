@@ -48,6 +48,22 @@ def check_workflow_functions(wf_type, wfobj, email, sapi):
                     for state in list(branches['States'].keys()): # state is the key
                         wf_state_map[state] = branches['States'][state] # add the state to the state map root
 
+            if wf_state_map[state_names]["Type"] == "Map":
+                mapStateName = state_names
+                iterator = wf_state_map[mapStateName]['Iterator'] # this is a dict 
+                
+                states_dict = iterator['States'] # this is a also dict
+                print (json.dumps(states_dict))
+                for state in states_dict.keys():
+                    print ("FOUND MAP STATE: "+str(state))
+                    wf_state_map[state] = states_dict[state]
+
+                """
+                for iterators in wf_state_map[mapStateName]['Iterator']:
+                    for state in list(iterators['States'].keys()): # state is the key
+                        wf_state_map[state] = iterators['States'][state] # add the state to the state map root
+                """
+
         for wfsname in wf_state_map:
             wfs = wf_state_map[wfsname]
             if wfs["Type"] == "Task":

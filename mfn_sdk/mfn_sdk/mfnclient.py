@@ -389,7 +389,6 @@ class MfnClient(object):
     def delWorkflow(self,wf):
         return self.delete_workflow(wf)
 
-
     def find_workflow(self,name):
         res = []
         for wf in self.workflows:
@@ -437,6 +436,14 @@ class MfnClient(object):
                 for branch in branches:
                     parallel_state_list = self._get_state_names_and_resource(desired_state_type, branch)
                     state_list = state_list + parallel_state_list
+
+            if state_type == 'Map':
+                branch = state['Iterator']
+                print("BRANCH: "+ str(branch))
+                map_state_list = self._get_state_names_and_resource(desired_state_type, branch)
+                state_list = state_list + map_state_list
+                print("STATE_LIST: "+ str(state_list))
+
         return state_list
 
 
