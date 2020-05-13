@@ -92,6 +92,11 @@ We're not hosting docker containers, so this Helm chart uses `registry.kube-syst
 [user@vm knix]# helm install --name mfn --set imageRepo=myregistry.com deploy/helm/MicroFunctions.tgz
 ```
 
+### MicroFunction web UI
+
+The frontend webpage is served by the nginx pod and service, which by default uses NodePort 31280 (optionally, nginx can be configured with certificated to serve an SSL port).
+There's no default Ingress created.
+
 ## Resource requirements (load free)
 
 | Service       | Pods | Containers  | CPU<br>request / limit | RAM<br>request / limit | PersistentVolume |
