@@ -15,7 +15,6 @@
 */
 package org.microfunctions.queue.local;
 
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,16 +24,17 @@ import org.apache.logging.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.server.TServer;
-import org.apache.thrift.server.TThreadPoolServer;
+import org.apache.thrift.server.TThreadedSelectorServer;
 import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TServerSocket;
-import org.apache.thrift.transport.TServerTransport;
+import org.apache.thrift.transport.TNonblockingServerSocket;
+import org.apache.thrift.transport.TNonblockingServerTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.microfunctions.queue.local.LocalQueueService.Iface;
 
 public class LocalQueueServer implements Iface, Runnable {
     
-    public static final int DEFAULT_MAX_WORKER_THREADS = Integer.MAX_VALUE;
+    public static final int DEFAULT_SELECTOR_THREADS = Math.max(2, 2 * Runtime.getRuntime().availableProcessors());
+    public static final int DEFAULT_WORKER_THREADS = Math.max(4, 4 * Runtime.getRuntime().availableProcessors());
     public static final int DEFAULT_CLIENT_TIMEOUT = 0;
     public static final int DEFAULT_MAX_FRAME_LENGTH = Integer.MAX_VALUE;
     
@@ -116,25 +116,26 @@ public class LocalQueueServer implements Iface, Runnable {
         return Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory();
     }
     
-    public void start (InetSocketAddress bindAddr, int maxWorkerThreads, int clientTimeout) throws TTransportException {
-        TServerTransport transport = new TServerSocket(bindAddr, clientTimeout);
-        TThreadPoolServer.Args args = new TThreadPoolServer.Args(transport)
+    public void start (InetSocketAddress bindAddr, int nSelectorThreads, int nWorkerThreads, int clientTimeout) throws TTransportException {
+        TNonblockingServerTransport transport = new TNonblockingServerSocket(bindAddr, clientTimeout);
+        TThreadedSelectorServer.Args args = new TThreadedSelectorServer.Args(transport)
                 .transportFactory(new TFramedTransport.Factory(DEFAULT_MAX_FRAME_LENGTH))
                 .protocolFactory(new TCompactProtocol.Factory())
                 .processor(new LocalQueueService.Processor<Iface>(this))
-                .maxWorkerThreads(maxWorkerThreads);
-        server = new TThreadPoolServer(args);
+                .selectorThreads(nSelectorThreads)
+                .workerThreads(nWorkerThreads);
+        server = new TThreadedSelectorServer(args);
         
         LOGGER.info("Starting local queue...");
         server.serve();
     }
     
-    public void start (InetSocketAddress bindAddr, int maxWorkerThreads) throws TTransportException {
-        this.start(bindAddr, maxWorkerThreads, DEFAULT_CLIENT_TIMEOUT);
+    public void start (InetSocketAddress bindAddr, int nSelectorThreads, int nWorkerThreads) throws TTransportException {
+        this.start(bindAddr, nSelectorThreads, nWorkerThreads, DEFAULT_CLIENT_TIMEOUT);
     }
     
     public void start (InetSocketAddress bindAddr) throws TTransportException {
-        this.start(bindAddr, DEFAULT_MAX_WORKER_THREADS, DEFAULT_CLIENT_TIMEOUT);
+        this.start(bindAddr, DEFAULT_SELECTOR_THREADS, DEFAULT_WORKER_THREADS, DEFAULT_CLIENT_TIMEOUT);
     }
     
     public void stop () {
