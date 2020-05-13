@@ -36,12 +36,6 @@ KNIX MicroFunctions can also be installed using Ansible playbooks on bare metal 
 
 Please refer to the installation [README](deploy/ansible/README.md).
 
-### Connecting to the KNIX web GUI to create functions and workflows
-Nginx is exposed through the Service nx- (e.g. nx-mfn-test) by default on port 20080 (optionally, nginx can be configured with an SSL port).
-There's no default Ingress created.
-
-
-
 # Hosted Service
 
 More info on hosted services for hands-on experimentation with the **KNIX MicroFunctions** platform can be found at: [https://knix.io](https://knix.io).
