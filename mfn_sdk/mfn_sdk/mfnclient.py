@@ -150,7 +150,6 @@ class MfnClient(object):
             url = url[:-1]
         log.info(f"Connecting as {user} to {url}")
         self._s = requests.Session()
-        self._s.verify=False
         if proxies:
             self._s.proxies.update(proxies)
         self._s.max_redirects = 10
@@ -160,7 +159,7 @@ class MfnClient(object):
         epr.raise_for_status()
         epf = epr.text
         idx = epf.index("managementServiceEndpoint")
-        idx = epf.index('"http:',idx)+1
+        idx = epf.index('"http',idx)+1
         self.mgmturl=epf[idx:epf.index('"',idx)]
         self.user=user
         self.token=None
@@ -213,6 +212,9 @@ class MfnClient(object):
         if self._s is not None:
             self._s.close()
 
+    def version(self):
+        data = self.action('version')
+        return data.get('message','')
 
     def login(self):
         userinfo = {}

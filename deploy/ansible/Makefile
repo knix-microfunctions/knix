@@ -59,7 +59,6 @@ FLUENTBITFILES=$(shell find ../../LoggingService/)
 	cd ../../LoggingService; make; cd -
 
 fluentbit.yaml: ../../LoggingService/fluentbit
-	cd ..; make fluentbit; cd -
 	touch $@
 
 # datalayer.yaml and dependencies

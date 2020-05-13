@@ -12,11 +12,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-VERSION=$(shell git describe --long --tags --dirty --always)
+VERSION?=$(shell git describe --long --tags --dirty --always)
 PKG=MicroFunctions-$(VERSION).tgz
 FILES=$(shell find microfunctions/)
 
 default: $(PKG)
+	-rm -f MicroFunctions.tgz
+	ln -s $(PKG) MicroFunctions.tgz
+
+.PHONY: push deploy undeploy
 
 $(PKG): $(FILES)
 	sed 's/^version:.*/version: $(VERSION)/' -i microfunctions/Chart.yaml
@@ -25,3 +29,16 @@ $(PKG): $(FILES)
 	helm package microfunctions/
 	sed 's/^version:.*/version: auto/' -i microfunctions/Chart.yaml
 
+-include ../../docker.mk
+
+push:
+	@echo "Pushing to registry $(REGISTRY)"
+	make -C ../../Sandbox push
+	make -C ../../ManagementService push
+	make -C ../../DataLayerService push
+	make -C ../../riak push
+	make -C ../../HttpFrontend push
+	make -C ../../GUI push
+
+deploy: push
+	helm install --name mfn microfunctions/

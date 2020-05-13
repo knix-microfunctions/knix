@@ -18,10 +18,10 @@
 Easy-to use package to access the management interface of MicroFunctions as well as
 deployed workflows.
 
-The latest version of the SDK can be obtained with [KNIX releases](https://github.com/knix-microfunctions/knix/releases/).
-After downloading, one can install it:
+The latest version of the SDK can be obtained from [KNIX releases](https://github.com/knix-microfunctions/knix/releases/).
+It's also hosted at PyPI and can be installed with the PyPA recommended tool for installing Python packages:
 ``` sh
-pip3 install --user <mfn_sdk_path>
+pip3 install mfn_sdk
 ```
 
 ## Setup the client
@@ -41,8 +41,8 @@ The configuration file should contain a json dictionary with the parameter names
     "mfn_name": "<full name>",
     "proxies":
     {
-        "http_proxy": "http://<proxyhost>:<port>",
-        "https_proxy": "http://<proxyhost>:<port>"
+        "http": "http://<proxyhost>:<port>",
+        "https": "http://<proxyhost>:<port>"
     }
 }
 ```
@@ -68,8 +68,8 @@ mfn = MfnClient(
     mfn_password="<password>",
     mfn_name="<full name>",
     proxies={
-        "http_proxy": "http://<proxyhost>:<port>",
-        "https_proxy": "http://<proxyhost>:<port>"
+        "http": "http://<proxyhost>:<port>",
+        "https": "http://<proxyhost>:<port>"
     })
 ```
 
@@ -80,8 +80,8 @@ NOTE: The `mfn_name` parameter is only used if the user doeas not exist (as it i
 ``` py
 from mfn_sdk import MfnClient
 mfn = MfnClient(
-    mfn_url="http://sand-1.cloud.brlab.nsn-rdnet.net",
-    mfn_user="test@test.com",
+    mfn_url="https://knix.io/mfn",
+    mfn_user="test@example.com",
     mfn_password="test123",
     mfn_name="Mr. Test")
 

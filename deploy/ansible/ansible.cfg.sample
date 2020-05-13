@@ -15,5 +15,5 @@ fact_caching_connection = /tmp/facts_cache
 any_errors_fatal = true
 
 [privilege_escalation]
-become = false
-become_ask_pass = false
+become = true
+become_ask_pass = true
