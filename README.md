@@ -26,7 +26,7 @@ This section covers installing KNIX.
 
 ### Installing KNIX MicroFunctions on Kubernetes
 
-KNIX can be installed using helm charts. Assuming you have a Kubernetes cluster and Knative running, simply run the following command:
+KNIX can be installed using helm charts, assuming you have a Kubernetes cluster and Knative running.
 
 Please refer to the Helm package deployment [README](deploy/helm/microfunctions/README.md).
 
