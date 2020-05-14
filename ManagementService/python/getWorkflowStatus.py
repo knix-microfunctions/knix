@@ -28,7 +28,6 @@ if 'KUBERNETES_SERVICE_HOST' in os.environ:
     if 'app.fullname.prefix' in new_workflow_conf:
         app_fullname_prefix = new_workflow_conf['app.fullname.prefix']+'-'
 
-    # Create a Deployment with SAND_USER, SAND_WORKFLOW and SANDBOXID set correctly
     with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r") as f:
         token = f.read()
     with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
