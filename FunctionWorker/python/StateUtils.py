@@ -441,7 +441,6 @@ class StateUtils:
         counter_metadata["FunctionTopic"] = self.functiontopic
         counter_metadata["Endpoint"] = self._internal_endpoint
 
-
         iterator = self.parsedfunctionstateinfo["Iterator"]
 
         #assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])        
@@ -506,7 +505,9 @@ class StateUtils:
         mapInfo["k_list"] = k_list
 
 
-        mapInfo_key = key+"_"+self.functionstatename+"_parallel_info"
+        #mapInfo_key = key+"_"+self.functionstatename+"_map_info"
+        mapInfo_key = self.functionstatename + "_" + key  + "_map_info"
+        
         metadata[mapInfo_key] = mapInfo
 
         self._logger.info("(StateUtils) evaluateMapState: ")
@@ -529,20 +530,6 @@ class StateUtils:
         counterName = str(mapInfo["CounterName"])
         counter_metadata_key_name = counterName + "_metadata"
 
-        """
-        try:
-            from riak import RiakClient
-            client = RiakClient(protocol='pbc', nodes=[{'host': self.dlnodes, 'pb_port':self.dlnodes_port}])
-            bucket = client.bucket_type('mfn_counter_trigger').bucket('counter_triggers')
-
-            counter = bucket.new(CounterName) # set counter name
-            #counter.increment(0) # set counter value
-            #counter.store()
-        except Exception as exc:
-            self._logger.error("Exception in creating counter: " + str(exc))
-            self._logger.error(exc)
-            raise
-        """
         try:
             dlc = DataLayerClient(locality=1, suid=self._storage_userid, is_wf_private=False, connect=self._datalayer)
 
@@ -616,8 +603,8 @@ class StateUtils:
         full_metadata = json.loads(full_metadata_encoded)
         full_metadata["state_counter"] = state_counter
 
-
-        mapInfoKey = key + "_" + self.functionstatename + "_parallel_info"
+        #mapInfoKey = key + "_" + self.functionstatename + "_map_info"
+        mapInfoKey = self.functionstatename + "_" + key  + "_map_info"
         mapInfo = full_metadata[mapInfoKey]
 
         branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
@@ -873,33 +860,15 @@ class StateUtils:
                 raise Exception("processBranchTerminalState Unable to find ParallelInfo")
 
         if self.parsedfunctionstateinfo["End"] and "ParentMapInfo" in self.parsedfunctionstateinfo:
+
             parentMapInfo = self.parsedfunctionstateinfo["ParentMapInfo"]
 
             self._logger.info("[StateUtils] processBranchTerminalState:parentMapInfo: " + str(parentMapInfo))
             mapName = parentMapInfo["Name"]
             self._logger.info("[StateUtils] processBranchTerminalState:mapName: " + str(mapName))
-            #mapInfoKey = mapName + "_" + key + "_parallel_info"
-            mapInfoKey = key + "_" + mapName + "_parallel_info"
+            mapInfoKey = mapName + "_" + key + "_map_info"
             self._logger.info("[StateUtils] processBranchTerminalState:mapInfoKey: " + str(mapInfoKey))
   
-            """
-            parentParallelInfo = self.parsedfunctionstateinfo["ParentParallelInfo"]
-            parallelName = parentParallelInfo["Name"]
-            branchCounter = parentParallelInfo["BranchCounter"]
-
-            #self._logger.debug("[StateUtils] processBranchTerminalState: ")
-            #self._logger.debug("\t ParentParallelInfo:" + json.dumps(parentParallelInfo))
-            #self._logger.debug("\t parallelName:" + parallelName)
-            #self._logger.debug("\t branchCounter: " + str(branchCounter))
-            #self._logger.debug("\t key:" + key)
-            #self._logger.debug("\t metadata:" + json.dumps(metadata))
-            #self._logger.debug("\t value_output(type):" + str(type(value_output)))
-            #self._logger.debug("\t value_output:" + value_output)
-
-            parallelInfoKey = parallelName + "_" + key + "_parallel_info"
-            #self._logger.debug("\t parallelInfoKey:" + parallelInfoKey)
-            """  
-
             branchCounter = parentMapInfo["BranchCounter"]
 
             self._logger.debug("[StateUtils] processBranchTerminalState: ")
@@ -911,28 +880,23 @@ class StateUtils:
             self._logger.debug("\t value_output(type):" + str(type(value_output)))
             self._logger.debug("\t value_output:" + value_output)
 
-            #mapInfoKey = mapName + "_" + key + "_map_info"
-            self._logger.debug("\t mapInfoKey:" + mapInfoKey)
-
             if mapInfoKey in metadata:
                 mapInfo = metadata[mapInfoKey]
 
-                #####
                 rest = metadata["__function_execution_id"].split("_")[1:]
                 for codes in rest: # find marker for map state and use it to calculate curent index
                     if "-M" in codes:
                         index = rest.index(codes)
                         current_index = int(rest[index].split("-M")[0]) 
                     
-                #self._logger.info("current_index: " + str(current_index) + ", BranchCount: " + str(parentMapInfo["BranchCount"]) )
+                self._logger.info("current_index: " + str(current_index))
                 if mapInfo["MaxConcurrency"] != 0:
                     current_index = current_index % int(mapInfo["MaxConcurrency"])
-                #branchOutputKey = str(branchOutputKeys[current_index])
 
-                #####
                 counterName = str(mapInfo["CounterName"])
                 branchOutputKeys = mapInfo["BranchOutputKeys"]
-                branchOutputKey = str(branchOutputKeys[branchCounter-1])
+                #branchOutputKey = str(branchOutputKeys[branchCounter-1])
+                branchOutputKey = str(branchOutputKeys[current_index])
 
                 branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
 
