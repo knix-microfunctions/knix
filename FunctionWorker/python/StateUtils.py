@@ -398,6 +398,8 @@ class StateUtils:
 
 
     def evaluateMapState(self, function_input, key, metadata, sapi):
+        name_prefix = self.functiontopic + "_" + key
+
         if "MaxConcurrency" in self.parsedfunctionstateinfo:
             maxConcurrency = self.parsedfunctionstateinfo["MaxConcurrency"]
         else:
@@ -419,12 +421,26 @@ class StateUtils:
 
         self._logger.info("(StateUtils) evaluateMapState metadata: " + str(metadata))
         #self.parsedfunctionstateinfo["alreadyDone"] = alreadyDone 
- 
+
         counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
 
         total_branch_count = len(function_input) # all branches executed concurrently
         self.parsedfunctionstateinfo["BranchCount"] = int(total_branch_count) # overwrite parsed BranchCount with new value
         self._logger.info("(StateUtils) evaluateMapState, total_branch_count: " + str(total_branch_count))
+
+        # translated from Parallel
+        counter_metadata = {}
+        counter_metadata["__state_action"] = "post_map_processing"
+        counter_metadata["__async_execution"] = metadata["__async_execution"]
+        workflow_instance_metadata_storage_key = name_prefix + "_workflow_metadata"
+        counter_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
+        counter_metadata["CounterValue"] = 0 # this should be updated by riak hook
+        #counter_metadata["Klist"] = klist
+        counter_metadata["TotalBranches"] = total_branch_count
+        counter_metadata["ExecutionId"] = key
+        counter_metadata["FunctionTopic"] = self.functiontopic
+        counter_metadata["Endpoint"] = self._internal_endpoint
+
 
         iterator = self.parsedfunctionstateinfo["Iterator"]
 
@@ -490,7 +506,7 @@ class StateUtils:
         mapInfo["k_list"] = k_list
 
 
-        mapInfo_key = key+"_"+self.functionstatename+"_map_info"
+        mapInfo_key = key+"_"+self.functionstatename+"_parallel_info"
         metadata[mapInfo_key] = mapInfo
 
         self._logger.info("(StateUtils) evaluateMapState: ")
@@ -510,6 +526,9 @@ class StateUtils:
         # create counter for Map equivalent Parallel state
 
         assert py3utils.is_string(CounterName)
+        counterName = str(mapInfo["CounterName"])
+        counter_metadata_key_name = counterName + "_metadata"
+
         """
         try:
             from riak import RiakClient
@@ -598,7 +617,7 @@ class StateUtils:
         full_metadata["state_counter"] = state_counter
 
 
-        mapInfoKey = key + "_" + self.functionstatename + "_map_info"
+        mapInfoKey = key + "_" + self.functionstatename + "_parallel_info"
         mapInfo = full_metadata[mapInfoKey]
 
         branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
@@ -632,6 +651,7 @@ class StateUtils:
         self._logger.info("\t do_cleanup:" + str(do_cleanup))
 
         counterName = str(mapInfo["CounterName"])
+        counter_metadata_key_name = counterName + "_metadata"
         assert py3utils.is_string(counterName)
 
         """
@@ -854,7 +874,32 @@ class StateUtils:
 
         if self.parsedfunctionstateinfo["End"] and "ParentMapInfo" in self.parsedfunctionstateinfo:
             parentMapInfo = self.parsedfunctionstateinfo["ParentMapInfo"]
+
+            self._logger.info("[StateUtils] processBranchTerminalState:parentMapInfo: " + str(parentMapInfo))
             mapName = parentMapInfo["Name"]
+            self._logger.info("[StateUtils] processBranchTerminalState:mapName: " + str(mapName))
+            #mapInfoKey = mapName + "_" + key + "_parallel_info"
+            mapInfoKey = key + "_" + mapName + "_parallel_info"
+            self._logger.info("[StateUtils] processBranchTerminalState:mapInfoKey: " + str(mapInfoKey))
+  
+            """
+            parentParallelInfo = self.parsedfunctionstateinfo["ParentParallelInfo"]
+            parallelName = parentParallelInfo["Name"]
+            branchCounter = parentParallelInfo["BranchCounter"]
+
+            #self._logger.debug("[StateUtils] processBranchTerminalState: ")
+            #self._logger.debug("\t ParentParallelInfo:" + json.dumps(parentParallelInfo))
+            #self._logger.debug("\t parallelName:" + parallelName)
+            #self._logger.debug("\t branchCounter: " + str(branchCounter))
+            #self._logger.debug("\t key:" + key)
+            #self._logger.debug("\t metadata:" + json.dumps(metadata))
+            #self._logger.debug("\t value_output(type):" + str(type(value_output)))
+            #self._logger.debug("\t value_output:" + value_output)
+
+            parallelInfoKey = parallelName + "_" + key + "_parallel_info"
+            #self._logger.debug("\t parallelInfoKey:" + parallelInfoKey)
+            """  
+
             branchCounter = parentMapInfo["BranchCounter"]
 
             self._logger.debug("[StateUtils] processBranchTerminalState: ")
@@ -866,8 +911,9 @@ class StateUtils:
             self._logger.debug("\t value_output(type):" + str(type(value_output)))
             self._logger.debug("\t value_output:" + value_output)
 
-            mapInfoKey = mapName + "_" + key + "_map_info"
-            self._logger.debug("\t mapInfoKey:" + parallelInfoKey)
+            #mapInfoKey = mapName + "_" + key + "_map_info"
+            self._logger.debug("\t mapInfoKey:" + mapInfoKey)
+
             if mapInfoKey in metadata:
                 mapInfo = metadata[mapInfoKey]
 
@@ -878,10 +924,10 @@ class StateUtils:
                         index = rest.index(codes)
                         current_index = int(rest[index].split("-M")[0]) 
                     
-                self._logger.info("current_index: " + str(current_index) + ", BranchCount: " + str(parentMapInfo["BranchCount"]) )
+                #self._logger.info("current_index: " + str(current_index) + ", BranchCount: " + str(parentMapInfo["BranchCount"]) )
                 if mapInfo["MaxConcurrency"] != 0:
                     current_index = current_index % int(mapInfo["MaxConcurrency"])
-                branchOutputKey = str(branchOutputKeys[current_index])
+                #branchOutputKey = str(branchOutputKeys[current_index])
 
                 #####
                 counterName = str(mapInfo["CounterName"])
@@ -916,134 +962,6 @@ class StateUtils:
                 self._logger.error("[StateUtils] processBranchTerminalState Unable to find MapInfo")
                 raise Exception("processBranchTerminalState Unable to find MapInfo")
  
-    """
-    @call_counter
-    def processBranchTerminalState(self, key, value_output, metadata, sapi):
-
-        self._logger.info("(StateUtils) Inside processBranchTerminalState, stateinfo: " + str(self.parsedfunctionstateinfo))
-
-        if 'End' not in self.parsedfunctionstateinfo:
-            return
-
-        #Handle Parallel State branch 
-        if self.parsedfunctionstateinfo["End"] and "ParentParallelInfo" in self.parsedfunctionstateinfo:
-            parentParallelInfo = self.parsedfunctionstateinfo["ParentParallelInfo"]
-            parallelName = parentParallelInfo["Name"]
-            branchCounter = parentParallelInfo["BranchCounter"] 
-
-            self._logger.info("(StateUtils) processBranchTerminalState: ")
-            self._logger.info("\t ParentParallelInfo:" + json.dumps(parentParallelInfo))
-            self._logger.info("\t parallelName:" + parallelName)
-            self._logger.info("\t branchCounter: " + str(branchCounter))
-            self._logger.info("\t key:" + key)
-            self._logger.info("\t metadata:" + json.dumps(metadata))
-            self._logger.info("\t value_output(type):" + str(type(value_output)))
-            #self._logger.info("\t value_output:" + value_output)
-
-            parallelInfoKey = key+"_"+parallelName+"_parallel_info"
-            self._logger.info("\t parallelInfoKey:" + parallelInfoKey)
-            if parallelInfoKey in metadata:
-                parallelInfo = metadata[parallelInfoKey]
-
-                counterName = str(parallelInfo["CounterName"])
-                branchOutputKeys = parallelInfo["BranchOutputKeys"]
-                branchOutputKey = str(branchOutputKeys[branchCounter-1])
-
-                branchOutputKeysSetKey = str(parallelInfo["BranchOutputKeysSetKey"])
-
-                self._logger.info("\t branchOutputKey:" + branchOutputKey)
-                self._logger.info("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
-
-                from riak import RiakClient
-                client = RiakClient(protocol='pbc', nodes=[{'host': self.dlnodes, 'pb_port':self.dlnodes_port}])
-                bucket = client.bucket_type('mfn_counter_trigger').bucket('counter_triggers')
-
-                assert py3utils.is_string(counterName)
-                counter = bucket.get(counterName)
-
-                assert py3utils.is_string(branchOutputKey)
-                sapi.put(branchOutputKey, value_output)
-
-                assert py3utils.is_string(branchOutputKeysSetKey)
-                sapi.addSetEntry(branchOutputKeysSetKey, branchOutputKey)
-
-                counter.increment(1)
-                counter.store()
-            else:
-                self._logger.error("(StateUtils) processBranchTerminalState Unable to find ParallelInfo")
-                raise Exception("processBranchTerminalState Unable to find ParallelInfo")
-
-        #Handle Map State Branch
-        elif self.parsedfunctionstateinfo["End"] and "ParentMapInfo" in self.parsedfunctionstateinfo:
-            # we are processing a terminal state in Map State, so we must construct our own BranchCounter metadata
-            # also we need maxConcurrency her to construnct the correct loops. Could be part of ParentMapInfo
-
-            parentMapInfo = self.parsedfunctionstateinfo["ParentMapInfo"]
-            
-            mapName = parentMapInfo["Name"]
- 
-            # this function is called once for each map state but must simulate the behaviour 
-            # for number of branches according to function_input
-
-            self._logger.info("(StateUtils) processBranchTerminalState for Map: ")
-            self._logger.info("\t ParentMapInfo:" + json.dumps(parentMapInfo))
-            self._logger.info("\t mapName:" + mapName)
-            self.__class__._instcnt += 1 # increase instance counter
-            self._logger.info("\t processMapBranchCounter:" + str(self.__class__._instcnt))
-            self._logger.info("\t " + str(self.processBranchTerminalState.calls))
- 
-            self._logger.info("\t key:" + key)
-            #self._logger.info("\t metadata:" + json.dumps(metadata))
-            #self._logger.info("\t value_output(type):" + str(type(value_output)))
-            self._logger.info("\t value_output:" + value_output)
-
-            mapInfoKey = key+"_"+mapName+"_map_info"
-            self._logger.info("\t mapInfoKey:" + mapInfoKey)
-
-            if mapInfoKey in metadata:  # run per terminal state in Map state
-
-                    mapInfo = metadata[mapInfoKey]
-                    branchOutputKeys = mapInfo["BranchOutputKeys"]  # list containing output keys
-                    parentMapInfo["BranchCount"] = len(mapInfo["BranchOutputKeys"])
-                    self.parsedfunctionstateinfo["BranchCount"] = len(mapInfo["BranchOutputKeys"]) # overwrite BranchCount with new value
-                    #self._logger.info("\t mapInfo state_counter: " + str(mapInfo["CounterNameValueMetadata"]["state_counter"]))
-                    rest = metadata["__function_execution_id"].split("_")[1:]
-
-                    for codes in rest: # find marker for map state and use it to calculate curent index
-                        if "-M" in codes:
-                            index = rest.index(codes)
-                            current_index = int(rest[index].split("-M")[0]) 
-                    
-                    self._logger.info("current_index: " + str(current_index) + ", BranchCount: " + str(parentMapInfo["BranchCount"]) )
-                    if mapInfo["MaxConcurrency"] != 0:
-                        current_index = current_index % int(mapInfo["MaxConcurrency"])
-
-                    branchOutputKey = str(branchOutputKeys[current_index])
-                    counterName = str(mapInfo["CounterName"]) # refers to Riak counter name
-                    branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
-
-                    from riak import RiakClient
-                    client = RiakClient(protocol='pbc', nodes=[{'host': self.dlnodes, 'pb_port':self.dlnodes_port}])
-                    bucket = client.bucket_type('mfn_counter_trigger').bucket('counter_triggers')
-
-                    assert py3utils.is_string(counterName)
-                    counter = bucket.get(counterName)
-
-                    assert py3utils.is_string(branchOutputKey)
-                    sapi.put(branchOutputKey, value_output)
-                    self._logger.info("\t branchOutputKey used in terminal state: " + str(branchOutputKey))
-
-                    assert py3utils.is_string(branchOutputKeysSetKey)
-                    sapi.addSetEntry(branchOutputKeysSetKey, branchOutputKey)
-
-                    counter.increment(1)
-                    counter.store()
-
-            else:
-                    self._logger.error("(StateUtils) processBranchTerminalState Unable to find MapInfo")
-                    raise Exception("processBranchTerminalState Unable to find MapInfo")
-
-    """
     def evaluatePostParallel(self, function_input, key, metadata, sapi):
         #self._logger.debug("[StateUtils] evaluatePostParallel: ")
         #self._logger.debug("\t key:" + key)
