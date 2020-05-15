@@ -303,32 +303,30 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
         verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
         proxies={"https":""})
     if resp.status_code == 200:
-        #print('Deleting existing kservice')
-        #resp = requests.delete(
-        #    "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
-        #    headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
-        #    verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
-        #    proxies={"https":""})
-        print('Replacing existing kservice')
-        resp = requests.put(
+        print('Deleting existing kservice')
+        resp = requests.delete(
             "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
-            headers={"Authorization": "Bearer "+token, "Content-Type": "application/yaml", "Accept": "application/json"},
+            headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
             verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
-            data=json.dumps(kservice),
             proxies={"https":""})
-    elif resp.status_code == 404:
-        print('Creating new kservice:' + json.dumps(kservice))
-        resp = requests.post(
-            "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
-            headers={"Authorization": "Bearer "+token, "Content-Type": "application/yaml", "Accept": "application/json"},
-            verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
-            data=json.dumps(kservice),
-            proxies={"https":""})
+        try:
+            resp.raise_for_status()
+        except Exception as e:
+            print("ERROR deleting existing kservice")
+            print(resp.text)
+
+    print('Creating new kservice')
+    resp = requests.post(
+        "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
+        headers={"Authorization": "Bearer "+token, "Content-Type": "application/yaml", "Accept": "application/json"},
+        verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
+        data=json.dumps(kservice),
+        proxies={"https":""})
     try:
         resp.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(json.dumps(kservice, indent=2))
+        print(json.dumps(kservice))
         print(resp.text)
         raise Exception("Error creating kubernetes deployment for "+email+" "+workflow_info["workflowId"], e)
 
@@ -342,6 +340,7 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
                 headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
                 verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
                 proxies={"https":""})
+            resp.raise_for_status()
             status = resp.json().get("status",{})
             if "url" in status:
                 url = status["url"]
@@ -350,10 +349,10 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
                 elif "HTTP_GATEWAYPORT" in os.environ:
                     url = "http://" + url.split("://",1)[1] + ":" + os.environ["HTTP_GATEWAYPORT"]
                 break
-            time.sleep(2)
         except requests.exceptions.HTTPError as e:
             print(e)
             print(resp.text)
+        time.sleep(2)
         retry -= 1
     print("Workflow endpoint URL: "+str(url))
     return url, endpoint_key
@@ -382,8 +381,8 @@ def handle(value, sapi):
             wfmeta = json.loads(wfmeta)
         except:
             raise Exception("workflow metadata is invalid json ("+wfmeta+")")
-        if wfmeta["status"] != "undeployed" and wfmeta["status"] != "failed":
-            raise Exception("workflow status is not undeployed: " + str(wfmeta["status"]))
+        #if wfmeta["status"] != "undeployed" and wfmeta["status"] != "failed":
+        #    raise Exception("workflow status is not undeployed: " + str(wfmeta["status"]))
 
         dlc = sapi.get_privileged_data_layer_client(storage_userid)
 
@@ -444,11 +443,15 @@ def handle(value, sapi):
             else:
                 runtime = "Python"
             url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime)
-            sapi.addSetEntry(workflow_info["workflowId"] + "_workflow_endpoints", str(url), is_private=True)
-            sapi.putMapEntry(workflow_info["workflowId"] + "_workflow_endpoint_map", endpoint_key, str(url), is_private=True)
-            urlset = set(wfmeta.get("endpoints",[]))
-            urlset.add(url)
-            wfmeta["endpoints"] = list(urlset)
+            if url is not None and len(url) > 0:
+                status = "deploying"
+                sapi.addSetEntry(workflow_info["workflowId"] + "_workflow_endpoints", str(url), is_private=True)
+                sapi.putMapEntry(workflow_info["workflowId"] + "_workflow_endpoint_map", endpoint_key, str(url), is_private=True)
+                urlset = set(wfmeta.get("endpoints",[]))
+                urlset.add(url)
+                wfmeta["endpoints"] = list(urlset)
+            else:
+                status = "failed"
         else:
             # We're running BARE METAL mode
             # _XXX_: due to the queue service still being in java in the sandbox
@@ -480,6 +483,7 @@ def handle(value, sapi):
                         urlset.add(url)
                         wfmeta["endpoints"] = list(urlset)
 
+                        status = "deploying"
                         sbinfo = {}
                         sbinfo["status"] = "deploying"
                         sbinfo["errmsg"] = ""
@@ -492,7 +496,7 @@ def handle(value, sapi):
                 print("available_hosts is empty. Not deploying")
 
         # Update workflow status
-        wfmeta["status"] = "deploying"
+        wfmeta["status"] = status
 
         # somebody needs to update the workflow deployment status after
         # successfully starting a sandbox
