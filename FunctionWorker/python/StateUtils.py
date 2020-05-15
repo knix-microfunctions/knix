@@ -478,10 +478,11 @@ class StateUtils:
         #counter_name_value_metadata = {}
         #workflow_instance_metadata_storage_key = key +"_"+ self.functionstatename + "_metadata"
         counter_name_value_metadata = copy.deepcopy(metadata)
-        workflow_instance_metadata_storage_key = metadata["__function_execution_id"] + "_" + self.functionstatename + "_metadata"
+        #### workflow_instance_metadata_storage_key = metadata["__function_execution_id"] + "_" + self.functionstatename + "_metadata"
         counter_name_value_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
         counter_name_value_metadata["CounterValue"] = 0 # this should be updated by riak hook
-        counter_name_value_metadata["Action"] = "post_map_processing"
+        #counter_name_value_metadata["Action"] = "post_map_processing"
+        counter_name_value_metadata["__state_action"] = "post_map_processing"
         #counter_name_value_metadata["batchCounter"] = batchCounter
         counter_name_value_metadata["state_counter"] = metadata["state_counter"]
         self._logger.info("(StateUtils) evaluateMapState, metadata[state_counter]: " + str(metadata["state_counter"]))
@@ -550,9 +551,11 @@ class StateUtils:
 
 
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
+        self._logger.info("(StateUtils) full_metadata_encoded put key: " + str(workflow_instance_metadata_storage_key))
+
         sapi.put(workflow_instance_metadata_storage_key, json.dumps(metadata))
 
-        assert py3utils.is_string(workflow_instance_outputkeys_set_key)
+        #assert py3utils.is_string(workflow_instance_outputkeys_set_key)
         # sapi.createSet(workflow_instance_outputkeys_set_key) # obsolete statement
 
 
@@ -584,12 +587,15 @@ class StateUtils:
 
         self._logger.info("(StateUtils) evaluatePostMap: ")
         self._logger.info("\t key:" + key)
-        #self._logger.info("\t metadata:" + json.dumps(metadata))
+        self._logger.info("\t metadata:" + json.dumps(metadata))
         self._logger.info("\t function_input: " + str(function_input))
 
-        action = metadata["Action"]
+        #action = metadata["Action"]
+        action = metadata["__state_action"]
         assert action == "post_map_processing"
-        counterValue = metadata["CounterValue"]
+        #counterValue = metadata["CounterValue"]
+        counterValue = function_input["CounterValue"]
+
         state_counter = 0
         if "state_counter" in metadata:
             state_counter = metadata["state_counter"]
@@ -598,10 +604,10 @@ class StateUtils:
 
         self._logger.info("\t metadata:" + json.dumps(metadata))
 
-        workflow_instance_metadata_storage_key = str(metadata["WorkflowInstanceMetadataStorageKey"])
+        workflow_instance_metadata_storage_key = str(function_input["WorkflowInstanceMetadataStorageKey"])
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
         full_metadata_encoded = sapi.get(workflow_instance_metadata_storage_key)
-        # self._logger.info("(StateUtils) full_metadata_encoded: " + str(full_metadata_encoded))
+        self._logger.info("(StateUtils) full_metadata_encoded get: " + str(full_metadata_encoded))
 
         full_metadata = json.loads(full_metadata_encoded)
         full_metadata["state_counter"] = state_counter
@@ -1165,7 +1171,8 @@ class StateUtils:
             self._logger.info("(StateUtils) Map state maxConcurrency: " + str(maxConcurrency))
             self._logger.info("(StateUtils) Map state handling")
 
-            if "Action" not in metadata or metadata["Action"] != "post_map_processing":
+            #if "Action" not in metadata or metadata["Action"] != "post_map_processing":
+            if "__state_action" not in metadata or metadata["__state_action"] != "post_map_processing":
                 # here we start the iteration process on a first batch
                 if maxConcurrency != 0:
                     tobeProcessednow = function_input[:maxConcurrency] # take the first maxConcurrency elements
@@ -1180,7 +1187,8 @@ class StateUtils:
                 sapi.put("mapInput", str(function_input))
                 function_output, metadata = self.evaluateMapState(tobeProcessednow, key, metadata, sapi)
 
-            elif metadata["Action"] == "post_map_processing":
+            #elif metadata["Action"] == "post_map_processing":
+            elif metadata["__state_action"] == "post_map_processing":
                         tobeProcessedlater = ast.literal_eval(sapi.get("tobeProcessedlater")) # get all elements that have not yet been processed
                         self._logger.info("(StateUtils) Map state post_map processing input:" + str(tobeProcessedlater))
                         # we need to decide at this point if there is a need for more batches. if so:
