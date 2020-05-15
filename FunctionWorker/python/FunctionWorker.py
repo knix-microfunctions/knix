@@ -330,10 +330,12 @@ class FunctionWorker:
 
                 # 3. Apply InputPath, if available
                 timestamp_map["t_start_inputpath"] = time.time() * 1000.0
-                #self._logger.info("[FunctionWorker] Before Path/Parameters processing, input: " + str(type(raw_state_input)) + " : " + str(raw_state_input))
+                self._logger.info("[FunctionWorker] Before Path/Parameters processing, input: " + str(type(raw_state_input)) + " : " + str(raw_state_input) + ", metadata: " + str(metadata) + " has_error: " + str(has_error))
                 if not has_error:
                     try:
+                        #if "__state_action" not in metadata or (metadata["__state_action"] != "post_map_processing" and metadata["state_action"] != "post_parallel_processing"):
                         if "Action" not in metadata or (metadata["Action"] != "post_map_processing" and metadata["Action"] != "post_parallel_processing"):
+                          if not ("__state_action" in raw_state_input and  raw_state_input["__state_action"] != "post_map_processing"):
                              self._logger.info("[FunctionWorker] User code input(Before InputPath processing):" + str(type(raw_state_input)) + ":" + str(raw_state_input))
                              function_input = self._state_utils.applyInputPath(raw_state_input)
                              self._logger.info("[FunctionWorker] User code input(Before applyParameter processing):" + str(type(function_input)) + ":" + str(function_input))
