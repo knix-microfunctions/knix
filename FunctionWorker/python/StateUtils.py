@@ -425,6 +425,9 @@ class StateUtils:
         counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
 
         total_branch_count = len(function_input) # all branches executed concurrently
+
+        klist = [total_branch_count]
+
         self.parsedfunctionstateinfo["BranchCount"] = int(total_branch_count) # overwrite parsed BranchCount with new value
         self._logger.info("(StateUtils) evaluateMapState, total_branch_count: " + str(total_branch_count))
 
@@ -435,7 +438,7 @@ class StateUtils:
         workflow_instance_metadata_storage_key = name_prefix + "_workflow_metadata"
         counter_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
         counter_metadata["CounterValue"] = 0 # this should be updated by riak hook
-        #counter_metadata["Klist"] = klist
+        counter_metadata["Klist"] = klist
         counter_metadata["TotalBranches"] = total_branch_count
         counter_metadata["ExecutionId"] = key
         counter_metadata["FunctionTopic"] = self.functiontopic
