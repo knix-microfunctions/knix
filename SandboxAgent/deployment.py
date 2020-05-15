@@ -112,34 +112,37 @@ class Deployment:
 
     def check_child_process(self):
         pid, status = os.waitpid(-1, os.WNOHANG|os.WUNTRACED|os.WCONTINUED)
+        failed_process_name = ""
         if os.WIFCONTINUED(status) or os.WIFSTOPPED(status):
             return False, _
         if os.WIFSIGNALED(status) or os.WIFEXITED(status):
             self._logger.error("Process with pid: " + str(pid) + " stopped.")
             if pid == self._fluentbit_actual_pid:
-                self._logger.error("Fluent-bit")
+                failed_process_name = "Fluent-bit"
             elif pid == self._queue_service_process.pid:
-                self._logger.error("Queue service")
+                failed_process_name = "Queue service"
             elif pid == self._frontend_process.pid:
-                self._logger.error("Frontend")
+                failed_process_name = "Frontend"
             else:
                 for jrhp in self._javarequesthandler_process_list:
                     if pid == jrhp.pid:
-                        self._logger.error("Java request handler")
-                        return
+                        failed_process_name = "Java request handler"
+                        break
                 for state_name in self._functionworker_process_map:
                     process = self._functionworker_process_map[state_name]
                     if pid == process.pid:
-                        self._logger.error("Function worker (" + state_name + ")")
+                        failed_process_name = "Function worker (" + state_name + ")"
                         del self._functionworker_process_map[state_name]
                         break
 
+            self._logger.error("Failed process name: " + failed_process_name)
+
         if os.path.exists('/var/run/secrets/kubernetes.io'):
-            return True, pid
+            return True, pid, failed_process_name
         else:
             # TODO: try to relaunch some of the processes (FWs, fluentbit, frontend)
             self._logger.info(self._child_process_command_args_map[pid])
-            return True, pid
+            return True, pid, failed_process_name
 
     def shutdown(self):
         shutdown_message = {}

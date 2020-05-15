@@ -199,24 +199,26 @@ class SandboxAgent:
 
     def sigchld(self, signum, _):
         if not self._shutting_down:
-            should_shutdown, pid = self._deployment.check_child_process()
+            should_shutdown, pid, failed_process_name = self._deployment.check_child_process()
 
             if should_shutdown:
-                self._update_deployment_status(True, "A sandbox process stopped unexpectedly.")
+                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name)
 
                 if pid == self._queue_service_process.pid:
                     self._queue_service_process = None
                 elif pid == self._frontend_process.pid:
                     self._frontend_process = None
 
-                self.shutdown(reason="Process with pid: " + str(pid) + " stopped unexpectedly.")
+                self.shutdown(reason="Process " + failed_process_name + " with pid: " + str(pid) + " stopped unexpectedly.")
 
     def shutdown(self, reason=None):
         self._shutting_down = True
+        errmsg = ""
         if reason is not None:
-            self._logger.error("Shutting down sandboxagent due to reason: " + reason)
+            errmsg = "Shutting down sandboxagent due to reason: " + reason + "..."
+            self._logger.info(errmsg)
         else:
-            self._logger.info("Gracefully shutting down sandboxagent")
+            self._logger.info("Gracefully shutting down sandboxagent...")
 
         if self._frontend_process is not None:
             self._logger.info("Shutting down the frontend...")
@@ -257,15 +259,19 @@ class SandboxAgent:
                 self._frontend_process.kill()
                 _, _ = self._frontend_process.communicate()
 
-        self._logger.info("Shutdown complete")
+        self._logger.info("Shutdown complete.")
         if reason is not None:
+            self._update_deployment_status(True, errmsg)
+            self._management_data_layer_client.shutdown()
             os._exit(1)
         else:
+            self._update_deployment_status(False, errmsg)
+            self._management_data_layer_client.shutdown()
             os._exit(0)
 
     def _stop_deployment(self, reason, errmsg):
         self._logger.error("Stopping deployment due to error in launching %s...", reason)
-        self._logger.error(errmsg)
+        self._logger.info(errmsg)
         self._update_deployment_status(True, errmsg)
         self._management_data_layer_client.shutdown()
         os._exit(1)
@@ -276,7 +282,11 @@ class SandboxAgent:
         if has_error:
             sbstatus["status"] = "failed"
         else:
-            sbstatus["status"] = "deployed"
+            if self._shutting_down:
+                sbstatus["status"] = "undeployed"
+            else:
+                sbstatus["status"] = "deployed"
+
         # set our own status in the map
         self._management_data_layer_client.putMapEntry(self._workflowid + "_sandbox_status_map", self._endpoint_key, json.dumps(sbstatus))
 
