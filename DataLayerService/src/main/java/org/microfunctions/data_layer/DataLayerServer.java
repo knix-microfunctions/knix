@@ -65,8 +65,8 @@ public class DataLayerServer implements Iface, Callable<Object> {
 	private static final List<AbstractMap.SimpleEntry<String, Integer>> NO_KEYSPACES = new ArrayList<AbstractMap.SimpleEntry<String, Integer>>(0);
 	private static final List<String> NO_KEYS = new ArrayList<String>(0);
 	
-	public static final int DEFAULT_SELECTOR_THREADS = Math.max(2, 2 * Runtime.getRuntime().availableProcessors());
-    public static final int DEFAULT_WORKER_THREADS = Math.max(4, 4 * Runtime.getRuntime().availableProcessors());
+	public static final int DEFAULT_SELECTOR_THREADS = 50; //Math.max(2, 2 * Runtime.getRuntime().availableProcessors());
+    public static final int DEFAULT_WORKER_THREADS = 100;  //Math.max(4, 4 * Runtime.getRuntime().availableProcessors());
 	public static final int DEFAULT_CLIENT_TIMEOUT = 0;
 	public static final int DEFAULT_MAX_FRAME_LENGTH = Integer.MAX_VALUE;
 	
