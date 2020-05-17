@@ -346,7 +346,7 @@
     function checkWorkflowDeploymentStatus(functionIndex, workflowId) {
       var req;
       //console.log('checkWorkflowDeploymentStatus,' + index + ',' + $scope.workflows[index].status);
-      
+
 
         console.log('checking workflow status for workflow ' + workflowId);
 
@@ -356,7 +356,7 @@
           headers: {
            'Content-Type': 'application/json'
           },
-          data:   JSON.stringify({ "action" : "getWorkflowStatus", "data" : { "user" : { "token" : token } , "workflow" : { "id" : workflowId } } })
+          data:   JSON.stringify({ "action" : "getWorkflows", "data" : { "user" : { "token" : token } , "workflow" : { "id" : workflowId } } })
         }
 
       $http(req).then(function successCallback(response) {
@@ -370,7 +370,7 @@
             else if (response.data.data.workflow.status=='failed')
             {
                 $interval.cancel(promise);
-              
+
                 console.log("Error in deployment: " + response.data.data.workflow.deployment_error);
                 $scope.errorMessage = response.data.data.workflow.deployment_error;
                 $uibModal.open({
@@ -407,7 +407,7 @@
           });
       });
 
-      
+
     }
 
 

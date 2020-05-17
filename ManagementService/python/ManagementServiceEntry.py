@@ -216,7 +216,6 @@ def actionOther(action, data, sapi):
     possibleActions["getFunctionZip"] = True
     possibleActions["getWorkflowJSON"] = True
     possibleActions["getWorkflows"] = True
-    possibleActions["getWorkflowStatus"] = True
     possibleActions["modifyFunction"] = True
     possibleActions["modifyWorkflow"] = True
     possibleActions["undeployWorkflow"] = True
