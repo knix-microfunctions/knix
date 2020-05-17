@@ -101,6 +101,7 @@ GUI_SRC:=../../GUI
 GUIFILES:=$(shell find $(GUI_SRC) | grep -v "knix_gui_deployment_package.tar.gz")
 ../../GUI/knix_gui_deployment_package.tar.gz: $(GUIFILES)
 	touch $@
+	cd ../../GUI; make; cd -
 	tar --exclude=knix_gui_deployment_package.tar.gz -czf $@ -C $(GUI_SRC) .
 
 nginx.yaml: ../../GUI/knix_gui_deployment_package.tar.gz

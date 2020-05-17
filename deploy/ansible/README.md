@@ -16,7 +16,7 @@
 
 # KNIX ansible installation
 
-To setup KNIX on localhost, or a single remote host, or a cluster of hosts  
+To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 (Tested on: Ubuntu 18.04 and Debian 9 as target machines)
 
 ## Prerequisites: on host machine
@@ -26,6 +26,11 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
     <https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html>
 
 ## Prerequisites: on target machines
+
+Note: The following steps should be handled by the init_once.yaml during the installation process.
+If you find something wrong or missing, please consider opening an issue on [GitHub](https://github.com/knix-microfunctions/knix)
+and/or letting us know in our [Slack workspace](https://knix.slack.com).
+Thank you!
 
 1. You can ssh into the target machines/VMs without a password. If not then run (on host machine):
 
@@ -38,7 +43,7 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 
 3. Appropriate proxies (/etc/profile, /etc/bash.bashrc, and /etc/apt/apt.conf) are set on target machines
 
-4. `python`, `python-dev`, `python-pip` are installed on each of the target machines
+4. `python3`, `python3-dev`, `python3-pip` are installed on each of the target machines
 
     ```bash
     sudo apt-get update
