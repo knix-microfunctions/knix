@@ -403,8 +403,6 @@ if __name__ == "__main__":
                 f.write("docker run -d --ulimit nofile=262144:262144 --name Management --env-file .env --log-opt max-size=500m --log-opt max-file=5 -P -p " + str(MANAGEMENT_SERVICE_EXPOSED_PORT) + ":8080 microfn/sandbox\n")
             os.chmod("start_management.sh", 0o0775)
 
-            print("Please run: start_management.sh  to start the Management container")
-
         DLCLIENT.shutdown()
         DLCLIENT_MANAGEMENT.shutdown()
     elif action == "print":

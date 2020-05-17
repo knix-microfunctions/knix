@@ -24,7 +24,6 @@
 
     install_dir: "{{ mfn_server_installation_folder }}/management"
     datalayer_connect: "{{ ansible_default_ipv4.address }}:4998" # same host
-    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}:8087"
     elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_default_ipv4.address }}:9200"
     nginx_http_listen_port: "{{ nginx_http_listen_port }}"
     nginx_connect: "{{ hostvars[groups['nginx'][0]].ansible_default_ipv4.address }}:{{ nginx_http_listen_port }}"
@@ -57,27 +56,12 @@
       - management_archive_filename = {{ management_archive_filename }}
       - install_dir = {{ install_dir }}
       - datalayer connect string = {{ datalayer_connect }}
-      - riak_connect = {{ riak_connect }}
       - elasticsearch_connect = {{ elasticsearch_connect }}
       - nginx_connect = {{ nginx_connect }}
       - http_proxy = {{ http_proxy }}
       - https_proxy = {{ https_proxy }}
       - no_proxy = {{ no_proxy }}
 
-
-  # Prerequisites to run the management init script
-  - name: pip install docker
-    pip:
-      name:
-      - docker
-      - riak
-      executable: pip3
-    environment:
-      http_proxy: "{{ http_proxy }}"
-      https_proxy: "{{ https_proxy }}"
-      no_proxy: "{{ no_proxy }}"
-      HTTP_PROXY: "{{ http_proxy }}"
-      HTTPS_PROXY: "{{ https_proxy }}"
 
   - name: remove old management folder
     file:
@@ -137,6 +121,7 @@
         set -x
         cat <<END >>dockerrun.sh
         set -x
+        pip3 install --upgrade pip
         pip3 install docker thrift
         python3 management_init.py start
         END
@@ -175,7 +160,6 @@
     environment:
       MFN_HOSTNAME: "{{ inventory_hostname }}"
       DATALAYER_CONNECT: "{{ datalayer_connect }}"
-      RIAK_CONNECT: "{{ riak_connect }}"
       ELASTICSEARCH_CONNECT: "{{ elasticsearch_connect }}"
       NGINX_CONNECT: "{{ nginx_connect }}"
       http_proxy: "{{ http_proxy }}"
