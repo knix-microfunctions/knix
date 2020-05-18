@@ -478,7 +478,6 @@ class StateUtils:
         #counter_name_value_metadata = {}
         #workflow_instance_metadata_storage_key = key +"_"+ self.functionstatename + "_metadata"
         counter_name_value_metadata = copy.deepcopy(metadata)
-        #### workflow_instance_metadata_storage_key = metadata["__function_execution_id"] + "_" + self.functionstatename + "_metadata"
         counter_name_value_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
         counter_name_value_metadata["CounterValue"] = 0 # this should be updated by riak hook
         #counter_name_value_metadata["Action"] = "post_map_processing"
@@ -585,10 +584,10 @@ class StateUtils:
         # function is triggered by post-commit hook with metadata containing information abaout state results in buckets.
         # It collects these results and returns metadata and post_map_output_results
 
-        self._logger.info("(StateUtils) evaluatePostMap: ")
-        self._logger.info("\t key:" + key)
-        self._logger.info("\t metadata:" + json.dumps(metadata))
-        self._logger.info("\t function_input: " + str(function_input))
+        #self._logger.debug("(StateUtils) evaluatePostMap: ")
+        #self._logger.debug("\t key:" + key)
+        #self._logger.debug("\t metadata:" + json.dumps(metadata))
+        #self._logger.debug("\t function_input: " + str(function_input))
 
         #action = metadata["Action"]
         action = metadata["__state_action"]
@@ -626,15 +625,15 @@ class StateUtils:
 
         k_list = mapInfo["k_list"]
 
-        self._logger.info("\t action: " + action)
-        self._logger.info("\t counterValue:" + str(counterValue))
-        #self._logger.info("\t WorkflowInstanceMetadataStorageKey:" + metadata["WorkflowInstanceMetadataStorageKey"])
-        #self._logger.info("\t full_metadata:" + full_metadata_encoded)
-        self._logger.info("\t mapInfoKey: " + mapInfoKey)
-        #self._logger.info("\t mapInfo:" + json.dumps(mapInfo))
-        self._logger.info("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
-        self._logger.info("\t branchOutputKeysSet:" + str(branchOutputKeysSet))
-        self._logger.info("\t k_list:" + str(k_list))
+        self._logger.debug("\t action: " + action)
+        self._logger.debug("\t counterValue:" + str(counterValue))
+        #self._logger.debug("\t WorkflowInstanceMetadataStorageKey:" + metadata["WorkflowInstanceMetadataStorageKey"])
+        #self._logger.debug("\t full_metadata:" + full_metadata_encoded)
+        self._logger.debug("\t mapInfoKey: " + mapInfoKey)
+        #self._logger.debug("\t mapInfo:" + json.dumps(mapInfo))
+        self._logger.debug("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
+        self._logger.debug("\t branchOutputKeysSet:" + str(branchOutputKeysSet))
+        self._logger.debug("\t k_list:" + str(k_list))
 
         NumBranchesFinished = abs(counterValue)
         self._logger.info("\t NumBranchesFinished:" + str(NumBranchesFinished))
@@ -649,17 +648,6 @@ class StateUtils:
         counterName = str(mapInfo["CounterName"])
         counter_metadata_key_name = counterName + "_metadata"
         assert py3utils.is_string(counterName)
-
-        """
-        if do_cleanup:
-            from riak import RiakClient
-            client = RiakClient(protocol='pbc', nodes=[{'host': self.dlnodes, 'pb_port':self.dlnodes_port}])
-            bucket = client.bucket_type('mfn_counter_trigger').bucket('counter_triggers')
-
-            bucket.delete(counterName)
-            self._logger.info("\t deleted Counter: " + counterName)
-            sapi.delete(workflow_instance_metadata_storage_key)
-        """
 
         if do_cleanup:
             assert py3utils.is_string(counterName)
@@ -679,30 +667,30 @@ class StateUtils:
 
         post_map_output_values = []
 
-        self._logger.info("\t mapInfo_BranchOutputKeys:" + str(mapInfo["BranchOutputKeys"]))
+        self._logger.debug("\t mapInfo_BranchOutputKeys:" + str(mapInfo["BranchOutputKeys"]))
 
-        self._logger.info("\t mapInfo_BranchOutputKeys length: " + str(len(mapInfo["BranchOutputKeys"])))
+        self._logger.debug("\t mapInfo_BranchOutputKeys length: " + str(len(mapInfo["BranchOutputKeys"])))
        
         for outputkey in mapInfo["BranchOutputKeys"]:
             outputkey = str(outputkey)
             if outputkey in branchOutputKeysSet: # mapInfo["BranchOutputKeys"]:   
-                self._logger.info("\t BranchOutputKey:" + outputkey)
+                self._logger.debug("\t BranchOutputKey:" + outputkey)
                 while sapi.get(outputkey) == "":
                     time.sleep(0.1) # wait until value is available
 
                 branchOutput = sapi.get(outputkey)
                 branchOutput_decoded = json.loads(branchOutput)
-                self._logger.info("\t branchOutput(type):" + str(type(branchOutput)))
-                self._logger.info("\t branchOutput:" + branchOutput)
-                self._logger.info("\t branchOutput_decoded(type):" + str(type(branchOutput_decoded)))
-                self._logger.info("\t branchOutput_decoded:" + str(branchOutput_decoded))
+                self._logger.debug("\t branchOutput(type):" + str(type(branchOutput)))
+                self._logger.debug("\t branchOutput:" + branchOutput)
+                self._logger.debug("\t branchOutput_decoded(type):" + str(type(branchOutput_decoded)))
+                self._logger.debug("\t branchOutput_decoded:" + str(branchOutput_decoded))
                 post_map_output_values = post_map_output_values + [branchOutput_decoded]
                 if do_cleanup:
                     sapi.delete(outputkey) # cleanup the key from data layer
-                    self._logger.info("\t cleaned output key:" + outputkey)
+                    self._logger.debug("\t cleaned output key:" + outputkey)
             else:
                 post_map_output_values = post_map_output_values + [None]
-                self._logger.info("\t this_BranchOutputKeys is not contained: " + str(outputkey))
+                self._logger.debug("\t this_BranchOutputKeys is not contained: " + str(outputkey))
 
         self._logger.info("\t post_map_output_values:" + str(post_map_output_values))
         while (sapi.get("mapStatePartialResult")) == "":
@@ -719,6 +707,9 @@ class StateUtils:
         if ast.literal_eval(sapi.get("mapInputCount")) == len(mapStatePartialResult): 
         # we are ready to publish  but need to honour ResultPath and OutputPath
             res_raw = ast.literal_eval(sapi.get("mapStatePartialResult"))
+
+            # reove unwanted keys from input before publishing
+            function_input = {}
 
             function_input_post_result = self.applyResultPath(function_input, res_raw)
             function_input_post_output = self.applyResultPath(function_input_post_result, function_input_post_result)
@@ -872,22 +863,22 @@ class StateUtils:
 
             parentMapInfo = self.parsedfunctionstateinfo["ParentMapInfo"]
 
-            self._logger.info("[StateUtils] processBranchTerminalState:parentMapInfo: " + str(parentMapInfo))
+            #self._logger.debug("[StateUtils] processBranchTerminalState:parentMapInfo: " + str(parentMapInfo))
             mapName = parentMapInfo["Name"]
-            self._logger.info("[StateUtils] processBranchTerminalState:mapName: " + str(mapName))
+            #self._logger.debug("[StateUtils] processBranchTerminalState:mapName: " + str(mapName))
             mapInfoKey = mapName + "_" + key + "_map_info"
-            self._logger.info("[StateUtils] processBranchTerminalState:mapInfoKey: " + str(mapInfoKey))
+            #self._logger.debug("[StateUtils] processBranchTerminalState:mapInfoKey: " + str(mapInfoKey))
   
             branchCounter = parentMapInfo["BranchCounter"]
 
-            self._logger.debug("[StateUtils] processBranchTerminalState: ")
-            self._logger.debug("\t ParentMapInfo:" + json.dumps(parentMapInfo))
-            self._logger.debug("\t mapName:" + mapName)
-            self._logger.debug("\t branchCounter: " + str(branchCounter))
-            self._logger.debug("\t key:" + key)
-            self._logger.debug("\t metadata:" + json.dumps(metadata))
-            self._logger.debug("\t value_output(type):" + str(type(value_output)))
-            self._logger.debug("\t value_output:" + value_output)
+            #self._logger.debug("[StateUtils] processBranchTerminalState: ")
+            #self._logger.debug("\t ParentMapInfo:" + json.dumps(parentMapInfo))
+            #self._logger.debug("\t mapName:" + mapName)
+            #self._logger.debug("\t branchCounter: " + str(branchCounter))
+            #self._logger.debug("\t key:" + key)
+            #self._logger.debug("\t metadata:" + json.dumps(metadata))
+            #self._logger.debug("\t value_output(type):" + str(type(value_output)))
+            #self._logger.debug("\t value_output:" + value_output)
 
             if mapInfoKey in metadata:
                 mapInfo = metadata[mapInfoKey]
@@ -898,7 +889,7 @@ class StateUtils:
                         index = rest.index(codes)
                         current_index = int(rest[index].split("-M")[0]) 
                     
-                self._logger.info("current_index: " + str(current_index))
+                self._logger.debug("current_index: " + str(current_index))
                 if mapInfo["MaxConcurrency"] != 0:
                     current_index = current_index % int(mapInfo["MaxConcurrency"])
 
