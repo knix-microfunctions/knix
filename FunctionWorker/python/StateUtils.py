@@ -1087,7 +1087,7 @@ class StateUtils:
                 # need to communicate with datalayer for definition of trigger for hibernating/resuming task
                 wait_state_timestamppath_data = [match.value for match in parse(wait_state_timestamppath).find(function_input)]
                 if wait_state_timestamppath_data == []:
-                    #self._logger.exception("[StateUtils] Wait state timestamppath does not match: " + str(wait_state_timestamppath))
+                    #self._logger.exception("[StateUtils] Wait state timestamp_path does not match: " + str(wait_state_timestamppath))
                     raise Exception("Wait state timestamp_path does not match")
 
                 self._logger.debug("[StateUtils] Wait state timestamppath data parsed:" + str(wait_state_timestamppath_data[0]))
@@ -1223,7 +1223,7 @@ class StateUtils:
         #           raw_state_input_midway = function_output
         #
         raw_state_input_midway = raw_state_input
-        self._logger.debug("Reached applyResultPath: " + str(self.result_path_dict))
+        #self._logger.debug("Reached applyResultPath: " + str(self.result_path_dict))
         try:
             if self.result_path_dict and 'ResultPath' in self.result_path_dict:
                 raw_state_input_midway = self.process_result_path(self.result_path_dict, raw_state_input, function_output)
@@ -1412,7 +1412,6 @@ class StateUtils:
             if "Parameters" in statedef:
                 self.parameters_dict['Parameters'] = statedef['Parameters']
                 self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
-
 
             #self._logger.debug("found Next:  " + json.dumps(statedef['Next']))
             #self._logger.debug("found Result:  " + json.dumps(statedef['Result']))

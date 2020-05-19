@@ -221,7 +221,7 @@ class FunctionWorker:
     ####
 
     def _fork_and_handle_message(self, key, encapsulated_value):
-        self._logger.debug("[FunctionWorker] fork_and_handle_message, Before fork")
+        #self._logger.debug("[FunctionWorker] fork_and_handle_message, Before fork")
         try:
             # replace individual timestamps with a map
             timestamp_map = {}
@@ -234,7 +234,7 @@ class FunctionWorker:
                 LOGGER_UUID = key
 
                 #self._print_self()  #FOR_DEBUGGING_ONLY
-                self._logger.debug("[FunctionWorker] fork_and_handle_message, After fork" + str(encapsulated_value))
+                #self._logger.debug("[FunctionWorker] fork_and_handle_message, After fork" + str(encapsulated_value))
 
                 has_error = False
                 error_type = ""
@@ -280,7 +280,7 @@ class FunctionWorker:
                 # 1. Decapsulate the input.
                 # The actual user input is encapsulated in a dict of the form {"__mfnuserdata": actual_user_input, "__mfnmetadata": mfn_specific_metadata}
                 # This encapsulation is invisible to the user and is added, maintained, and removed by the hostagent and functionworker.
-                self._logger.debug("[FunctionWorker] Received encapsulated input:" + str(type(encapsulated_value)) + ":" + encapsulated_value)
+                #self._logger.debug("[FunctionWorker] Received encapsulated input:" + str(type(encapsulated_value)) + ":" + encapsulated_value)
                 timestamp_map["t_start_decapsulate"] = time.time() * 1000.0
                 if not has_error:
                     try:
