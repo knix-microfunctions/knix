@@ -39,7 +39,7 @@ def handle(value, sapi):
                     wf = sapi.get(email + "_workflow_" + workflow["id"], True)
                     if wf is not None and wf != "":
                         wf = json.loads(wf)
-                        if wf["status"] == "undeployed":
+                        if wf["status"] == "undeployed" or wf["status"] == "failed":
                             for wn in workflows:
                                 if workflows[wn] == workflow["id"]:
                                     del workflows[wn]

@@ -32,3 +32,5 @@ class ImportErrorTest(unittest.TestCase):
             test.report(True, "import error report success", None, None)
         else:
             test.report(False, "import error report failure", expected_error, deployment_error)
+
+        test.undeploy_workflow()

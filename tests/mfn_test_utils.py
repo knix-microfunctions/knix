@@ -306,9 +306,10 @@ class MFNTest():
     def undeploy_workflow(self):
         existing_workflows = self._client.workflows
         for wf in existing_workflows:
-            if wf.name == self._workflow_name and wf.status == "deployed":
-                wf.undeploy(self._settings["timeout"])
-                print("Workflow undeployed.")
+            if wf.name == self._workflow_name:
+                if wf.status == "deployed":
+                    wf.undeploy(self._settings["timeout"])
+                    print("Workflow undeployed.")
                 self._client.delete_workflow(wf)
                 break
 
