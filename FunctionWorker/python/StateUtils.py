@@ -146,7 +146,7 @@ class StateUtils:
         #
         try:
             function_input = raw_state_input
-            self._logger.info("inside applyParameters: " + str(self.parameters_dict) + ", raw_state_input: " + str(raw_state_input))
+            self._logger.debug("inside applyParameters: " + str(self.parameters_dict) + ", raw_state_input: " + str(raw_state_input))
             if self.parameters_dict:
                 function_input = self.process_parameters(self.parameters_dict, function_input)
             return function_input
@@ -412,9 +412,9 @@ class StateUtils:
         else:
             mapParameters = {}
 
-        self._logger.debug("(StateUtils) evaluateMapState, maxConcurrency: " + str(maxConcurrency))
+        self._logger.debug("[StateUtils] evaluateMapState, maxConcurrency: " + str(maxConcurrency))
 
-        self._logger.debug("(StateUtils) evaluateMapState metadata: " + str(metadata))
+        self._logger.debug("[StateUtils] evaluateMapState metadata: " + str(metadata))
 
         counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
 
@@ -423,7 +423,7 @@ class StateUtils:
         klist = [total_branch_count]
 
         self.parsedfunctionstateinfo["BranchCount"] = int(total_branch_count) # overwrite parsed BranchCount with new value
-        self._logger.debug("(StateUtils) evaluateMapState, total_branch_count: " + str(total_branch_count))
+        self._logger.debug("[StateUtils] evaluateMapState, total_branch_count: " + str(total_branch_count))
 
         # translated from Parallel
         counter_metadata = {}
@@ -440,23 +440,23 @@ class StateUtils:
 
         iterator = self.parsedfunctionstateinfo["Iterator"]
 
-        #assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])        
+        #assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
 
         k_list = []
 
         if "WaitForNumBranches" in self.parsedfunctionstateinfo:
             k_list = self.parsedfunctionstateinfo["WaitForNumBranches"]
             if not isinstance(k_list, list):
-                self._logger.info("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
-                raise Exception("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
+                self._logger.debug("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
+                raise Exception("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
             k_list.sort()
             for k in k_list:
                 if not isinstance(k, int):
-                    self._logger.debug("(StateUtils) Values inside WaitForNumBranches must be integers")
-                    raise Exception("(StateUtils) Values inside WaitForNumBranches must be integers")
+                    self._logger.debug("[StateUtils] Values inside WaitForNumBranches must be integers")
+                    raise Exception("[StateUtils] Values inside WaitForNumBranches must be integers")
                 if k > total_branch_count:
-                    self._logger.debug("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the map state")
-                    raise Exception("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the map state")
+                    self._logger.debug("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the map state")
+                    raise Exception("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the map state")
         else:
             k_list.append(total_branch_count)
 
@@ -474,7 +474,7 @@ class StateUtils:
         counter_name_value_metadata["CounterValue"] = 0 # this should be updated by riak hook
         counter_name_value_metadata["__state_action"] = "post_map_processing"
         counter_name_value_metadata["state_counter"] = metadata["state_counter"]
-        self._logger.debug("(StateUtils) evaluateMapState, metadata[state_counter]: " + str(metadata["state_counter"]))
+        self._logger.debug("[StateUtils] evaluateMapState, metadata[state_counter]: " + str(metadata["state_counter"]))
         self.mapStateCounter = int(metadata["state_counter"])
 
         counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
@@ -494,10 +494,10 @@ class StateUtils:
         mapInfo["k_list"] = k_list
 
         mapInfo_key = self.functionstatename + "_" + key  + "_map_info"
-        
+
         metadata[mapInfo_key] = mapInfo
 
-        self._logger.debug("(StateUtils) evaluateMapState: ")
+        self._logger.debug("[StateUtils] evaluateMapState: ")
         self._logger.debug("\t CounterName:" + CounterName)
         self._logger.debug("\t counter_name_topic:" + counter_name_topic)
         self._logger.debug("\t counter_name_key: " + counter_name_key)
@@ -533,7 +533,7 @@ class StateUtils:
 
 
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
-        self._logger.debug("(StateUtils) full_metadata_encoded put key: " + str(workflow_instance_metadata_storage_key))
+        self._logger.debug("[StateUtils] full_metadata_encoded put key: " + str(workflow_instance_metadata_storage_key))
 
         sapi.put(workflow_instance_metadata_storage_key, json.dumps(metadata))
 
@@ -549,7 +549,7 @@ class StateUtils:
         # lauch a branch for each input element
         startat = str(branch["StartAt"])
 
-        
+
         for i in range(len(function_input)):
             sapi.add_dynamic_next(startat, function_input[i]) # Alias for add_workflow_next(self, next, value)
 
@@ -571,7 +571,7 @@ class StateUtils:
         # function is triggered by post-commit hook with metadata containing information abaout state results in buckets.
         # It collects these results and returns metadata and post_map_output_results
 
-        #self._logger.debug("(StateUtils) evaluatePostMap: ")
+        #self._logger.debug("[StateUtils] evaluatePostMap: ")
         #self._logger.debug("\t key:" + key)
         #self._logger.debug("\t metadata:" + json.dumps(metadata))
         #self._logger.debug("\t function_input: " + str(function_input))
@@ -585,14 +585,14 @@ class StateUtils:
         if "state_counter" in metadata:
             state_counter = metadata["state_counter"]
 
-        #self._logger.info("(StateUtils) evaluatePostMap, metadata[state_counter]: " + str(metadata["state_counter"]))
+        #self._logger.debug("[StateUtils] evaluatePostMap, metadata[state_counter]: " + str(metadata["state_counter"]))
 
         self._logger.debug("\t metadata:" + json.dumps(metadata))
 
         workflow_instance_metadata_storage_key = str(function_input["WorkflowInstanceMetadataStorageKey"])
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
         full_metadata_encoded = sapi.get(workflow_instance_metadata_storage_key)
-        self._logger.debug("(StateUtils) full_metadata_encoded get: " + str(full_metadata_encoded))
+        self._logger.debug("[StateUtils] full_metadata_encoded get: " + str(full_metadata_encoded))
 
         full_metadata = json.loads(full_metadata_encoded)
         full_metadata["state_counter"] = state_counter
@@ -604,10 +604,10 @@ class StateUtils:
         branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
         branchOutputKeysSet = sapi.retrieveSet(branchOutputKeysSetKey)
         self._logger.debug("\t branchOutputKeysSet: " + str(branchOutputKeysSet))
-  
+
         if not branchOutputKeysSet:
-            self._logger.error("(StateUtils) branchOutputKeysSet is empty")
-            raise Exception("(StateUtils) branchOutputKeysSet is empty")
+            self._logger.error("[StateUtils] branchOutputKeysSet is empty")
+            raise Exception("[StateUtils] branchOutputKeysSet is empty")
 
         k_list = mapInfo["k_list"]
 
@@ -623,9 +623,9 @@ class StateUtils:
 
         NumBranchesFinished = abs(counterValue)
         self._logger.debug("\t NumBranchesFinished:" + str(NumBranchesFinished))
-        
+
         do_cleanup = False
-        
+
         if k_list[-1] == NumBranchesFinished:
             do_cleanup = True
 
@@ -657,10 +657,10 @@ class StateUtils:
         self._logger.debug("\t mapInfo_BranchOutputKeys:" + str(mapInfo["BranchOutputKeys"]))
 
         self._logger.debug("\t mapInfo_BranchOutputKeys length: " + str(len(mapInfo["BranchOutputKeys"])))
-       
+
         for outputkey in mapInfo["BranchOutputKeys"]:
             outputkey = str(outputkey)
-            if outputkey in branchOutputKeysSet: # mapInfo["BranchOutputKeys"]:   
+            if outputkey in branchOutputKeysSet: # mapInfo["BranchOutputKeys"]:
                 self._logger.debug("\t BranchOutputKey:" + outputkey)
                 while sapi.get(outputkey) == "":
                     time.sleep(0.1) # wait until value is available
@@ -692,11 +692,11 @@ class StateUtils:
 
         # now apply ResultPath and OutputPath
         if do_cleanup:
-            
+
             sapi.deleteSet(branchOutputKeysSetKey)
-         
-        if ast.literal_eval(sapi.get(name_prefix + "_" + "mapInputCount")) == len(mapStatePartialResult): 
-        # if ast.literal_eval(self._mapStateInfo["mapInputCount"]) == len(mapStatePartialResult): 
+
+        if ast.literal_eval(sapi.get(name_prefix + "_" + "mapInputCount")) == len(mapStatePartialResult):
+        # if ast.literal_eval(self._mapStateInfo["mapInputCount"]) == len(mapStatePartialResult):
 
             # we are ready to publish  but need to honour ResultPath and OutputPath
             res_raw = ast.literal_eval(sapi.get(name_prefix + "_" +"mapStatePartialResult"))
@@ -710,7 +710,7 @@ class StateUtils:
             if "Next" in self.parsedfunctionstateinfo:
                 if self.parsedfunctionstateinfo["Next"]:
                     sapi.add_dynamic_next(self.parsedfunctionstateinfo["Next"], function_input_post_output )
- 
+
             if "End" in self.parsedfunctionstateinfo:
                 if self.parsedfunctionstateinfo["End"]:
                     sapi.add_dynamic_next("end", function_input_post_output)
@@ -867,7 +867,7 @@ class StateUtils:
             #self._logger.debug("[StateUtils] processBranchTerminalState:mapName: " + str(mapName))
             mapInfoKey = mapName + "_" + key + "_map_info"
             #self._logger.debug("[StateUtils] processBranchTerminalState:mapInfoKey: " + str(mapInfoKey))
-  
+
             branchCounter = parentMapInfo["BranchCounter"]
 
             #self._logger.debug("[StateUtils] processBranchTerminalState: ")
@@ -886,9 +886,9 @@ class StateUtils:
                 for codes in rest: # find marker for map state and use it to calculate curent index
                     if "-M" in codes:
                         index = rest.index(codes)
-                        current_index = int(rest[index].split("-M")[0]) 
-                    
-                self._logger.debug("current_index: " + str(current_index))
+                        current_index = int(rest[index].split("-M")[0])
+
+                self._logger.debug("[StateUtils] current_index: " + str(current_index))
                 if mapInfo["MaxConcurrency"] != 0:
                     current_index = current_index % int(mapInfo["MaxConcurrency"])
 
@@ -924,7 +924,7 @@ class StateUtils:
             else:
                 self._logger.error("[StateUtils] processBranchTerminalState Unable to find MapInfo")
                 raise Exception("processBranchTerminalState Unable to find MapInfo")
- 
+
     def evaluatePostParallel(self, function_input, key, metadata, sapi):
         #self._logger.debug("[StateUtils] evaluatePostParallel: ")
         #self._logger.debug("\t key:" + key)
@@ -1152,16 +1152,16 @@ class StateUtils:
         elif self.functionstatetype == StateUtils.mapStateType:
             name_prefix = self.functiontopic + "_" + key
 
-            self._logger.debug("(StateUtils) Map state handling function_input: " + str(function_input))
-            self._logger.debug("(StateUtils) Map state handling metadata: " + str(metadata))
+            self._logger.debug("[StateUtils] Map state handling function_input: " + str(function_input))
+            self._logger.debug("[StateUtils] Map state handling metadata: " + str(metadata))
 
             if "MaxConcurrency" in self.parsedfunctionstateinfo.keys():
                 maxConcurrency = int(self.parsedfunctionstateinfo["MaxConcurrency"])
             else:
                 maxConcurrency = 0
 
-            self._logger.debug("(StateUtils) Map state maxConcurrency: " + str(maxConcurrency))
-            self._logger.debug("(StateUtils) Map state handling")
+            self._logger.debug("[StateUtils] Map state maxConcurrency: " + str(maxConcurrency))
+            self._logger.debug("[StateUtils] Map state handling")
 
             if "__state_action" not in metadata or metadata["__state_action"] != "post_map_processing":
                 # here we start the iteration process on a first batch
@@ -1171,7 +1171,7 @@ class StateUtils:
                 else:
                     tobeProcessednow = function_input
                     tobeProcessedlater = []
-                self._logger.debug("(StateUtils) Map state function_input split:" + str(tobeProcessednow) + " " + str(tobeProcessedlater))
+                self._logger.debug("[StateUtils] Map state function_input split:" + str(tobeProcessednow) + " " + str(tobeProcessedlater))
                 sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater)) # store elements to be processed on DL
                 sapi.put(name_prefix + "_" + "mapStatePartialResult", "[]") # initialise the collector variable
                 sapi.put(name_prefix + "_" + "mapInputCount", str(len(function_input)))
@@ -1188,7 +1188,7 @@ class StateUtils:
             elif metadata["__state_action"] == "post_map_processing":
                         tobeProcessedlater = ast.literal_eval(sapi.get(name_prefix + "_" + "tobeProcessedlater")) # get all elements that have not yet been processed
                         #tobeProcessedlater = ast.literal_eval(self._mapStateInfo["tobeProcessedlater"]) # get all elements that have not yet been processed
-                        self._logger.debug("(StateUtils) Map state post_map processing input:" + str(tobeProcessedlater))
+                        self._logger.debug("[StateUtils] Map state post_map processing input:" + str(tobeProcessedlater))
                         # we need to decide at this point if there is a need for more batches. if so:
 
                         if len(tobeProcessedlater) > 0: # we need to start another batch
@@ -1197,7 +1197,7 @@ class StateUtils:
                             sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
                             #self._mapStateInfo["tobeProcessedlater"] = str(tobeProcessedlater[maxConcurrency:]) # store remaining elements to be processed on DL
                         else: # no more batches required. we are at the iteration end, publish the final result
-                            self._logger.debug("(StateUtils) Map state input final stage: " + str(function_input))
+                            self._logger.debug("[StateUtils] Map state input final stage: " + str(function_input))
                             function_output, metadata = self.evaluatePostMap(function_input, key, metadata, sapi)
 
             else:
@@ -1223,7 +1223,7 @@ class StateUtils:
         #           raw_state_input_midway = function_output
         #
         raw_state_input_midway = raw_state_input
-        self._logger.info("Reached applyResultPath: " + str(self.result_path_dict))
+        self._logger.debug("Reached applyResultPath: " + str(self.result_path_dict))
         try:
             if self.result_path_dict and 'ResultPath' in self.result_path_dict:
                 raw_state_input_midway = self.process_result_path(self.result_path_dict, raw_state_input, function_output)
@@ -1266,7 +1266,7 @@ class StateUtils:
 
     def parse_function_state_info(self):
         if self.functionstatetype == StateUtils.defaultStateType:
-            #self._logger.info("Task_SAND state parsing. Not parsing further")
+            #self._logger.debug("Task_SAND state parsing. Not parsing further")
             return
         else:
             self.parsedfunctionstateinfo = json.loads(self.functionstateinfo)
@@ -1275,72 +1275,72 @@ class StateUtils:
             assert statetype == statedef['Type']
 
         if statetype == StateUtils.waitStateType:
-            self._logger.info("Wait state parsing")
+            self._logger.debug("Wait state parsing")
 
         if statetype == StateUtils.failStateType:
-            self._logger.info("Fail state parsing")
+            self._logger.debug("Fail state parsing")
 
         if statetype == StateUtils.succeedStateType:
-            self._logger.info("Succeed state parsing")
+            self._logger.debug("Succeed state parsing")
 
         if statetype == StateUtils.taskStateType:
-            #self._logger.info("Task state parsing")
+            #self._logger.debug("Task state parsing")
 
             if "InputPath" in statedef: # read the I/O Path dicts
                 self.input_path_dict['InputPath'] = statedef['InputPath']
-                #self._logger.info("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
+                #self._logger.debug("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
 
             if "OutputPath" in statedef:
                 self.output_path_dict['OutputPath'] = statedef['OutputPath']
-                #self._logger.info("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
+                #self._logger.debug("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
 
             if "ResultPath" in statedef:
                 self.result_path_dict['ResultPath'] = statedef['ResultPath']
 
             if "Parameters" in statedef:
                 self.parameters_dict['Parameters'] = statedef['Parameters']
-                self._logger.info("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
+                self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
 
             if "Catch" in statedef:
                 self.catcher_list = statedef['Catch']
                 # parse it once and store it
                 self.catcher_list = ast.literal_eval(str(self.catcher_list))
-                #self._logger.info("found Catchers: " + str(self.catcher_list))
+                #self._logger.debug("found Catchers: " + str(self.catcher_list))
 
             if "Retry" in statedef:
                 self.retry_list = statedef['Retry']
                 # parse it once and store it
                 self.retry_list = ast.literal_eval(str(self.retry_list))
-                #self._logger.info("found Retry: " + str(self.retry_list))
+                #self._logger.debug("found Retry: " + str(self.retry_list))
 
         if statetype == StateUtils.choiceStateType:
-            #self._logger.info("Choice state parsing")
+            #self._logger.debug("Choice state parsing")
 
             if "InputPath" in statedef:
                 self.input_path_dict['InputPath'] = statedef['InputPath']
-                self._logger.info("found InputPath: " + json.dumps(statedef['InputPath']))
+                self._logger.debug("found InputPath: " + json.dumps(statedef['InputPath']))
 
             if "OutputPath" in statedef:
                 self.output_path_dict['OutputPath'] = statedef['OutputPath']
-                self._logger.info("found OutputPath: " + json.dumps(statedef['OutputPath']))
+                self._logger.debug("found OutputPath: " + json.dumps(statedef['OutputPath']))
 
             if "ResultPath" in statedef:
                 self.result_path_dict['ResultPath'] = statedef['ResultPath']
-                self._logger.info("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
+                self._logger.debug("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
 
-            self._logger.info("Choice state rules: " + json.dumps(statedef))
+            self._logger.debug("Choice state rules: " + json.dumps(statedef))
             if "Default" in statedef:
                 self.default_next_choice.append(statedef["Default"])
-                self._logger.info("DefaultTarget: " + str(self.default_next_choice))
+                self._logger.debug("DefaultTarget: " + str(self.default_next_choice))
             #choice_state_default = statedef['Default']
 
             choices_list = statedef['Choices'] # get the choice rule list for this state
-            self._logger.info("Choice state rules list: " + str(choices_list))
+            self._logger.debug("Choice state rules list: " + str(choices_list))
 
             key_dict = {} # parse the choice rule list into an expression tree
             for choices in choices_list:
-                self._logger.info("Choice state rule element processed: " + json.dumps(list(choices.keys())))
-                #self._logger.info("converted_function_output: " + str(converted_function_output))
+                self._logger.debug("Choice state rule element processed: " + json.dumps(list(choices.keys())))
+                #self._logger.debug("converted_function_output: " + str(converted_function_output))
                 operator_counter = 0
                 if ("Not" in list(choices.keys())) or ("And" in list(choices.keys())) or ("Or" in list(choices.keys())):
                     operator_counter += 1
@@ -1380,84 +1380,84 @@ class StateUtils:
                         previousnode = anytree.Node(childname, key_dict[hostname])
 
                 #test = EvaluateNode(root.children[0])
-                #self._logger.info("Evaluate: " + str(test) + ", Next: " + choices['Next']) # + str(json.dumps(value))
+                #self._logger.debug("Evaluate: " + str(test) + ", Next: " + choices['Next']) # + str(json.dumps(value))
                 #input_json={}
-                #self._logger.info("value type: " + value)
+                #self._logger.debug("value type: " + value)
                 #for key in value.keys():
                     #if key in test:
-                        #self._logger.info("Modified Evaluate: " + key)
+                        #self._logger.debug("Modified Evaluate: " + key)
                         #test.replace(key, test[key])
-                        #self._logger.info("Modified Evaluate: " + test)
-                ##self._logger.info("Resulting Rendered Tree: " + str(anytree.RenderTree(root)))
+                        #self._logger.debug("Modified Evaluate: " + test)
+                ##self._logger.debug("Resulting Rendered Tree: " + str(anytree.RenderTree(root)))
                 self.parsed_trees.append(root)
 
             #if statedef[substates]['Type'] == "Task":
-            #    self._logger.info("Task state: " + json.dumps(statedef[substates]))
+            #    self._logger.debug("Task state: " + json.dumps(statedef[substates]))
 
         if statetype == StateUtils.passStateType:
-            self._logger.info("(StateUtils) Pass state parsing")
+            self._logger.debug("[StateUtils] Pass state parsing")
 
             if "InputPath" in statedef:
                 self.input_path_dict['InputPath'] = statedef['InputPath']
-                self._logger.info("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
+                self._logger.debug("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
 
             if "OutputPath" in statedef:
                 self.output_path_dict['OutputPath'] = statedef['OutputPath']
-                self._logger.info("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
+                self._logger.debug("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
 
             if "ResultPath" in statedef:
                 self.result_path_dict['ResultPath'] = statedef['ResultPath']
-                self._logger.info("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
+                self._logger.debug("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
 
             if "Parameters" in statedef:
                 self.parameters_dict['Parameters'] = statedef['Parameters']
-                self._logger.info("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
+                self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
 
 
-            #self._logger.info("found Next:  " + json.dumps(statedef['Next']))
-            #self._logger.info("found Result:  " + json.dumps(statedef['Result']))
+            #self._logger.debug("found Next:  " + json.dumps(statedef['Next']))
+            #self._logger.debug("found Result:  " + json.dumps(statedef['Result']))
 
         if statetype == StateUtils.parallelStateType:
-            #self._logger.info("(StateUtils) Parallel state parsing")
+            #self._logger.debug("[StateUtils] Parallel state parsing")
 
             if "InputPath" in statedef:
                 self.input_path_dict['InputPath'] = statedef['InputPath']
-                self._logger.info("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
+                self._logger.debug("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
 
             if "OutputPath" in statedef:
                 self.output_path_dict['OutputPath'] = statedef['OutputPath']
-                self._logger.info("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
+                self._logger.debug("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
 
             if "ResultPath" in statedef:
                 self.result_path_dict['ResultPath'] = statedef['ResultPath']
-                self._logger.info("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
+                self._logger.debug("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
 
             if "Parameters" in statedef:
                 self.parameters_dict['Parameters'] = statedef['Parameters']
-                self._logger.info("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
+                self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
 
         if statetype == StateUtils.mapStateType:
-            #self._logger.info("(StateUtils) Parallel state parsing")
+            #self._logger.debug("[StateUtils] Parallel state parsing")
 
             if "InputPath" in statedef:
                 self.input_path_dict['InputPath'] = statedef['InputPath']
-                self._logger.info("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
+                self._logger.debug("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
 
             if "ItemsPath" in statedef:
                 self.items_path_dict['ItemsPath'] = statedef['ItemsPath']
-                self._logger.info("found ItemsPath: " + json.dumps(self.items_path_dict['ItemsPath']))
+                self._logger.debug("found ItemsPath: " + json.dumps(self.items_path_dict['ItemsPath']))
 
             if "ResultPath" in statedef:
                 self.result_path_dict['ResultPath'] = statedef['ResultPath']
-                self._logger.info("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
+                self._logger.debug("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
 
             if "OutputPath" in statedef:
                 self.output_path_dict['OutputPath'] = statedef['OutputPath']
-                self._logger.info("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
+                self._logger.debug("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
 
             if "Parameters" in statedef:
                 self.parameters_dict['Parameters'] = statedef['Parameters']
-                self._logger.info("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
+                self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
 
 
     def EvaluateNode(self, node):
@@ -1531,15 +1531,15 @@ class StateUtils:
         if parameters == "$": # return unfiltered input data
             ret_value = state_data
         elif parameters is None: #return empty json
-            ret_value =  {} 
+            ret_value =  {}
         else: # contains a parameter filter, get it and return selected kv pairs
-            ret_value = {} 
+            ret_value = {}
             ret_index = {}
 
         for key in parameters.keys(): # process parameters keys
                 if key.casefold() == "comment".casefold(): # ignore
                     ret_value[key] = parameters[key]
-                elif parameters[key] == "$$.Map.Item.Value": # get Items key 
+                elif parameters[key] == "$$.Map.Item.Value": # get Items key
                        value_key = key.split(".$")[0]
                        ret_value = value_key
                        ret_item_value = value_key
@@ -1554,7 +1554,7 @@ class StateUtils:
                                print (parameters[key][k])
                                ret_value[key][k] = parameters[key][k]
                            else:
-                               new_key = k.split(".$")[0] # use the json paths in paramters to match 
+                               new_key = k.split(".$")[0] # use the json paths in paramters to match
                                ret_value[key][new_key] = [match.value for match in parse(parameters[key][k]).find(state_data)][0]
                         return ret_value
 
@@ -1563,31 +1563,31 @@ class StateUtils:
                         new_key = key.split(".$")[0] # get the parameters key
                         query_key = parameters[key].split("$.")[1] # correct the correspondig value
                         new_value = state_data[query_key] # save the actual value before replacing the key
-                        for kk in state_data.keys(): 
+                        for kk in state_data.keys():
                          if isinstance(state_data[kk], dict): # value encapsulates dict
-                            ret_value[new_key] = new_value 
-                            if ret_item_value != None: 
-                                 ret_value[ret_item_value] = state_data[kk] 
-                            else: 
-                                 raise Exception("Error: item value is not set!") 
-                            ret_value_dict = {} 
-                            ret_value_dict[kk] = ret_value 
-                            return ret_value_dict 
+                            ret_value[new_key] = new_value
+                            if ret_item_value != None:
+                                 ret_value[ret_item_value] = state_data[kk]
+                            else:
+                                 raise Exception("Error: item value is not set!")
+                            ret_value_dict = {}
+                            ret_value_dict[kk] = ret_value
+                            return ret_value_dict
 
                          if isinstance(state_data[kk], list):  # value encapsulates list
-                            ret_value_list = []  
-                            for data in state_data[kk]: 
-                                ret_value_list.append({new_key: new_value, ret_item_value: data}) 
-                            ret_value_dict = {} 
-                            ret_value_dict[kk] = ret_value_list  
-                            return ret_value_dict 
+                            ret_value_list = []
+                            for data in state_data[kk]:
+                                ret_value_list.append({new_key: new_value, ret_item_value: data})
+                            ret_value_dict = {}
+                            ret_value_dict[kk] = ret_value_list
+                            return ret_value_dict
                      else:
                         raise Exception("Error: invaldid Parmeters format: " + str(parameters[key]))
 
         # calculate transformed state output provided to Iterator
         ret_total = []
         ret_total_dict = {}
-        
+
         if isinstance(state_data, dict):
             for kk in state_data.keys():
                 for key  in state_data[kk]:
@@ -1615,7 +1615,7 @@ class StateUtils:
             ret_value = ret_total
         else:
             raise Exception("Map state parse error: invalid state input")
- 
+
         return ret_value
 
     def process_items_path(self, path_fields, state_data):
@@ -1630,7 +1630,7 @@ class StateUtils:
         elif input_path is None: #return empty  list
             ret_value = []
         else: # it contains a filter, get it and return selected list in input
-            self._logger.info("seeing items_path filter: " + str(input_path) + " " + str(state_data))   
+            self._logger.debug("seeing items_path filter: " + str(input_path) + " " + str(state_data))
             filtered_state_data = [match.value for match in parse(input_path).find(state_data)]
             if not filtered_state_data:
                 raise Exception("Items Path processing exception: no match with map state item, invalid path!")
@@ -1652,9 +1652,9 @@ class StateUtils:
         elif input_path is None: #return empty dict
             ret_value = {}
         else: # input_path contains a filter, get and apply it
-            self._logger.info("seeing input_path filter: " + str(input_path) + " " + str(state_data))   
+            self._logger.debug("seeing input_path filter: " + str(input_path) + " " + str(state_data))
             filtered_state_data = [match.value for match in parse(input_path).find(state_data)]
-            self._logger.info("after seeing input_path filter: " + str(filtered_state_data))   
+            self._logger.debug("after seeing input_path filter: " + str(filtered_state_data))
             if not filtered_state_data:
                 raise Exception("Input Path processing exception: no match with state input item, invalid path!")
             else:
@@ -1683,10 +1683,10 @@ class StateUtils:
         elif result_path is None:
             ret_value = {}
         else: # result_path is not empty so is there a match?
-            self._logger.info("inside ResultPath processing: " + str(result_path) + " " + str(task_output) )
+            self._logger.debug("inside ResultPath processing: " + str(result_path) + " " + str(task_output) )
             keys = list(tokenize(result_path)) # get all keys
             filtered_state_data = self.nested_dict(keys[1:], task_output)
-            if isinstance(state_data, dict): 
+            if isinstance(state_data, dict):
                 ret_value = dict(list(filtered_state_data.items()) + list(state_data.items())) # adding key and values to new dict
             else:
                 ret_value = filtered_state_data

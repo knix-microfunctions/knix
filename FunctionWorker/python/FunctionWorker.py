@@ -221,7 +221,7 @@ class FunctionWorker:
     ####
 
     def _fork_and_handle_message(self, key, encapsulated_value):
-        self._logger.info("[FunctionWorker] fork_and_handle_message, Before fork")
+        self._logger.debug("[FunctionWorker] fork_and_handle_message, Before fork")
         try:
             # replace individual timestamps with a map
             timestamp_map = {}
@@ -280,7 +280,7 @@ class FunctionWorker:
                 # 1. Decapsulate the input.
                 # The actual user input is encapsulated in a dict of the form {"__mfnuserdata": actual_user_input, "__mfnmetadata": mfn_specific_metadata}
                 # This encapsulation is invisible to the user and is added, maintained, and removed by the hostagent and functionworker.
-                self._logger.info("[FunctionWorker] Received encapsulated input:" + str(type(encapsulated_value)) + ":" + encapsulated_value)
+                self._logger.debug("[FunctionWorker] Received encapsulated input:" + str(type(encapsulated_value)) + ":" + encapsulated_value)
                 timestamp_map["t_start_decapsulate"] = time.time() * 1000.0
                 if not has_error:
                     try:
@@ -341,7 +341,7 @@ class FunctionWorker:
                              #self._logger.debug("[FunctionWorker] User code input(Before ItemsPath processing):" + str(type(function_input)) + ":" + str(function_input))
                              function_input = self._state_utils.applyItemsPath(function_input) # process map items path
 
-                        #elif "Action" not in metadata or metadata["Action"] != "post_parallel_processing": 
+                        #elif "Action" not in metadata or metadata["Action"] != "post_parallel_processing":
                         #     function_input = self._state_utils.applyInputPath(raw_state_input)
 
                         else:
@@ -604,7 +604,7 @@ class FunctionWorker:
 
     def run(self):
         self._is_running = True
-         
+
         self._logger.info("[FunctionWorker] Started:" \
             + self._function_state_name \
             + ", user: " + self._userid \

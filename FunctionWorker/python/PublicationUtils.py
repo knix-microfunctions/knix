@@ -359,7 +359,7 @@ class PublicationUtils():
 
         # get current state type. if map state add marker to execution Id
         state_type = self._state_utils.functionstatetype
-        self._logger.info("self._state_utils.functionstatetype: " + str(state_type))
+        self._logger.debug("self._state_utils.functionstatetype: " + str(state_type))
 
         if state_type == 'Map':
             next_function_execution_id = self._metadata["__function_execution_id"] + "_" + str(output_instance_id)+"-M"

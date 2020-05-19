@@ -104,7 +104,6 @@ class Workflow:
         self.mapStateNamesStack = collections.deque([])
         self.mapBranchCounterStack = collections.deque([])
 
-
         self.workflowExitPoint = None
         self.workflowExitTopic = None
 
@@ -289,8 +288,7 @@ class Workflow:
             assert "Type" in stateinfo.keys()
             statetype = stateinfo["Type"]
 
-            self._logger.info("parseStates: State name: " + statename)
-            self._logger.info("parseStates: State type: " + statetype)
+            self._logger.info("parseStates: State name: %s, state type: %s", statename, statetype)
 
             if statetype == WorkflowStateType.TASK_STATE_TYPE:
                 self.parseTaskState(statename, stateinfo)
@@ -598,14 +596,14 @@ class Workflow:
 
         if self.insideMapBranchAlready():
             mapstateinfo["ParentMapInfo"] = self.constructParentMapInfo() # BranchCounter needs to be added by FunctionWorker
-        #mapstateinfo["ParentMapInfo"] = {"Name": mapstatename, "BranchCounter": 1}        
+        #mapstateinfo["ParentMapInfo"] = {"Name": mapstatename, "BranchCounter": 1}
 
         self.mapStateNamesStack.append(mapstatename)
         if "MaxConcurrency" in mapstateinfo.keys():
             mapstateinfo["MaxConcurrency"] = mapstateinfo["MaxConcurrency"]
 
         if "Iterator" in mapstateinfo.keys():
-            count = 1 # hardcoded number of branches 
+            count = 1 # hardcoded number of branches
             iterator = mapstateinfo["Iterator"]
 
             self.mapBranchCounterStack.append(1)
