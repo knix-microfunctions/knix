@@ -553,8 +553,8 @@ class StateUtils:
         for i in range(len(function_input)):
             sapi.add_dynamic_next(startat, function_input[i]) # Alias for add_workflow_next(self, next, value)
 
-            sapi.put("mapStateInputValue", str(function_input[i]))
-            sapi.put("mapStateInputIndex", str(i))
+            sapi.put(name_prefix + "_" + "mapStateInputValue", str(function_input[i]))
+            sapi.put(name_prefix + "_" + "mapStateInputIndex", str(i))
 
             #self._mapStateInfo["mapStateInputValue"] = str(function_input[i])
             #self._mapStateInfo["mapStateInputIndex"] = str(i)
@@ -565,6 +565,9 @@ class StateUtils:
         return function_input, metadata
 
     def evaluatePostMap(self, function_input, key, metadata, sapi):
+
+        name_prefix = self.functiontopic + "_" + key
+
         # function is triggered by post-commit hook with metadata containing information abaout state results in buckets.
         # It collects these results and returns metadata and post_map_output_results
 
@@ -677,14 +680,14 @@ class StateUtils:
                 self._logger.debug("\t this_BranchOutputKeys is not contained: " + str(outputkey))
 
         self._logger.debug("\t post_map_output_values:" + str(post_map_output_values))
-        while (sapi.get("mapStatePartialResult")) == "":
+        while (sapi.get(name_prefix + "_" + "mapStatePartialResult")) == "":
             time.sleep(0.1) # wait until value is available
 
-        mapStatePartialResult = ast.literal_eval(sapi.get("mapStatePartialResult"))
+        mapStatePartialResult = ast.literal_eval(sapi.get(name_prefix + "_" + "mapStatePartialResult"))
         #mapStatePartialResult = ast.literal_eval(self._mapStateInfo["mapStatePartialResult"])
 
         mapStatePartialResult += post_map_output_values
-        sapi.put("mapStatePartialResult", str(mapStatePartialResult))
+        sapi.put(name_prefix + "_" + "mapStatePartialResult", str(mapStatePartialResult))
         #self._mapStateInfo["mapStatePartialResult"] = str(mapStatePartialResult)
 
         # now apply ResultPath and OutputPath
@@ -692,11 +695,11 @@ class StateUtils:
             
             sapi.deleteSet(branchOutputKeysSetKey)
          
-        if ast.literal_eval(sapi.get("mapInputCount")) == len(mapStatePartialResult): 
+        if ast.literal_eval(sapi.get(name_prefix + "_" + "mapInputCount")) == len(mapStatePartialResult): 
         # if ast.literal_eval(self._mapStateInfo["mapInputCount"]) == len(mapStatePartialResult): 
 
             # we are ready to publish  but need to honour ResultPath and OutputPath
-            res_raw = ast.literal_eval(sapi.get("mapStatePartialResult"))
+            res_raw = ast.literal_eval(sapi.get(name_prefix + "_" +"mapStatePartialResult"))
             #res_raw = ast.literal_eval(self._mapStateInfo["mapStatePartialResult"])
 
             # remove unwanted keys from input before publishing
@@ -711,11 +714,11 @@ class StateUtils:
             if "End" in self.parsedfunctionstateinfo:
                 if self.parsedfunctionstateinfo["End"]:
                     sapi.add_dynamic_next("end", function_input_post_output)
-            sapi.delete("mapInputCount")
-            sapi.delete("mapStateInputIndex")
-            sapi.delete("mapStateInputValue")
-            sapi.delete("mapStatePartialResult")
-            sapi.delete("tobeProcessedlater")
+            sapi.delete(name_prefix + "_" + "mapInputCount")
+            sapi.delete(name_prefix + "_" + "mapStateInputIndex")
+            sapi.delete(name_prefix + "_" + "mapStateInputValue")
+            sapi.delete(name_prefix + "_" + "mapStatePartialResult")
+            sapi.delete(name_prefix + "_" + "tobeProcessedlater")
             post_map_output_values = function_input_post_output
         return post_map_output_values, full_metadata
 
@@ -1147,6 +1150,8 @@ class StateUtils:
                     function_output, metadata = self.evaluatePostParallel(function_input, key, metadata, sapi)
 
         elif self.functionstatetype == StateUtils.mapStateType:
+            name_prefix = self.functiontopic + "_" + key
+
             self._logger.debug("(StateUtils) Map state handling function_input: " + str(function_input))
             self._logger.debug("(StateUtils) Map state handling metadata: " + str(metadata))
 
@@ -1167,21 +1172,21 @@ class StateUtils:
                     tobeProcessednow = function_input
                     tobeProcessedlater = []
                 self._logger.debug("(StateUtils) Map state function_input split:" + str(tobeProcessednow) + " " + str(tobeProcessedlater))
-                sapi.put("tobeProcessedlater", str(tobeProcessedlater)) # store elements to be processed on DL
-                sapi.put("mapStatePartialResult", "[]") # initialise the collector variable
-                sapi.put("mapInputCount", str(len(function_input)))
+                sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater)) # store elements to be processed on DL
+                sapi.put(name_prefix + "_" + "mapStatePartialResult", "[]") # initialise the collector variable
+                sapi.put(name_prefix + "_" + "mapInputCount", str(len(function_input)))
 
-                ######
+                """
                 metadata["tobeProcessedlater"] = str(tobeProcessedlater) # store elements to be processed on DL
                 metadata["mapStatePartialResult"] = "[]" # initialise the collector variable
                 metadata["mapInputCount"] =  str(len(function_input))
 
-                #####
+                """
 
                 function_output, metadata = self.evaluateMapState(tobeProcessednow, key, metadata, sapi)
 
             elif metadata["__state_action"] == "post_map_processing":
-                        tobeProcessedlater = ast.literal_eval(sapi.get("tobeProcessedlater")) # get all elements that have not yet been processed
+                        tobeProcessedlater = ast.literal_eval(sapi.get(name_prefix + "_" + "tobeProcessedlater")) # get all elements that have not yet been processed
                         #tobeProcessedlater = ast.literal_eval(self._mapStateInfo["tobeProcessedlater"]) # get all elements that have not yet been processed
                         self._logger.debug("(StateUtils) Map state post_map processing input:" + str(tobeProcessedlater))
                         # we need to decide at this point if there is a need for more batches. if so:
@@ -1189,7 +1194,7 @@ class StateUtils:
                         if len(tobeProcessedlater) > 0: # we need to start another batch
                             function_output, metadata2 = self.evaluatePostMap(function_input, key, metadata, sapi) # take care not to overwrite metadata
                             function_output, metadata = self.evaluateMapState(tobeProcessedlater[:maxConcurrency], key, metadata, sapi) # start a new batch
-                            sapi.put("tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
+                            sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
                             #self._mapStateInfo["tobeProcessedlater"] = str(tobeProcessedlater[maxConcurrency:]) # store remaining elements to be processed on DL
                         else: # no more batches required. we are at the iteration end, publish the final result
                             self._logger.debug("(StateUtils) Map state input final stage: " + str(function_input))
