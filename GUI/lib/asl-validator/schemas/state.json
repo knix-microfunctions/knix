@@ -12,6 +12,9 @@
       "$ref": "http://asl-validator.cloud/parallel#"
     },
     {
+      "$ref": "http://asl-validator.cloud/map#"
+    },
+    {
       "$ref": "http://asl-validator.cloud/pass#"
     },
     {
