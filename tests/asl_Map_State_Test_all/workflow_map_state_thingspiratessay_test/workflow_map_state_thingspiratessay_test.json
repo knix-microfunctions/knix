@@ -1,0 +1,19 @@
+{
+     "StartAt": "PiratesSay",
+     "States": {
+         "PiratesSay": {
+         "Type": "Map",
+         "ItemsPath": "$.ThingsPiratesSay",
+         "Iterator": {
+             "StartAt": "SayWord",
+              "States": {
+                 "SayWord": {
+                   "Type": "Pass",
+                   "End": true
+                  }
+                }
+           },
+           "End": true
+       }
+   }
+} 
