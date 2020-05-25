@@ -1,0 +1,51 @@
+{
+  "Comment": "An example of the Amazon States Language using a map state to process elements of an array with a max concurrency of 2.",
+  "StartAt": "HardcodedInputsState",
+  "States": {
+    "HardcodedInputsState": {
+      "Type": "Pass",
+      "Result": {
+        "array": [
+          "Iterate",
+          "Over",
+          "This",
+          "Array"
+        ]
+      },
+      "Next": "Map"
+    },
+  "Map": {
+      "Type": "Map",
+      "ItemsPath": "$.array",
+      "MaxConcurrency": 0,
+      "Parameters": {
+        "Value.$": "$$.Map.Item.Value",
+        "Index.$": "$$.Map.Item.Index"
+      },
+      "Next": "FinalState", 
+      "Iterator": {
+        "StartAt": "You",
+        "States": {
+          "You": {
+            "Type": "Pass",
+            "Next": "Can"
+          },
+          "Can": {
+            "Type": "Pass",
+            "Next": "Do"
+          },
+          "Do": {
+            "Type": "Pass",
+            "Next": "Anything"
+          },
+          "Anything": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      }
+    },
+    "FinalState": {"Type": "Pass", "End": true}
+  }
+}
+
