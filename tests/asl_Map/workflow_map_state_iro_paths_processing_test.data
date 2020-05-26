@@ -1,0 +1,50 @@
+{
+"test_name": "Map State IRO Paths Processing Test", 
+
+"workflow_name": "workflow_map_state_iro_paths_processing_test/workflow_map_state_iro_paths_processing_test.json",
+
+"event": {
+  "orderId": "12345678",
+  "orderDate": "20190820101213",
+  "detail": {
+    "customerId": "1234",
+    "deliveryAddress": "123, Seattle, WA",
+    "deliverySpeed": "1-day",
+    "paymentMethod": "aCreditCard",
+    "items": [
+      {
+        "productName": "Agile Software Development",
+        "category": "book",
+        "price": 60.0,
+        "quantity": 1
+      },
+      {
+        "productName": "Domain-Driven Design",
+        "category": "book",
+        "price": 32.0,
+        "quantity": 1
+      },
+      {
+        "productName": "The Mythical Man Month",
+        "category": "book",
+        "price": 18.0,
+        "quantity": 1
+      },
+      {
+        "productName": "The Art of Computer Programming",
+        "category": "book",
+        "price": 180.0,
+        "quantity": 1
+      },
+      {
+        "productName": "Ground Coffee, Dark Roast",
+        "category": "grocery",
+        "price": 8.0,
+        "quantity": 6
+      }
+    ]
+  }
+}, 
+
+"expectedResponse" :  {"summary": "This is a test summary!", "detail": {"processedItems": [{"deliveryAddress": "123, Seattle, WA", "item": {"productName": "Agile Software Development", "category": "book", "price": 60.0, "quantity": 1}}, {"deliveryAddress": "123, Seattle, WA", "item": {"productName": "Domain-Driven Design", "category": "book", "price": 32.0, "quantity": 1}}, {"deliveryAddress": "123, Seattle, WA", "item": {"productName": "The Mythical Man Month", "category": "book", "price": 18.0, "quantity": 1}}, {"deliveryAddress": "123, Seattle, WA", "item": {"productName": "The Art of Computer Programming", "category": "book", "price": 180.0, "quantity": 1}}, {"deliveryAddress": "123, Seattle, WA", "item": {"productName": "Ground Coffee, Dark Roast", "category": "grocery", "price": 8.0, "quantity": 6}}]}}
+}

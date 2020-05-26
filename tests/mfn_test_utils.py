@@ -205,6 +205,12 @@ class MFNTest():
                     for branch in branches:
                         resource_info_map = self._get_resource_info_map(branch, resource_info_map)
 
+                if "Type" in state and state["Type"] == "Map":
+                    branch = state['Iterator']
+                    #print(str(branch))
+                    resource_info_map = self._get_resource_info_map(branch, resource_info_map)
+                    #print(str(resource_info_map))
+
         else:
             print("ERROR: invalid workflow description.")
             assert False
@@ -300,11 +306,11 @@ class MFNTest():
     def undeploy_workflow(self):
         existing_workflows = self._client.workflows
         for wf in existing_workflows:
-            #print wf.name, wf.wid, wf.status
-            if wf.name == self._workflow_name and wf.status == "deployed":
-                wf.undeploy(self._settings["timeout"])
+            if wf.name == self._workflow_name:
+                if wf.status == "deployed":
+                    wf.undeploy(self._settings["timeout"])
+                    print("Workflow undeployed.")
                 self._client.delete_workflow(wf)
-                print("Workflow undeployed.")
                 break
 
         existing_resources = self._client.functions

@@ -1,0 +1,20 @@
+{
+  "StartAt": "TaskTest",
+  "States": {
+    "TaskTest": 
+             {
+              "Type":"Task",
+              "Resource":"TaskTest", 
+               "End":true, 
+               "Parameters": 
+              {
+               "comment": "Selecting what I care about.",
+               "MyDetails": {
+                   "size.$": "$.product.details.size",
+                   "exists.$": "$.product.availability",
+                   "StaticValue": "foo"}
+              }
+             }
+            }
+}
+

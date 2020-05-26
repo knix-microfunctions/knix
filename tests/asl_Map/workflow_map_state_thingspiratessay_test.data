@@ -1,0 +1,18 @@
+{
+"test_name": "Map State Pirates Say Test", 
+
+"workflow_name": "workflow_map_state_thingspiratessay_test/workflow_map_state_thingspiratessay_test.json",
+
+"event" : {"ThingsPiratesSay": [{
+                      "say": "Avast!"},{
+                      "say": "Yar!"},{
+                      "say": "Walk the Plank!"}],
+           "ThingsGiantsSay": [{
+                      "say": "Fee!"},{
+                      "say": "Fi!"},{
+                      "say": "Fo!"},{
+                      "say": "Fum!"}]
+                    },
+"expectedResponse" :  [ {"say": "Avast!" },{ "say": "Yar!" }, { "say": "Walk the Plank!" } ]
+}
+

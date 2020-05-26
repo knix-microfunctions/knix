@@ -31,6 +31,9 @@
      var fail = $.getJSON("lib/asl-validator/schemas/fail.json", function(json) {
      });
 
+     var mapState = $.getJSON("lib/asl-validator/schemas/map.json", function(json) {
+     });
+
      var parallel = $.getJSON("lib/asl-validator/schemas/parallel.json", function(json) {
      });
 
@@ -1209,6 +1212,7 @@
                 choice.responseJSON,
                 fail.responseJSON,
                 parallel.responseJSON,
+		mapState.responseJSON,
                 pass.responseJSON,
                 stateMachine.responseJSON,
                 state.responseJSON,
