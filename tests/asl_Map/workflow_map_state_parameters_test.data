@@ -1,0 +1,21 @@
+
+{
+"test_name": "Map State Parameters Test", 
+
+"workflow_name": "workflow_map_state_parameters_test/workflow_map_state_parameters_test.json",
+
+"event": [{"who": "bob"},{"who": "meg"},{"who": "joe"}],
+
+"expectedResponse" : {"result" :[{
+                                "ContextValue": {
+                                "who": "bob"
+                                 },"ContextIndex": 0},
+                                 {
+                                 "ContextValue": {
+                                 "who": "meg"
+                                 },"ContextIndex": 1},
+                                 {
+                                 "ContextValue": {
+                                 "who": "joe"
+                                 }, "ContextIndex": 2}]}
+}

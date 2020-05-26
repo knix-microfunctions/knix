@@ -1,0 +1,24 @@
+{
+  "StartAt": "ExampleMapState",
+  "States": {
+    "ExampleMapState": {
+      "Type": "Map",
+      "ResultPath": "$.result",
+      "Parameters": {
+               "ContextIndex.$": "$$.Map.Item.Index",
+               "ContextValue.$": "$$.Map.Item.Value"
+             },
+      "Iterator": {
+         "StartAt": "TestPass",
+         "States": {
+           "TestPass": {
+             "Type": "Pass",    
+             "End": true
+           }
+         }
+      },
+      "End": true
+    }
+  }
+}
+
