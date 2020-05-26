@@ -138,9 +138,9 @@ def handle(value, sapi):
     try:
         workflows = sapi.get(email + "_list_workflows", True)
         if workflows is None or workflows == "":
-            raise Exception("Couldn't retrieve workflow status; no such workflow.")
-
-        workflows = json.loads(workflows)
+            workflows = {}
+        else:
+            workflows = json.loads(workflows)
 
         # get single workflow status
         if "workflow" in data and "id" in data["workflow"]:
