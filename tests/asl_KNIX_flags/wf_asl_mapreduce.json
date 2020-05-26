@@ -1,0 +1,28 @@
+{
+  "Comment": "MapReduce in KNIX",
+  "StartAt": "driver",
+  "States": {
+    "driver": {
+      "Type": "Task",
+      "Resource": "driver",
+      "PotentialNext": ["mapper", "reducer"]
+    },
+    "mapper": {
+      "Type": "Task",
+      "Resource": "mapper",
+      "PotentialNext": ["mapper", "reducer"]
+    },
+    "reducer": {
+      "Type": "Task",
+      "Resource": "reducer",
+      "SessionFunction": true,
+      "PotentialNext": ["reducer", "final"]
+    },
+    "final": {
+      "Type": "Task",
+      "Resource": "final",
+      "End": true
+    }
+  }
+}
+
