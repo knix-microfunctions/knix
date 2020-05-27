@@ -1,9 +1,9 @@
 {
-  "StartAt": "func",
+  "StartAt": "echo",
   "States": {
-    "func": {
+    "echo": {
       "Type": "Task",
-      "Resource": "func",
+      "Resource": "echo",
       "End": true
     }
   }

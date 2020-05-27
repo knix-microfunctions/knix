@@ -1,10 +1,12 @@
 {
-"name": "wf_triggerable_tables",
-"entry": "triggerable_table",
-"functions": [
-    {
-    "name": "triggerable_table",
-    "next": ["end"]
-    }]
+  "Comment": "Triggerable table workflow",
+  "StartAt": "triggerable_table",
+  "States": {
+    "triggerable_table": {
+      "Type": "Task",
+      "Resource": "triggerable_table",
+      "End": true
+    }
+  }
 }
 

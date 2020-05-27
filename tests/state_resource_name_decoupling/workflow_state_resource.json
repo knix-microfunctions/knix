@@ -1,36 +1,35 @@
 {
-        "name": "workflow_state_resource",
-        "entry": "state_0",
-        "functions": [
-                {
-                        "name": "state_0",
-                        "next": ["state_1"],
-                        "resource": "my_function"
-                },
-                {
-                        "name": "state_1",
-                        "next": ["state_2"],
-                        "resource": "my_function"
-                },
-                {
-                        "name": "state_2",
-                        "next": ["state_3"],
-                        "resource": "my_function"
-                },
-                {
-                        "name": "state_3",
-                        "next": ["state_4"],
-                        "resource": "my_function"
-                },
-                {
-                        "name": "state_4",
-                        "next": ["state_5"],
-                        "resource": "my_function"
-                },
-                {
-                        "name": "state_5",
-                        "next": ["end"],
-                        "resource": "my_function"
-                }
-        ]
+  "StartAt": "state_0",
+  "States": {
+    "state_0": {
+      "Type": "Task",
+      "Resource": "my_function",
+      "Next": "state_1"
+    },
+    "state_1": {
+      "Type": "Task",
+      "Resource": "my_function",
+      "Next": "state_2"
+    },
+    "state_2": {
+      "Type": "Task",
+      "Resource": "my_function",
+      "Next": "state_3"
+    },
+    "state_3": {
+      "Type": "Task",
+      "Resource": "my_function",
+      "Next": "state_4"
+    },
+    "state_4": {
+      "Type": "Task",
+      "Resource": "my_function",
+      "Next": "state_5"
+    },
+    "state_5": {
+      "Type": "Task",
+      "Resource": "my_function",
+      "End": true
+    },
+  }
 }
