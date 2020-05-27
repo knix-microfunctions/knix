@@ -9,7 +9,7 @@ Compared with existing serverless computing platforms, **KNIX MicroFunctions** h
 * Low function startup latency & high resource efficiency
 * Fast locality-aware storage access
 * Python and Java function runtimes
-* Workflow support and compatibility with Amazon States Language (ASL)
+* Workflow support and compatibility with [Amazon States Language (ASL)](https://states-language.net/spec.html)
 * Support for long-running functions for continuous data processing applications
 * Powerful web UI, SDK and CLI for effective serverless application development
 
@@ -35,12 +35,6 @@ Please refer to the Helm package deployment [README](deploy/helm/microfunctions/
 KNIX MicroFunctions can also be installed using Ansible playbooks on bare metal or virtual machines. You'll need a user with sudo access.
 
 Please refer to the installation [README](deploy/ansible/README.md).
-
-### Connecting to the KNIX web GUI to create functions and workflows
-Nginx is exposed through the Service nx- (e.g. nx-mfn-test) by default on port 20080 (optionally, nginx can be configured with an SSL port).
-There's no default Ingress created.
-
-
 
 # Hosted Service
 

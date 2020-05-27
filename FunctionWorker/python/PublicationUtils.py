@@ -356,6 +356,13 @@ class PublicationUtils():
 
         output_instance_id = self._output_counter_map[topic_next]
         next_function_execution_id = self._metadata["__function_execution_id"] + "_" + str(output_instance_id)
+
+        # get current state type. if map state add marker to execution Id
+        state_type = self._state_utils.functionstatetype
+        self._logger.debug("self._state_utils.functionstatetype: " + str(state_type))
+
+        if state_type == 'Map':
+            next_function_execution_id = self._metadata["__function_execution_id"] + "_" + str(output_instance_id)+"-M"
         self._output_counter_map[topic_next] += 1
 
         trigger_metadata = copy.deepcopy(self._metadata)

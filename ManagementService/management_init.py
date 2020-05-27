@@ -74,6 +74,7 @@ def parse_states(state_map):
 
         if stype == "Task":
             functions.append(wfs["Resource"])
+
         elif stype == 'Parallel':
             # add the parallel state function worker
             states.append({'name':sresource,'type':stype})
@@ -83,7 +84,18 @@ def parse_states(state_map):
                 # add found functions to list of function workers
                 functions.extend(sub_functions)
                 states.extend(sub_states)
-        elif stype in {'Choice', 'Pass', 'Wait', 'Fail', 'Succeed'}: #, 'Parallel'}:
+
+        elif stype == 'Map':
+            # add the Map state iterator function worker
+            states.append({'name':sresource,'type':stype})
+            # find recursively everything that is in the branch
+            branch = state_map[sresource]['Iterator']
+            sub_functions, sub_states = parse_states(branch['States'])
+            # add found functions to list of function workers
+            functions.extend(sub_functions)
+            states.extend(sub_states)
+
+        elif stype in {'Choice', 'Pass', 'Wait', 'Fail', 'Succeed'}: 
             states.append({'name':sresource,'type':stype})
         else:
             raise Exception("Unknown state type: " + stype)
@@ -402,8 +414,6 @@ if __name__ == "__main__":
                 #f.write("docker run --network host -d --ulimit nofile=262144:262144 --name Management --env-file .env --log-opt max-size=500m --log-opt max-file=5 microfn/sandbox\n")
                 f.write("docker run -d --ulimit nofile=262144:262144 --name Management --env-file .env --log-opt max-size=500m --log-opt max-file=5 -P -p " + str(MANAGEMENT_SERVICE_EXPOSED_PORT) + ":8080 microfn/sandbox\n")
             os.chmod("start_management.sh", 0o0775)
-
-            print("Please run: start_management.sh  to start the Management container")
 
         DLCLIENT.shutdown()
         DLCLIENT_MANAGEMENT.shutdown()
