@@ -1,11 +1,10 @@
 {
-        "name": "return_values_java",
-        "entry": "TestReturnValues",
-        "functions": [
-                {
-                        "name": "TestReturnValues",
-                        "next": ["end"],
-                        "potentialNext": []
-                }
-        ]
+  "StartAt": "TestReturnValues",
+  "States": {
+    "TestReturnValues": {
+      "Type": "Task",
+      "Resource": "TestReturnValues",
+      "End": true
+    }
+  }
 }

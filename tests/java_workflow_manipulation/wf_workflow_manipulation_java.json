@@ -1,16 +1,15 @@
 {
-        "name": "workflow_manipulation_java",
-        "entry": "TestWorkflowManipulation",
-        "functions": [
-                {
-                        "name": "TestWorkflowManipulation",
-                        "next": [],
-                        "potentialNext": ["final"]
-                },
-                {
-                        "name": "final",
-                        "next": ["end"],
-                        "potentialNext": []
-                }
-        ]
+  "StartAt": "TestWorkflowManipulation",
+  "States": {
+    "TestWorkflowManipulation": {
+      "Type": "Task",
+      "Resource": "TestWorkflowManipulation",
+      "PotentialNext": ["final"]
+    },
+    "final": {
+        "Type": "Task",
+        "Resource": "final",
+        "End": true
+    }
+  }
 }
