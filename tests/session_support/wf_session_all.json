@@ -1,56 +1,52 @@
 {
-        "name": "wf_session_all",
-        "entry": "entryFunction",
-        "functions": [
-                {
-                        "name": "entryFunction",
-                        "next": ["end"],
-                        "potentialNext": ["sessionFunction1", "sessionFunction2", "finalFunction", "telemetryHandler"]
-                },
-                {
-                        "name": "heartbeatHandler",
-                        "next": [],
-                        "potentialNext": ["healthChecker"]
-                },
-                {
-                        "name": "healthChecker",
-                        "next": [],
-                        "potentialNext": ["sessionFunction1", "sessionFunction2", "telemetryHandler", "entryFunction"]
-                },
-                {
-                        "name": "telemetryHandler",
-                        "next": [],
-                        "potentialNext": ["finalFunction"]
-                },
-                {
-                        "name": "sessionFunction1",
-                        "isSessionFunction": true,
-                        "sessionFunctionParameters":
-                                {
-                                "heartbeat_method": "function",
-                                "heartbeat_function": "heartbeatHandler",
-                                "heartbeat_interval_ms": 15000
-                                },
-                        "next": ["finalFunction"],
-                        "potentialNext": ["telemetryHandler"]
-                },
-                {
-                        "name": "sessionFunction2",
-                        "isSessionFunction": true,
-                        "sessionFunctionParameters":
-                                {
-                                "heartbeat_method": "function",
-                                "heartbeat_function": "heartbeatHandler",
-                                "heartbeat_interval_ms": 15000
-                                },
-                        "next": ["finalFunction"],
-                        "potentialNext": ["telemetryHandler"]
-                },
-                {
-                        "name": "finalFunction",
-                        "next": ["end"],
-                        "potentialNext": []
-                }
-
-        ]
+  "Comment": "Session functions in KNIX",
+  "StartAt": "entryFunction",
+  "States": {
+    "entryFunction": {
+      "Type": "Task",
+      "Resource": "entryFunction",
+      "PotentialNext": ["sessionFunction1", "sessionFunction2", "finalFunction", "telemetryHandler"],
+      "End": true
+    },
+    "heartbeatHandler": {
+      "Type": "Task",
+      "Resource": "heartbeatHandler",
+      "PotentialNext": ["healthChecker"]
+    },
+    "telemetryHandler": {
+      "Type": "Task",
+      "Resource": "telemetryHandler",
+      "PotentialNext": ["finalFunction"]
+    },
+    "sessionFunction1": {
+      "Type": "Task",
+      "Resource": "sessionFunction1",
+      "SessionFunction": true,
+      "SessionFunctionParameters": {
+          "heartbeat_method": "function",
+          "heartbeat_function": "heartbeatHandler",
+          "heartbeat_interval_ms": 15000
+      },
+      "Next": "finalFunction",
+      "PotentialNext": ["telemetryHandler"]
+    },
+    "sessionFunction2": {
+      "Type": "Task",
+      "Resource": "sessionFunction2",
+      "SessionFunction": true,
+      "SessionFunctionParameters": {
+          "heartbeat_method": "function",
+          "heartbeat_function": "heartbeatHandler",
+          "heartbeat_interval_ms": 15000
+      },
+      "Next": "finalFunction",
+      "PotentialNext": ["telemetryHandler"]
+    },
+    "finalFunction": {
+      "Type": "Task",
+      "Resource": "finalFunction",
+      "End": true
+    }
+  }
 }
+

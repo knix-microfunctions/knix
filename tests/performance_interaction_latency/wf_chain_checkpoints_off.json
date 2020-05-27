@@ -1,32 +1,37 @@
 {
-"name": "wf_chain_checkpoints_off",
-"enable_checkpoints": false,
-"entry": "function1",
-"functions": [
-    {
-    "name": "function1",
-    "next": ["function2"]
+  "StartAt": "function1",
+  "EnableCheckpoints": false,
+  "States": {
+    "function1": {
+      "Type": "Task",
+      "Resource": "function1",
+      "Next": "function2"
     },
-    {
-    "name": "function2",
-    "next": ["function3"]
+    "function2": {
+      "Type": "Task",
+      "Resource": "function2",
+      "Next": "function3"
     },
-    {
-    "name": "function3",
-    "next": ["function4"]
+    "function3": {
+      "Type": "Task",
+      "Resource": "function3",
+      "Next": "function4"
     },
-    {
-    "name": "function4",
-    "next": ["function5"]
+    "function4": {
+      "Type": "Task",
+      "Resource": "function4",
+      "Next": "function5"
     },
-    {
-    "name": "function5",
-    "next": ["function6"]
+    "function5": {
+      "Type": "Task",
+      "Resource": "function5",
+      "Next": "function6"
     },
-    {
-    "name": "function6",
-    "next": ["end"]
+    "function6": {
+      "Type": "Task",
+      "Resource": "function6",
+      "End": true
     }
-    ]
+  }
 }
 
