@@ -1,0 +1,171 @@
+{
+  "$id": "http://asl-validator.cloud/choice#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Operator": {
+      "type": "object",
+      "properties": {
+        "Variable": {
+          "type": "string"
+        },
+        "Next": {
+          "type": "string"
+        },
+        "And": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Operator"
+          }
+        },
+        "Or": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Operator"
+          }
+        },
+        "Not": {
+          "$ref": "#/definitions/Operator"
+        },
+        "BooleanEquals": {
+          "type": "boolean"
+        },
+        "NumericEquals": {
+          "type": "number"
+        },
+        "NumericGreaterThan": {
+          "type": "number"
+        },
+        "NumericGreaterThanEquals": {
+          "type": "number"
+        },
+        "NumericLessThan": {
+          "type": "number"
+        },
+        "NumericLessThanEquals": {
+          "type": "number"
+        },
+        "StringEquals": {
+          "type": "string"
+        },
+        "StringGreaterThan": {
+          "type": "string"
+        },
+        "StringGreaterThanEquals": {
+          "type": "string"
+        },
+        "StringLessThan": {
+          "type": "string"
+        },
+        "StringLessThanEquals": {
+          "type": "string"
+        },
+        "TimestampEquals": {
+          "type": "string"
+        },
+        "TimestampGreaterThan": {
+          "type": "string"
+        },
+        "TimestampGreaterThanEquals": {
+          "type": "string"
+        },
+        "TimestampLessThan": {
+          "type": "string"
+        },
+        "TimestampLessThanEquals": {
+          "type": "string"
+        }
+      },
+      "oneOf": [{
+          "required": ["And"]
+        },
+        {
+          "required": ["BooleanEquals"]
+        },
+        {
+          "required": ["Not"]
+        },
+        {
+          "required": ["NumericEquals"]
+        },
+        {
+          "required": ["NumericGreaterThan"]
+        },
+        {
+          "required": ["NumericGreaterThanEquals"]
+        },
+        {
+          "required": ["NumericLessThan"]
+        },
+        {
+          "required": ["NumericLessThanEquals"]
+        },
+        {
+          "required": ["Or"]
+        },
+        {
+          "required": ["StringEquals"]
+        },
+        {
+          "required": ["StringGreaterThan"]
+        },
+        {
+          "required": ["StringGreaterThanEquals"]
+        },
+        {
+          "required": ["StringLessThan"]
+        },
+        {
+          "required": ["StringLessThanEquals"]
+        },
+        {
+          "required": ["TimestampEquals"]
+        },
+        {
+          "required": ["TimestampGreaterThan"]
+        },
+        {
+          "required": ["TimestampGreaterThanEquals"]
+        },
+        {
+          "required": ["TimestampLessThan"]
+        },
+        {
+          "required": ["TimestampLessThanEquals"]
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "Type": {
+      "type": "string",
+      "pattern": "^Choice$"
+    },
+    "Next": {
+      "type": "string"
+    },
+    "End": {
+      "enum": [true]
+    },
+    "Comment": {
+      "type": "string"
+    },
+    "OutputPath": {
+      "type": ["string", "null"]
+    },
+    "InputPath": {
+      "type": ["string", "null"]
+    },
+    "Choices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Operator"
+      }
+    },
+    "Default": {
+      "type": "string"
+    }
+  },
+  "required": ["Type", "Choices"],
+  "additionalProperties": false
+}
