@@ -59,7 +59,6 @@ FLUENTBITFILES=$(shell find ../../LoggingService/)
 	cd ../../LoggingService; make; cd -
 
 fluentbit.yaml: ../../LoggingService/fluentbit
-	cd ..; make fluentbit; cd -
 	touch $@
 
 # datalayer.yaml and dependencies
@@ -89,7 +88,9 @@ sandbox.yaml: ../../Sandbox/sandbox_deployment_package.tar.gz
 	touch $@
 
 # management.yaml and dependencies
-../../ManagementService/management_deployment_package.tar.gz:
+MANAGEMENT_SRC:=../../ManagementService
+MANAGEMENTFILES:=$(shell find $(MANAGEMENT_SRC) | grep -v "management_deployment_package.tar.gz")
+../../ManagementService/management_deployment_package.tar.gz: $(MANAGEMENTFILES)
 	cd ../../ManagementService/; make; cd -
 
 management.yaml: ../../ManagementService/management_deployment_package.tar.gz
@@ -100,6 +101,7 @@ GUI_SRC:=../../GUI
 GUIFILES:=$(shell find $(GUI_SRC) | grep -v "knix_gui_deployment_package.tar.gz")
 ../../GUI/knix_gui_deployment_package.tar.gz: $(GUIFILES)
 	touch $@
+	cd ../../GUI; make; cd -
 	tar --exclude=knix_gui_deployment_package.tar.gz -czf $@ -C $(GUI_SRC) .
 
 nginx.yaml: ../../GUI/knix_gui_deployment_package.tar.gz

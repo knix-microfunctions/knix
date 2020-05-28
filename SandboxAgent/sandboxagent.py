@@ -191,40 +191,56 @@ class SandboxAgent:
         return has_error, errmsg
 
     # SIGTERM kills Thrift before we can handle stuff
-    def sigterm(self, signum, frame):
-        self.shutdown()
+    def sigterm(self, signum, _):
+        self._logger.info("SIGTERM received...")
+        # we will call shutdown() when we catch the exception
         # raise interrupt to kill main sequence when shutdown was not received through the queue
-        raise InterruptedError
+        raise KeyboardInterrupt
 
     def sigchld(self, signum, _):
         if not self._shutting_down:
-            should_shutdown, pid = self._deployment.check_child_process()
+            should_shutdown, pid, failed_process_name = self._deployment.check_child_process()
 
             if should_shutdown:
-                self._update_deployment_status(True, "A sandbox process stopped unexpectedly.")
-                self.shutdown(reason="Process with pid: " + str(pid) + " stopped unexpectedly.")
+                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name)
+
+                if pid == self._queue_service_process.pid:
+                    self._queue_service_process = None
+                elif pid == self._frontend_process.pid:
+                    self._frontend_process = None
+
+                self.shutdown(reason="Process " + failed_process_name + " with pid: " + str(pid) + " stopped unexpectedly.")
 
     def shutdown(self, reason=None):
         self._shutting_down = True
+        errmsg = ""
         if reason is not None:
-            self._logger.error("Shutting down sandboxagent due to reason: " + reason)
+            errmsg = "Shutting down sandboxagent due to reason: " + reason + "..."
+            self._logger.info(errmsg)
         else:
-            self._logger.info("Gracefully shutting down sandboxagent")
+            self._logger.info("Gracefully shutting down sandboxagent...")
 
-        self._logger.info("Shutting down the frontend...")
         if self._frontend_process is not None:
+            self._logger.info("Shutting down the frontend...")
             self._frontend_process.terminate()
+        else:
+            self._logger.info("No frontend; most probably it was the reason of the shutdown.")
 
-        self._logger.info("Shutting down the function worker(s)...")
-        self._deployment.shutdown()
-
-        # shut down the local queue client, so that we can also shut down the queue service
-        self._local_queue_client.removeTopic(self._instructions_topic)
-        self._local_queue_client.shutdown()
-
-        self._logger.info("Shutting down the queue service...")
+        # shutting down function workers depends on the queue service
         if self._queue_service_process is not None:
+            self._logger.info("Shutting down the function worker(s)...")
+            self._deployment.shutdown()
+
+            # shut down the local queue client, so that we can also shut down the queue service
+            self._local_queue_client.removeTopic(self._instructions_topic)
+            self._local_queue_client.shutdown()
+
+            self._logger.info("Shutting down the queue service...")
             process_utils.terminate_and_wait_child(self._queue_service_process, "queue service", 5, self._logger)
+        else:
+            self._logger.info("No queue service; most probably it was the reason of the shutdown.")
+            self._logger.info("Force shutting down the function worker(s)...")
+            self._deployment.force_shutdown()
 
         # we can't do this here, because there may be other sandboxes running the same workflow
         #self._management_data_layer_client.put("workflow_status_" + self._workflowid, "undeployed")
@@ -233,18 +249,29 @@ class SandboxAgent:
         self._logger.info("Shutting down fluent-bit...")
         time.sleep(2) # flush interval of fluent-bit
         process_utils.terminate_and_wait_child(self._fluentbit_process, "fluent-bit", 5, self._logger)
+
         self._is_running = False
 
-        try:
-            self._frontend_process.wait(30)
-        except subprocess.TimeoutExpired as exc:
-            self._frontend_process.kill()
-            _, _ = self._frontend_process.communicate()
-        self._logger.info("Shutdown complete")
+        if self._frontend_process is not None:
+            try:
+                self._frontend_process.wait(30)
+            except subprocess.TimeoutExpired as exc:
+                self._frontend_process.kill()
+                _, _ = self._frontend_process.communicate()
+
+        self._logger.info("Shutdown complete.")
+        if reason is not None:
+            self._update_deployment_status(True, errmsg)
+            self._management_data_layer_client.shutdown()
+            os._exit(1)
+        else:
+            self._update_deployment_status(False, errmsg)
+            self._management_data_layer_client.shutdown()
+            os._exit(0)
 
     def _stop_deployment(self, reason, errmsg):
         self._logger.error("Stopping deployment due to error in launching %s...", reason)
-        self._logger.error(errmsg)
+        self._logger.info(errmsg)
         self._update_deployment_status(True, errmsg)
         self._management_data_layer_client.shutdown()
         os._exit(1)
@@ -255,7 +282,11 @@ class SandboxAgent:
         if has_error:
             sbstatus["status"] = "failed"
         else:
-            sbstatus["status"] = "deployed"
+            if self._shutting_down:
+                sbstatus["status"] = "undeployed"
+            else:
+                sbstatus["status"] = "deployed"
+
         # set our own status in the map
         self._management_data_layer_client.putMapEntry(self._workflowid + "_sandbox_status_map", self._endpoint_key, json.dumps(sbstatus))
 
@@ -321,12 +352,6 @@ class SandboxAgent:
         self._deployment.set_child_process("qs", self._queue_service_process, command_args_map_qs)
         self._deployment.set_child_process("fe", self._frontend_process, command_args_map_fe)
 
-        # 4. start listening for additional instructions if any
-        self._local_queue_client = LocalQueueClient(connect=self._queue)
-        self._local_queue_client.addTopic(self._instructions_topic)
-
-        self._is_running = True
-
         signal.signal(signal.SIGTERM, self.sigterm)
 
         children_pids = self._deployment.get_all_children_pids()
@@ -341,14 +366,27 @@ class SandboxAgent:
         #self._management_data_layer_client.put("workflow_status_" + self._workflowid, "deployed")
         #self._management_data_layer_client.delete("workflow_status_error_" + self._workflowid)
 
+        # 4. start listening for additional instructions if any
+        self._local_queue_client = LocalQueueClient(connect=self._queue)
+        self._local_queue_client.addTopic(self._instructions_topic)
+
+        self._is_running = True
+
         self._logger.info("Successfully deployed.")
 
         while self._is_running:
             try:
                 self._get_and_handle_message()
+            except KeyboardInterrupt as interrupt:
+                self._logger.info("Interrupted...")
+                self.shutdown()
             except Exception as exc:
                 self._logger.error("%s", str(exc))
-                time.sleep(2)
+                # allow shutdown() some time to clean up
+                if self._shutting_down:
+                    time.sleep(5)
+                else:
+                    time.sleep(2)
 
 def get_k8s_nodename():
     with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as ftoken:

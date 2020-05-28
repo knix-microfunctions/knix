@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-VERSION=$(shell git describe --long --tags --dirty --always)
+VERSION?=$(shell git describe --tags)
 PKG=mfn_cli-$(VERSION)-py3-none-any.whl
 
 default: dist/$(PKG)
@@ -23,7 +23,9 @@ clean:
 dist/$(PKG): mfn_cli/*.py setup.cfg setup.py
 	rm -f $(PKG)
 	sed 's/^__version__ .*$$/__version__ = "$(VERSION)"/' -i mfn_cli/__init__.py
+	sed 's/mfn_sdk >= "auto"$$/mfn_sdk >= "$(VERSION)"/' -i setup.cfg
 	python3 setup.py sdist bdist_wheel
 	sed 's/^__version__ .*$$/__version__ = "auto"/' -i mfn_cli/__init__.py
+	sed 's/mfn_sdk >= "$(VERSION)"$$/mfn_sdk >= "auto"/' -i setup.cfg
 
 dist: dist/$(PKG)

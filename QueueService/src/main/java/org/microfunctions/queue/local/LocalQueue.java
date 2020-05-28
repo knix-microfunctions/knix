@@ -26,10 +26,13 @@ public class LocalQueue {
     public static final long VALID_MESSAGE_INDEX = 1L;
     public static final LocalQueueMessage NO_MESSAGE = new LocalQueueMessage(ByteBuffer.allocate(0)).setIndex(NO_MESSAGE_INDEX);
     
+    // define a queue capacity; this will mean that the queue for a function will have only this many outstanding messages
+    private static final int QUEUE_SIZE = 1000;
+    
     private ConcurrentHashMap<String, LinkedBlockingQueue<LocalQueueMessage>> topicToNewMessages = new ConcurrentHashMap<String, LinkedBlockingQueue<LocalQueueMessage>>();
     
     public void addTopic (String topic) {
-        topicToNewMessages.putIfAbsent(topic, new LinkedBlockingQueue<LocalQueueMessage>());
+        topicToNewMessages.putIfAbsent(topic, new LinkedBlockingQueue<LocalQueueMessage>(QUEUE_SIZE));
     }
     
     public void removeTopic (String topic) {

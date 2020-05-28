@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-VERSION=$(shell git describe --long --tags --dirty --always)
+VERSION?=$(shell git describe --tags)
 PKG=mfn_sdk-$(VERSION)-py3-none-any.whl
 
 default: dist/$(PKG)

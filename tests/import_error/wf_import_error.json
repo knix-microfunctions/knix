@@ -1,10 +1,10 @@
 {
-"name": "wf_import_error",
-"entry": "func",
-"functions": [
-	{
-	"name": "func",
-	"next": ["end"]
-	}]
+  "StartAt": "func",
+  "States": {
+    "func": {
+      "Type": "Task",
+      "Resource": "func",
+      "End": true
+    }
+  }
 }
-

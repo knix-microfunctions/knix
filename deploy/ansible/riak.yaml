@@ -277,13 +277,13 @@
       regexp: "^bitcask.max_file_size = "
       line: "bitcask.max_file_size = 500MB"
 
-  - name: configure /etc/security/limits.conf  riak soft nofile 65536
+  - name: configure /etc/security/limits.conf riak soft nofile 65536
     lineinfile:
       path: "/etc/security/limits.conf"
       regexp: "^riak soft nofile"
       line: "riak soft nofile 65536"
 
-  - name: configure /etc/security/limits.conf  riak hard nofile 200000
+  - name: configure /etc/security/limits.conf riak hard nofile 200000
     lineinfile:
       path: "/etc/security/limits.conf"
       regexp: "^riak hard nofile"

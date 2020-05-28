@@ -1,0 +1,10 @@
+{
+  "StartAt": "echo",
+  "States": {
+    "echo": {
+      "Type": "Task",
+      "Resource": "echo",
+      "End": true
+    }
+  }
+}

@@ -26,7 +26,7 @@ from thriftpy2.transport import TFramedTransportFactory, TServerSocket
 from thriftpy2.protocol import TCompactProtocolFactory
 from thriftpy2.server import TSimpleServer
 from thriftpy2.thrift import TProcessor
-from ujsonpath import parse
+from ujsonpath import parse, tokenize
 
 import py3utils
 
@@ -42,6 +42,9 @@ class StateUtils:
     failStateType = 'Fail'
     waitStateType = 'Wait'
     parallelStateType = 'Parallel'
+    mapStateType = 'Map'
+    _instcnt = 0  # instance counter
+    mapFunctionOutput =  {}
 
     def __init__(self, functionstatetype=defaultStateType, functionstatename='', functionstateinfo='{}', functionruntime="", logger=None, workflowid=None, sandboxid=None, functiontopic=None, datalayer=None, storage_userid=None, internal_endpoint=None):
         self.operators = ['And', 'BooleanEquals', 'Not', 'NumericEquals', 'NumericGreaterThan', 'NumericGreaterThanEquals',\
@@ -60,8 +63,10 @@ class StateUtils:
         self.default_next_choice = []
 
         self.input_path_dict = {}
+        self.items_path_dict = {}
         self.result_path_dict = {}
         self.output_path_dict = {}
+        self.parameters_dict = {}
         self.functionstatetype = functionstatetype
         self.functionstatename = functionstatename
         self.functionstateinfo = functionstateinfo
@@ -79,11 +84,29 @@ class StateUtils:
         self.sandboxid = sandboxid
         self.choiceNext = ''
 
+        self.mapStateCounter = 0
+        #self._mapStateInfo = {}
+        #self.batchAlreadyLaunched = []
+        #self.currentMapInputMetadata = {} # initialise with empty dicts
+        self.evaluateCounter = 0
+
         self.catcher_list = []
         self.retry_list = []
 
         self._logger = logger
         self.parse_function_state_info()
+        self.function_output_batch_list = []
+        self.tobeProcessedlater = []
+        self.outputMapStatebatch = []
+        self.mapPartialResult = {}
+
+    def call_counter(func):
+        def helper(*args, **kwargs):
+            helper.calls += 1
+            return func(*args, **kwargs)
+        helper.calls = 0
+        helper.__name__= func.__name__
+        return helper
 
     # find target next for error in catcher list
     def find_cat_data(self, err, cat_list):
@@ -110,9 +133,40 @@ class StateUtils:
                     ret_backoff_rate = ret['BackoffRate']
         return ret_max_attempts, ret_interval_seconds, ret_backoff_rate
 
+    def isMapState(self):
+        return self.functionstatetype == StateUtils.mapStateType
 
     def isTaskState(self):
         return self.functionstatetype == StateUtils.taskStateType or self.functionstatetype == StateUtils.defaultStateType
+    def applyParameters(self, raw_state_input):
+        #2c. Apply Parameters, if available and applicable (The Parameters field is used in Map to select values in the input)
+        #       in = raw_state_input
+        #       if Parameters:
+        #           in = raw_state_input[ItemsPath]
+        #
+        try:
+            function_input = raw_state_input
+            self._logger.debug("inside applyParameters: " + str(self.parameters_dict) + ", raw_state_input: " + str(raw_state_input))
+            if self.parameters_dict:
+                function_input = self.process_parameters(self.parameters_dict, function_input)
+            return function_input
+        except Exception:
+            raise Exception("Parameters processing exception")
+
+    def applyItemsPath(self, raw_state_input):
+        #2a. Apply ItemsPath, if available and applicable (The ItemsPath field is used in Map to select an array in the input)
+        #       in = raw_state_input
+        #       if ItemsPath:
+        #           in = raw_state_input[ItemsPath]
+        #
+        try:
+            function_input = raw_state_input
+            if self.items_path_dict and 'ItemsPath' in self.items_path_dict:
+                function_input = self.process_items_path(self.items_path_dict, function_input)
+            return function_input
+        except Exception:
+            raise Exception("Items path processing exception")
+
 
     def applyInputPath(self, raw_state_input):
         #2. Apply InputPath, if available (Extract function_input from raw_state_input)
@@ -343,6 +397,331 @@ class StateUtils:
         self.choiceNext = self.evaluateNextState(function_input)
         self._logger.debug("[StateUtils] Evaluated Choice condition: " + str(self.choiceNext))
 
+
+    def evaluateMapState(self, function_input, key, metadata, sapi):
+        name_prefix = self.functiontopic + "_" + key
+
+        if "MaxConcurrency" in self.parsedfunctionstateinfo:
+            maxConcurrency = self.parsedfunctionstateinfo["MaxConcurrency"]
+        else:
+            maxConcurrency = 0
+            self.parsedfunctionstateinfo["MaxConcurrency"] = maxConcurrency
+
+        if "Parameters" in self.parsedfunctionstateinfo:
+            mapParamters = self.parsedfunctionstateinfo["Parameters"]
+        else:
+            mapParameters = {}
+
+        self._logger.debug("[StateUtils] evaluateMapState, maxConcurrency: " + str(maxConcurrency))
+
+        self._logger.debug("[StateUtils] evaluateMapState metadata: " + str(metadata))
+
+        counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
+
+        total_branch_count = len(function_input) # all branches executed concurrently
+
+        klist = [total_branch_count]
+
+        self.parsedfunctionstateinfo["BranchCount"] = int(total_branch_count) # overwrite parsed BranchCount with new value
+        self._logger.debug("[StateUtils] evaluateMapState, total_branch_count: " + str(total_branch_count))
+
+        # translated from Parallel
+        counter_metadata = {}
+        counter_metadata["__state_action"] = "post_map_processing"
+        counter_metadata["__async_execution"] = metadata["__async_execution"]
+        workflow_instance_metadata_storage_key = name_prefix + "_workflow_metadata"
+        counter_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
+        counter_metadata["CounterValue"] = 0 # this should be updated by riak hook
+        counter_metadata["Klist"] = klist
+        counter_metadata["TotalBranches"] = total_branch_count
+        counter_metadata["ExecutionId"] = key
+        counter_metadata["FunctionTopic"] = self.functiontopic
+        counter_metadata["Endpoint"] = self._internal_endpoint
+
+        iterator = self.parsedfunctionstateinfo["Iterator"]
+
+        #assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
+
+        k_list = []
+
+        if "WaitForNumBranches" in self.parsedfunctionstateinfo:
+            k_list = self.parsedfunctionstateinfo["WaitForNumBranches"]
+            if not isinstance(k_list, list):
+                self._logger.debug("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
+                raise Exception("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
+            k_list.sort()
+            for k in k_list:
+                if not isinstance(k, int):
+                    self._logger.debug("[StateUtils] Values inside WaitForNumBranches must be integers")
+                    raise Exception("[StateUtils] Values inside WaitForNumBranches must be integers")
+                if k > total_branch_count:
+                    self._logger.debug("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the map state")
+                    raise Exception("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the map state")
+        else:
+            k_list.append(total_branch_count)
+
+        counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
+
+        # dynamic values used for generation of branches
+        counter_name_key = key
+        branch_out_keys = []
+        for i in range(total_branch_count):
+            branch_out_key = key + "-branch-" + str(i+1)
+            branch_out_keys.append(branch_out_key)
+
+        counter_name_value_metadata = copy.deepcopy(metadata)
+        counter_name_value_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
+        counter_name_value_metadata["CounterValue"] = 0 # this should be updated by riak hook
+        counter_name_value_metadata["__state_action"] = "post_map_processing"
+        counter_name_value_metadata["state_counter"] = metadata["state_counter"]
+        self._logger.debug("[StateUtils] evaluateMapState, metadata[state_counter]: " + str(metadata["state_counter"]))
+        self.mapStateCounter = int(metadata["state_counter"])
+
+        counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
+
+        CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
+
+        workflow_instance_outputkeys_set_key = key +"_"+ self.functionstatename + "_outputkeys_set"
+        mapInfo = {}
+        mapInfo["CounterTopicName"] = counter_name_topic
+        mapInfo["CounterNameKey"] = counter_name_key
+        mapInfo["TriggerMetadata"] = counter_name_trigger_metadata
+        mapInfo["CounterNameValueMetadata"] = counter_name_value_metadata
+        mapInfo["BranchOutputKeys"] = branch_out_keys
+        mapInfo["CounterName"] = CounterName
+        mapInfo["MaxConcurrency"] = maxConcurrency
+        mapInfo["BranchOutputKeysSetKey"] = workflow_instance_outputkeys_set_key
+        mapInfo["k_list"] = k_list
+
+        mapInfo_key = self.functionstatename + "_" + key  + "_map_info"
+
+        metadata[mapInfo_key] = mapInfo
+
+        self._logger.debug("[StateUtils] evaluateMapState: ")
+        self._logger.debug("\t CounterName:" + CounterName)
+        self._logger.debug("\t counter_name_topic:" + counter_name_topic)
+        self._logger.debug("\t counter_name_key: " + counter_name_key)
+        self._logger.debug("\t counter_name_trigger_metadata:" + json.dumps(counter_name_trigger_metadata))
+        self._logger.debug("\t counter_name_value_metadata:" + json.dumps(counter_name_value_metadata))
+        self._logger.debug("\t counter_name_value_encoded: " + json.dumps(counter_name_value))
+        self._logger.debug("\t mapInfo_key:" + mapInfo_key)
+        #self._logger.debug("\t mapInfo:" + json.dumps(mapInfo))
+        self._logger.debug("\t workflow_instance_metadata_storage_key: " + workflow_instance_metadata_storage_key)
+        #self._logger.debug("\t metadata " + json.dumps(metadata))
+        self._logger.debug("\t total_branch_count:" + str(total_branch_count))
+        self._logger.debug("\t branch_out_keys:" + ",".join(branch_out_keys))
+
+        # create counter for Map equivalent Parallel state
+        assert py3utils.is_string(CounterName)
+        counterName = str(mapInfo["CounterName"])
+        counter_metadata_key_name = counterName + "_metadata"
+
+        try:
+            dlc = DataLayerClient(locality=1, suid=self._storage_userid, is_wf_private=False, connect=self._datalayer)
+
+            # create a triggerable counter to start the post-parallel when parallel state finishes
+            dlc.createCounter(CounterName, 0, tableName=dlc.countertriggerstable)
+
+            dlc.put(counter_metadata_key_name, json.dumps(counter_metadata), tableName=dlc.countertriggersinfotable)
+
+        except Exception as exc:
+            self._logger.error("Exception in creating counter: " + str(exc))
+            self._logger.error(exc)
+            raise
+        finally:
+            dlc.shutdown()
+
+
+        assert py3utils.is_string(workflow_instance_metadata_storage_key)
+        self._logger.debug("[StateUtils] full_metadata_encoded put key: " + str(workflow_instance_metadata_storage_key))
+
+        sapi.put(workflow_instance_metadata_storage_key, json.dumps(metadata))
+
+        #assert py3utils.is_string(workflow_instance_outputkeys_set_key)
+        # sapi.createSet(workflow_instance_outputkeys_set_key) # obsolete statement
+
+
+        # Now provide each branch with its own input
+
+        #branches = self.parsedfunctionstateinfo["Branches"]
+        branch = self.parsedfunctionstateinfo["Iterator"] # this is just onee set
+        #for branch in branches:
+        # lauch a branch for each input element
+        startat = str(branch["StartAt"])
+
+
+        for i in range(len(function_input)):
+            sapi.add_dynamic_next(startat, function_input[i]) # Alias for add_workflow_next(self, next, value)
+
+            sapi.put(name_prefix + "_" + "mapStateInputValue", str(function_input[i]))
+            sapi.put(name_prefix + "_" + "mapStateInputIndex", str(i))
+
+            #self._mapStateInfo["mapStateInputValue"] = str(function_input[i])
+            #self._mapStateInfo["mapStateInputIndex"] = str(i)
+
+            self._logger.debug("\t Map State StartAt:" + startat)
+            self._logger.debug("\t Map State input:" + str(function_input[i]))
+
+        return function_input, metadata
+
+    def evaluatePostMap(self, function_input, key, metadata, sapi):
+
+        name_prefix = self.functiontopic + "_" + key
+
+        # function is triggered by post-commit hook with metadata containing information abaout state results in buckets.
+        # It collects these results and returns metadata and post_map_output_results
+
+        #self._logger.debug("[StateUtils] evaluatePostMap: ")
+        #self._logger.debug("\t key:" + key)
+        #self._logger.debug("\t metadata:" + json.dumps(metadata))
+        #self._logger.debug("\t function_input: " + str(function_input))
+
+        action = metadata["__state_action"]
+        assert action == "post_map_processing"
+        #counterValue = metadata["CounterValue"]
+        counterValue = function_input["CounterValue"]
+
+        state_counter = 0
+        if "state_counter" in metadata:
+            state_counter = metadata["state_counter"]
+
+        #self._logger.debug("[StateUtils] evaluatePostMap, metadata[state_counter]: " + str(metadata["state_counter"]))
+
+        self._logger.debug("\t metadata:" + json.dumps(metadata))
+
+        workflow_instance_metadata_storage_key = str(function_input["WorkflowInstanceMetadataStorageKey"])
+        assert py3utils.is_string(workflow_instance_metadata_storage_key)
+        full_metadata_encoded = sapi.get(workflow_instance_metadata_storage_key)
+        self._logger.debug("[StateUtils] full_metadata_encoded get: " + str(full_metadata_encoded))
+
+        full_metadata = json.loads(full_metadata_encoded)
+        full_metadata["state_counter"] = state_counter
+
+        #mapInfoKey = key + "_" + self.functionstatename + "_map_info"
+        mapInfoKey = self.functionstatename + "_" + key  + "_map_info"
+        mapInfo = full_metadata[mapInfoKey]
+
+        branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
+        branchOutputKeysSet = sapi.retrieveSet(branchOutputKeysSetKey)
+        self._logger.debug("\t branchOutputKeysSet: " + str(branchOutputKeysSet))
+
+        if not branchOutputKeysSet:
+            self._logger.error("[StateUtils] branchOutputKeysSet is empty")
+            raise Exception("[StateUtils] branchOutputKeysSet is empty")
+
+        k_list = mapInfo["k_list"]
+
+        self._logger.debug("\t action: " + action)
+        self._logger.debug("\t counterValue:" + str(counterValue))
+        #self._logger.debug("\t WorkflowInstanceMetadataStorageKey:" + metadata["WorkflowInstanceMetadataStorageKey"])
+        #self._logger.debug("\t full_metadata:" + full_metadata_encoded)
+        self._logger.debug("\t mapInfoKey: " + mapInfoKey)
+        #self._logger.debug("\t mapInfo:" + json.dumps(mapInfo))
+        self._logger.debug("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
+        self._logger.debug("\t branchOutputKeysSet:" + str(branchOutputKeysSet))
+        self._logger.debug("\t k_list:" + str(k_list))
+
+        NumBranchesFinished = abs(counterValue)
+        self._logger.debug("\t NumBranchesFinished:" + str(NumBranchesFinished))
+
+        do_cleanup = False
+
+        if k_list[-1] == NumBranchesFinished:
+            do_cleanup = True
+
+        self._logger.debug("\t do_cleanup:" + str(do_cleanup))
+
+        counterName = str(mapInfo["CounterName"])
+        counter_metadata_key_name = counterName + "_metadata"
+        assert py3utils.is_string(counterName)
+
+        if do_cleanup:
+            assert py3utils.is_string(counterName)
+            try:
+                dlc = DataLayerClient(locality=1, suid=self._storage_userid, is_wf_private=False, connect=self._datalayer)
+
+                # done with the triggerable counter
+                dlc.deleteCounter(counterName, tableName=dlc.countertriggerstable)
+
+                dlc.delete(counter_metadata_key_name, tableName=dlc.countertriggersinfotable)
+
+            except Exception as exc:
+                self._logger.error("Exception deleting counter: " + str(exc))
+                self._logger.error(exc)
+                raise
+            finally:
+                dlc.shutdown()
+
+        post_map_output_values = []
+
+        self._logger.debug("\t mapInfo_BranchOutputKeys:" + str(mapInfo["BranchOutputKeys"]))
+
+        self._logger.debug("\t mapInfo_BranchOutputKeys length: " + str(len(mapInfo["BranchOutputKeys"])))
+
+        for outputkey in mapInfo["BranchOutputKeys"]:
+            outputkey = str(outputkey)
+            if outputkey in branchOutputKeysSet: # mapInfo["BranchOutputKeys"]:
+                self._logger.debug("\t BranchOutputKey:" + outputkey)
+                while sapi.get(outputkey) == "":
+                    time.sleep(0.1) # wait until value is available
+
+                branchOutput = sapi.get(outputkey)
+                branchOutput_decoded = json.loads(branchOutput)
+                self._logger.debug("\t branchOutput(type):" + str(type(branchOutput)))
+                self._logger.debug("\t branchOutput:" + branchOutput)
+                self._logger.debug("\t branchOutput_decoded(type):" + str(type(branchOutput_decoded)))
+                self._logger.debug("\t branchOutput_decoded:" + str(branchOutput_decoded))
+                post_map_output_values = post_map_output_values + [branchOutput_decoded]
+                if do_cleanup:
+                    sapi.delete(outputkey) # cleanup the key from data layer
+                    self._logger.debug("\t cleaned output key:" + outputkey)
+            else:
+                post_map_output_values = post_map_output_values + [None]
+                self._logger.debug("\t this_BranchOutputKeys is not contained: " + str(outputkey))
+
+        self._logger.debug("\t post_map_output_values:" + str(post_map_output_values))
+        while (sapi.get(name_prefix + "_" + "mapStatePartialResult")) == "":
+            time.sleep(0.1) # wait until value is available
+
+        mapStatePartialResult = ast.literal_eval(sapi.get(name_prefix + "_" + "mapStatePartialResult"))
+        #mapStatePartialResult = ast.literal_eval(self._mapStateInfo["mapStatePartialResult"])
+
+        mapStatePartialResult += post_map_output_values
+        sapi.put(name_prefix + "_" + "mapStatePartialResult", str(mapStatePartialResult))
+        #self._mapStateInfo["mapStatePartialResult"] = str(mapStatePartialResult)
+
+        # now apply ResultPath and OutputPath
+        if do_cleanup:
+
+            sapi.deleteSet(branchOutputKeysSetKey)
+
+        if ast.literal_eval(sapi.get(name_prefix + "_" + "mapInputCount")) == len(mapStatePartialResult):
+        # if ast.literal_eval(self._mapStateInfo["mapInputCount"]) == len(mapStatePartialResult):
+
+            # we are ready to publish  but need to honour ResultPath and OutputPath
+            res_raw = ast.literal_eval(sapi.get(name_prefix + "_" +"mapStatePartialResult"))
+            #res_raw = ast.literal_eval(self._mapStateInfo["mapStatePartialResult"])
+
+            # remove unwanted keys from input before publishing
+            function_input = {}
+
+            function_input_post_result = self.applyResultPath(function_input, res_raw)
+            function_input_post_output = self.applyResultPath(function_input_post_result, function_input_post_result)
+            if "Next" in self.parsedfunctionstateinfo:
+                if self.parsedfunctionstateinfo["Next"]:
+                    sapi.add_dynamic_next(self.parsedfunctionstateinfo["Next"], function_input_post_output )
+
+            if "End" in self.parsedfunctionstateinfo:
+                if self.parsedfunctionstateinfo["End"]:
+                    sapi.add_dynamic_next("end", function_input_post_output)
+            sapi.delete(name_prefix + "_" + "mapInputCount")
+            sapi.delete(name_prefix + "_" + "mapStateInputIndex")
+            sapi.delete(name_prefix + "_" + "mapStateInputValue")
+            sapi.delete(name_prefix + "_" + "mapStatePartialResult")
+            sapi.delete(name_prefix + "_" + "tobeProcessedlater")
+            post_map_output_values = function_input_post_output
+        return post_map_output_values, full_metadata
+
     def evaluateParallelState(self, function_input, key, metadata, sapi):
         name_prefix = self.functiontopic + "_" + key
         total_branch_count = self.parsedfunctionstateinfo["BranchCount"]
@@ -479,6 +858,72 @@ class StateUtils:
                 self._logger.error("[StateUtils] processBranchTerminalState Unable to find ParallelInfo")
                 raise Exception("processBranchTerminalState Unable to find ParallelInfo")
 
+        if self.parsedfunctionstateinfo["End"] and "ParentMapInfo" in self.parsedfunctionstateinfo:
+
+            parentMapInfo = self.parsedfunctionstateinfo["ParentMapInfo"]
+
+            #self._logger.debug("[StateUtils] processBranchTerminalState:parentMapInfo: " + str(parentMapInfo))
+            mapName = parentMapInfo["Name"]
+            #self._logger.debug("[StateUtils] processBranchTerminalState:mapName: " + str(mapName))
+            mapInfoKey = mapName + "_" + key + "_map_info"
+            #self._logger.debug("[StateUtils] processBranchTerminalState:mapInfoKey: " + str(mapInfoKey))
+
+            branchCounter = parentMapInfo["BranchCounter"]
+
+            #self._logger.debug("[StateUtils] processBranchTerminalState: ")
+            #self._logger.debug("\t ParentMapInfo:" + json.dumps(parentMapInfo))
+            #self._logger.debug("\t mapName:" + mapName)
+            #self._logger.debug("\t branchCounter: " + str(branchCounter))
+            #self._logger.debug("\t key:" + key)
+            #self._logger.debug("\t metadata:" + json.dumps(metadata))
+            #self._logger.debug("\t value_output(type):" + str(type(value_output)))
+            #self._logger.debug("\t value_output:" + value_output)
+
+            if mapInfoKey in metadata:
+                mapInfo = metadata[mapInfoKey]
+
+                rest = metadata["__function_execution_id"].split("_")[1:]
+                for codes in rest: # find marker for map state and use it to calculate curent index
+                    if "-M" in codes:
+                        index = rest.index(codes)
+                        current_index = int(rest[index].split("-M")[0])
+
+                self._logger.debug("[StateUtils] current_index: " + str(current_index))
+                if mapInfo["MaxConcurrency"] != 0:
+                    current_index = current_index % int(mapInfo["MaxConcurrency"])
+
+                counterName = str(mapInfo["CounterName"])
+                branchOutputKeys = mapInfo["BranchOutputKeys"]
+                #branchOutputKey = str(branchOutputKeys[branchCounter-1])
+                branchOutputKey = str(branchOutputKeys[current_index])
+
+                branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
+
+                self._logger.debug("\t branchOutputKey:" + branchOutputKey)
+                self._logger.debug("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
+
+                assert py3utils.is_string(branchOutputKey)
+                sapi.put(branchOutputKey, value_output)
+
+                assert py3utils.is_string(branchOutputKeysSetKey)
+                sapi.addSetEntry(branchOutputKeysSetKey, branchOutputKey)
+
+                assert py3utils.is_string(counterName)
+                try:
+                    dlc = DataLayerClient(locality=1, suid=self._storage_userid, is_wf_private=False, connect=self._datalayer)
+
+                    # increment the triggerable counter
+                    dlc.incrementCounter(counterName, 1, tableName=dlc.countertriggerstable)
+                except Exception as exc:
+                    self._logger.error("Exception incrementing counter: " + str(exc))
+                    self._logger.error(exc)
+                    raise
+                finally:
+                    dlc.shutdown()
+
+            else:
+                self._logger.error("[StateUtils] processBranchTerminalState Unable to find MapInfo")
+                raise Exception("processBranchTerminalState Unable to find MapInfo")
 
     def evaluatePostParallel(self, function_input, key, metadata, sapi):
         #self._logger.debug("[StateUtils] evaluatePostParallel: ")
@@ -642,8 +1087,8 @@ class StateUtils:
                 # need to communicate with datalayer for definition of trigger for hibernating/resuming task
                 wait_state_timestamppath_data = [match.value for match in parse(wait_state_timestamppath).find(function_input)]
                 if wait_state_timestamppath_data == []:
-                    #self._logger.exception("[StateUtils] Wait state timestamppath does not match: " + str(wait_state_timestamppath))
-                    raise Exception("Wait state timestamppath does not match")
+                    #self._logger.exception("[StateUtils] Wait state timestamp_path does not match: " + str(wait_state_timestamppath))
+                    raise Exception("Wait state timestamp_path does not match")
 
                 self._logger.debug("[StateUtils] Wait state timestamppath data parsed:" + str(wait_state_timestamppath_data[0]))
 
@@ -704,6 +1149,60 @@ class StateUtils:
                 if metadata["__state_action"] == "post_parallel_processing":
                     function_output, metadata = self.evaluatePostParallel(function_input, key, metadata, sapi)
 
+        elif self.functionstatetype == StateUtils.mapStateType:
+            name_prefix = self.functiontopic + "_" + key
+
+            self._logger.debug("[StateUtils] Map state handling function_input: " + str(function_input))
+            self._logger.debug("[StateUtils] Map state handling metadata: " + str(metadata))
+
+            if "MaxConcurrency" in self.parsedfunctionstateinfo.keys():
+                maxConcurrency = int(self.parsedfunctionstateinfo["MaxConcurrency"])
+            else:
+                maxConcurrency = 0
+
+            self._logger.debug("[StateUtils] Map state maxConcurrency: " + str(maxConcurrency))
+            self._logger.debug("[StateUtils] Map state handling")
+
+            if "__state_action" not in metadata or metadata["__state_action"] != "post_map_processing":
+                # here we start the iteration process on a first batch
+                if maxConcurrency != 0:
+                    tobeProcessednow = function_input[:maxConcurrency] # take the first maxConcurrency elements
+                    tobeProcessedlater = function_input[maxConcurrency:] # keep the remaining  elements for later
+                else:
+                    tobeProcessednow = function_input
+                    tobeProcessedlater = []
+                self._logger.debug("[StateUtils] Map state function_input split:" + str(tobeProcessednow) + " " + str(tobeProcessedlater))
+                sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater)) # store elements to be processed on DL
+                sapi.put(name_prefix + "_" + "mapStatePartialResult", "[]") # initialise the collector variable
+                sapi.put(name_prefix + "_" + "mapInputCount", str(len(function_input)))
+
+                """
+                metadata["tobeProcessedlater"] = str(tobeProcessedlater) # store elements to be processed on DL
+                metadata["mapStatePartialResult"] = "[]" # initialise the collector variable
+                metadata["mapInputCount"] =  str(len(function_input))
+
+                """
+
+                function_output, metadata = self.evaluateMapState(tobeProcessednow, key, metadata, sapi)
+
+            elif metadata["__state_action"] == "post_map_processing":
+                        tobeProcessedlater = ast.literal_eval(sapi.get(name_prefix + "_" + "tobeProcessedlater")) # get all elements that have not yet been processed
+                        #tobeProcessedlater = ast.literal_eval(self._mapStateInfo["tobeProcessedlater"]) # get all elements that have not yet been processed
+                        self._logger.debug("[StateUtils] Map state post_map processing input:" + str(tobeProcessedlater))
+                        # we need to decide at this point if there is a need for more batches. if so:
+
+                        if len(tobeProcessedlater) > 0: # we need to start another batch
+                            function_output, metadata2 = self.evaluatePostMap(function_input, key, metadata, sapi) # take care not to overwrite metadata
+                            function_output, metadata = self.evaluateMapState(tobeProcessedlater[:maxConcurrency], key, metadata, sapi) # start a new batch
+                            sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
+                            #self._mapStateInfo["tobeProcessedlater"] = str(tobeProcessedlater[maxConcurrency:]) # store remaining elements to be processed on DL
+                        else: # no more batches required. we are at the iteration end, publish the final result
+                            self._logger.debug("[StateUtils] Map state input final stage: " + str(function_input))
+                            function_output, metadata = self.evaluatePostMap(function_input, key, metadata, sapi)
+
+            else:
+                raise Exception("Unknow action type in map state")
+
         else:
             raise Exception("Unknown state type")
 
@@ -724,7 +1223,7 @@ class StateUtils:
         #           raw_state_input_midway = function_output
         #
         raw_state_input_midway = raw_state_input
-        #self._logger.debug("Reached applyResultPath!")
+        #self._logger.debug("Reached applyResultPath: " + str(self.result_path_dict))
         try:
             if self.result_path_dict and 'ResultPath' in self.result_path_dict:
                 raw_state_input_midway = self.process_result_path(self.result_path_dict, raw_state_input, function_output)
@@ -798,12 +1297,9 @@ class StateUtils:
             if "ResultPath" in statedef:
                 self.result_path_dict['ResultPath'] = statedef['ResultPath']
 
-                #self._logger.debug("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
-
-            #if "Next" in statedef:
-            #        self._logger.debug("found Next:  " + json.dumps(statedef['Next']))
-            #if "Resource" in statedef:
-            #    self._logger.debug("found Resource:  " + json.dumps(statedef['Resource']))
+            if "Parameters" in statedef:
+                self.parameters_dict['Parameters'] = statedef['Parameters']
+                self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
 
             if "Catch" in statedef:
                 self.catcher_list = statedef['Catch']
@@ -913,6 +1409,10 @@ class StateUtils:
                 self.result_path_dict['ResultPath'] = statedef['ResultPath']
                 self._logger.debug("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
 
+            if "Parameters" in statedef:
+                self.parameters_dict['Parameters'] = statedef['Parameters']
+                self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
+
             #self._logger.debug("found Next:  " + json.dumps(statedef['Next']))
             #self._logger.debug("found Result:  " + json.dumps(statedef['Result']))
 
@@ -930,6 +1430,33 @@ class StateUtils:
             if "ResultPath" in statedef:
                 self.result_path_dict['ResultPath'] = statedef['ResultPath']
                 self._logger.debug("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
+
+            if "Parameters" in statedef:
+                self.parameters_dict['Parameters'] = statedef['Parameters']
+                self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
+
+        if statetype == StateUtils.mapStateType:
+            #self._logger.debug("[StateUtils] Parallel state parsing")
+
+            if "InputPath" in statedef:
+                self.input_path_dict['InputPath'] = statedef['InputPath']
+                self._logger.debug("found InputPath: " + json.dumps(self.input_path_dict['InputPath']))
+
+            if "ItemsPath" in statedef:
+                self.items_path_dict['ItemsPath'] = statedef['ItemsPath']
+                self._logger.debug("found ItemsPath: " + json.dumps(self.items_path_dict['ItemsPath']))
+
+            if "ResultPath" in statedef:
+                self.result_path_dict['ResultPath'] = statedef['ResultPath']
+                self._logger.debug("found ResultPath: " + json.dumps(self.result_path_dict['ResultPath']))
+
+            if "OutputPath" in statedef:
+                self.output_path_dict['OutputPath'] = statedef['OutputPath']
+                self._logger.debug("found OutputPath: " + json.dumps(self.output_path_dict['OutputPath']))
+
+            if "Parameters" in statedef:
+                self.parameters_dict['Parameters'] = statedef['Parameters']
+                self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
 
 
     def EvaluateNode(self, node):
@@ -992,6 +1519,124 @@ class StateUtils:
             result = "%s %s '%s'" % (expr[0], expr[1], expr[2]) # we want to compare strings with strings
         return result
 
+    def process_parameters(self, parameters, state_data):
+        """
+        evaluate JSON path Paramaters in conjunction with state_data
+        """
+        parameters = parameters['Parameters']
+        ret_value = None
+        ret_item_value = None
+
+        if parameters == "$": # return unfiltered input data
+            ret_value = state_data
+        elif parameters is None: #return empty json
+            ret_value =  {}
+        else: # contains a parameter filter, get it and return selected kv pairs
+            ret_value = {}
+            ret_index = {}
+
+        for key in parameters.keys(): # process parameters keys
+                if key.casefold() == "comment".casefold(): # ignore
+                    ret_value[key] = parameters[key]
+                elif parameters[key] == "$$.Map.Item.Value": # get Items key
+                       value_key = key.split(".$")[0]
+                       ret_value = value_key
+                       ret_item_value = value_key
+                elif parameters[key] == "$$.Map.Item.Index": # get Index key
+                       index_key = key.split(".$")[0]
+                       ret_index = index_key
+                else: # processing more complex Parameters values
+                     if isinstance(parameters[key], dict): # parameters key refers to dict value
+                        ret_value[key] = {}
+                        for k in parameters[key]: # get nested keys
+                           if not k.split(".")[-1] == "$": # parse static value
+                               print (parameters[key][k])
+                               ret_value[key][k] = parameters[key][k]
+                           else:
+                               new_key = k.split(".$")[0] # use the json paths in paramters to match
+                               ret_value[key][new_key] = [match.value for match in parse(parameters[key][k]).find(state_data)][0]
+                        return ret_value
+
+                     if isinstance(parameters[key], str): # parameters key refers to string value
+                        ret_value = {}
+                        new_key = key.split(".$")[0] # get the parameters key
+                        query_key = parameters[key].split("$.")[1] # correct the correspondig value
+                        new_value = state_data[query_key] # save the actual value before replacing the key
+                        for kk in state_data.keys():
+                         if isinstance(state_data[kk], dict): # value encapsulates dict
+                            ret_value[new_key] = new_value
+                            if ret_item_value != None:
+                                 ret_value[ret_item_value] = state_data[kk]
+                            else:
+                                 raise Exception("Error: item value is not set!")
+                            ret_value_dict = {}
+                            ret_value_dict[kk] = ret_value
+                            return ret_value_dict
+
+                         if isinstance(state_data[kk], list):  # value encapsulates list
+                            ret_value_list = []
+                            for data in state_data[kk]:
+                                ret_value_list.append({new_key: new_value, ret_item_value: data})
+                            ret_value_dict = {}
+                            ret_value_dict[kk] = ret_value_list
+                            return ret_value_dict
+                     else:
+                        raise Exception("Error: invaldid Parmeters format: " + str(parameters[key]))
+
+        # calculate transformed state output provided to Iterator
+        ret_total = []
+        ret_total_dict = {}
+
+        if isinstance(state_data, dict):
+            for kk in state_data.keys():
+                for key  in state_data[kk]:
+                    if ret_value != {} and ret_index == {}:
+                        ret_total.append({ret_value: key})
+                    elif ret_value == {} and ret_index != {}:
+                        ret_total.append({ret_index: state_data[kk].index(key) })
+                    elif ret_value != {} and ret_index != {}:
+                        ret_total.append({ret_value: key, ret_index: state_data[kk].index(key) })
+                    else:
+                        raise Exception("Map State Parameters parse error on dict input: " + str(state_data))
+                ret_total_dict[kk] = ret_total
+            ret_value = ret_total_dict
+
+        elif isinstance(state_data, list):
+            for key in state_data:
+                if ret_value != {} and ret_index == {}:
+                    ret_total.append({ret_value: key})
+                elif ret_value == {} and ret_index != {}:
+                    ret_total.append({ret_index: state_data.index(key) })
+                elif ret_value != {} and ret_index != {}:
+                    ret_total.append({ret_value: key, ret_index: state_data.index(key) })
+                else:
+                    raise Exception("Map State Parameters parse error on list input: " + str(list))
+            ret_value = ret_total
+        else:
+            raise Exception("Map state parse error: invalid state input")
+
+        return ret_value
+
+    def process_items_path(self, path_fields, state_data):
+        ret_value = None
+        if 'ItemsPath' not in list(path_fields.keys()):
+            path_fields['ItemsPath'] = "$"
+
+        input_path = path_fields['ItemsPath']
+
+        if input_path == "$": # return unfiltered input data
+            ret_value = state_data
+        elif input_path is None: #return empty  list
+            ret_value = []
+        else: # it contains a filter, get it and return selected list in input
+            self._logger.debug("seeing items_path filter: " + str(input_path) + " " + str(state_data))
+            filtered_state_data = [match.value for match in parse(input_path).find(state_data)]
+            if not filtered_state_data:
+                raise Exception("Items Path processing exception: no match with map state item, invalid path!")
+            else:
+                filtered_state_data = [match.value for match in parse(input_path).find(state_data)][0]
+                ret_value = filtered_state_data
+        return ret_value
 
     def process_input_path(self, path_fields, state_data):
         ret_value = None
@@ -1003,21 +1648,24 @@ class StateUtils:
 
         if input_path == "$": # return unfiltered input data
             ret_value = state_data
-            #return state_data
         elif input_path is None: #return empty dict
             ret_value = {}
-            #return {}
-        else: # it contains a filter, get it
+        else: # input_path contains a filter, get and apply it
+            self._logger.debug("seeing input_path filter: " + str(input_path) + " " + str(state_data))
             filtered_state_data = [match.value for match in parse(input_path).find(state_data)]
+            self._logger.debug("after seeing input_path filter: " + str(filtered_state_data))
             if not filtered_state_data:
                 raise Exception("Input Path processing exception: no match with state input item, invalid path!")
             else:
                 filtered_state_data = [match.value for match in parse(input_path).find(state_data)][0]
                 ret_value = filtered_state_data
-                #return filtered_state_data
 
         return ret_value
 
+    def nested_dict(self, keys, value):
+        if len(keys) == 1:
+            return {keys[0]: value}
+        return {keys[0]: self.nested_dict(keys[1:], value)}
 
     def process_result_path(self, path_fields, state_data, task_output):
         ret_value = None
@@ -1031,21 +1679,16 @@ class StateUtils:
 
         if result_path == "$":
             ret_value = state_data
-            #return state_data
         elif result_path is None:
             ret_value = {}
-            #return {}
         else: # result_path is not empty so is there a match?
-            key = str(parse(result_path).nodes[-1].value[0]) # get the new key for results
-
-            filtered_state_data = [match.value for match in parse(result_path).find(task_output)]
-            if not filtered_state_data: # there is no match between result_path and task_output, create new key for task_output
-                filtered_state_data = {key: task_output}
-            else: # there is a match, overwrite with task output of that key
-                filtered_state_data = {key: task_output[key]}
-
-            ret_value = dict(list(filtered_state_data.items()) + list(state_data.items()))
-            #return dict(list(filtered_state_data.items()) + list(state_data.items()))
+            self._logger.debug("inside ResultPath processing: " + str(result_path) + " " + str(task_output) )
+            keys = list(tokenize(result_path)) # get all keys
+            filtered_state_data = self.nested_dict(keys[1:], task_output)
+            if isinstance(state_data, dict):
+                ret_value = dict(list(filtered_state_data.items()) + list(state_data.items())) # adding key and values to new dict
+            else:
+                ret_value = filtered_state_data
 
         return ret_value
 
@@ -1053,16 +1696,13 @@ class StateUtils:
         ret_value = None
         if 'OutputPath' not in list(path_fields.keys()):
             path_fields['OutputPath'] = "$"
-            #return raw_state_input_midway
 
         output_path = path_fields['OutputPath']
 
         if output_path == "$":
             ret_value = raw_state_input_midway
-            #return raw_state_input_midway
         elif output_path is None:
             ret_value = {}
-            #return {}
         else: # output_path is not empty so is there a match?
             filtered_state_data = [match.value for match in parse(output_path).find(raw_state_input_midway)]
             if not filtered_state_data:
@@ -1071,9 +1711,9 @@ class StateUtils:
                 key = str(parse(output_path).nodes[-1].value[0])
                 filtered_state_data = raw_state_input_midway[key]
                 ret_value = filtered_state_data
-                #return filtered_state_data
 
         return ret_value
+
 
     def traverse(self, path, obj):
         """

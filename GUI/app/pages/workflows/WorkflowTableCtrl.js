@@ -293,7 +293,7 @@
           headers: {
            'Content-Type': 'application/json'
           },
-          data:   JSON.stringify({ "action" : "getWorkflowStatus", "data" : { "user" : { "token" : token } , "workflow" : { "id" : $scope.workflows[index].id } } })
+          data:   JSON.stringify({ "action" : "getWorkflows", "data" : { "user" : { "token" : token } , "workflow" : { "id" : $scope.workflows[index].id } } })
         }
 
       $http(req).then(function successCallback(response) {

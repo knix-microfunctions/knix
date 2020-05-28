@@ -33,11 +33,10 @@
       https_proxy: "{{ https_proxy.stdout }}"
 
   - debug:
-      msg: 
+      msg:
       - inventory_hostname = {{ inventory_hostname }}
       - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
       - mfn_server_installation_folder = {{ mfn_server_installation_folder }}
-      - set_http_proxy = {{ set_http_proxy }}
       - proxy settings files = ./proxy/
       - http_proxy = {{ http_proxy }}
       - https_proxy = {{ https_proxy }}
@@ -53,77 +52,150 @@
         - python3-pip
         - netcat
         - rsync
-        - python-dev 
-        - libffi-dev 
-        - libssl-dev 
-        - libxml2-dev 
+        - python3-dev
+        - libffi-dev
+        - libssl-dev
+        - libxml2-dev
         - libxslt1-dev
         - zlib1g-dev
       state: latest
 
   - name: pip install pyOpenSSL
     pip:
-      name: pyOpenSSL 
+      name: pyOpenSSL
       executable: pip3
     environment:
       http_proxy: "{{ http_proxy }}"
       https_proxy: "{{ https_proxy }}"
 
-  - name: Ensure mfn root folder exists
+  - name: configure /etc/hosts - disable 127.0.1.1
+    lineinfile:
+      path: "/etc/hosts"
+      regexp: "^127.0.1.1"
+      line: "#127.0.1.1 {{ inventory_hostname }}"
+
+  - name: configure /etc/hosts - add ip address hostname mapping
+    lineinfile:
+      path: "/etc/hosts"
+      insertafter: EOF
+      line: "{{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ inventory_hostname }}"
+
+  - name: ensure docker is at the latest version
+    apt: name=docker-ce update_cache=yes
+    register: dockerupdate
+    ignore_errors: True
+
+  - name: Remove old docker
+    apt:
+      name:
+        - docker
+        - docker-engine
+        - docker.io
+        - runc
+      state: absent
+    when: dockerupdate.failed
+
+  - name: get docker key
+    get_url:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      dest: /etc/apt/docker.gpg.key
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+    when: dockerupdate.failed
+
+  - name: install docker key
+    shell: "apt-key add /etc/apt/docker.gpg.key"
+    when: dockerupdate.failed
+
+  - name: add docker repo
+    apt_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+      state: present
+    when: dockerupdate.failed
+
+  - name: ensure docker is at the latest version
+    apt: name=docker-ce update_cache=yes
+    when: dockerupdate.failed
+
+  # The below approach risks when updating the docker using regular software updates.
+  # a better way probably is just to override the configuration with a new file
+  #- name: fix docker service command line
+  #  lineinfile:
+  #    path: /lib/systemd/system/docker.service
+  #    backrefs: yes
+  #    regex: "^ExecStart=(.*)-H fd://(.*)$"
+  #    line: "ExecStart=\\1\\2"
+  #  when: dockerupdate.failed
+
+  #- name: configure docker daemon
+  #  copy:
+  #    dest: /etc/docker/daemon.json
+  #    content: |
+  #      {
+  #        "hosts": ["fd://","unix:///var/run/docker.sock","tcp://0.0.0.0"]
+  #      }
+  #################
+
+  # see the following links why this approach might be better
+  # https://stackoverflow.com/questions/44052054/unable-to-start-docker-after-configuring-hosts-in-daemon-json
+  # https://success.docker.com/article/how-do-i-enable-the-remote-api-for-dockerd
+  - name: docker service configuration directory
+    file:
+      path: /etc/systemd/system/docker.service.d
+      state: directory
+
+  - name: add override configuration for docker start
+    copy:
+      dest: /etc/systemd/system/docker.service.d/startup_options.conf
+      content: |
+        [Service]
+        ExecStart=
+        ExecStart=/usr/bin/dockerd -H unix:// -H tcp://0.0.0.0:2375
+
+  - name: override configuration for docker daemon to disable tls
+    copy:
+      dest: /etc/docker/daemon.json
+      content: |
+        {
+          "tls": false
+        }
+
+  - name: configure docker proxy
+    copy:
+      dest: /etc/systemd/system/docker.service.d/proxy.conf
+      content: |
+        [Service]
+        Environment=HTTP_PROXY={{ http_proxy }}
+        Environment=HTTPS_PROXY={{ https_proxy }}
+        Environment=NO_PROXY={{ no_proxy }}
+    when: http_proxy != "" and dockerupdate.failed
+
+  - name: systemd restart docker
+    systemd:
+      daemon_reload: yes
+      name: docker
+      enabled: true
+      state: restarted
+    when: dockerupdate.failed
+
+  - name: ensure java is at the latest version
+    apt:
+      name: openjdk-8-jre-headless
+      state: latest
+      update_cache: yes
+
+  - name: Ensure knix mfn root folder exists
     file:
       path: "{{ mfn_server_installation_folder }}"
       state: directory
       mode: '775'
 
-  - name: Remove proxy folder
-    file:
-      state: absent
-      path: "{{ mfn_server_installation_folder }}/proxy/"
-    when: set_http_proxy == 'true'
-
-  - name: Copy proxy package
-    copy:
-      mode: '775'
-      src: "./proxy"
-      dest: "{{ mfn_server_installation_folder }}/"
-    when: set_http_proxy == 'true'
-
-  - name: set proxy for bash
-    shell: "cd {{ mfn_server_installation_folder }}/proxy; ./enable-bash-proxy.sh"
-    when: set_http_proxy == 'true'
-
-  - name: set proxy for apt
-    shell: "cd {{ mfn_server_installation_folder }}/proxy; ./enable-apt-proxy.sh"
-    when: set_http_proxy == 'true'
-
-  - name: ensure java is at the latest version
-    apt: 
-      name: openjdk-8-jre-headless
-      state: latest
-      update_cache: yes
-
-  - name: get http_proxy
-    shell: "su - -c 'echo $http_proxy'"
-    register: http_proxy
-
-  - name: get https_proxy
-    shell: "su - -c 'echo $https_proxy'"
-    register: https_proxy
-
-  - set_fact:
-      http_proxy: "{{ http_proxy.stdout }}"
-      https_proxy: "{{ https_proxy.stdout }}"
-
-  - debug:
-      msg:
-        - http_proxy = {{ http_proxy }}
-        - https_proxy = {{ https_proxy }}
-
   - name: Copy start-all.sh script
     copy:
       mode: '775'
       src: "./scripts/start-all.sh"
-      dest: "{{ mfn_server_installation_folder }}/"      
+      dest: "{{ mfn_server_installation_folder }}/"
 
   - name: Copy stop-all.sh script
     copy:
@@ -132,25 +204,25 @@
       dest: "{{ mfn_server_installation_folder }}/"
 
   - name: copy wait-for-it.sh script
-    copy: 
+    copy:
       mode: '775'
       src: "./scripts/wait-for-it.sh"
       dest: "{{ mfn_server_installation_folder }}/"
 
   - name: copy tail-service-logs.sh script
-    copy: 
+    copy:
       mode: '775'
       src: "./scripts/tail-service-logs.sh"
       dest: "{{ mfn_server_installation_folder }}/"
 
   - name: copy purge-riak.sh script
-    copy: 
+    copy:
       mode: '775'
       src: "./scripts/purge-riak.sh"
       dest: "{{ mfn_server_installation_folder }}/"
 
    #https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
-  - name: configure /etc/sysctl.conf  vm.max_map_count=262144 
-    sysctl: 
+  - name: configure /etc/sysctl.conf  vm.max_map_count=262144
+    sysctl:
       name: "vm.max_map_count"
       value: "262144"

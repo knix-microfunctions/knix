@@ -15,7 +15,6 @@
 */
 package org.microfunctions.queue.local;
 
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +25,7 @@ import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
+import org.apache.thrift.server.TThreadedSelectorServer;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;

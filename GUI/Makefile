@@ -23,7 +23,9 @@ app/pages/docs/sdk/cli.md: ../mfn_cli/README.md
 -include ../proxy.mk
 include ../docker.mk
 
-image: $(shell find ./ -type f|grep -v Makefile)
+image: $(shell find ./ -type f|grep -v -e Makefile -e app/pages/docs/sdk/sdk.md -e app/pages/docs/sdk/cli.md) \
+	app/pages/docs/sdk/cli.md \
+	app/pages/docs/sdk/sdk.md
 	$(call build_image,Dockerfile,microfn/nginx)
 
 push: image

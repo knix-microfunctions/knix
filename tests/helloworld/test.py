@@ -32,26 +32,17 @@ class HelloWorldTest(unittest.TestCase):
     #@unittest.skip("")
     def test_helloworld_asl(self):
         """ creates and executes the hello world workflow from an ASL description """
-        event = {"a":5}
-        testtuplelist = [(json.dumps(event), '{"a":5}')]
+        event = {"Hello,": "World!"}
+        testtuplelist = [(json.dumps(event), '{"Hello,": "World!"}')]
 
         test = MFNTest(test_name="Hello World ASL", workflow_filename="helloworld-asl.json")
         test.exec_tests(testtuplelist)
 
     #@unittest.skip("")
     def test_helloworld_wfd(self):
-        """ creates and executes the hello world workflow from a SAND workflow description """
-        event = {"a":5}
-        testtuplelist = [(json.dumps(event), '{"a":5}')]
+        """ creates and executes the hello world workflow from a KNIX MicroFunctions workflow description """
+        event = {"Hello,": "World!"}
+        testtuplelist = [(json.dumps(event), '{"Hello,": "World!"}')]
 
-        test = MFNTest(test_name="Hello World MFn", workflow_filename="helloworld-wfd.json")
+        test = MFNTest(test_name="Hello World KNIX MicroFunctions", workflow_filename="helloworld-knix.json")
         test.exec_tests(testtuplelist)
-
-    #@unittest.skip("")
-    def test_helloworld(self):
-        # build pairs of input and expected output values
-        testtuplelist = [('[3, 2]', '[3, 2]'), ('"1,2,.. test, test"', '"1,2,.. test, test"')]
-
-        test = MFNTest(test_name="HelloWorld")
-        test.exec_tests(testtuplelist)
-

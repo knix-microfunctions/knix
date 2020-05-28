@@ -112,34 +112,37 @@ class Deployment:
 
     def check_child_process(self):
         pid, status = os.waitpid(-1, os.WNOHANG|os.WUNTRACED|os.WCONTINUED)
+        failed_process_name = ""
         if os.WIFCONTINUED(status) or os.WIFSTOPPED(status):
             return False, _
         if os.WIFSIGNALED(status) or os.WIFEXITED(status):
             self._logger.error("Process with pid: " + str(pid) + " stopped.")
             if pid == self._fluentbit_actual_pid:
-                self._logger.error("Fluent-bit")
+                failed_process_name = "Fluent-bit"
             elif pid == self._queue_service_process.pid:
-                self._logger.error("Queue service")
+                failed_process_name = "Queue service"
             elif pid == self._frontend_process.pid:
-                self._logger.error("Frontend")
+                failed_process_name = "Frontend"
             else:
                 for jrhp in self._javarequesthandler_process_list:
                     if pid == jrhp.pid:
-                        self._logger.error("Java request handler")
-                        return
+                        failed_process_name = "Java request handler"
+                        break
                 for state_name in self._functionworker_process_map:
                     process = self._functionworker_process_map[state_name]
                     if pid == process.pid:
-                        self._logger.error("Function worker (" + state_name + ")")
+                        failed_process_name = "Function worker (" + state_name + ")"
                         del self._functionworker_process_map[state_name]
                         break
 
+            self._logger.error("Failed process name: " + failed_process_name)
+
         if os.path.exists('/var/run/secrets/kubernetes.io'):
-            return True, pid
+            return True, pid, failed_process_name
         else:
             # TODO: try to relaunch some of the processes (FWs, fluentbit, frontend)
             self._logger.info(self._child_process_command_args_map[pid])
-            return True, pid
+            return True, pid, failed_process_name
 
     def shutdown(self):
         shutdown_message = {}
@@ -155,6 +158,17 @@ class Deployment:
 
         self._logger.info("Waiting for function workers to shutdown")
         self._wait_for_child_processes()
+
+        for jrh_process in self._javarequesthandler_process_list:
+            process_utils.terminate_and_wait_child(jrh_process, "JavaRequestHandler", 5, self._logger)
+
+        self._local_queue_client.shutdown()
+
+    def force_shutdown(self):
+        # called when the queue service has crashed and we need to shut down the function workers
+        for state in self._functionworker_process_map:
+            p = self._functionworker_process_map[state]
+            process_utils.terminate_and_wait_child(p, "FunctionWorker", 5, self._logger)
 
         for jrh_process in self._javarequesthandler_process_list:
             process_utils.terminate_and_wait_child(jrh_process, "JavaRequestHandler", 5, self._logger)

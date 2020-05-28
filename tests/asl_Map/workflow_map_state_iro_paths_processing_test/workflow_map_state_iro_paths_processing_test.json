@@ -1,0 +1,79 @@
+{
+  "StartAt": "ValidatePayment",
+  "States": {
+    "ValidatePayment": {
+      "Type": "Task",
+      "Resource": "validatePayment",
+      "Next": "CheckPayment"
+    },
+    "CheckPayment": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Not": {
+            "Variable": "$.payment",
+            "StringEquals": "Ok"
+          },
+          "Next": "PaymentFailed"
+        }
+      ],
+      "Default": "ProcessAllItems"
+    },
+    "PaymentFailed": {
+      "Type": "Task",
+      "Resource": "paymentFailed",
+      "End": true
+    },
+    "ProcessAllItems": {
+      "Type": "Map",
+      "ItemsPath": "$.items",
+      "InputPath": "$.detail",
+      "MaxConcurrency": 3,
+      "Parameters": {
+          "index.$": "$$.Map.Item.Index",
+          "item.$": "$$.Map.Item.Value",
+          "deliveryAddress.$": "$.deliveryAddress"
+          },
+      "Iterator": {
+        "StartAt": "CheckAvailability",
+        "States": {
+          "CheckAvailability": {
+            "Type": "Task",
+            "Resource": "checkAvailability",
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "TimeOut"
+                ],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2,
+                "MaxAttempts": 3
+              }
+            ],
+            "Next": "PrepareForDelivery"
+          },
+          "PrepareForDelivery": {
+            "Type": "Task",
+            "Resource": "prepareForDelivery",
+            "Next": "StartDelivery"
+          },
+          "StartDelivery": {
+            "Type": "Task",
+            "Resource": "startDelivery",
+            "End": true
+          }
+        }
+      },
+      "ResultPath": "$.detail.processedItems",
+      "Next": "SendOrderSummary"
+    },
+    "SendOrderSummary": {
+      "Type": "Task",
+      "Resource": "sendOrderSummary",
+      "ResultPath": "$.summary",
+      "InputPath": "$.processedItems",
+      "End": true
+    }
+  }
+}
+

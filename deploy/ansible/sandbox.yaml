@@ -43,11 +43,6 @@
       - sandbox installation directory {{ install_dir }}
       - riak_connect = {{ riak_connect }}
 
-  - name: ensure docker is at the latest version
-    apt: name=docker-ce update_cache=yes
-    register: dockerupdate
-    ignore_errors: True
-
   - name: get http_proxy
     shell: "su - -c 'echo $http_proxy'"
     become: true
@@ -73,108 +68,6 @@
       - http_proxy = {{ http_proxy }}
       - https_proxy = {{ https_proxy }}
       - no_proxy = {{ no_proxy }}
-
-  - name: pip install riak
-    pip:
-      name: riak
-      executable: pip3
-    environment:
-      http_proxy: "{{ http_proxy }}"
-    when: dockerupdate.failed
-
-  - name: Remove old docker
-    apt:
-      name:
-        - docker
-        - docker-engine
-        - docker.io
-        - runc
-      state: absent
-    when: dockerupdate.failed
-
-  - name: get docker key
-    get_url:
-      url: https://download.docker.com/linux/ubuntu/gpg
-      dest: /etc/apt/docker.gpg.key
-    environment:
-      http_proxy: "{{ http_proxy }}"
-      https_proxy: "{{ https_proxy }}"
-    when: dockerupdate.failed
-
-  - name: install docker key
-    shell: "apt-key add /etc/apt/docker.gpg.key"
-    when: dockerupdate.failed
-
-  - name: add docker repo
-    apt_repository:
-      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
-      state: present
-    when: dockerupdate.failed
-
-  - name: ensure docker is at the latest version
-    apt: name=docker-ce update_cache=yes
-    when: dockerupdate.failed
-
-  # The below approach risks when updating the docker using regular software updates.
-  # a better way probably is just to override the configuration with a new file
-  #- name: fix docker service command line
-  #  lineinfile:
-  #    path: /lib/systemd/system/docker.service
-  #    backrefs: yes
-  #    regex: "^ExecStart=(.*)-H fd://(.*)$"
-  #    line: "ExecStart=\\1\\2"
-  #  when: dockerupdate.failed
-
-  #- name: configure docker daemon
-  #  copy:
-  #    dest: /etc/docker/daemon.json
-  #    content: |
-  #      {
-  #        "hosts": ["fd://","unix:///var/run/docker.sock","tcp://0.0.0.0"]
-  #      }
-  #################
-
-  # see the following links why this approach might be better
-  # https://stackoverflow.com/questions/44052054/unable-to-start-docker-after-configuring-hosts-in-daemon-json
-  # https://success.docker.com/article/how-do-i-enable-the-remote-api-for-dockerd
-  - name: docker service configuration directory
-    file:
-      path: /etc/systemd/system/docker.service.d
-      state: directory
-
-  - name: add override configuration for docker start
-    copy:
-      dest: /etc/systemd/system/docker.service.d/startup_options.conf
-      content: |
-        [Service]
-        ExecStart=
-        ExecStart=/usr/bin/dockerd -H unix:// -H tcp://0.0.0.0:2375
-
-  - name: override configuration for docker daemon to disable tls
-    copy:
-      dest: /etc/docker/daemon.json
-      content: |
-        {
-          "tls": false
-        }
-
-  - name: configure docker proxy
-    copy:
-      dest: /etc/systemd/system/docker.service.d/proxy.conf
-      content: |
-        [Service]
-        Environment=HTTP_PROXY={{ http_proxy }}
-        Environment=HTTPS_PROXY={{ https_proxy }}
-        Environment=NO_PROXY={{ no_proxy }}
-    when: http_proxy != "" and dockerupdate.failed
-
-  - name: systemd restart docker
-    systemd:
-      daemon_reload: yes
-      name: docker
-      enabled: true
-      state: restarted
-    when: dockerupdate.failed
 
   #################
   - name: create sandbox folder
@@ -279,6 +172,7 @@
         cd {{ install_dir }}
         cat <<END >>dockerrun.sh
         set -x
+        pip3 install --upgrade pip
         pip3 install riak
         python3 available_hosts.py add
         END
@@ -301,12 +195,6 @@
       HTTP_PROXY: "{{ http_proxy }}"
       HTTPS_PROXY: "{{ https_proxy }}"
     register: availablehosts
-
-  #- name: Add to available hosts
-  #  command: "python3 available_hosts.py add"
-  #  args:
-  #    chdir: "{{ install_dir }}"
-  #  register: availablehosts
 
   - debug:
       msg:

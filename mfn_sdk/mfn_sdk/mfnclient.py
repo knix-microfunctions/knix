@@ -150,7 +150,6 @@ class MfnClient(object):
             url = url[:-1]
         log.info(f"Connecting as {user} to {url}")
         self._s = requests.Session()
-        self._s.verify=False
         if proxies:
             self._s.proxies.update(proxies)
         self._s.max_redirects = 10
@@ -160,7 +159,7 @@ class MfnClient(object):
         epr.raise_for_status()
         epf = epr.text
         idx = epf.index("managementServiceEndpoint")
-        idx = epf.index('"http:',idx)+1
+        idx = epf.index('"http',idx)+1
         self.mgmturl=epf[idx:epf.index('"',idx)]
         self.user=user
         self.token=None
@@ -213,6 +212,9 @@ class MfnClient(object):
         if self._s is not None:
             self._s.close()
 
+    def version(self):
+        data = self.action('version')
+        return data.get('message','')
 
     def login(self):
         userinfo = {}
@@ -389,7 +391,6 @@ class MfnClient(object):
     def delWorkflow(self,wf):
         return self.delete_workflow(wf)
 
-
     def find_workflow(self,name):
         res = []
         for wf in self.workflows:
@@ -437,6 +438,14 @@ class MfnClient(object):
                 for branch in branches:
                     parallel_state_list = self._get_state_names_and_resource(desired_state_type, branch)
                     state_list = state_list + parallel_state_list
+
+            if state_type == 'Map':
+                branch = state['Iterator']
+                print("BRANCH: "+ str(branch))
+                map_state_list = self._get_state_names_and_resource(desired_state_type, branch)
+                state_list = state_list + map_state_list
+                print("STATE_LIST: "+ str(state_list))
+
         return state_list
 
 

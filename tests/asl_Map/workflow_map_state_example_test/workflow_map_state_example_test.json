@@ -1,0 +1,22 @@
+{
+  "StartAt": "Validate-All",
+  "States": {
+    "Validate-All": {
+      "End": true,
+      "Type": "Map",
+      "InputPath": "$.detail",
+      "ItemsPath": "$.shipped",
+      "ResultPath": "$.detail.shipped",
+      "Parameters": {
+         "parcel.$": "$$.Map.Item.Value",
+         "courier.$": "$.delivery-partner"
+      },
+      "MaxConcurrency": 0, 
+      "Iterator": {
+        "StartAt": "ship-val",
+        "States": {
+            "ship-val": {"Type": "Task", "Resource": "ship-val", "End": true}}
+}
+}
+}
+}
