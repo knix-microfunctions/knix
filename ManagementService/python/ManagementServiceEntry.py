@@ -280,6 +280,8 @@ def handle(event, context):
         for key in user:
             if any(not (ord(c) < 128) for c in user[key]):
                 unsupported_chars = True
+            elif key == "email" and any(c == " " for c in user[key]):
+                unsupported_chars = True
 
         if not unsupported_chars:
             if action == "signUp":
@@ -296,12 +298,12 @@ def handle(event, context):
 
             return actionOther(action, data, context)
         else:
-            errmsg = "Unsupported non-ascii characters."
+            errmsg = "Space or non-ascii characters in email."
             context.log(errmsg)
 
     response = {}
     response["status"] = "failure"
     response["data"] = {}
-    response["data"]["message"] = "Invalid input parameters. " + errmsg
+    response["data"]["message"] = "Invalid input parameters: " + errmsg
     context.add_workflow_next("ManagementServiceExit", response)
     return None
