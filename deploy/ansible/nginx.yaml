@@ -91,7 +91,8 @@
     lineinfile:
       path: "{{ install_dir }}/gui/app/endpoint.js"
       regexp: "^var managementServiceEndpoint.*$"
-      line: "var managementServiceEndpoint = \"http://{{ groups['management']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join(':{{ management_service_exposed_port }}/\";') }}:{{ management_service_exposed_port }}/\";"
+      #line: "var managementServiceEndpoint = \"http://{{ groups['management']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join(':{{ management_service_exposed_port }}/\";') }}:{{ management_service_exposed_port }}/\";"
+      line: "var managementServiceEndpoint = \"http://{{ groups['management']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join('/management/\";') }}/management/\";"
 
   - name: create logs directory
     file:

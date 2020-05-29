@@ -4,6 +4,12 @@ upstream mfn_frontend {
 {% endfor %}
 }
 
+upstream knix_management {
+{% for host in groups['management'] %}
+        server {{ hostvars[host].ansible_default_ipv4.address }}:{{ management_service_exposed_port }};
+{% endfor %}
+}
+
 log_format mfn_log '[$msec] [$time_iso8601] [$remote_addr] [$remote_user] '
                          '[$request] [$status] [$body_bytes_sent] '
                          '[$http_referer] [$http_user_agent] [ExecutionId] [$sent_http_mfn_id] '
@@ -41,6 +47,21 @@ server {
         root {{ install_dir }}/gui;
         access_log {{ install_dir }}/nginx_access.log mfn_log;
         error_log {{ install_dir }}/nginx_error.log warn;
+
+        location ~ ^/(management)/ {
+                proxy_pass http://knix_management;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                client_max_body_size 100m;
+
+                proxy_connect_timeout 600;
+                proxy_send_timeout 600;
+                proxy_read_timeout 600;
+                send_timeout 600;
+        }
 
         location ~ ^/(workflow|storage)/ {
                 proxy_pass http://mfn_frontend;
