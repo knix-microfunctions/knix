@@ -304,8 +304,10 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
         kservice['spec']['template']['spec']['volumes'] = [{ 'name': 'new-workflow-conf', 'configMap': {'name': new_workflow_conf['configmap']}}]
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
         kservice['spec']['template']['spec']['serviceAccountName'] = new_workflow_conf['mgmtserviceaccount']
-        env.append({'name': 'HTTP_GATEWAYPORT', 'value': new_workflow_conf['HTTP_GATEWAYPORT']})
-        env.append({'name': 'HTTPS_GATEWAYPORT', 'value': new_workflow_conf['HTTPS_GATEWAYPORT']})
+        if 'HTTP_GATEWAYPORT' in new_workflow_conf:
+            env.append({'name': 'HTTP_GATEWAYPORT', 'value': new_workflow_conf['HTTP_GATEWAYPORT']})
+        if 'HTTPS_GATEWAYPORT' in new_workflow_conf:
+            env.append({'name': 'HTTPS_GATEWAYPORT', 'value': new_workflow_conf['HTTPS_GATEWAYPORT']})
 
     for k in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
         if not k in os.environ:
