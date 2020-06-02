@@ -225,6 +225,7 @@ def actionOther(action, data, sapi):
     possibleActions["uploadFunctionZipMetadata"] = True
     possibleActions["uploadWorkflowJSON"] = True
     possibleActions["retrieveAllWorkflowLogs"] = True
+    possibleActions["clearAllWorkflowLogs"] = True
     possibleActions["getWorkflowDetails"] = True
     possibleActions["addTriggerableTable"] = True
     possibleActions["addStorageTriggerForWorkflow"] = True
