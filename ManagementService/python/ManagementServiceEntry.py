@@ -124,13 +124,54 @@ def actionLogin(user, sapi):
     sapi.add_dynamic_workflow(output)
     return None
 
+def actionChangeName(user, sapi):
+    response = {}
+    response_data = {}
+
+    success = False
+
+    if "email" in user and "password" in user and "new_name" in user:
+        email = user["email"]
+        password = user["password"]
+        new_name = user["new_name"]
+
+        if not any(not (ord(c) < 128) for c in new_name):
+            cur_user = sapi.get(email, True)
+
+            if cur_user is not None and cur_user != "":
+                cur_user = json.loads(cur_user)
+                if cur_user["passwordHash"] == hashlib.sha256(password.encode()).hexdigest():
+                    cur_user["name"] = new_name
+
+                    sapi.put(email, json.dumps(cur_user), True, True)
+
+                    response["status"] = "success"
+                    response_data["message"] = "Name changed successfully."
+                    response_data["storageEndpoint"] = cur_user["storageEndpoint"]
+                    response["data"] = response_data
+
+                    output = {"next": "ManagementServiceExit", "value": response}
+                    sapi.add_dynamic_workflow(output)
+                    success = True
+                else:
+                    response_data["message"] = "Authentication failed; wrong username and/or password."
+            else:
+                response_data["message"] = "Name could not be changed; non-ascii characters in name."
+
+    if not success:
+        response["status"] = "failure"
+        response["data"] = response_data
+
+        output = {"next": "ManagementServiceExit", "value": response}
+        sapi.add_dynamic_workflow(output)
+
 def actionChangePassword(user, sapi):
     response = {}
     response_data = {}
 
     success = False
 
-    if "email" in user and "password" in user:
+    if "email" in user and "password" in user and "new_password" in user:
         email = user["email"]
         password = user["password"]
         new_password = user["new_password"]
@@ -189,13 +230,13 @@ def actionResetPassword(user, sapi):
     return None
 
 def verifyUser(user, sapi, extendTokenExpiry=True):
-    status=False
+    status = False
     if "token" not in user:
         return status, "No token supplied", None, None
 
     token = user["token"]
     authenticated_user = sapi.get(token, True)
-    if authenticated_user == None or authenticated_user == "":
+    if authenticated_user is None or authenticated_user == "":
         return status, "No user information found for supplied token", token, None
     authenticated_user = json.loads(authenticated_user)
 
@@ -205,7 +246,7 @@ def verifyUser(user, sapi, extendTokenExpiry=True):
         return status, "User token expired", token, authenticated_user
 
     status = True
-    if extendTokenExpiry == True:
+    if extendTokenExpiry:
         authenticated_user["timestamp"] = cur_time
         sapi.put(token, json.dumps(authenticated_user), True, True)
 
@@ -215,7 +256,7 @@ def actionVerifyUser(user, sapi):
     response = {}
     response_data = {}
     status, statusmessage, token, authenticated_user = verifyUser(user, sapi, extendTokenExpiry=True)
-    if status == True:
+    if status:
         response["status"] = "success"
         response_data["message"] = statusmessage
         response_data["email"] = authenticated_user["email"]
@@ -343,6 +384,9 @@ def handle(event, context):
             elif action == "changePassword":
                 return actionChangePassword(user, context)
 
+            elif action == "changeName":
+                return actionChangeName(user, context)
+
             elif action == "resetPassword":
                 return actionResetPassword(user, context)
 
@@ -351,7 +395,7 @@ def handle(event, context):
 
             return actionOther(action, data, context)
         else:
-            errmsg = "Space or non-ascii characters in email."
+            errmsg = "Non-ascii characters in name or email, or space characters in email."
             context.log(errmsg)
 
     response = {}
