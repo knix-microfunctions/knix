@@ -43,7 +43,7 @@ metadata:
   name: "{{ template "nginx.fullname" . }}-nginx-conf"
   labels:
     app: {{ include "nginx.name" . | quote }}
-    release: {{ .Release.Name | quote }}    
+    release: {{ .Release.Name | quote }}
 data:
   mfn.conf: |-
     log_format mfn_log '$remote_addr - $remote_user [$time_local] '
@@ -52,7 +52,11 @@ data:
     upstream frontend {
       server 127.0.0.1:50000;
     }
-    
+
+    upstream knix_management {
+      server "{{ .Values.manager.endpoint }}"
+    }
+
     server {
       listen 8080;
 {{ if (.Values.nginx.httpsPort) }}
@@ -75,26 +79,43 @@ data:
       # OCSP stapling
       #ssl_stapling on;
       #ssl_stapling_verify on;
-   
+
       # verify chain of trust of OCSP response using Root CA and Intermediate certs
       ssl_trusted_certificate /opt/mfn/nginx/ssl/..data/ca;
 {{ end }}
       client_max_body_size 100m;
-    
+
       access_log /opt/mfn/nginx/access.log mfn_log;
       error_log /opt/mfn/nginx/error.log info;
-        
+
       root /opt/mfn/nginx/gui;
       location {{ .Values.nginx.location }} {
         alias /opt/mfn/nginx/gui/;
       }
+      location /management {
+        proxy_pass http://knix_management;
+        proxy_set_header Host "{{ .Values.manager.host }}";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        client_max_body_size 100m;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+      }
+
       location /storage {
         proxy_pass http://frontend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+
         client_max_body_size 100m;
+
         proxy_connect_timeout 600;
         proxy_send_timeout 600;
         proxy_read_timeout 600;
@@ -202,4 +223,4 @@ metadata:
   name: config-endpoint
 data:
   endpoint.js: |
-    var managementServiceEndpoint = "{{ .Values.manager.endpoint }}";
+    var managementServiceEndpoint = "{{ .Values.manager.endpoint }}/management/";
