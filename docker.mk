@@ -1,6 +1,7 @@
 ##############################
 ## Container images
 ##
+SHELL := /bin/bash
 REGISTRY ?= localhost:5000
 VERSION ?= latest #$(shell git describe --tags)
 
