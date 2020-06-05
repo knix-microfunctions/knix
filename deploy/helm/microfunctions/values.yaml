@@ -27,7 +27,7 @@ manager:
   #httpsGatewayPort: 443
   endpoint: http://wf-mfn1-management.svc.cluster.local:31380
   # host: wf-mfn1-management.knix
-  host: wf-mfn1-management
+  knativeDomain: mfn.knix.io
   nameOverride: "microfunctions"
   newWorkflow:
     hpa:
