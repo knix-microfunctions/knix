@@ -14,6 +14,7 @@
 
 SHELL := /bin/bash
 -include ../proxy.mk
+include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
 all: \
@@ -25,7 +26,7 @@ src/main/java/org/microfunctions/data_layer/DataLayerService.java: \
 	docker run --rm -it --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
-		thrift:0.12.0 \
+		thrift:$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/DataLayerMessage.thrift; thrift --gen java -out ./src/main/java/ ./thrift/DataLayerService.thrift'
 	touch src/main/java/org/microfunctions/data_layer/DataLayerService.java
 
@@ -33,7 +34,7 @@ PythonClient/data_layer:
 	docker run --rm -it --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
-		thrift:0.12.0 \
+		thrift:$(THRIFT_VERSION) \
 		bash -c 'thrift --gen py -out ./PythonClient ./thrift/DataLayerMessage.thrift; thrift --gen py -out ./PythonClient ./thrift/DataLayerService.thrift'
 
 # In case the user doesn't have maven configurations in the home directory, we need to create it

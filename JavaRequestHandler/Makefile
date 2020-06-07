@@ -14,6 +14,7 @@
 
 SHELL := /bin/bash
 -include ../proxy.mk
+include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
 all: \
@@ -29,7 +30,7 @@ src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: \
 	docker run --rm -it --name mfnapi-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/mfnapi -w /usr/src/mfnapi \
-		thrift:0.12 \
+		thrift:$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./MicroFunctionsAPI.thrift'
 	rm ./MicroFunctionsAPI.thrift
 

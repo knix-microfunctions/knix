@@ -13,7 +13,8 @@
 #   limitations under the License.
 
 SHELL := /bin/bash
--include proxy.mk
+-include ../proxy.mk
+include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
 all: target/queueservice.jar
@@ -23,7 +24,7 @@ src/main/java/org/microfunctions/queue/local/LocalQueueService.java: \
 	docker run --rm -it --name queue-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \
-		thrift:0.12.0 \
+		thrift:$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/LocalQueueService.thrift'
 	touch src/main/java/org/microfunctions/queue/local/LocalQueueService.java
 

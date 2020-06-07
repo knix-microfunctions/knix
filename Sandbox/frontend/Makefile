@@ -15,6 +15,7 @@
 UID:=`id -u`
 GID:=`id -g`
 -include ../../proxy.mk
+include ../../build_env.mk
 SOURCES=$(shell find ./ -name '*.go')
 
 default: frontend
@@ -24,7 +25,7 @@ datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
-		thrift:0.12.0 \
+		thrift:$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/microfn/microfunctions/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerMessage.thrift'
 
 datalayerservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
@@ -32,7 +33,7 @@ datalayerservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
-		thrift:0.12.0 \
+		thrift:$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/microfn/microfunctions/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
 localqueueservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
@@ -40,7 +41,7 @@ localqueueservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../QueueService:/usr/src/queue \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
-		thrift:0.12.0 \
+		thrift:$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/microfn/microfunctions/Sandbox/frontend/ -out ./ /usr/src/queue/thrift/LocalQueueService.thrift'
 
 mfnmessage.go: ../schema/mfnmessage-schema.json
