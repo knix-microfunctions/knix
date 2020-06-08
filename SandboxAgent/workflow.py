@@ -111,6 +111,7 @@ class Workflow:
 
         # whether the function workers should store backups of triggers to next functions
         self._enable_checkpoints = True
+        self._allow_immediate_messages = False
 
         self._has_error = False
 
@@ -127,6 +128,7 @@ class Workflow:
                 "name": "test_workflow",
                 "entry": "entryFunction",
                 "enable_checkpoints": False,
+                "allow_immediate_messages": True,
                 "exit": "exitName",
                 "functions": [
                     {
@@ -159,8 +161,12 @@ class Workflow:
         if "enable_checkpoints" in wfobj.keys():
             self._enable_checkpoints = wfobj["enable_checkpoints"]
 
-        # also include the exit as a potential destination for sending immediate trigger messages
-        self.workflowFunctionMap[self.workflowExitPoint] = True
+        if "allow_immediate_messages" in wfobj.keys():
+            self._allow_immediate_messages = wfobj["allow_immediate_messages"]
+
+        if self._allow_immediate_messages:
+            # also include the exit as a potential destination for sending immediate trigger messages
+            self.workflowFunctionMap[self.workflowExitPoint] = True
 
         self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
         self._logger.info("parseSAND: workflowExitTopic: " + self.workflowExitTopic)
@@ -172,8 +178,9 @@ class Workflow:
             if "resource" in function:
                 resource = function["resource"]
 
-            # keep a map of function names as potential destination for sending immediate trigger messages
-            self.workflowFunctionMap[gname] = True
+            if self._allow_immediate_messages:
+                # keep a map of function names as potential destination for sending immediate trigger messages
+                self.workflowFunctionMap[gname] = True
             topic = self.topicPrefix + gname
 
             #print("topic:", topic)
@@ -212,7 +219,6 @@ class Workflow:
                 self._is_session_workflow = True
                 self.workflowSessionFunctions[gname] = is_session_function
 
-
         # check whether all 'next' fields refer to existing functions
         # for (Map.Entry<String, WorkflowNode> entry: this.workflowNodeMap.entrySet())
         for entry in self.workflowNodeMap:
@@ -247,6 +253,9 @@ class Workflow:
 
         if "EnableCheckpoints" in wfobj.keys():
             self._enable_checkpoints = wfobj["EnableCheckpoints"]
+
+        if "AllowImmediateMessages" in wfobj.keys():
+            self._allow_immediate_messages = wfobj["AllowImmediateMessages"]
 
         self._logger.info("parseASL: workflowName: " + self.workflowName)
         self._logger.info("parseASL: workflowEntryPoint: " + self.workflowEntryTopic)
@@ -323,7 +332,8 @@ class Workflow:
 
             if bool(value) and not (self.insideParallelBranchAlready() or self.insideMapBranchAlready()):
                 self.workflowExitPoint = "end"
-                self.workflowFunctionMap[self.workflowExitPoint] = True
+                if self._allow_immediate_messages:
+                    self.workflowFunctionMap[self.workflowExitPoint] = True
                 nextNodes.append(self.workflowExitPoint)
                 self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
             #else:
@@ -352,7 +362,8 @@ class Workflow:
             self._is_session_workflow = True
             self.workflowSessionFunctions[taskstatename] = is_session_function
 
-        self.workflowFunctionMap[taskstatename] = True
+        if self._allow_immediate_messages:
+            self.workflowFunctionMap[taskstatename] = True
 
         if "Catch" in taskstateinfo.keys(): # need to add Catch Next to potentialNext
             for catch in taskstateinfo["Catch"]:

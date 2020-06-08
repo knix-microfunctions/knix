@@ -12,6 +12,9 @@
     "EnableCheckpoints": {
         "enum": [true, false]
     },
+    "AllowImmediateMessages": {
+        "enum": [true, false]
+    },
     "States": {
       "type": "object",
       "patternProperties": {
