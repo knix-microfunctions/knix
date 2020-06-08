@@ -14,6 +14,7 @@
 
 SHELL := /bin/bash
 -include ../proxy.mk
+include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
 all: target/frontend.jar
@@ -23,7 +24,7 @@ src/main/java/data_layer:
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../DataLayerService:/usr/src/datalayer \
 		-v $(CURDIR):/usr/src/frontend -w /usr/src/frontend \
-		thrift:0.12.0 \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ /usr/src/datalayer/thrift/DataLayerMessage.thrift; thrift --gen java -out ./src/main/java/ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
 # In case the user doesn't have maven configurations in the home directory, we need to create it
@@ -49,7 +50,7 @@ target/frontend.jar: src/main/java/data_layer ~/.m2/settings-docker.xml
 	-v ~/.m2:/usr/share/maven/ref \
 	-v $(CURDIR):/usr/src/frontend -w /usr/src/frontend \
 	maven:3.6.1-jdk-8 \
-	mvn -Drevision=$(GIT_REVISION) -Dargline="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+	mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -Dargline="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
 
 clean:
 	rm -rf ./target

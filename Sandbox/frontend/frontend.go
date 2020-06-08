@@ -30,9 +30,9 @@ import (
   "sync"
   "syscall"
   "time"
-  "github.com/microfn/microfunctions/Sandbox/frontend/localqueueservice"
-  "github.com/microfn/microfunctions/Sandbox/frontend/datalayermessage"
-  "github.com/microfn/microfunctions/Sandbox/frontend/datalayerservice"
+  "github.com/knix-microfunctions/knix/Sandbox/frontend/localqueueservice"
+  "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
+  "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
   "github.com/apache/thrift/lib/go/thrift"
   "github.com/google/uuid"
 )

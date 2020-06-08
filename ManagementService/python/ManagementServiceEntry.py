@@ -224,18 +224,35 @@ def actionOther(action, data, sapi):
     possibleActions["uploadFunctionRequirements"] = True
     possibleActions["uploadFunctionZipMetadata"] = True
     possibleActions["uploadWorkflowJSON"] = True
-    possibleActions["prepareWorkflowLog"] = True
-    possibleActions["retrieveWorkflowLog"] = True
-    possibleActions["prepareAllWorkflowLogs"] = True
     possibleActions["retrieveAllWorkflowLogs"] = True
     possibleActions["clearAllWorkflowLogs"] = True
-    possibleActions["clearWorkflowLog"] = True
     possibleActions["getWorkflowDetails"] = True
     possibleActions["addTriggerableTable"] = True
     possibleActions["addStorageTriggerForWorkflow"] = True
     possibleActions["getTriggerableTables"] = True
 
-    if action in possibleActions:
+    deprecatedActions = {}
+    deprecatedActions["clearWorkflowLog"] = True
+    deprecatedActions["prepareWorkflowLog"] = True
+    deprecatedActions["prepareAllWorkflowLogs"] = True
+    deprecatedActions["retrieveWorkflowLog"] = True
+
+    if action in deprecatedActions:
+        message = "[WARNING] Deprecated action: '" + action + "'"
+        if action == "clearWorkflowLog":
+            message += "; use 'clearAllWorkflowLogs'"
+        elif action == "prepareWorkflowLog" or action == "prepareAllWorkflowLogs" or action == "retrieveWorkflowLog":
+            message += "; use 'retrieveAllWorkflowLogs'"
+
+        response["status"] = "success"
+        response_data["message"] = message
+        response["data"] = response_data
+
+        output = {"next": "ManagementServiceExit", "value": response}
+        sapi.add_dynamic_workflow(output)
+        return {}
+
+    elif action in possibleActions:
         user = data["user"]
         status, statusmessage, token, authenticated_user = verifyUser(user, sapi, extendTokenExpiry=True)
         if status == True:
@@ -280,6 +297,8 @@ def handle(event, context):
         for key in user:
             if any(not (ord(c) < 128) for c in user[key]):
                 unsupported_chars = True
+            elif key == "email" and any(c == " " for c in user[key]):
+                unsupported_chars = True
 
         if not unsupported_chars:
             if action == "signUp":
@@ -296,12 +315,12 @@ def handle(event, context):
 
             return actionOther(action, data, context)
         else:
-            errmsg = "Unsupported non-ascii characters."
+            errmsg = "Space or non-ascii characters in email."
             context.log(errmsg)
 
     response = {}
     response["status"] = "failure"
     response["data"] = {}
-    response["data"]["message"] = "Invalid input parameters. " + errmsg
+    response["data"]["message"] = "Invalid input parameters: " + errmsg
     context.add_workflow_next("ManagementServiceExit", response)
     return None

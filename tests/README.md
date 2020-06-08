@@ -18,6 +18,14 @@
 
 Each folder contains a bunch of Python unit tests that are run to verify a certain component/scenario/functionality.
 
+Before running the tests, make sure that you have the correct settings.json or settings.env file.
+They both contain the same information, so filling one is enough.
+You can find the samples settings.json.sample and settings.env.sample in this folder.
+
+For filling default values into a settings.json file, use:
+
+`$ make settings`
+
 To run the tests in a folder, use:
 
 `$ make <foldername>`

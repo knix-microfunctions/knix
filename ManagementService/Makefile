@@ -15,7 +15,7 @@
 # Makefile
 SHELL := /bin/bash
 -include ../proxy.mk
-
+include ../build_env.mk
 default: management_deployment_package.tar.gz
 
 DataLayerClient.py: ../FunctionWorker/python/DataLayerClient.py
@@ -28,7 +28,7 @@ thrift: $(THRIFT)
 
 $(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerService/thrift/DataLayerService.thrift
 	mkdir -p data_layer
-	docker run --user $$(id -u):$$(id -g) --rm -v $(CURDIR)/..:/root -w /root thrift:0.12.0 bash -c '\
+	docker run --user $$(id -u):$$(id -g) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerMessage.thrift; \
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerService.thrift'
 
