@@ -14,4 +14,6 @@
 
 from setuptools import setup
 
-setup()
+setup(
+    name="mfn_sdk"
+)
