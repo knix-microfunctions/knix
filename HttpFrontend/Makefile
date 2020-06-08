@@ -50,7 +50,7 @@ target/frontend.jar: src/main/java/data_layer ~/.m2/settings-docker.xml
 	-v ~/.m2:/usr/share/maven/ref \
 	-v $(CURDIR):/usr/src/frontend -w /usr/src/frontend \
 	maven:3.6.1-jdk-8 \
-	mvn -Drevision=$(GIT_REVISION) -Dargline="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+	mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -Dargline="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
 
 clean:
 	rm -rf ./target

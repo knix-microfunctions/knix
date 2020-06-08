@@ -66,7 +66,7 @@ target/datalayerservice.jar: $(JAVA_SOURCES) \
 		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
 		maven:3.6.1-jdk-8 \
-		mvn -Drevision=$(GIT_REVISION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
 
 clean:
 	rm -rf ./target
