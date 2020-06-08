@@ -24,7 +24,7 @@ src/main/java/data_layer:
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../DataLayerService:/usr/src/datalayer \
 		-v $(CURDIR):/usr/src/frontend -w /usr/src/frontend \
-		thrift:$(THRIFT_VERSION) \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ /usr/src/datalayer/thrift/DataLayerMessage.thrift; thrift --gen java -out ./src/main/java/ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
 # In case the user doesn't have maven configurations in the home directory, we need to create it

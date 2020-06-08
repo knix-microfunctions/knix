@@ -30,7 +30,7 @@ src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: \
 	docker run --rm -it --name mfnapi-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/mfnapi -w /usr/src/mfnapi \
-		thrift:$(THRIFT_VERSION) \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./MicroFunctionsAPI.thrift'
 	rm ./MicroFunctionsAPI.thrift
 

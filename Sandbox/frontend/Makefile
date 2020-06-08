@@ -25,7 +25,7 @@ datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
-		thrift:$(THRIFT_VERSION) \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerMessage.thrift'
 
 datalayerservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
@@ -33,7 +33,7 @@ datalayerservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
-		thrift:$(THRIFT_VERSION) \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
 localqueueservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
@@ -41,7 +41,7 @@ localqueueservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../QueueService:/usr/src/queue \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
-		thrift:$(THRIFT_VERSION) \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/queue/thrift/LocalQueueService.thrift'
 
 mfnmessage.go: ../schema/mfnmessage-schema.json
