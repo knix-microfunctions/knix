@@ -17,9 +17,13 @@ SHELL := /bin/bash
 include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: \
+
+all: build_thrift \
 	target/javaworker.jar \
 	mfnapi
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
 mfnapi:
 	cd target/classes; jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class; mv mfnapi.jar ../../.; cd ../..

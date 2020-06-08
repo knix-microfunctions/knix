@@ -18,12 +18,16 @@ SHELL := /bin/bash
 include ../build_env.mk
 .PHONY: build
 
-default: image \
+default: build_thrift \
+	image \
 	image_java
 
 clean:
 	make -C frontend clean
 	rm -rf build/*
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
 ##############################
 ## Build

@@ -17,7 +17,12 @@ SHELL := /bin/bash
 include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: target/queueservice.jar
+
+all: build_thrift \
+	target/queueservice.jar
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
 src/main/java/org/microfunctions/queue/local/LocalQueueService.java: \
 		thrift/LocalQueueService.thrift

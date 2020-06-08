@@ -12,13 +12,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+SHELL := /bin/bash
+
 UID:=`id -u`
 GID:=`id -g`
 -include ../../proxy.mk
 include ../../build_env.mk
 SOURCES=$(shell find ./ -name '*.go')
 
-default: frontend
+default: build_thrift \
+	frontend
+
+build_thrift:
+	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
 datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift
 	docker run --rm -it --name sandbox-thrift \

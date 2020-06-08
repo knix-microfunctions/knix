@@ -17,8 +17,12 @@ SHELL := /bin/bash
 include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: \
+
+all: build_thrift \
 	target/datalayerservice.jar
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
 src/main/java/org/microfunctions/data_layer/DataLayerService.java: \
 		thrift/DataLayerMessage.thrift \
