@@ -42,9 +42,14 @@ def execute_workflow(wfid, wfurl, wfinput):
     try:
         if IN_KUBERNETES:
             protocol = wfurl[0:wfurl.find("://")+3]
+            host = wfurl[len(protocol):]
+
+            port_index = host.find(":")
+            if port_index != -1:
+                host = host[0:port_index]
 
             headers = {}
-            headers["Host"] = wfurl[len(protocol):]
+            headers["Host"] = host
 
             url_first_part = wfurl.split(".")[0]
             url = "http://" + url_first_part[len(protocol):]
