@@ -41,12 +41,14 @@ def execute_workflow(wfid, wfurl, wfinput):
     result = None
     try:
         if IN_KUBERNETES:
-            # TODO: modify the url and set the Host header
-            url_first_part = wfurl.split(".")[0]
             protocol = wfurl[0:wfurl.find("://")+3]
-            url = url_first_part + ".knix.svc.cluster.local"
+
             headers = {}
             headers["Host"] = wfurl[len(protocol):]
+
+            url_first_part = wfurl.split(".")[0]
+            url = "http://" + url_first_part[len(protocol):]
+
             result = requests.post(url, headers=headers, params={}, json=wfinput)
         else:
             result = requests.post(wfurl, params={}, json=wfinput)

@@ -155,7 +155,7 @@ class MfnClient(object):
         self._s.max_redirects = 10
 
         self.weburl = str(url)
-        self.mgmturl= self.weburl.rstrip(['/'])+"/management"
+        self.mgmturl= self.weburl.rstrip('/')+"/management"
         self.user=user
         self.token=None
         self.store=self.weburl
