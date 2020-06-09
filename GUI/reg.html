@@ -23,8 +23,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MicroFunctions</title>
 
-  <script src="app/endpoint.js"></script>
-
   <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900&subset=latin,greek,greek-ext,vietnamese,cyrillic-ext,latin-ext,cyrillic' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="lib/bootstrap.css" >
@@ -37,36 +35,30 @@
 
     var xhr = new XMLHttpRequest();
 
-    var url = managementServiceEndpoint; // from app/endpoint.js
+    var url = "/management";
 
-    if (url=="") {
-        document.getElementById('message').innerHTML = '<a href="#" class="auth-link" style="color:#2dacd1;font-size:20px;">Error: Management service URL not set</a>';
-    } else {
-    
-      xhr.open("POST", url, true);
+    xhr.open("POST", url, true);
 
-      xhr.onreadystatechange = function () {
-          if (xhr.readyState === 4 && xhr.status === 200) {
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
 
-              var json = JSON.parse(xhr.responseText.toString());
+            var json = JSON.parse(xhr.responseText.toString());
 
-              console.log(json);
-              if (json.status==='success') {
-                document.cookie = "token=" + json.data.token + "; path=/";
-                console.log(json.data.token);
-                document.location.href="auth.html";
-              } else {
-                document.getElementById('message').innerHTML = '<a href="#" class="auth-link" style="color:#2dacd1;font-size:20px;">' + json.data.message + '</a>';
-              }
+            console.log(json);
+            if (json.status==='success') {
+              document.cookie = "token=" + json.data.token + "; path=/";
+              console.log(json.data.token);
+              document.location.href="auth.html";
+            } else {
+              document.getElementById('message').innerHTML = '<a href="#" class="auth-link" style="color:#2dacd1;font-size:20px;">' + json.data.message + '</a>';
+            }
 
-          }
-      };
-      var jsonData = '{"action" : "signUp", "data" : { "user" : { "name" : "' + document.getElementById('inputName').value + '", "email" : "' + document.getElementById('inputEmail').value + '", "password" : "' + document.getElementById('inputPassword').value + '" } }}';
+        }
+    };
+    var jsonData = '{"action" : "signUp", "data" : { "user" : { "name" : "' + document.getElementById('inputName').value + '", "email" : "' + document.getElementById('inputEmail').value + '", "password" : "' + document.getElementById('inputPassword').value + '" } }}';
 
-      xhr.setRequestHeader("Content-type", "application/json;charset=UTF-8");
-      xhr.send(jsonData);
-    }
-
+    xhr.setRequestHeader("Content-type", "application/json;charset=UTF-8");
+    xhr.send(jsonData);
   }
 </script>
 </head>

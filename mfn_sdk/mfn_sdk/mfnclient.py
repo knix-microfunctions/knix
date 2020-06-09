@@ -155,12 +155,7 @@ class MfnClient(object):
         self._s.max_redirects = 10
 
         self.weburl = str(url)
-        epr = self._s.get(self.weburl+"/app/endpoint.js")
-        epr.raise_for_status()
-        epf = epr.text
-        idx = epf.index("managementServiceEndpoint")
-        idx = epf.index('"http',idx)+1
-        self.mgmturl=epf[idx:epf.index('"',idx)]
+        self.mgmturl= self.weburl.rstrip(['/'])+"/management"
         self.user=user
         self.token=None
         self.store=self.weburl
