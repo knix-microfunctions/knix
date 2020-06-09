@@ -26,6 +26,7 @@
                 "getWorkflows",
                 "addWorkflow",
                 "modifyWorkflow",
+                "executeWorkflow",
                 "deleteWorkflow",
                 "uploadWorkflowJSON",
                 "getWorkflowJSON",
@@ -116,7 +117,12 @@
             "next": ["ManagementServiceExit"],
             "potentialNext": []
         },
-                {
+        {
+            "name": "executeWorkflow",
+            "next": ["ManagementServiceExit"],
+            "potentialNext": []
+        },
+        {
             "name": "uploadWorkflowJSON",
             "next": ["ManagementServiceExit"],
             "potentialNext": []

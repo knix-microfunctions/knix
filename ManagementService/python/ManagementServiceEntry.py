@@ -218,6 +218,7 @@ def actionOther(action, data, sapi):
     possibleActions["getWorkflows"] = True
     possibleActions["modifyFunction"] = True
     possibleActions["modifyWorkflow"] = True
+    possibleActions["executeWorkflow"] = True
     possibleActions["undeployWorkflow"] = True
     possibleActions["uploadFunctionCode"] = True
     possibleActions["uploadFunctionEnvironmentVariables"] = True
