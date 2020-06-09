@@ -14,11 +14,16 @@
 
 SHELL := /bin/bash
 -include ../proxy.mk
+include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: \
+
+all: build_thrift \
 	target/javaworker.jar \
 	mfnapi
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
 mfnapi:
 	cd target/classes; jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class; mv mfnapi.jar ../../.; cd ../..
@@ -29,7 +34,7 @@ src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: \
 	docker run --rm -it --name mfnapi-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/mfnapi -w /usr/src/mfnapi \
-		thrift:0.12 \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./MicroFunctionsAPI.thrift'
 	rm ./MicroFunctionsAPI.thrift
 
@@ -60,7 +65,7 @@ target/javaworker.jar: $(JAVA_SOURCES) \
 	-v ~/.m2:/usr/share/maven/ref \
 	-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
 	maven:3.6.1-jdk-8 \
-	mvn -Drevision=$(GIT_REVISION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e package
+	mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e package
 
 clean:
 	rm -rf target/

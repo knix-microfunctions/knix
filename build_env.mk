@@ -12,16 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-apiVersion: serving.knative.dev/v1alpha1
-kind: Service
-metadata:
-  name: wf-mfn1-management
-  namespace: knix
-spec:
-  template:
-    spec:
-      containers:
-        - image: localhost:5000/microfn/sandbox
-          env:
-            - name: TARGET
-              value: Go Sample v1
+THRIFT_IMAGE_NAME=thrift
+THRIFT_VERSION=0.13
+MVN_LIBTHRIFT_VERSION=0.13.0
+

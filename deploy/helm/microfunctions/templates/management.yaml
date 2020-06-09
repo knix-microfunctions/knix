@@ -161,7 +161,7 @@ data:
               {
                 "securityContext": { "runAsUser": 1000 },
                 "name": "sandbox",
-                "image": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePath }}:{{ .Values.manager.sandbox.imageTag }}",
+                "image": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag }}",
                 "imagePullPolicy": "Always",
                 "env": [
                 {{/* not allowed in KNative

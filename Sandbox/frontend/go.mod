@@ -1,4 +1,4 @@
-module github.com/microfn/microfunctions/Sandbox/frontend
+module github.com/knix-microfunctions/knix/Sandbox/frontend
 
 go 1.13
 

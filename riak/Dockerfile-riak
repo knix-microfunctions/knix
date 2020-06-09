@@ -70,7 +70,9 @@ COPY src/workflow_triggers.erl /usr/lib/riak/lib/workflow_triggers
 
 # Install custom start script
 COPY script/riak-cluster.sh $RIAK_HOME/riak-cluster.sh
+COPY script/shutdown.sh $RIAK_HOME/shutdown.sh
 RUN chmod a+x $RIAK_HOME/riak-cluster.sh
+RUN chmod a+x $RIAK_HOME/shutdown.sh
 RUN echo "riak soft nofile 65536\nriak hard nofile 200000" >>/etc/security/limits.conf
 
 # Install custom hooks
