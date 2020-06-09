@@ -61,7 +61,7 @@ def actionSignUp(user, sapi):
 
             output = {"next": "ManagementServiceExit", "value": response}
             sapi.add_dynamic_workflow(output)
-            return {}
+            return None
 
     response["status"] = "failure"
     response_data["message"] = "User already exists."
@@ -82,8 +82,6 @@ def actionLogin(user, sapi):
 
         cur_user = sapi.get(email, True)
 
-        sapi.log(cur_user)
-
         if cur_user is not None and cur_user != "":
             cur_user = json.loads(cur_user)
             if cur_user["passwordHash"] == hashlib.sha256(password.encode()).hexdigest():
@@ -103,13 +101,15 @@ def actionLogin(user, sapi):
 
                 response["status"] = "success"
                 response_data["message"] = "Logged in successfully."
+                response_data["name"] = cur_user["name"]
+                response_data["email"] = cur_user["email"]
                 response_data["token"] = token
                 response_data["storageEndpoint"] = cur_user["storageEndpoint"]
                 response["data"] = response_data
 
                 output = {"next": "ManagementServiceExit", "value": response}
                 sapi.add_dynamic_workflow(output)
-                return {}
+                return None
             else:
                 response_data["message"] = "Authentication failed; wrong username and/or password."
         else:
@@ -147,6 +147,8 @@ def actionChangeName(user, sapi):
 
                     response["status"] = "success"
                     response_data["message"] = "Name changed successfully."
+                    response_data["name"] = cur_user["name"]
+                    response_data["email"] = cur_user["email"]
                     response_data["storageEndpoint"] = cur_user["storageEndpoint"]
                     response["data"] = response_data
 
@@ -178,8 +180,6 @@ def actionChangePassword(user, sapi):
 
         cur_user = sapi.get(email, True)
 
-        sapi.log(cur_user)
-
         if cur_user is not None and cur_user != "":
             cur_user = json.loads(cur_user)
             if cur_user["passwordHash"] == hashlib.sha256(password.encode()).hexdigest():
@@ -199,6 +199,8 @@ def actionChangePassword(user, sapi):
 
                 response["status"] = "success"
                 response_data["message"] = "Password changed successfully."
+                response_data["name"] = cur_user["name"]
+                response_data["email"] = cur_user["email"]
                 response_data["token"] = token
                 response_data["storageEndpoint"] = cur_user["storageEndpoint"]
                 response["data"] = response_data
@@ -347,7 +349,7 @@ def actionOther(action, data, sapi):
     elif action in possibleActions:
         user = data["user"]
         status, statusmessage, token, authenticated_user = verifyUser(user, sapi, extendTokenExpiry=True)
-        if status == True:
+        if status:
             sapi.log(statusmessage + " Authenticated user: " + str(authenticated_user))
             # pass the email to the next function,
             # so that they don't have to re-authenticate the again
