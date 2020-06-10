@@ -559,7 +559,7 @@ class MfnClient(object):
                     json=value)
         r.raise_for_status()
         if r.text != "true":
-            raise Exception("PUT failed: "+r.text)
+            raise Exception("PUT failed: " + r.text)
 
 
     def delete(self,key,table="defaultTable"):
@@ -573,6 +573,4 @@ class MfnClient(object):
                     params=data_to_send)
         r.raise_for_status()
         if r.text != "true":
-            raise Exception("PUT failed: "+r.text)
-
-
+            raise Exception("DELETE failed: " + r.text)
