@@ -32,7 +32,7 @@ THRIFT=$(-shell find data_layer/ -type f -size +1c) data_layer
 
 thrift: $(THRIFT)
 
-$(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerService/thrift/DataLayerService.thrift
+$(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerService/thrift/DataLayerService.thrift ../build_env.mk
 	mkdir -p data_layer
 	docker run --user $(UID):$(GID) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerMessage.thrift; \

@@ -24,7 +24,7 @@ all: build_thrift \
 build_thrift:
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
-src/main/java/data_layer:
+src/main/java/data_layer: ../build_env.mk
 	docker run --rm -it --name frontend-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../DataLayerService:/usr/src/datalayer \

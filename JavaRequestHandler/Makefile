@@ -28,8 +28,8 @@ build_thrift:
 mfnapi:
 	cd target/classes; jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class; mv mfnapi.jar ../../.; cd ../..
 
-src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: \
-		../FunctionWorker/MicroFunctionsAPI.thrift
+src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: ../build_env.mk \
+	../FunctionWorker/MicroFunctionsAPI.thrift
 	cp ../FunctionWorker/MicroFunctionsAPI.thrift .
 	docker run --rm -it --name mfnapi-thrift \
 		--user $(UID):$(GID) \
