@@ -14,7 +14,7 @@
 #   limitations under the License.
 
 # Maybe join to a cluster
-if [[ ${COORDINATOR_NODE} != ${HOSTNAME}* && ${HOSTNAME} != ${COORDINATOR_NODE}* ]]; then
+if [[ -z "$($RIAK_ADMIN cluster status | grep $HOSTNAME)" && ${COORDINATOR_NODE} != ${HOSTNAME}* && ${HOSTNAME} != ${COORDINATOR_NODE}* ]]; then
 #if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE_HOST)" && ${HOSTNAME} != ${COORDINATOR_NODE}* ]]; then
   # Not already in this cluster and not the coordinator itself, so join
   echo "Connecting to cluster coordinator $COORDINATOR_NODE"
