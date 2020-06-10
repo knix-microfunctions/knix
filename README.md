@@ -50,6 +50,8 @@ Before you attempt to make a contribution please read the [Code of Conduct](./CO
 
 * Join our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw)
 
+* (Optionally) subscribe to [knix-users mailing list](https://groups.google.com/forum/#!forum/knix-users) and/or [knix-dev mailing list](https://groups.google.com/forum/#!forum/knix-dev)
+
 # License
 
 [Apache License 2.0](https://github.com/knix-microfunctions/knix/blob/master/LICENSE)
