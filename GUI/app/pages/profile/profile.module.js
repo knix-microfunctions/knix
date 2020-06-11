@@ -14,39 +14,25 @@
    limitations under the License.
 */
 
-
 (function () {
   'use strict';
 
-  angular.module('MfnWebConsole.pages', [
-    'ui.router',
-
-    'MfnWebConsole.pages.dashboard',
-    'MfnWebConsole.pages.functions',
-    'MfnWebConsole.pages.workflows',
-    'MfnWebConsole.pages.storage',
-    'MfnWebConsole.pages.profile',
-    'MfnWebConsole.pages.docs'
-
-
-  ])
-
+  angular.module('MfnWebConsole.pages.profile', [])
       .config(routeConfig);
 
-
-
   /** @ngInject */
-  function routeConfig($urlRouterProvider, baSidebarServiceProvider) {
-
-
-    $urlRouterProvider.otherwise('/dashboard');
-
-    
-    baSidebarServiceProvider.addStaticItem({
-      title: '',
-      fixedHref: 'auth.html',
-      blank: true
-    });
+  function routeConfig($stateProvider) {
+    $stateProvider
+        .state('profile', {
+          url: '/profile',
+          templateUrl: 'app/pages/profile/profile.html',
+          title: 'User Profile',
+          controller: 'ProfileCtrl',
+          sidebarMeta: {
+            icon: '',
+            order: 10,
+          },
+        });
   }
 
 })();
