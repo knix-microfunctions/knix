@@ -40,6 +40,10 @@
 {{- printf "nx-%s" .Release.Name | trunc 40 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "nginx.mgmtService" -}}
+{{- default (printf "wf-%s-management.%s.example.com" .Release.Name .Release.Namespace) .Values.nginx.managementService -}}
+{{- end -}}
+
 {{- define "nxConnect.url" }}
 {{- $rlsname := .Release.Name -}}
 {{- $namespace := .Release.Namespace -}}
