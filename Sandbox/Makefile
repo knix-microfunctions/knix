@@ -41,7 +41,7 @@ build/SandboxAgent.tar.gz: $(SBASOURCE)
 	tar -czf $@ ../SandboxAgent
 
 FWSOURCE = $(shell find ../FunctionWorker)
-build/FunctionWorker.tar.gz: $(FWSOURCE)
+build/FunctionWorker.tar.gz: $(FWSOURCE) ../build_env.mk
 	mkdir -p build
 	docker run --user $$(id -u):$$(id -g) --rm -v $$(pwd)/../:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \
@@ -50,7 +50,7 @@ build/FunctionWorker.tar.gz: $(FWSOURCE)
 	tar -czf $@ ../FunctionWorker
 
 QSOURCE = $(shell find ../QueueService/src)
-build/queueservice.jar: $(QSOURCE)
+build/queueservice.jar: $(QSOURCE) ../build_env.mk
 	mkdir -p build
 	cd ../QueueService; make; cd -
 	cp ../QueueService/target/queueservice.jar build/
@@ -62,7 +62,7 @@ build/LoggingService.tar.gz: $(LSOURCE)
 	tar -czf $@ -C ../ LoggingService/fluent-bit
 
 JRHSOURCE = $(shell find ../JavaRequestHandler/src)
-build/JavaRequestHandler.tar.gz: $(JRHSOURCE) $(wildcard ../JavaRequestHandler/*.xml)
+build/JavaRequestHandler.tar.gz: $(JRHSOURCE) $(wildcard ../JavaRequestHandler/*.xml) ../build_env.mk
 	mkdir -p build
 	rm -f $@
 	cd ../JavaRequestHandler; make all; cd -

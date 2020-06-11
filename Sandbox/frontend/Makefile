@@ -26,7 +26,7 @@ default: build_thrift \
 build_thrift:
 	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
-datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift
+datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift ../../build_env.mk
 	docker run --rm -it --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
@@ -34,7 +34,7 @@ datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerMessage.thrift'
 
-datalayerservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
+datalayerservice: ../../DataLayerService/thrift/DataLayerService.thrift ../../build_env.mk
 	docker run --rm -it --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
@@ -42,7 +42,7 @@ datalayerservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
-localqueueservice: ../../DataLayerService/thrift/DataLayerMessage.thrift
+localqueueservice: ../../QueueService/thrift/LocalQueueService.thrift ../../build_env.mk
 	docker run --rm -it --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../QueueService:/usr/src/queue \
