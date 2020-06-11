@@ -81,14 +81,12 @@ class MicroFunctionsAPI:
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
 
-    def get_privileged_data_layer_client(self, suid=None, keyspace=None, init_tables=False, drop_keyspace=False):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, init_tables=False, drop_keyspace=False):
         if self._is_privileged:
             if suid is not None:
                 return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
-            elif keyspace is not None:
-                dlc = DataLayerClient(locality=1, for_mfn=True, connect=self._datalayer)
-                dlc.keyspace = keyspace
-                return dlc
+            elif sid is not None:
+                return DataLayerClient(locality=1, for_mfn=True, sid=sid, connect=self._datalayer, drop_keyspace=drop_keyspace)
         return None
 
     def update_metadata(self, metadata_name, metadata_value, is_privileged_metadata=False):

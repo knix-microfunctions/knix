@@ -214,7 +214,7 @@ public class MicroFunctionsAPI
 
     ===================
     
-    def get_privileged_data_layer_client(self, suid=None, keyspace=None, tablename=None, maptablename=None, settablename=None, countertablename=None, init_tables=False):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, init_tables=False, drop_keyspace=False):
     
     */
 	
