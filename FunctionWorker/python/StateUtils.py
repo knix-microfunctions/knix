@@ -1746,7 +1746,8 @@ class StateUtils:
         # this should be called for Choice state only
         # for the rest the next values are statically defined and are parsed by hostagent
 
-        nextfunc = self.default_next_choice[-1]
+        if len(self.default_next_choice) > 0:
+            nextfunc = self.default_next_choice[-1]
 
         self._logger.debug("[StateUtils] choice_function_input: " + str(function_input))
 
