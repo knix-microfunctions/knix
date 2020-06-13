@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import json
+import hashlib
 
 def delete_single_workflow(email, wid, sapi):
     # delete
@@ -140,34 +141,55 @@ def handle(value, sapi):
     response = {}
     response_data = {}
 
-    success = False
+    sapi.log(data)
 
-    email = data["email"]
-    storage_userid = data["storage_userid"]
+    try:
 
-    delete_workflows(email, sapi)
+        if "password" not in data["user"]:
+            raise Exception("Password parameter missing.")
 
-    delete_functions(email, sapi)
+        email = data["email"]
+        password = data["user"]["password"]
+        cur_user = sapi.get(email, True)
 
-    delete_user(email, storage_userid, sapi)
+        if cur_user is not None and cur_user != "":
+            cur_user = json.loads(cur_user)
+            if cur_user["passwordHash"] != hashlib.sha256(password.encode()).hexdigest():
+                raise Exception("Invalid password.")
+        else: raise Exception("Invalid email.")
 
-    # finally, delete the authenticated tokens that belong to all sessions of this user
-    session_tokens = sapi.retrieveSet(email + "_session_tokens", is_private=True)
-    for token in session_tokens:
-        sapi.delete(token, True, True)
+        success = False
+        
+        storage_userid = data["storage_userid"]
 
-    sapi.delete(data["usertoken"], True, True)
+        delete_workflows(email, sapi)
 
-    sapi.deleteSet(email + "_session_tokens", is_private=True)
+        delete_functions(email, sapi)
 
-    success = True
+        delete_user(email, storage_userid, sapi)
 
-    if success:
-        response["status"] = "success"
-    else:
+        # finally, delete the authenticated tokens that belong to all sessions of this user
+        session_tokens = sapi.retrieveSet(email + "_session_tokens", is_private=True)
+        for token in session_tokens:
+            sapi.delete(token, True, True)
+
+        sapi.delete(data["usertoken"], True, True)
+
+        sapi.deleteSet(email + "_session_tokens", is_private=True)
+
+        success = True
+
+        if success:
+            response["status"] = "success"
+        else:
+            response["status"] = "failure"
+
+        response["data"] = response_data
+
+    except Exception as exc:
         response["status"] = "failure"
-
-    response["data"] = response_data
+        response_data["message"] = str(exc)
+        response["data"] = response_data
 
     sapi.log(json.dumps(response))
 

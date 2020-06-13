@@ -39,32 +39,29 @@
       var xhr = new XMLHttpRequest();
       var url = managementServiceEndpoint; // from app/endpoint.js
 
-      if (url=="") {
-        document.getElementById('message').innerHTML = '<a href="#" class="auth-link" style="color:#2dacd1;font-size:20px;">Error: Management service URL not set</a>';
-      } else {
-        xhr.open("POST", url, true);
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                            
-                var json = JSON.parse(xhr.responseText.toString());
-                
-                if (json.status==='success') {
-                  document.cookie = "token=" + json.data.token + "; path=/";
-                  document.cookie = "email=" + document.getElementById('inputEmail').value + "; path=/";
-                  console.log(json.data.token);
-                  document.location.href="index.html";
-                } else {
-                  document.getElementById('message').innerHTML = '<a href="#" class="auth-link" style="color:#2dacd1;font-size:20px;">No match! Please try again.</a>';
-                }
+      xhr.open("POST", url, true);
+      xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+                          
+              var json = JSON.parse(xhr.responseText.toString());
+              
+              if (json.status==='success') {
+                document.cookie = "token=" + json.data.token + "; path=/";
+                document.cookie = "email=" + document.getElementById('inputEmail').value + "; path=/";
+                document.cookie = "name=" + json.data.name + "; path=/";
+                console.log(json.data.token);
+                document.location.href="index.html";
+              } else {
+                document.getElementById('message').innerHTML = '<a href="#" class="auth-link" style="color:#2dacd1;font-size:20px;">No match! Please try again.</a>';
+              }
 
-            }
-        };
-        var jsonData = '{"action" : "logIn", "data" : { "user" : { "email" : "' + document.getElementById('inputEmail').value + '", "password" : "' + document.getElementById('inputPassword').value + '" } }}';
+          }
+      };
+      var jsonData = '{"action" : "logIn", "data" : { "user" : { "email" : "' + document.getElementById('inputEmail').value + '", "password" : "' + document.getElementById('inputPassword').value + '" } }}';
 
-        xhr.setRequestHeader("Content-type", "application/json;charset=UTF-8");
+      xhr.setRequestHeader("Content-type", "application/json;charset=UTF-8");
 
-        xhr.send(jsonData);
-      }
+      xhr.send(jsonData);
     }
   </script>
 </head>
