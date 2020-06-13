@@ -46,6 +46,7 @@
               if (json.status==='success') {
                 document.cookie = "token=" + json.data.token + "; path=/";
                 document.cookie = "email=" + document.getElementById('inputEmail').value + "; path=/";
+                document.cookie = "name=" + json.data.name + "; path=/";
                 console.log(json.data.token);
                 document.location.href="index.html";
               } else {
