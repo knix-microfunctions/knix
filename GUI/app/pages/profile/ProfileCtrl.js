@@ -16,30 +16,29 @@
 
 (function () {
     'use strict';
- 
+
     angular.module('MfnWebConsole.pages.profile')
     .controller('ProfileCtrl', ProfileCtrl);
 
-    
+
 
     /** @ngInject */
     function ProfileCtrl($scope, $http, sharedProperties, sharedData, toastr, $cookies, $uibModal) {
-    
         var urlPath = sharedProperties.getUrlPath();
 
         $scope.workflows = sharedData.getWorkflows();
         $scope.currentWorkflow = "";
         $scope.workflowUndeploymentModal = "";
-        
+
         $scope.email = $cookies.get('email');
         $scope.name = $cookies.get('name');
         var token = $cookies.get('token');
-        
+
         $scope.updateProfile = function() {
-            
+
             var newName = $("#inputName").val();
             var password = $("#currentPassword").val();
-                     
+
             // name change
             if (newName && newName!=$scope.name) {
                 if (!password) {
@@ -66,9 +65,9 @@
         }
 
         $scope.removeAccount = function() {
-            
-            var password = $("#currentPassword").val();    
-            
+
+            var password = $("#currentPassword").val();
+
             if (!password) {
                 $scope.errorMessage = "Please enter your password."
                 $uibModal.open({
@@ -133,27 +132,22 @@
                     $("#inputConfirmPassword").val("");
                     changePassword(password, newPassword);
                 }
-                
             }
             $("#currentPassword").val("");
-                        
         }
 
         function changeName(password, newName) {
-        
+
             var req = {
               method: 'POST',
               url: urlPath,
               headers: {
                    'Content-Type': 'application/json'
               },
-     
               data:   JSON.stringify({ "action" : "changeName", "data" : { "user" : { "email" : $scope.email, "password" : password, "new_name" : newName } } })
-                   
             }
-     
+
             $http(req).then(function successCallback(response) {
-     
                 if (response.data.status=="success") {
                   console.log("Message:" + response.data.data.message);
                   $cookies.put('name', newName);
@@ -187,9 +181,7 @@
                   templateUrl: 'app/pages/workflows/modals/errorModal.html',
                   size: 'md',
                 });
-                
             });
-        
         }
 
         function deleteAccount(password) {
@@ -197,24 +189,24 @@
             if ($scope.workflowUndeploymentModal) {
                 $scope.workflowUndeploymentModal.dismiss();
             }
-        
+
             var req = {
               method: 'POST',
               url: urlPath,
               headers: {
                    'Content-Type': 'application/json'
               },
-     
+
               data:   JSON.stringify({ "action" : "deleteAccount", "data" :  { "user" : { "password": password, "token" : token } } })
-                   
+
             }
-     
+
             $http(req).then(function successCallback(response) {
-     
+
                 if (response.data.status=="success") {
                   console.log("Message:" + response.data.data.message);
                   $scope.logOut();
-                  
+
                 } else {
                   console.log("Failure status returned by deleteAccount request");
                   console.log("Message:" + response.data.data.message);
@@ -225,7 +217,7 @@
                     templateUrl: 'app/pages/workflows/modals/errorModal.html',
                     size: 'md',
                   });
-                  
+
                 }
             }, function errorCallback(response) {
                 console.log("Error occurred during deleteAccount request");
@@ -241,9 +233,9 @@
                   templateUrl: 'app/pages/workflows/modals/errorModal.html',
                   size: 'md',
                 });
-                
+
             });
-        
+
         }
 
         function checkDeployedWorkflows(password) {
@@ -256,11 +248,11 @@
               },
               data:   JSON.stringify({ "action" : "getWorkflows", "data" : { "user" : { "token" : token } } })
             }
-      
+
             $http(req).then(function successCallback(response) {
-      
+
                 if (response.data.status=="success") {
-      
+
                   $scope.workflows = response.data.data.workflows;
                   sharedData.setWorkflows(response.data.data.workflows);
                   var deployedWorkflows = false;
@@ -274,7 +266,7 @@
                   if (!deployedWorkflows) {
                     deleteAccount(password);
                   }
-              
+
                 } else {
                   console.log("Failure status returned by getWorkflows");
                   console.log("Message:" + response.data.data.message);
@@ -330,12 +322,12 @@
                 },
                 data:   JSON.stringify({ "action" : "undeployWorkflow", "data" : { "user" : { "token" : token } , "workflow" : { "id" : $scope.workflows[index].id } } })
             }
-        
+
             $http(req).then(function successCallback(response) {
 
                 if (response.data.status=="success") {
                     setTimeout(function() {$scope.workflows[index].status='undeployed'; checkDeployedWorkflows(password); }, 2000);
-                    
+
                 } else {
                     console.log("Failure status returned by undeployWorkflow");
                     console.log("Message:" + response.data.data.message);
@@ -370,20 +362,20 @@
         }
 
         function changePassword(password, newPassword) {
-        
+
             var req = {
               method: 'POST',
               url: urlPath,
               headers: {
                    'Content-Type': 'application/json'
               },
-     
+
               data:   JSON.stringify({ "action" : "changePassword", "data" : { "user" : { "email" : $scope.email, "password" : password, "new_password" : newPassword } } })
-                   
+
             }
-     
+
             $http(req).then(function successCallback(response) {
-     
+
                 if (response.data.status=="success") {
                   console.log("Message:" + response.data.data.message);
                   toastr.success('Your password has been updated successfully.');
@@ -397,7 +389,6 @@
                     templateUrl: 'app/pages/workflows/modals/errorModal.html',
                     size: 'md',
                   });
-                  
                 }
             }, function errorCallback(response) {
                 console.log("Error occurred during changePassword request");
@@ -413,11 +404,8 @@
                   templateUrl: 'app/pages/workflows/modals/errorModal.html',
                   size: 'md',
                 });
-                
             });
-        
         }
-        
-    }   
+    }
 
 })();

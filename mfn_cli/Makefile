@@ -12,6 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+SHELL := /bin/bash
+
 VERSION?=$(shell git describe --tags)
 PKG=mfn_cli-$(VERSION)-py3-none-any.whl
 

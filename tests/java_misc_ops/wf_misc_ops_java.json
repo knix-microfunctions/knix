@@ -1,11 +1,10 @@
 {
-        "name": "misc_ops_java",
-        "entry": "TestMiscOperations",
-        "functions": [
-                {
-                        "name": "TestMiscOperations",
-                        "next": ["end"],
-                        "potentialNext": []
-                }
-        ]
+  "StartAt": "TestMiscOperations",
+  "States": {
+    "TestMiscOperations": {
+      "Type": "Task",
+      "Resource": "TestMiscOperations",
+      "End": true
+    }
+  }
 }

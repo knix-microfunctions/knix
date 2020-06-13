@@ -43,16 +43,13 @@ metadata:
   name: "{{ template "nginx.fullname" . }}-nginx-conf"
   labels:
     app: {{ include "nginx.name" . | quote }}
-    release: {{ .Release.Name | quote }}    
+    release: {{ .Release.Name | quote }}
 data:
   mfn.conf: |-
     log_format mfn_log '$remote_addr - $remote_user [$time_local] '
                         '"$request" $status $body_bytes_sent '
                         '"$http_referer" "$http_user_agent"';
-    upstream frontend {
-      server 127.0.0.1:50000;
-    }
-    
+
     server {
       listen 8080;
 {{ if (.Values.nginx.httpsPort) }}
@@ -75,26 +72,36 @@ data:
       # OCSP stapling
       #ssl_stapling on;
       #ssl_stapling_verify on;
-   
+
       # verify chain of trust of OCSP response using Root CA and Intermediate certs
       ssl_trusted_certificate /opt/mfn/nginx/ssl/..data/ca;
 {{ end }}
       client_max_body_size 100m;
-    
+
       access_log /opt/mfn/nginx/access.log mfn_log;
       error_log /opt/mfn/nginx/error.log info;
-        
+
       root /opt/mfn/nginx/gui;
       location {{ .Values.nginx.location }} {
         alias /opt/mfn/nginx/gui/;
       }
       location /storage {
-        proxy_pass http://frontend;
+        proxy_pass http://127.0.0.1:50000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        client_max_body_size 100m;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+      }
+      location /management {
+        proxy_pass http://{{ include "nginx.mgmtService" . | regexFind "^[^.]+" }};
+        proxy_set_header Host {{ include "nginx.mgmtService" . }};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_connect_timeout 600;
         proxy_send_timeout 600;
         proxy_read_timeout 600;
@@ -147,9 +154,6 @@ spec:
           mountPath: "/opt/mfn/nginx/ssl"
           readOnly: true
 {{ end }}
-        - name: config-endpoint
-          mountPath: /opt/mfn/nginx/gui/app/endpoint.js
-          subPath: endpoint.js
       - name: frontend
         image: "{{ .Values.imageRepo }}{{ .Values.nginx.frontendImagePath }}:{{ .Values.nginx.frontendImageTag }}"
         imagePullPolicy: "{{ .Values.nginx.imagePullPolicy }}"
@@ -172,13 +176,6 @@ spec:
         secret:
           secretName: "{{ template "nginx.fullname" . }}-nginx-ssl"
 {{ end }}
-      - name: config-endpoint
-        configMap:
-          name: config-endpoint
-          items:
-          - key: endpoint.js
-            path: endpoint.js
-            mode: 493
 {{ if (.Values.nginx.httpsPort) }}
 ---
 apiVersion: v1
@@ -195,11 +192,3 @@ metadata:
     release: {{ .Release.Name | quote }}
 type: Opaque
 {{ end }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: config-endpoint
-data:
-  endpoint.js: |
-    var managementServiceEndpoint = "{{ .Values.manager.endpoint }}";

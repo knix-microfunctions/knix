@@ -26,15 +26,12 @@
                 "getWorkflows",
                 "addWorkflow",
                 "modifyWorkflow",
+                "executeWorkflow",
                 "deleteWorkflow",
                 "uploadWorkflowJSON",
                 "getWorkflowJSON",
                 "clearAllWorkflowLogs",
-                "clearWorkflowLog",
-                "retrieveWorkflowLog",
                 "retrieveAllWorkflowLogs",
-                "prepareAllWorkflowLogs",
-                "prepareWorkflowLog",
                 "addTriggerableTable",
                 "addStorageTriggerForWorkflow",
                 "getTriggerableTables",
@@ -121,7 +118,12 @@
             "next": ["ManagementServiceExit"],
             "potentialNext": []
         },
-                {
+        {
+            "name": "executeWorkflow",
+            "next": ["ManagementServiceExit"],
+            "potentialNext": []
+        },
+        {
             "name": "uploadWorkflowJSON",
             "next": ["ManagementServiceExit"],
             "potentialNext": []
@@ -157,27 +159,7 @@
             "next": []
         },
         {
-            "name": "clearWorkflowLog",
-            "potentialNext": ["ManagementServiceExit"],
-            "next": []
-        },
-        {
-            "name": "retrieveWorkflowLog",
-            "potentialNext": ["ManagementServiceExit"],
-            "next": []
-        },
-        {
             "name": "retrieveAllWorkflowLogs",
-            "potentialNext": ["ManagementServiceExit"],
-            "next": []
-        },
-        {
-            "name": "prepareAllWorkflowLogs",
-            "potentialNext": ["ManagementServiceExit"],
-            "next": []
-        },
-        {
-            "name": "prepareWorkflowLog",
             "potentialNext": ["ManagementServiceExit"],
             "next": []
         },

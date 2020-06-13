@@ -36,10 +36,10 @@ class LocalQueueClient:
         self.connect()
 
     def connect(self):
+        host, port = self.qaddress.split(':')
         retry = 0.5 #s
         while True:
             try:
-                host, port = self.qaddress.split(':')
                 self.socket = TSocket.TSocket(host, int(port))
                 self.transport = TTransport.TFramedTransport(self.socket)
                 self.transport.open()
@@ -101,15 +101,8 @@ class LocalQueueClient:
         return lqm_list
 
     def shutdown(self):
-        try:
-            self.socket.handle.shutdown(socket.SHUT_RDWR)
-            self.transport.close()
-        except Thrift.TException as exc:
-            print("[LocalQueueClient] failed shutdown: " + str(exc))
-        except Exception as exc:
-            print("[LocalQueueClient] failed shutdown: " + str(exc))
-            raise
-        finally:
+        if self.transport.isOpen():
+            #self.socket.handle.shutdown(socket.SHUT_RDWR)
             self.transport.close()
 
     def addTopic(self, topic):

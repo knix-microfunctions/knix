@@ -13,17 +13,23 @@
 #   limitations under the License.
 
 SHELL := /bin/bash
--include proxy.mk
+-include ../proxy.mk
+include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: target/queueservice.jar
 
-src/main/java/org/microfunctions/queue/local/LocalQueueService.java: \
-		thrift/LocalQueueService.thrift
+all: build_thrift \
+	target/queueservice.jar
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
+
+src/main/java/org/microfunctions/queue/local/LocalQueueService.java: ../build_env.mk \
+	thrift/LocalQueueService.thrift
 	docker run --rm -it --name queue-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \
-		thrift:0.12.0 \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/LocalQueueService.thrift'
 	touch src/main/java/org/microfunctions/queue/local/LocalQueueService.java
 
@@ -55,7 +61,7 @@ target/queueservice.jar: $(JAVA_SOURCES) \
 		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \
 		maven:3.6.1-jdk-8 \
-		mvn -Drevision=$(GIT_REVISION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
 
 clean:
 	rm -rf ./target

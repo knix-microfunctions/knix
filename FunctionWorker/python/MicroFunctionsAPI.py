@@ -81,6 +81,11 @@ class MicroFunctionsAPI:
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
 
+    def ping(self, num):
+        self._logger.info("ping: " + str(num))
+        output = num
+        return 'pong ' + str(output)
+
     def get_privileged_data_layer_client(self, suid=None, sid=None, init_tables=False, drop_keyspace=False):
         if self._is_privileged:
             if suid is not None:

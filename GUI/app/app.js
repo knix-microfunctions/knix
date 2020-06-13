@@ -45,11 +45,8 @@ var app = angular.module('MfnWebConsole', [
     var objectKey = '';
     var codeError = '';
 
-    var urlPath = managementServiceEndpoint; // from app/endpoint.js
+    var urlPath = "/management";
     var dataPrefix = "value=";
-
-    
-
 
     return {
 

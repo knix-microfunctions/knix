@@ -48,7 +48,9 @@ Before you attempt to make a contribution please read the [Code of Conduct](./CO
 
 * [View current Issues](https://github.com/knix-microfunctions/knix/issues) or [view current Pull Requests](https://github.com/knix-microfunctions/knix/pulls).
 
-* Join our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw)
+* Join our Slack workspace [https://knix.slack.com](https://join.slack.com/t/knix/shared_invite/zt-dm7agzna-8~cVsYqAMKenxFhFDARjvw) which has 'users' and 'dev' channels.
+
+* (Optionally) subscribe to [knix-users mailing list](https://groups.google.com/forum/#!forum/knix-users) and/or [knix-dev mailing list](https://groups.google.com/forum/#!forum/knix-dev).
 
 # License
 

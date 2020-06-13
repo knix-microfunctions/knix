@@ -40,7 +40,6 @@ metadata:
     app: {{ include "riak.name" . | quote }}
     release: {{ .Release.Name | quote }}
     heritage: {{ .Release.Service | quote }}
-
 spec:
   serviceName: {{ template "riak.fullname" . }}
   replicas: {{ default 3 .Values.riak.replicas }}
@@ -51,6 +50,14 @@ spec:
     matchLabels:
       app: {{ include "riak.name" . | quote }}
       release: {{ .Release.Name | quote }}
+  volumeClaimTemplates:
+  - metadata:
+      name: riak-data-dir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.riak.DataStorage }}
   template:
     metadata:
       labels:
@@ -67,7 +74,7 @@ spec:
         imagePullPolicy: "{{ .Values.riak.imagePullPolicy }}"    
         env:     
           - name: COORDINATOR_NODE
-            value: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc"
+            value: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
           - name: WAIT_FOR_ERLANG
             value: "{{ .Values.riak.WaitForErlang }}"
           - name: CLUSTER_NAME
@@ -101,13 +108,16 @@ spec:
         readinessProbe:
           exec:
             command:
-            - /usr/sbin/riak-admin
-            - test
+            - /usr/sbin/riak
+            - ping
           initialDelaySeconds: 45
           timeoutSeconds: 30
           failureThreshold: 10
         resources:
 {{ toYaml .Values.riak.resources | indent 10 }}
+        volumeMounts:
+        - name: riak-data-dir
+          mountPath: /var/lib/riak
         ports:
         - containerPort: {{ .Values.riak.ClientPortHttp }}
           name: http
