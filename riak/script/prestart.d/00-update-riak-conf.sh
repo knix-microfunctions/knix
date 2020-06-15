@@ -31,10 +31,10 @@ sed -i -r 's/^bitcask\.merge_check_interval .*$//' $RIAK_CONF
 sed -i -r 's/^bitcask\.max_file_size .*$//' $RIAK_CONF
 
 cat <<END >>$RIAK_CONF
-nodename = riak@$HOST
+nodename = riak@$HOSTNAME
 distributed_cookie = $CLUSTER_NAME
-listener.protobuf.internal = $HOST:$PB_PORT
-listener.http.internal = $HOST:$HTTP_PORT
+listener.protobuf.internal = 0.0.0.0:$PB_PORT
+listener.http.internal = 0.0.0.0:$HTTP_PORT
 erlang.distribution.port_range.minimum = $ERLANG_DISTRIBUTION_PORT_RANGE_MINIMUM
 erlang.distribution.port_range.maximum = $ERLANG_DISTRIBUTION_PORT_RANGE_MAXIMUM
 log.console.level = $LOG_CONSOLE_LEVEL

@@ -13,9 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
-# MicroFunctions Command Line Interface
+# KNIX MicroFunctions Command Line Interface (CLI)
 
-The package provides the mfn command based on the [SDK](https://github.com/knix-microfunctions/knix/tree/master/mfn_sdk/).
+The package provides the `mfn` command based on the [KNIX MicroFunctions SDK](https://github.com/knix-microfunctions/knix/tree/master/mfn_sdk/).
 
 The latest version of the CLI can be obtained from [KNIX releases](https://github.com/knix-microfunctions/knix/releases/).
 It's also hosted at PyPI and can be installed with the PyPA recommended tool for installing Python packages:

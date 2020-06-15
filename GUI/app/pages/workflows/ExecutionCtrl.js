@@ -114,7 +114,7 @@
        $http(req).then(function successCallback(response) {
 
            if (response.data.status=="success") {
-             console.log('retrieveWorkflowLog successfully called.');
+             console.log('retrieveAllWorkflowLogs successfully called.');
 
              if (response.data.data.workflow.log != prevLogEntry) {
 
@@ -399,7 +399,7 @@
                    setTimeout(function() { timeline.setWindow(new Date(dStart.getTime()-((dEnd-dStart)*2)), new Date(dEnd.getTime()+((dEnd-dStart)*2))) }, 500);
 
                  }
-                 
+
                }
 
              }
@@ -417,7 +417,7 @@
              workflowExecuted = false;
 
            } else {
-             console.log("Failure status returned by retrieveWorkflowLog");
+             console.log("Failure status returned by retrieveAllWorkflowLogs");
              console.log("Message:" + response.data.data.message);
              $scope.errorMessage = response.data.data.message;
              if (executionModalVisible) {
@@ -430,7 +430,7 @@
              }
            }
        }, function errorCallback(response) {
-           console.log("Error occurred during retrieveWorkflowLog");
+           console.log("Error occurred during retrieveAllWorkflowLogs");
            console.log("Response:" + response);
            if (response.statusText) {
              $scope.errorMessage = response.statusText;
@@ -1108,11 +1108,11 @@
          $interval.cancel(inter);
 
          codeError = "";
-         
+
          var inputData = {};
          var input = $scope.aceInputSession.getDocument().getValue();
 
-         if (input=="") { 
+         if (input=="") {
            input = "\"\"";
          }
 
@@ -1128,16 +1128,16 @@
              });
              $scope.aceInput.focus();
            }
-           resolve(); 
+           resolve();
            return;
          }
 
          if (workflowName.endsWith("   ")) {
-           // execute workflow
+           // test function
            sharedData.setWorkflowExecutionInputEditor("mfn-internal-" + workflowName, input);
            sharedData.setWorkflowExecutionInput("mfn-internal-" + workflowName, input);
          } else {
-           // test function
+           // execute workflow
            sharedData.setWorkflowExecutionInputEditor(workflowId, input);
            sharedData.setWorkflowExecutionInput(workflowId, input);
          }
@@ -1145,18 +1145,16 @@
          inputData = JSON.parse(input);
 
          var workflowUrl = sharedProperties.getWorkflowUrl();
+         var token = $cookies.get('token');
 
-
-         var req = {
-           method: 'POST',
-           url: workflowUrl,
-
-           headers: {
-             'Content-Type': 'application/json'
-           },
-           data: JSON.stringify(inputData)
-
-         }
+        var req = {
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "executeWorkflow", "data" : { "user" : { "token" : token } , "workflow" : { "id" : workflowId, "wfurl": workflowUrl, "wfinput": inputData } } })
+        }
 
          intervalCounter = 0;
 
@@ -1172,23 +1170,37 @@
                //setTimeout(function() { promise = $interval(function(){prepareLogFile();}, 3000); }, 500);
 
                $interval.cancel(inter);
-               
+
                setTimeout(function() { prepareLogFile(); }, 500);
                setTimeout(function() { workflowExecuted = true; prepareLogFile(); }, 4500);
 
                //showTimeline();
+               if (response.data.status=="success") {
+                   console.log("executeWorkflow called succesfully.");
+                   result = response.data.data.result;
+                   document.getElementById('execOutput').innerHTML = result;
 
-               document.getElementById('execOutput').innerHTML = response.data;
+                   var jObj = result;
+                   if (typeof jObj == 'string') {
+                     $scope.aceOutputSession.setValue(result);
+                   } else {
+                     $scope.aceOutputSession.setValue(JSON.stringify(result, null, 4));
+                   }
+                   resolve();
 
-               var jObj = response.data;
-               if (typeof jObj == 'string') {
-                 $scope.aceOutputSession.setValue(response.data);
                } else {
-                 $scope.aceOutputSession.setValue(JSON.stringify(response.data, null, 4));
+                 console.log("Failure status returned by executeWorkflow");
+                 console.log("Message:" + response.data.data.message);
+                 $scope.errorMessage = response.data.data.message;
+                 if (executionModalVisible) {
+                   $uibModal.open({
+                     animation: true,
+                     scope: $scope,
+                     templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                     size: 'md',
+                   });
+                 }
                }
-               resolve();
-
-
          }, function errorCallback(response) {
              console.log("Error occurred during workflow execution");
              console.log("Response:" + response);
@@ -1446,55 +1458,8 @@
          return;
        }
        console.log('Loading workflow log: ' + sharedProperties.getWorkflowId());
-       var token = $cookies.get('token');
+       setTimeout(function() { refreshLog($scope.aceLogSession); }, 500);
 
-       var req = {
-         method: 'POST',
-         url: urlPath,
-         headers: {
-           'Content-Type': 'application/json'
-
-         },
-
-         data:  JSON.stringify({ "action" : "prepareAllWorkflowLogs", "data" : { "user" : { "token" : token } , "workflow" : { "id" : sharedProperties.getWorkflowId() } } })
-
-       }
-       $http(req).then(function successCallback(response) {
-
-           if (response.data.status=="success") {
-             console.log('prepareWorkflowLog successfully called.');
-             setTimeout(function() { refreshLog($scope.aceLogSession); }, 500);
-           } else {
-             console.log("Failure status returned by prepareWorkflowLog");
-             console.log("Message:" + response.data.data.message);
-             $scope.errorMessage = response.data.data.message;
-             if (executionModalVisible) {
-               $uibModal.open({
-                 animation: true,
-                 scope: $scope,
-                 templateUrl: 'app/pages/workflows/modals/errorModal.html',
-                 size: 'md',
-               });
-             }
-           }
-       }, function errorCallback(response) {
-           console.log("Error occurred during prepareWorkflowLog");
-           console.log("Response:" + response);
-           if (response.statusText) {
-             $scope.errorMessage = response.statusText;
-           } else {
-             $scope.errorMessage = response;
-           }
-           if (executionModalVisible) {
-             $uibModal.open({
-               animation: true,
-               scope: $scope,
-               templateUrl: 'app/pages/workflows/modals/errorModal.html',
-               size: 'md',
-             });
-           }
-
-       });
      }
 
     function createTimeline() {
@@ -1537,55 +1502,8 @@
        _editor.$blockScrolling = Infinity;
        _editor.$readOnly = true;
        console.log('Loading workflow log: ' + sharedProperties.getWorkflowId());
-       var token = $cookies.get('token');
+       setTimeout(function() { refreshLog($scope.aceLogSession); }, 500);
 
-       var req = {
-         method: 'POST',
-         url: urlPath,
-         headers: {
-           'Content-Type': 'application/json'
-         },
-
-         data:  JSON.stringify({ "action" : "prepareAllWorkflowLogs", "data" : { "user" : { "token" : token } , "workflow" : { "id" : sharedProperties.getWorkflowId() } } })
-
-       }
-       $http(req).then(function successCallback(response) {
-
-           if (response.data.status=="success") {
-             console.log('prepareWorkflowLog successfully called.');
-             //promise = $interval(function(){refreshLog($scope.aceLogSession);}, 2000);
-             setTimeout(function() { refreshLog($scope.aceLogSession); }, 500);
-           } else {
-             console.log("Failure status returned by prepareWorkflowLog");
-             console.log("Message:" + response.data.data.message);
-             $scope.errorMessage = response.data.data.message;
-             if (executionModalVisible) {
-               $uibModal.open({
-                 animation: true,
-                 scope: $scope,
-                 templateUrl: 'app/pages/workflows/modals/errorModal.html',
-                 size: 'md',
-               });
-             }
-           }
-       }, function errorCallback(response) {
-           console.log("Error occurred during prepareWorkflowLog");
-           console.log("Response:" + response);
-           if (response.statusText) {
-             $scope.errorMessage = response.statusText;
-           } else {
-             $scope.errorMessage = response;
-           }
-           if (executionModalVisible) {
-             $uibModal.open({
-               animation: true,
-               scope: $scope,
-               templateUrl: 'app/pages/workflows/modals/errorModal.html',
-               size: 'md',
-             });
-           }
-
-       });
      }
    });
 

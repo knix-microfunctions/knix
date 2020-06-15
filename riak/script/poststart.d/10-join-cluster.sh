@@ -14,11 +14,12 @@
 #   limitations under the License.
 
 # Maybe join to a cluster
-if [[ ${COORDINATOR_NODE} != ${HOSTNAME}* && ${HOSTNAME} != ${COORDINATOR_NODE}* ]]; then
+if [[ -z "$($RIAK_ADMIN cluster status | grep $HOSTNAME)" && ${COORDINATOR_NODE} != ${HOSTNAME}* && ${HOSTNAME} != ${COORDINATOR_NODE}* ]]; then
 #if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE_HOST)" && ${HOSTNAME} != ${COORDINATOR_NODE}* ]]; then
   # Not already in this cluster and not the coordinator itself, so join
-  echo "Connecting to cluster coordinator $COORDINATOR_NODE_HOST"
-  $RIAK_ADMIN cluster join riak@$COORDINATOR_NODE_HOST
+  echo "Connecting to cluster coordinator $COORDINATOR_NODE"
+  ping -c 1 $COORDINATOR_NODE
+  $RIAK_ADMIN cluster join riak@$COORDINATOR_NODE
   if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'joining')" ]]; then
     if [[ -z "$($RIAK_ADMIN cluster plan | grep 'There are no staged changes')" ]]; then
       while [[ -z "$($RIAK_ADMIN ringready|grep '^TRUE')" ]]; do

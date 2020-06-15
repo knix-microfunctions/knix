@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 def handle(event, context):
-    print("Hello World!")
+    print("Hello, World!")
     return event
 
 

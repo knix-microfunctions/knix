@@ -1,10 +1,10 @@
 {
-"name": "relative_filepaths",
-"entry": "function",
-"functions": [
-	{
-	"name": "function",
-	"next": ["end"]
-	}]
+  "StartAt": "function",
+  "States": {
+    "function": {
+      "Type": "Task",
+      "Resource": "function",
+      "End": true
+    }
+  }
 }
-

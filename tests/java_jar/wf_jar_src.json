@@ -1,12 +1,10 @@
 {
-        "name": "workflow_jar_src_java",
-        "entry": "actual.DummyExampleSrc",
-        "functions": [
-                {
-                        "name": "actual.DummyExampleSrc",
-                        "next": ["end"],
-                        "resource": "actual.DummyExampleSrc",
-                        "potentialNext": []
-                }
-        ]
+  "StartAt": "DummyExampleSrc",
+  "States": {
+    "DummyExampleSrc": {
+      "Type": "Task",
+      "Resource": "actual.DummyExampleSrc",
+      "End": true
+    }
+  }
 }

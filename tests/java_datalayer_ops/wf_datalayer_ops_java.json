@@ -1,11 +1,10 @@
 {
-        "name": "datalayer_ops_java",
-        "entry": "TestDataLayerOperations",
-        "functions": [
-                {
-                        "name": "TestDataLayerOperations",
-                        "next": ["end"],
-                        "potentialNext": []
-                }
-        ]
+  "StartAt": "TestDataLayerOperations",
+  "States": {
+    "TestDataLayerOperations": {
+      "Type": "Task",
+      "Resource": "TestDataLayerOperations",
+      "End": true
+    }
+  }
 }

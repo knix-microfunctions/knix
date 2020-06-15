@@ -45,6 +45,7 @@ class JavaDataLayerOpsTest(unittest.TestCase):
 
         print("----------")
         test.undeploy_workflow()
+        test.cleanup()
 
 def main():
     unittest.main()

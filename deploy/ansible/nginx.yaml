@@ -28,7 +28,7 @@
     install_dir: "{{ mfn_server_installation_folder }}/nginx"
 
     # Nginx configuration
-    mfn_nginx_config_template: ../../HttpFrontend/nginx_config/mfn.conf.j2
+    mfn_nginx_config_template: knix-mfn.nginx.conf.j2
     # nginx_http_listen_port is set in settings.json
     # nginx_https_listen_port is set in settings.json
     frontend_http_listen_port: "51000"
@@ -47,7 +47,7 @@
       https_proxy: "{{ https_proxy.stdout }}"
 
   - debug:
-      msg: 
+      msg:
         - inventory_hostname = {{ inventory_hostname }}
         - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
         - mfn_server_installation_folder = {{ mfn_server_installation_folder }}    # e.g. /opt/mfn
@@ -87,12 +87,6 @@
       src: "{{ install_dir }}/{{ mfn_gui_archive_filename}}"
       dest: "{{ install_dir }}/gui/"
 
-  - name: update management endpoint
-    lineinfile:
-      path: "{{ install_dir }}/gui/app/endpoint.js"
-      regexp: "^var managementServiceEndpoint.*$"
-      line: "var managementServiceEndpoint = \"http://{{ groups['management']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join(':{{ management_service_exposed_port }}/\";') }}:{{ management_service_exposed_port }}/\";"
-
   - name: create logs directory
     file:
       path: "{{ install_dir }}/logs"
@@ -121,7 +115,7 @@
       country_name: DE
       state_or_province_name: Baden-Wuerttemberg
       locality_name: Stuttgart
-      email_address: 
+      email_address:
       common_name: "{{ ansible_fqdn }}"
       subject_alt_name:
         - "DNS:{{ ansible_fqdn }}"
@@ -139,15 +133,21 @@
   - name: Disable default site
     file: path=/etc/nginx/sites-enabled/default state=absent
 
-  - name: Configure microfunctions site
+  - name: Disable old microfunctions site
+    file: path=/etc/nginx/sites-enabled/microfunctions state=absent
+
+  - name: Remove old microfunctions site
+    file: path=/etc/nginx/sites-available/microfunctions state=absent
+
+  - name: Configure KNIX MicroFunctions site
     template:
-      dest: "/etc/nginx/sites-available/microfunctions"
+      dest: "/etc/nginx/sites-available/knix-microfunctions"
       src: "{{ mfn_nginx_config_template }}"
 
-  - name: Enable microfunctions site
+  - name: Enable KNIX MicroFunctions site
     file:
-      src: "/etc/nginx/sites-available/microfunctions"
-      dest: "/etc/nginx/sites-enabled/microfunctions"
+      src: "/etc/nginx/sites-available/knix-microfunctions"
+      dest: "/etc/nginx/sites-enabled/knix-microfunctions"
       state: link
 
   - name: Start Nginx

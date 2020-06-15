@@ -27,7 +27,7 @@ MAX_RETRIES=3
 
 class DataLayerClient:
 
-    def __init__(self, locality=1, sid=None, wid=None, suid=None, is_wf_private=False, for_mfn=False, connect="127.0.0.1:4998", init_tables=False):
+    def __init__(self, locality=1, sid=None, wid=None, suid=None, is_wf_private=False, for_mfn=False, connect="127.0.0.1:4998", init_tables=False, drop_keyspace=False):
         self.dladdress = connect
 
         if for_mfn:
@@ -68,6 +68,9 @@ class DataLayerClient:
         if init_tables:
             self._initialize_tables()
 
+        if drop_keyspace:
+            self._drop_keyspace()
+
     def _initialize_tables(self):
         replication_factor = 3
         # just need the local instance
@@ -87,6 +90,12 @@ class DataLayerClient:
             print("Could not initialize tables: " + str(exc))
             raise
 
+    def _drop_keyspace(self):
+        try:
+            self.datalayer.dropKeyspace(self.keyspace, self.locality)
+        except Thrift.TException as exc:
+            print("Could not drop keyspace: " + str(exc))
+            raise
 
     def connect(self):
         retry = 0.5 #s

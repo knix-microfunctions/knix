@@ -21,7 +21,7 @@ spec:
   template:
     spec:
       containers:
-        - image: slfg92.rcs.de.alcatel-lucent.com/microfn/sandbox
+        - image: localhost:5000/microfn/sandbox
           env:
             - name: TARGET
               value: Go Sample v1

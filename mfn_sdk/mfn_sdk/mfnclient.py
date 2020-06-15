@@ -154,16 +154,11 @@ class MfnClient(object):
             self._s.proxies.update(proxies)
         self._s.max_redirects = 10
 
-        self.weburl = str(url)
-        epr = self._s.get(self.weburl+"/app/endpoint.js")
-        epr.raise_for_status()
-        epf = epr.text
-        idx = epf.index("managementServiceEndpoint")
-        idx = epf.index('"http',idx)+1
-        self.mgmturl=epf[idx:epf.index('"',idx)]
+        self.baseurl = str(url)
+        self.mgmturl= self.baseurl.rstrip("/")+"/management"
         self.user=user
         self.token=None
-        self.store=self.weburl
+        self.store=""
         self.name=name
         self.password=password
         self._functions=[]
@@ -179,7 +174,7 @@ class MfnClient(object):
                 userinfo = {}
                 userinfo["email"] = self.user
                 userinfo["password"] = self.password
-                userinfo["name"] = name
+                userinfo["name"] = self.name
                 data_to_send = {}
                 data_to_send["action"] = "signUp"
                 data_to_send["data"] = {}
@@ -239,10 +234,17 @@ class MfnClient(object):
         resp = r.json()
         if resp['status'] == 'success':
             self.token = resp['data']['token']
-            self.store = self.weburl+resp['data']['storageEndpoint']
+            self.store = self.baseurl+resp['data']['storageEndpoint']
         else:
             raise Exception("Error logging in at "+self.mgmturl)
 
+
+    def delete_user(self):
+        data = {}
+        data["user"] = {}
+        data["user"]["token"] = self.token
+
+        self.action("deleteAccount", data)
 
     def action(self,action,data=None):
         if data is None:
@@ -548,7 +550,7 @@ class MfnClient(object):
         r = self._s.get(self.store,#verify=False,
                 params=data_to_send)
         r.raise_for_status()
-        return r.text
+        return r.json()
 
 
     def put(self,key,value,table="defaultTable"):
@@ -564,7 +566,7 @@ class MfnClient(object):
                     json=value)
         r.raise_for_status()
         if r.text != "true":
-            raise Exception("PUT failed: "+r.text)
+            raise Exception("PUT failed: " + r.text)
 
 
     def delete(self,key,table="defaultTable"):
@@ -578,6 +580,4 @@ class MfnClient(object):
                     params=data_to_send)
         r.raise_for_status()
         if r.text != "true":
-            raise Exception("PUT failed: "+r.text)
-
-
+            raise Exception("DELETE failed: " + r.text)

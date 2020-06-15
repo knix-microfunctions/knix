@@ -12,6 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+SHELL := /bin/bash
+
 default: app/pages/docs/sdk/cli.md app/pages/docs/sdk/sdk.md
 
 app/pages/docs/sdk/sdk.md: ../mfn_sdk/README.md

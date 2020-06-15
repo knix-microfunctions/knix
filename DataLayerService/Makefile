@@ -14,26 +14,33 @@
 
 SHELL := /bin/bash
 -include ../proxy.mk
+include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: \
+
+all: build_thrift \
 	target/datalayerservice.jar
 
-src/main/java/org/microfunctions/data_layer/DataLayerService.java: \
-		thrift/DataLayerMessage.thrift \
-		thrift/DataLayerService.thrift
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
+
+src/main/java/org/microfunctions/data_layer/DataLayerService.java: ../build_env.mk \
+	thrift/DataLayerMessage.thrift \
+	thrift/DataLayerService.thrift
 	docker run --rm -it --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
-		thrift:0.12.0 \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/DataLayerMessage.thrift; thrift --gen java -out ./src/main/java/ ./thrift/DataLayerService.thrift'
 	touch src/main/java/org/microfunctions/data_layer/DataLayerService.java
 
-PythonClient/data_layer:
+PythonClient/data_layer: ../build_env.mk \
+	thrift/DataLayerMessage.thrift \
+	thrift/DataLayerService.thrift
 	docker run --rm -it --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
-		thrift:0.12.0 \
+		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen py -out ./PythonClient ./thrift/DataLayerMessage.thrift; thrift --gen py -out ./PythonClient ./thrift/DataLayerService.thrift'
 
 # In case the user doesn't have maven configurations in the home directory, we need to create it
@@ -55,17 +62,15 @@ PythonClient/data_layer:
 JAVA_SOURCES=$(shell find src/ -type f|grep -v src/main/java/org/microfunctions/data_layer/DataLayerService.java)
 GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 target/datalayerservice.jar: $(JAVA_SOURCES) \
-		src/main/java/org/microfunctions/data_layer/DataLayerService.java \
-		thrift/DataLayerMessage.thrift \
-		thrift/DataLayerService.thrift \
-		~/.m2/settings-docker.xml
+	src/main/java/org/microfunctions/data_layer/DataLayerService.java \
+	~/.m2/settings-docker.xml
 	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
 	docker run --rm -it --name datalayer-maven \
 		--user $(UID):$(GID) \
 		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
 		maven:3.6.1-jdk-8 \
-		mvn -Drevision=$(GIT_REVISION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
 
 clean:
 	rm -rf ./target

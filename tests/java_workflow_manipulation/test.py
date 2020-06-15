@@ -30,43 +30,36 @@ class JavaWorkflowManipulationTest(unittest.TestCase):
         test_tuples = []
         test_tuples.append(('"float addWorkflowNext"', '"final_42.0_addWorkflowNext"'))
         test_tuples.append(('"float addDynamicNext"', '"final_42.0_addDynamicNext"'))
-        test_tuples.append(('"float sendToFunctionNow"', '"final_42.0_sendToFunctionNow"'))
         test_tuples.append(('"float addDynamicWorkflowTrigger"', '"final_42.0_addDynamicWorkflowTrigger"'))
         test_tuples.append(('"float addDynamicWorkflowTriggerList"', '"final_42.0_addDynamicWorkflowTriggerList"'))
 
         test_tuples.append(('"int addWorkflowNext"', '"final_42_addWorkflowNext"'))
         test_tuples.append(('"int addDynamicNext"', '"final_42_addDynamicNext"'))
-        test_tuples.append(('"int sendToFunctionNow"', '"final_42_sendToFunctionNow"'))
         test_tuples.append(('"int addDynamicWorkflowTrigger"', '"final_42_addDynamicWorkflowTrigger"'))
         test_tuples.append(('"int addDynamicWorkflowTriggerList"', '"final_42_addDynamicWorkflowTriggerList"'))
 
         test_tuples.append(('"double addWorkflowNext"', '"final_42.0_addWorkflowNext"'))
         test_tuples.append(('"double addDynamicNext"', '"final_42.0_addDynamicNext"'))
-        test_tuples.append(('"double sendToFunctionNow"', '"final_42.0_sendToFunctionNow"'))
         test_tuples.append(('"double addDynamicWorkflowTrigger"', '"final_42.0_addDynamicWorkflowTrigger"'))
         test_tuples.append(('"double addDynamicWorkflowTriggerList"', '"final_42.0_addDynamicWorkflowTriggerList"'))
 
         test_tuples.append(('"list addWorkflowNext"', '"final_[myelement]_addWorkflowNext"'))
         test_tuples.append(('"list addDynamicNext"', '"final_[myelement]_addDynamicNext"'))
-        test_tuples.append(('"list sendToFunctionNow"', '"final_[myelement]_sendToFunctionNow"'))
         test_tuples.append(('"list addDynamicWorkflowTrigger"', '"final_[myelement]_addDynamicWorkflowTrigger"'))
         test_tuples.append(('"list addDynamicWorkflowTriggerList"', '"final_[myelement]_addDynamicWorkflowTriggerList"'))
 
         test_tuples.append(('"string addWorkflowNext"', '"final_mystring_addWorkflowNext"'))
         test_tuples.append(('"string addDynamicNext"', '"final_mystring_addDynamicNext"'))
-        test_tuples.append(('"string sendToFunctionNow"', '"final_mystring_sendToFunctionNow"'))
         test_tuples.append(('"string addDynamicWorkflowTrigger"', '"final_mystring_addDynamicWorkflowTrigger"'))
         test_tuples.append(('"string addDynamicWorkflowTriggerList"', '"final_mystring_addDynamicWorkflowTriggerList"'))
 
         test_tuples.append(('"dict addWorkflowNext"', '"final_{mykey=true}_addWorkflowNext"'))
         test_tuples.append(('"dict addDynamicNext"', '"final_{mykey=true}_addDynamicNext"'))
-        test_tuples.append(('"dict sendToFunctionNow"', '"final_{mykey=true}_sendToFunctionNow"'))
         test_tuples.append(('"dict addDynamicWorkflowTrigger"', '"final_{mykey=true}_addDynamicWorkflowTrigger"'))
         test_tuples.append(('"dict addDynamicWorkflowTriggerList"', '"final_{mykey=true}_addDynamicWorkflowTriggerList"'))
 
         test_tuples.append(('"something_else addWorkflowNext"', '"final_null_addWorkflowNext"'))
         test_tuples.append(('"something_else addDynamicNext"', '"final_null_addDynamicNext"'))
-        test_tuples.append(('"something_else sendToFunctionNow"', '"final_null_sendToFunctionNow"'))
         test_tuples.append(('"something_else addDynamicWorkflowTrigger"', '"final_null_addDynamicWorkflowTrigger"'))
         test_tuples.append(('"something_else addDynamicWorkflowTriggerList"', '"final_null_addDynamicWorkflowTriggerList"'))
 

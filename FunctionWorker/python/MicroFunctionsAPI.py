@@ -82,25 +82,16 @@ class MicroFunctionsAPI:
         #self._logger.debug("[MicroFunctionsAPI] init done.")
 
     def ping(self, num):
-        self._logger.info("ping:" + str(num))
+        self._logger.info("ping: " + str(num))
         output = num
         return 'pong ' + str(output)
 
-    def get_privileged_data_layer_client(self, suid=None, keyspace=None, tablename=None, maptablename=None, settablename=None, countertablename=None, init_tables=False):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, init_tables=False, drop_keyspace=False):
         if self._is_privileged:
             if suid is not None:
-                return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables)
-            elif keyspace is not None and tablename is not None:
-                dlc = DataLayerClient(locality=1, for_mfn=True, connect=self._datalayer)
-                dlc.keyspace = keyspace
-                dlc.tablename = tablename
-                if maptablename is not None:
-                    dlc.maptablename = maptablename
-                if settablename is not None:
-                    dlc.settablename = settablename
-                if countertablename is not None:
-                    dlc.countertablename = countertablename
-                return dlc
+                return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
+            elif sid is not None:
+                return DataLayerClient(locality=1, for_mfn=True, sid=sid, connect=self._datalayer, drop_keyspace=drop_keyspace)
         return None
 
     def update_metadata(self, metadata_name, metadata_value, is_privileged_metadata=False):

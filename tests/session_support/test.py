@@ -390,6 +390,7 @@ class SessionSupportTest(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         self._test.undeploy_workflow()
+        self._test.cleanup()
 
     ####################
     # internal functions

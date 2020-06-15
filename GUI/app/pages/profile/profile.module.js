@@ -13,6 +13,26 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-// Management Service Endpoint URL
 
-var managementServiceEndpoint = "http://management-service-host:port/";
+(function () {
+  'use strict';
+
+  angular.module('MfnWebConsole.pages.profile', [])
+      .config(routeConfig);
+
+  /** @ngInject */
+  function routeConfig($stateProvider) {
+    $stateProvider
+        .state('profile', {
+          url: '/profile',
+          templateUrl: 'app/pages/profile/profile.html',
+          title: 'User Profile',
+          controller: 'ProfileCtrl',
+          sidebarMeta: {
+            icon: '',
+            order: 10,
+          },
+        });
+  }
+
+})();
