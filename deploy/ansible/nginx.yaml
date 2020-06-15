@@ -133,6 +133,12 @@
   - name: Disable default site
     file: path=/etc/nginx/sites-enabled/default state=absent
 
+  - name: Disable old microfunctions site
+    file: path=/etc/nginx/sites-enabled/microfunctions state=absent
+
+  - name: Remove old microfunctions site
+    file: path=/etc/nginx/sites-available/microfunctions state=absent
+
   - name: Configure KNIX MicroFunctions site
     template:
       dest: "/etc/nginx/sites-available/knix-microfunctions"
