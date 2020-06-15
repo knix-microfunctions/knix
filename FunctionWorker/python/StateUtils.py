@@ -442,23 +442,7 @@ class StateUtils:
 
         #assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
 
-        k_list = []
-
-        if "WaitForNumBranches" in self.parsedfunctionstateinfo:
-            k_list = self.parsedfunctionstateinfo["WaitForNumBranches"]
-            if not isinstance(k_list, list):
-                self._logger.debug("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
-                raise Exception("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
-            k_list.sort()
-            for k in k_list:
-                if not isinstance(k, int):
-                    self._logger.debug("[StateUtils] Values inside WaitForNumBranches must be integers")
-                    raise Exception("[StateUtils] Values inside WaitForNumBranches must be integers")
-                if k > total_branch_count:
-                    self._logger.debug("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the map state")
-                    raise Exception("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the map state")
-        else:
-            k_list.append(total_branch_count)
+        k_list = [total_branch_count]
 
         counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
 
