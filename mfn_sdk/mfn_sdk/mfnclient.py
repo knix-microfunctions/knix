@@ -174,7 +174,7 @@ class MfnClient(object):
                 userinfo = {}
                 userinfo["email"] = self.user
                 userinfo["password"] = self.password
-                userinfo["name"] = name
+                userinfo["name"] = self.name
                 data_to_send = {}
                 data_to_send["action"] = "signUp"
                 data_to_send["data"] = {}
@@ -238,6 +238,13 @@ class MfnClient(object):
         else:
             raise Exception("Error logging in at "+self.mgmturl)
 
+
+    def delete_user(self):
+        data = {}
+        data["user"] = {}
+        data["user"]["token"] = self.token
+
+        self.action("deleteAccount", data)
 
     def action(self,action,data=None):
         if data is None:

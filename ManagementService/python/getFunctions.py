@@ -28,7 +28,7 @@ def handle(value, sapi):
     functions = sapi.get(email + "_list_grains", True)
 
     if functions is not None and functions != "":
-        sapi.log(functions)
+        #sapi.log(functions)
         functions = json.loads(functions)
         f_list = []
         for i in functions:

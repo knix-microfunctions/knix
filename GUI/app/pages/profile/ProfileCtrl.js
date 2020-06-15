@@ -24,7 +24,6 @@
 
     /** @ngInject */
     function ProfileCtrl($scope, $http, sharedProperties, sharedData, toastr, $cookies, $uibModal) {
-
         var urlPath = sharedProperties.getUrlPath();
 
         $scope.workflows = sharedData.getWorkflows();
@@ -64,6 +63,35 @@
             console.log('Logging out...');
             document.location.href="auth.html";
         }
+
+        $scope.removeAccount = function() {
+
+            var password = $("#currentPassword").val();
+
+            if (!password) {
+                $scope.errorMessage = "Please enter your password."
+                $uibModal.open({
+                    animation: true,
+                    scope: $scope,
+                    templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                    size: 'md',
+                });
+                return;
+            } else {
+                $uibModal.open({
+                    animation: true,
+                    scope: $scope,
+                    templateUrl: 'app/pages/profile/modals/deleteAccountModal.html',
+                    size: 'md',
+                  });
+            }
+        };
+
+        $scope.undeployAllWorkflows = function() {
+            var password = $("#currentPassword").val();
+            $("#currentPassword").val("");
+            checkDeployedWorkflows(password);
+        };
 
         $scope.clearPassword = function() {
             $("#currentPassword").val("");
@@ -120,7 +148,6 @@
             }
 
             $http(req).then(function successCallback(response) {
-
                 if (response.data.status=="success") {
                   console.log("Message:" + response.data.data.message);
                   $cookies.put('name', newName);
@@ -154,8 +181,184 @@
                   templateUrl: 'app/pages/workflows/modals/errorModal.html',
                   size: 'md',
                 });
+            });
+        }
+
+        function deleteAccount(password) {
+
+            if ($scope.workflowUndeploymentModal) {
+                $scope.workflowUndeploymentModal.dismiss();
+            }
+
+            var req = {
+              method: 'POST',
+              url: urlPath,
+              headers: {
+                   'Content-Type': 'application/json'
+              },
+
+              data:   JSON.stringify({ "action" : "deleteAccount", "data" :  { "user" : { "password": password, "token" : token } } })
+
+            }
+
+            $http(req).then(function successCallback(response) {
+
+                if (response.data.status=="success") {
+                  console.log("Message:" + response.data.data.message);
+                  $scope.logOut();
+
+                } else {
+                  console.log("Failure status returned by deleteAccount request");
+                  console.log("Message:" + response.data.data.message);
+                  $scope.errorMessage = response.data.data.message;
+                  $uibModal.open({
+                    animation: true,
+                    scope: $scope,
+                    templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                    size: 'md',
+                  });
+
+                }
+            }, function errorCallback(response) {
+                console.log("Error occurred during deleteAccount request");
+                console.log("Response:" + response);
+                if (response.statusText) {
+                    $scope.errorMessage = response.statusText;
+                } else {
+                   $scope.errorMessage = response;
+                }
+                $uibModal.open({
+                  animation: true,
+                  scope: $scope,
+                  templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                  size: 'md',
+                });
 
             });
+
+        }
+
+        function checkDeployedWorkflows(password) {
+
+            var req = {
+              method: 'POST',
+              url: urlPath,
+              headers: {
+                   'Content-Type': 'application/json'
+              },
+              data:   JSON.stringify({ "action" : "getWorkflows", "data" : { "user" : { "token" : token } } })
+            }
+
+            $http(req).then(function successCallback(response) {
+
+                if (response.data.status=="success") {
+
+                  $scope.workflows = response.data.data.workflows;
+                  sharedData.setWorkflows(response.data.data.workflows);
+                  var deployedWorkflows = false;
+                  for (var i=0;i<$scope.workflows.length;++i) {
+                    if ($scope.workflows[i].status=="deployed") {
+                       undeployWorkflow(i, password);
+                       deployedWorkflows = true;
+                       break;
+                    }
+                  }
+                  if (!deployedWorkflows) {
+                    deleteAccount(password);
+                  }
+
+                } else {
+                  console.log("Failure status returned by getWorkflows");
+                  console.log("Message:" + response.data.data.message);
+                  $scope.errorMessage = response.data.data.message;
+                  $uibModal.open({
+                    animation: true,
+                    scope: $scope,
+                    templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                    size: 'md',
+                  });
+                  return true;
+                }
+            }, function errorCallback(response) {
+                console.log("Error occurred during getWorkflows");
+                console.log("Response:" + response);
+                if (response.statusText) {
+                  $scope.errorMessage = response.statusText;
+                } else {
+                  $scope.errorMessage = response;
+                }
+                $uibModal.open({
+                  animation: true,
+                  scope: $scope,
+                  templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                  size: 'md',
+                });
+                return true;
+            });
+        }
+
+        function undeployWorkflow(index, password) {
+            var req;
+
+            console.log('undeploying workflow ' + $scope.workflows[index].id);
+            $scope.currentWorkflow = $scope.workflows[index].name;
+            console.log($scope.currentWorkflow);
+            if (!$scope.workflowUndeploymentModal) {
+                $scope.workflowUndeploymentModal = $uibModal.open({
+                    animation: true,
+                    scope: $scope,
+                    backdrop  : 'static',
+                    keyboard  : false,
+                    templateUrl: 'app/pages/profile/modals/workflowUndeploymentModal.html',
+                    size: 'sm',
+                });
+            }
+            $scope.workflows[index].status='undeploying';
+            req = {
+                method: 'POST',
+                url: urlPath,
+                headers: {
+                'Content-Type': 'application/json'
+                },
+                data:   JSON.stringify({ "action" : "undeployWorkflow", "data" : { "user" : { "token" : token } , "workflow" : { "id" : $scope.workflows[index].id } } })
+            }
+
+            $http(req).then(function successCallback(response) {
+
+                if (response.data.status=="success") {
+                    setTimeout(function() {$scope.workflows[index].status='undeployed'; checkDeployedWorkflows(password); }, 2000);
+
+                } else {
+                    console.log("Failure status returned by undeployWorkflow");
+                    console.log("Message:" + response.data.data.message);
+                    $scope.workflowUndeploymentModal.dismiss();
+                    $scope.errorMessage = response.data.data.message;
+                    $uibModal.open({
+                    animation: true,
+                    scope: $scope,
+                    templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                    size: 'md',
+                    });
+                }
+            }, function errorCallback(response) {
+                console.log("Error occurred during undeployWorkflow");
+                console.log("Response:" + response);
+                $scope.workflowUndeploymentModal.dismiss();
+                if (response.statusText) {
+                    $scope.errorMessage = response.statusText;
+                } else {
+                    $scope.errorMessage = response;
+                }
+
+                $uibModal.open({
+                    animation: true,
+                    scope: $scope,
+                    templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                    size: 'md',
+                });
+
+            });
+
         }
 
         function changePassword(password, newPassword) {
@@ -166,7 +369,9 @@
               headers: {
                    'Content-Type': 'application/json'
               },
+
               data:   JSON.stringify({ "action" : "changePassword", "data" : { "user" : { "email" : $scope.email, "password" : password, "new_password" : newPassword } } })
+
             }
 
             $http(req).then(function successCallback(response) {
@@ -184,7 +389,6 @@
                     templateUrl: 'app/pages/workflows/modals/errorModal.html',
                     size: 'md',
                   });
-
                 }
             }, function errorCallback(response) {
                 console.log("Error occurred during changePassword request");
@@ -200,7 +404,6 @@
                   templateUrl: 'app/pages/workflows/modals/errorModal.html',
                   size: 'md',
                 });
-
             });
         }
     }

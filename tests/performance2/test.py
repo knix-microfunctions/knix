@@ -83,4 +83,6 @@ class PerformanceLatencyTestSingle(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         self._test.undeploy_workflow()
+        self._test.cleanup()
         self._test_checkpoints_off.undeploy_workflow()
+        self._test_checkpoints_off.cleanup()
