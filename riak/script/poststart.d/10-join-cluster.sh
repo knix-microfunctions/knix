@@ -18,7 +18,7 @@ if [[ -z "$($RIAK_ADMIN cluster status | grep $HOSTNAME)" && ${COORDINATOR_NODE}
 #if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE_HOST)" && ${HOSTNAME} != ${COORDINATOR_NODE}* ]]; then
   # Not already in this cluster and not the coordinator itself, so join
   echo "Connecting to cluster coordinator $COORDINATOR_NODE"
-  ping -c 1 $COORDINATOR_NODE
+  curl -s http://$COORDINATOR_NODE:$RK_MFN1_SERVICE_PORT_HTTP >/dev/null
   $RIAK_ADMIN cluster join riak@$COORDINATOR_NODE
   if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'joining')" ]]; then
     if [[ -z "$($RIAK_ADMIN cluster plan | grep 'There are no staged changes')" ]]; then
