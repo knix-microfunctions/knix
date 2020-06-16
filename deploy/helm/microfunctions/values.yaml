@@ -100,13 +100,13 @@ riak:
   ErlangDistributionPortRangeMaximum: 6999
   LogConsoleLevel: "debug"
   BitcaskMergePolicy: "always"
-  BitcaskMergeTriggersFragmentation: 20
-  BitcaskMergeTriggersDeadBytes: "2MB"
-  BitcaskMergeThresholdsFragmentation: 10
-  BitcaskMergeThresholdsDeadBytes: "1MB"
-  BitcaskMergeThresholdsSmallFile: "512GB"
-  BitcaskMergeCheckInterval: "1m"
-  BitcaskMaxFileSize: "100MB"
+  BitcaskMergeTriggersFragmentation: 60
+  BitcaskMergeTriggersDeadBytes: "128MB"
+  BitcaskMergeThresholdsFragmentation: 40
+  BitcaskMergeThresholdsDeadBytes: "32MB"
+  BitcaskMergeThresholdsSmallFile: "20MB"
+  BitcaskMergeCheckInterval: "10m"
+  BitcaskMaxFileSize: "500MB"
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs

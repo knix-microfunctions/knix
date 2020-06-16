@@ -80,5 +80,5 @@ done
 # Trap SIGTERM and SIGINT and tail the log file indefinitely
 tail -n 1024 -f /var/log/riak/console.log &
 PID=$!
-trap "/usr/lib/riak/shutdown.sh" SIGTERM SIGINT
+trap "$RIAK stop; kill $PID" SIGTERM SIGINT
 wait $PID
