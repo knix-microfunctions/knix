@@ -78,7 +78,7 @@ spec:
         - name: DATALAYER_BIND
           value: "0.0.0.0:{{ .Values.datalayer.port }}"
         - name: ALL_DATALAYER_BIND
-          value: "dl-mfn1-0.datalayer.{{.Release.Namespace}}.svc.cluster.local:4998,dl-mfn1-1.datalayer.{{.Release.Namespace}}.svc.cluster.local:4998,dl-mfn1-2.datalayer.{{.Release.Namespace}}.svc.cluster.local:4998"
+          value: {{ include "dlConnect" . | quote }}
         ports:
         - containerPort: {{ .Values.datalayer.port }}
           name: datalayer
