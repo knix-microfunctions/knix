@@ -14,10 +14,11 @@
 #   limitations under the License.
 
 # If not coordinator, join it to form a cluster
-# TODO: restart of coordinator node leaves it outside the cluster
-if [[ ${COORDINATOR_NODE} != ${HOSTNAME}* && ${HOSTNAME} != ${COORDINATOR_NODE}* ]]; then
+# TODO: restart of coordinator node may leave it outside the cluster
+if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
   echo "Connecting to cluster coordinator $COORDINATOR_NODE"
-  curl -s http://$COORDINATOR_NODE:$RK_MFN1_SERVICE_PORT_HTTP >/dev/null
+  SERVICE_PORT=$(env|grep 'RK_.*_SERVICE_PORT_HTTP'|sed 's/.*=//')
+  curl -s http://$COORDINATOR_NODE:${SERVICE_PORT:-8098} >/dev/null
   $RIAK_ADMIN cluster join riak@$COORDINATOR_NODE
   if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'joining')" ]]; then
     if [[ -z "$($RIAK_ADMIN cluster plan | grep 'There are no staged changes')" ]]; then
