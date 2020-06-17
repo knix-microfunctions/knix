@@ -1,5 +1,5 @@
 {
-  "$id": "http://asl-validator.cloud/succeed#",
+  "$id": "http://knix-asl-validator.cloud/succeed#",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
