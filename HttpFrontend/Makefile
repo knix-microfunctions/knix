@@ -17,9 +17,14 @@ SHELL := /bin/bash
 include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: target/frontend.jar
 
-src/main/java/data_layer:
+all: build_thrift \
+	target/frontend.jar
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
+
+src/main/java/data_layer: ../build_env.mk
 	docker run --rm -it --name frontend-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../DataLayerService:/usr/src/datalayer \

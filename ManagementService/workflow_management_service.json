@@ -26,6 +26,7 @@
                 "getWorkflows",
                 "addWorkflow",
                 "modifyWorkflow",
+                "executeWorkflow",
                 "deleteWorkflow",
                 "uploadWorkflowJSON",
                 "getWorkflowJSON",
@@ -33,7 +34,8 @@
                 "retrieveAllWorkflowLogs",
                 "addTriggerableTable",
                 "addStorageTriggerForWorkflow",
-                "getTriggerableTables"
+                "getTriggerableTables",
+                "deleteAccount"
             ]
         },
         {
@@ -116,7 +118,12 @@
             "next": ["ManagementServiceExit"],
             "potentialNext": []
         },
-                {
+        {
+            "name": "executeWorkflow",
+            "next": ["ManagementServiceExit"],
+            "potentialNext": []
+        },
+        {
             "name": "uploadWorkflowJSON",
             "next": ["ManagementServiceExit"],
             "potentialNext": []
@@ -168,6 +175,11 @@
         },
         {
             "name": "getTriggerableTables",
+            "next": ["ManagementServiceExit"],
+            "potentialNext": []
+        },
+        {
+            "name": "deleteAccount",
             "next": ["ManagementServiceExit"],
             "potentialNext": []
         }

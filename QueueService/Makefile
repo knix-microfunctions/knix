@@ -17,10 +17,15 @@ SHELL := /bin/bash
 include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: target/queueservice.jar
 
-src/main/java/org/microfunctions/queue/local/LocalQueueService.java: \
-		thrift/LocalQueueService.thrift
+all: build_thrift \
+	target/queueservice.jar
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
+
+src/main/java/org/microfunctions/queue/local/LocalQueueService.java: ../build_env.mk \
+	thrift/LocalQueueService.thrift
 	docker run --rm -it --name queue-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \

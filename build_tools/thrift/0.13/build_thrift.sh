@@ -12,7 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-THRIFT_IMAGE_NAME=thrift
-THRIFT_VERSION=0.13
-MVN_LIBTHRIFT_VERSION=0.13.0
+#!/bin/bash
 
+EXISTING_IMAGE=$(docker images thrift | awk '{print $2}' | grep -x "0\.13")
+
+if [[ "$EXISTING_IMAGE" != "0.13" ]]
+then
+	docker -D -l debug build --network host --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${HTTP_PROXY} --build-arg https_proxy=${HTTPS_PROXY} -t thrift:0.13 .
+fi

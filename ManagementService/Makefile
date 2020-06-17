@@ -16,19 +16,25 @@
 SHELL := /bin/bash
 -include ../proxy.mk
 include ../build_env.mk
-default: management_deployment_package.tar.gz
+UID:=`id -u`
+GID:=`id -g`
+
+default: build_thrift \
+	management_deployment_package.tar.gz
+
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
 DataLayerClient.py: ../FunctionWorker/python/DataLayerClient.py
 	cp $< $@
-
 
 THRIFT=$(-shell find data_layer/ -type f -size +1c) data_layer
 
 thrift: $(THRIFT)
 
-$(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerService/thrift/DataLayerService.thrift
+$(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerService/thrift/DataLayerService.thrift ../build_env.mk
 	mkdir -p data_layer
-	docker run --user $$(id -u):$$(id -g) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
+	docker run --user $(UID):$(GID) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerMessage.thrift; \
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerService.thrift'
 

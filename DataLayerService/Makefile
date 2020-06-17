@@ -17,12 +17,16 @@ SHELL := /bin/bash
 include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
-all: \
+
+all: build_thrift \
 	target/datalayerservice.jar
 
-src/main/java/org/microfunctions/data_layer/DataLayerService.java: \
-		thrift/DataLayerMessage.thrift \
-		thrift/DataLayerService.thrift
+build_thrift:
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
+
+src/main/java/org/microfunctions/data_layer/DataLayerService.java: ../build_env.mk \
+	thrift/DataLayerMessage.thrift \
+	thrift/DataLayerService.thrift
 	docker run --rm -it --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
@@ -30,7 +34,9 @@ src/main/java/org/microfunctions/data_layer/DataLayerService.java: \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/DataLayerMessage.thrift; thrift --gen java -out ./src/main/java/ ./thrift/DataLayerService.thrift'
 	touch src/main/java/org/microfunctions/data_layer/DataLayerService.java
 
-PythonClient/data_layer:
+PythonClient/data_layer: ../build_env.mk \
+	thrift/DataLayerMessage.thrift \
+	thrift/DataLayerService.thrift
 	docker run --rm -it --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
@@ -56,10 +62,8 @@ PythonClient/data_layer:
 JAVA_SOURCES=$(shell find src/ -type f|grep -v src/main/java/org/microfunctions/data_layer/DataLayerService.java)
 GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 target/datalayerservice.jar: $(JAVA_SOURCES) \
-		src/main/java/org/microfunctions/data_layer/DataLayerService.java \
-		thrift/DataLayerMessage.thrift \
-		thrift/DataLayerService.thrift \
-		~/.m2/settings-docker.xml
+	src/main/java/org/microfunctions/data_layer/DataLayerService.java \
+	~/.m2/settings-docker.xml
 	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
 	docker run --rm -it --name datalayer-maven \
 		--user $(UID):$(GID) \

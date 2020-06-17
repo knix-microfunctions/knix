@@ -1133,11 +1133,11 @@
          }
 
          if (workflowName.endsWith("   ")) {
-           // execute workflow
+           // test function
            sharedData.setWorkflowExecutionInputEditor("mfn-internal-" + workflowName, input);
            sharedData.setWorkflowExecutionInput("mfn-internal-" + workflowName, input);
          } else {
-           // test function
+           // execute workflow
            sharedData.setWorkflowExecutionInputEditor(workflowId, input);
            sharedData.setWorkflowExecutionInput(workflowId, input);
          }
@@ -1145,18 +1145,16 @@
          inputData = JSON.parse(input);
 
          var workflowUrl = sharedProperties.getWorkflowUrl();
+         var token = $cookies.get('token');
 
-
-         var req = {
-           method: 'POST',
-           url: workflowUrl,
-
-           headers: {
-             'Content-Type': 'application/json'
-           },
-           data: JSON.stringify(inputData)
-
-         }
+        var req = {
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "executeWorkflow", "data" : { "user" : { "token" : token } , "workflow" : { "id" : workflowId, "wfurl": workflowUrl, "wfinput": inputData } } })
+        }
 
          intervalCounter = 0;
 
@@ -1177,18 +1175,32 @@
                setTimeout(function() { workflowExecuted = true; prepareLogFile(); }, 4500);
 
                //showTimeline();
+               if (response.data.status=="success") {
+                   console.log("executeWorkflow called succesfully.");
+                   result = response.data.data.result;
+                   document.getElementById('execOutput').innerHTML = result;
 
-               document.getElementById('execOutput').innerHTML = response.data;
+                   var jObj = result;
+                   if (typeof jObj == 'string') {
+                     $scope.aceOutputSession.setValue(result);
+                   } else {
+                     $scope.aceOutputSession.setValue(JSON.stringify(result, null, 4));
+                   }
+                   resolve();
 
-               var jObj = response.data;
-               if (typeof jObj == 'string') {
-                 $scope.aceOutputSession.setValue(response.data);
                } else {
-                 $scope.aceOutputSession.setValue(JSON.stringify(response.data, null, 4));
+                 console.log("Failure status returned by executeWorkflow");
+                 console.log("Message:" + response.data.data.message);
+                 $scope.errorMessage = response.data.data.message;
+                 if (executionModalVisible) {
+                   $uibModal.open({
+                     animation: true,
+                     scope: $scope,
+                     templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                     size: 'md',
+                   });
+                 }
                }
-               resolve();
-
-
          }, function errorCallback(response) {
              console.log("Error occurred during workflow execution");
              console.log("Response:" + response);

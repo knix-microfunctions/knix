@@ -25,6 +25,7 @@
     'MfnWebConsole.pages.functions',
     'MfnWebConsole.pages.workflows',
     'MfnWebConsole.pages.storage',
+    'MfnWebConsole.pages.profile',
     'MfnWebConsole.pages.docs'
 
 

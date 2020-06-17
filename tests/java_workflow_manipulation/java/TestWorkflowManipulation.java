@@ -41,17 +41,6 @@ public class TestWorkflowManipulation
             {
                 context.addDynamicNext("final", value + "_" + apiCall);
             }
-            else if (apiCall.equalsIgnoreCase("sendToFunctionNow"))
-            {
-                context.sendToFunctionNow("final", value + "_" + apiCall);
-                try
-                {
-                    Thread.sleep(1000);
-                }
-                catch (Exception e)
-                {
-                }
-            }
             else if (apiCall.equalsIgnoreCase("addDynamicWorkflowTrigger"))
             {
                 HashMap<String, Object> trigger = new HashMap<String, Object>();

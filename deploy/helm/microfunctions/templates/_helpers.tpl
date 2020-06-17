@@ -29,6 +29,14 @@
     rk-{{$rlsname}}.{{$namespace}}.svc.cluster.local:{{$port}}
 {{- end -}}
 
+{{- define "dlConnect" }}
+{{- range $num, $e := until (.Values.datalayer.replicas|int) -}}
+    {{- printf "dl-%s-%d.datalayer.%s.svc:%d" $.Release.Name $num $.Release.Namespace ($.Values.datalayer.port|int) -}}
+    {{- if lt $num  ( sub ($.Values.datalayer.replicas|int) 1 ) -}}
+      {{- printf "," -}}
+    {{- end -}}
+{{- end -}}
+{{- end -}}
 
 {{/* Microfunctions's Nginx */}}
 
@@ -38,6 +46,10 @@
 
 {{- define "nginx.fullname" -}}
 {{- printf "nx-%s" .Release.Name | trunc 40 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "nginx.mgmtService" -}}
+{{- default (printf "wf-%s-management.%s.example.com" .Release.Name .Release.Namespace) .Values.nginx.managementService -}}
 {{- end -}}
 
 {{- define "nxConnect.url" }}

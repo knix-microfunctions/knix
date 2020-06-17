@@ -25,7 +25,6 @@ manager:
   #httpsProxy: "http://<host>:<port>"
   #httpGatewayPort: 80
   #httpsGatewayPort: 443
-  endpoint: http://wf-mfn1-management.svc.cluster.local:31380
   nameOverride: "microfunctions"
   newWorkflow:
     hpa:
@@ -132,6 +131,11 @@ elastic:
 nginx:
   Replicas: 1
   nameOverride: "microfunctions-nginx"
+  # Knative Serving creates an FQDN for the management kservice "wf-{{ .Release.Name }}-management".
+  # In most installations, it would be {ksvc}.{namespace}.example.com
+  # Please use --set nginx.managementService to specify the FQDN that the service will get from your Knative setup
+  # _helpers.tpl would default it to wf-mfn1-management.knix.example.com
+  #managementService: wf-mfn1-management.knix.example.com
   frontendImagePath: "/microfn/frontend"
   frontendImageTag: "latest"
   imagePath: "/microfn/nginx"

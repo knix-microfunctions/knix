@@ -42,7 +42,7 @@ mfntestpassed = MfnAppTextFormat.STYLE_BOLD + MfnAppTextFormat.COLOR_GREEN + 'PA
 mfntestfailed = MfnAppTextFormat.STYLE_BOLD + MfnAppTextFormat.COLOR_RED + 'FAILED' + MfnAppTextFormat.END + MfnAppTextFormat.END
 
 class MFNTest():
-    def __init__(self, test_name=None, timeout=None, workflow_filename=None, new_user=False):
+    def __init__(self, test_name=None, timeout=None, workflow_filename=None, new_user=False, delete_user=False):
 
         self._settings = self._get_settings()
 
@@ -318,8 +318,6 @@ class MFNTest():
         for resource_name in self._workflow_resources:
             self._delete_resource_if_existing(existing_resources, resource_name)
 
-        self._client.disconnect()
-
     def get_test_workflow_endpoints(self):
         if self._workflow.status == "deployed":
             return self._workflow.endpoints
@@ -352,6 +350,7 @@ class MFNTest():
         except Exception as e:
             any_failed_tests = True
             self.undeploy_workflow()
+            self.cleanup()
             print(str(e))
             raise e
         finally:
@@ -412,6 +411,7 @@ class MFNTest():
                 self._print_logs(self._workflow.logs())
             if should_undeploy:
                 self.undeploy_workflow()
+                self.cleanup()
 
     def _print_logs(self, logs):
         print(logs)
@@ -492,8 +492,10 @@ class MFNTest():
         self.exec_tests(testtuplelist, check_just_keys=True)
 
     # compatibility with older tests
-    def cleanup(self):
-        return
+    def cleanup(self, delete_user=False):
+        if delete_user:
+            self._client.delete_user()
+        self._client.disconnect()
 
 def combine_output(output, error):
     output = output.split("\n")

@@ -45,6 +45,7 @@ class JavaMiscOpsTest(unittest.TestCase):
             test.report(False, name, "", "")
 
         test.undeploy_workflow()
+        test.cleanup()
 
 def main():
     unittest.main()
