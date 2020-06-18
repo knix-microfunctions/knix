@@ -1,0 +1,37 @@
+{
+  "Comment":"parallelwf Workflow",
+  "StartAt":"FunWithMath",
+  "States":{
+    "FunWithMath":{
+      "Type":"Parallel",
+      "Next":"After",
+      "Branches":[
+        {
+          "StartAt":"Add",
+          "States":{
+            "Add":{
+              "Type":"Task",
+              "Resource":"Add",
+              "End":true
+            }
+          }
+        },
+        {
+          "StartAt":"Subtract",
+          "States":{
+            "Subtract":{
+              "Type":"Task",
+              "Resource":"Subtract",
+              "End":true
+            }
+          }
+        }
+      ]
+    },
+    "After": {
+      "Type": "Task",
+      "Resource": "hello",
+      "End": true
+    }
+  }
+}

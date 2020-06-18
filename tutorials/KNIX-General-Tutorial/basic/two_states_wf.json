@@ -1,0 +1,16 @@
+{
+  "Comment": "twostates Workflow",
+  "StartAt": "random",
+  "States": {
+    "random": {
+      "Type": "Task",
+      "Resource": "random",
+      "Next": "avg"
+    },
+    "avg": {
+      "Type": "Task",
+      "Resource": "avg",
+      "End": true
+    }
+  }
+}
