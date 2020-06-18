@@ -29,6 +29,7 @@ sed -i -r 's/^bitcask\.merge\.thresholds\.dead_bytes .*$//' $RIAK_CONF
 sed -i -r 's/^bitcask\.merge\.thresholds\.small_file .*$//' $RIAK_CONF
 sed -i -r 's/^bitcask\.merge_check_interval .*$//' $RIAK_CONF
 sed -i -r 's/^bitcask\.max_file_size .*$//' $RIAK_CONF
+sed -i -r 's/^anti_entropy .*//' $RIAK_CONF
 
 cat <<END >>$RIAK_CONF
 nodename = riak@$HOSTNAME
@@ -46,6 +47,7 @@ bitcask.merge.thresholds.fragmentation = $BITCASK_MERGE_THRESHOLDS_FRAGMENTATION
 bitcask.merge.thresholds.dead_bytes = $BITCASK_MERGE_THRESHOLDS_DEAD_BYTES
 bitcask.merge.thresholds.small_file = $BITCASK_MERGE_THRESHOLDS_SMALL_FILE
 bitcask.max_file_size = $BITCASK_MAX_FILE_SIZE
+anti_entropy = $ANTI_ENTROPY
 END
 
 # Maybe add user config items

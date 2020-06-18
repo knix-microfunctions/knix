@@ -105,6 +105,8 @@ spec:
             value: "{{ .Values.riak.BitcaskMergeCheckInterval }}"
           - name: BITCASK_MAX_FILE_SIZE
             value: "{{ .Values.riak.BitcaskMaxFileSize }}"
+          - name: ANTI_ENTROPY
+            value: "{{ .Values.riak.AntiEntropy }}"
         readinessProbe:
           exec:
             command:

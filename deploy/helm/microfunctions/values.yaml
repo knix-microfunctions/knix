@@ -107,6 +107,7 @@ riak:
   BitcaskMergeThresholdsSmallFile: "20MB"
   BitcaskMergeCheckInterval: "10m"
   BitcaskMaxFileSize: "500MB"
+  AntiEntropy: "passive"
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs

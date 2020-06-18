@@ -277,6 +277,12 @@
       regexp: "^bitcask.max_file_size = "
       line: "bitcask.max_file_size = 500MB"
 
+  - name: configure riak anti_entropy = passive
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^anti_entropy = "
+      line: "anti_entropy = passive"
+
   - name: configure /etc/security/limits.conf riak soft nofile 65536
     lineinfile:
       path: "/etc/security/limits.conf"

@@ -12,22 +12,46 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-FROM ubuntu:18.04
+FROM ubuntu:16.04
+
+ENV OS_FAMILY Debian
+ENV OS_VERSION xenial
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN true
+
+# Install essentials
+RUN apt-get update --allow-unauthenticated -y
+RUN apt-get dist-upgrade --allow-unauthenticated -y
+RUN apt-get install -y apt-transport-https
+RUN apt-get install -y python python-six python-pkg-resources python-openssl
+RUN apt-get install -y curl
+RUN apt-get install -y libapr1 realpath jq unzip
+RUN apt-get install -y iproute iputils-ping netcat
+
+# Install OpenJDK 8
+#RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys DA1A4A13543B466853BAF164EB9B1D8886F44E2A
+#RUN echo "deb http://ppa.launchpad.net/openjdk-r/ppa/ubuntu {{os_flavor}} main" >/etc/apt/sources.list.d/openjdk.list
+#RUN echo "deb-src http://ppa.launchpad.net/openjdk-r/ppa/ubuntu {{os_flavor}} main" >>/etc/apt/sources.list.d/openjdk.list
+#RUN echo "deb http://http.debian.net/debian jessie-backports main" >/etc/apt/sources.list.d/openjdk.list
+#RUN apt-get update
+RUN apt-get install -y openjdk-8-jre-headless openjdk-8-jdk-headless
+
+# Install Riak
+RUN curl https://packagecloud.io/gpg.key | apt-key add -
+RUN apt-get install -y apt-transport-https
+COPY script/basho.list /etc/apt/sources.list.d/basho.list
 
 RUN apt-get update
-RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo
-
-# Download riak package
-RUN mkdir -p /opt/mfn/riak/
-RUN cd /opt/mfn/riak/
-RUN curl https://files.tiot.jp/riak/kv/2.9/2.9.0/ubuntu/bionic64/riak_2.9.0-1_amd64.deb --output riak_2.9.0-1_amd64.deb
-
 RUN groupadd -o -g 1000 -r riak && useradd -d /var/lib/riak -u 1000 -c 'Riak user' -M -r -g riak riak
+RUN apt-get install --allow-unauthenticated -y riak
 
-RUN dpkg -i riak_2.9.0-1_amd64.deb
-
-ENV RIAK_VERSION 2.9.0
+ENV RIAK_VERSION 2.2.3
 ENV RIAK_HOME /usr/lib/riak
+
+# Install the Python client
+#RUN apt-get install -y build-essential libssl-dev libffi-dev python-dev python-pip
+#RUN pip install --upgrade pip cryptography pyparsing appdirs riak
 
 # Clean up APT cache
 RUN rm -rf /var/lib/apt/lists/* /tmp/*
