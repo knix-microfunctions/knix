@@ -1235,6 +1235,10 @@
          }
          //var lcJson = $scope.aceSession.getDocument().getValue().toLowerCase();
 
+         // valid values should be: "unknown", "AWS-compatible", "KNIX-specific"
+         // also store the determined workflowASLType during upload of the workflow JSON
+         var workflowASLType = "unknown";
+
          if ($scope.aceSession.getDocument().getValue().includes('"StartAt"')) {
            const ajv = new Ajv({
               schemas: [
@@ -1283,8 +1287,15 @@
                  $scope.aceWorkflowEditor.focus();
                  return;
                }
+
+               workflowASLType = "KNIX-specific";
+           }
+           else
+           {
+               workflowASLType = "AWS-compatible";
            }
          }
+
          enableFunctionCodeTabs(workflowJson);
          if ($scope.activeTab==1) {
            $scope.gTab = 0;
@@ -1307,7 +1318,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "uploadWorkflowJSON", "data" : { "user" : { "token" : token } , "workflow" : { "id" : sharedProperties.getWorkflowId(), "json" : encodedWorkflowJSON } } })
+         data:  JSON.stringify({ "action" : "uploadWorkflowJSON", "data" : { "user" : { "token" : token } , "workflow" : { "id" : sharedProperties.getWorkflowId(), "json" : encodedWorkflowJSON, "ASL_type": workflowASLType } } })
        }
        $http(req).then(function successCallback(response) {
 

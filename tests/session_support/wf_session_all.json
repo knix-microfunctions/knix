@@ -1,6 +1,7 @@
 {
   "Comment": "Session functions in KNIX",
   "StartAt": "entryFunction",
+  "AllowImmediateMessages": true,
   "States": {
     "entryFunction": {
       "Type": "Task",

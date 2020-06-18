@@ -1,6 +1,7 @@
 {
   "Comment": "MapReduce in KNIX",
   "StartAt": "driver",
+  "AllowImmediateMessages": true,
   "States": {
     "driver": {
       "Type": "Task",

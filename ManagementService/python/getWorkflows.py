@@ -151,6 +151,12 @@ def handle(value, sapi):
             if wf is None or wf == "":
                 raise Exception("Couldn't retrieve workflow status; no such workflow.")
 
+            if "modified" not in wf:
+                wf["modified"] = 0
+
+            if "ASL_type" not in wf:
+                wf["ASL_type"] = "unknown"
+
             wf = json.loads(wf)
             wf = check_and_update_workflow_status(email, wf, sapi)
 
@@ -170,6 +176,9 @@ def handle(value, sapi):
 
                 if "modified" not in wf:
                     wf["modified"] = 0
+
+                if "ASL_type" not in wf:
+                    wf["ASL_type"] = "unknown"
 
                 wf = check_and_update_workflow_status(email, wf, sapi)
 
