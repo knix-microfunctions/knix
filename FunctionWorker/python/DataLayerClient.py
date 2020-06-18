@@ -566,6 +566,25 @@ class DataLayerClient:
                 raise
         return status
 
+    def listKeys(self, start, count, tableName=None):
+        keylist = None
+        table = self.tablename if tableName is None else tableName
+        
+        for retry in range(MAX_RETRIES):
+            try:
+                keylist = self.datalayer.selectKeys(self.keyspace, table, start, count, self.locality)
+                if keylist == None or type(keylist) != type([]):
+                    keylist = None
+                break
+            except TTransport.TTransportException as exc:
+                print("[DataLayerClient] Reconnecting because of failed selectKeys: " + str(exc))
+                self.connect()
+            except Exception as exc:
+                print("[DataLayerClient] failed selectKeys: " + str(exc))
+                raise
+
+        return keylist
+
     def shutdown(self):
         try:
             self.transport.close()
