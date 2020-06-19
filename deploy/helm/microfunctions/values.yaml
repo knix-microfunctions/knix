@@ -92,7 +92,7 @@ riak:
       memory: 8Gi
     requests:
       cpu: 4
-      memory: 4Gi
+      memory: 8Gi
   DataStorage: 8Gi
   ClusterName: "riak"
   WaitForErlang: 180
