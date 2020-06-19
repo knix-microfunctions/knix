@@ -88,12 +88,12 @@ riak:
   ClientPortProtobuf: 8087
   resources:
     limits:
-      cpu: 1
-      memory: 3Gi
+      cpu: 4
+      memory: 8Gi
     requests:
-     cpu: 1
-     memory: 1Gi
-  DataStorage: 2Gi
+      cpu: 4
+      memory: 4Gi
+  DataStorage: 8Gi
   ClusterName: "riak"
   WaitForErlang: 180
   ErlangDistributionPortRangeMinimum: 6000
@@ -109,8 +109,8 @@ riak:
   BitcaskMaxFileSize: "500MB"
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
-  ErlangSchedulersTotal: 1
-  ErlangSchedulersOnline: 1
+  ErlangSchedulersTotal: 4
+  ErlangSchedulersOnline: 4
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs
