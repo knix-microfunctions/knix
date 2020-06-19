@@ -1213,6 +1213,7 @@
 
        // base 64 encode workflow JSON
        var encodedWorkflowJSON = btoa($scope.aceSession.getDocument().getValue());
+       var workflowASLType = "unknown";
 
        if (!silentSave) {
          try {
@@ -1237,7 +1238,6 @@
 
          // valid values should be: "unknown", "AWS-compatible", "KNIX-specific"
          // also store the determined workflowASLType during upload of the workflow JSON
-         var workflowASLType = "unknown";
 
          if ($scope.aceSession.getDocument().getValue().includes('"StartAt"')) {
            const ajv = new Ajv({
@@ -1277,7 +1277,7 @@
                console.log("valid_knix: " + valid_knix);
                if (!valid_knix)
                {
-                 $scope.errorMessage = "Invalid Amazon States Language (ASL) specification and/or ASL KNIX extensions.";
+                 $scope.errorMessage = "Invalid Amazon States Language (ASL) specification and/or KNIX ASL extensions.";
                  $uibModal.open({
                    animation: true,
                    scope: $scope,
@@ -1308,6 +1308,7 @@
          }
        } else {
          initializeGraph();
+         workflowASLType = "AWS-compatible";
        }
 
        var token = $cookies.get('token');
@@ -1324,6 +1325,7 @@
 
        if (response.data.status=="success") {
              console.log('Workflow JSON sucessfully uploaded.');
+             $scope.reloadWorkflows();
              if (silentSave==false) {
                toastr.success('Your workflow JSON has been saved successfully!');
                workflowBuffer = $scope.aceSession.getDocument().getValue();

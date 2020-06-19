@@ -26,6 +26,9 @@
     var fail = $.getJSON("lib/asl-validator/schemas/fail.json", function(json) {
     });
 
+    var mapState = $.getJSON("lib/asl-validator/schemas/map.json", function(json) {
+    });
+
     var parallel = $.getJSON("lib/asl-validator/schemas/parallel.json", function(json) {
     });
 
@@ -43,6 +46,38 @@
 
     var succeed = $.getJSON("lib/asl-validator/schemas/succeed.json", function(json) {
     });
+
+    // KNIX extensions to ASL
+    var knix_task = $.getJSON("lib/knix-asl-validator/schemas/task.json", function (json) {
+    });
+
+    var knix_choice = $.getJSON("lib/knix-asl-validator/schemas/choice.json", function (json) {
+    });
+
+    var knix_fail = $.getJSON("lib/knix-asl-validator/schemas/fail.json", function (json) {
+    });
+
+    var knix_mapState = $.getJSON("lib/knix-asl-validator/schemas/map.json", function (json) {
+    });
+
+    var knix_parallel = $.getJSON("lib/knix-asl-validator/schemas/parallel.json", function (json) {
+    });
+
+    var knix_wait = $.getJSON("lib/knix-asl-validator/schemas/wait.json", function (json) {
+    });
+
+    var knix_state = $.getJSON("lib/knix-asl-validator/schemas/state.json", function (json) {
+    });
+
+    var knix_stateMachine = $.getJSON("lib/knix-asl-validator/schemas/state-machine.json", function (json) {
+    });
+
+    var knix_pass = $.getJSON("lib/knix-asl-validator/schemas/pass.json", function (json) {
+    });
+
+    var knix_succeed = $.getJSON("lib/knix-asl-validator/schemas/succeed.json", function (json) {
+    });
+   
 
      var urlPath = sharedProperties.getUrlPath();
 
@@ -765,44 +800,73 @@
 
        }
 
+       var workflowASLType = "unknown";
+
        if (workflowJson.includes('"StartAt"')) {
-         const ajv = new Ajv({
-            schemas: [
-              choice.responseJSON,
-              fail.responseJSON,
-              parallel.responseJSON,
-              pass.responseJSON,
-              stateMachine.responseJSON,
-              state.responseJSON,
-              succeed.responseJSON,
-              task.responseJSON,
-              wait.responseJSON,
-            ],
-         });
-         var valid = ajv.validate('http://asl-validator.cloud/state-machine#', wJson);
+        const ajv = new Ajv({
+           schemas: [
+             choice.responseJSON,
+             fail.responseJSON,
+             parallel.responseJSON,
+             mapState.responseJSON,
+             pass.responseJSON,
+             stateMachine.responseJSON,
+             state.responseJSON,
+             succeed.responseJSON,
+             task.responseJSON,
+             wait.responseJSON,
+           ],
+        });
+        var valid = ajv.validate('http://asl-validator.cloud/state-machine#', wJson);
 
-         if (!valid) {
-           importError = true;
-           console.log("Invalid Amazon States Language (ASL) specification.");
-           $scope.errorMessage = "Invalid Amazon States Language (ASL) specification.";
-           $uibModal.open({
-             animation: true,
-             scope: $scope,
-             templateUrl: 'app/pages/workflows/modals/errorModal.html',
-             size: 'md',
-           });
+        if (!valid) {
+          
+          console.log("Invalid Amazon States Language (ASL) specification.");
+          console.log("Checking KNIX extensions validity...");
+            const ajv_knix = new Ajv({
+               schemas: [
+                 knix_choice.responseJSON,
+                 knix_fail.responseJSON,
+                 knix_parallel.responseJSON,
+                 knix_mapState.responseJSON,
+                 knix_pass.responseJSON,
+                 knix_stateMachine.responseJSON,
+                 knix_state.responseJSON,
+                 knix_succeed.responseJSON,
+                 knix_task.responseJSON,
+                 knix_wait.responseJSON,
+               ],
+            });
+            var valid_knix = ajv_knix.validate('http://knix-asl-validator.cloud/state-machine#', wJson);
+            console.log("valid_knix: " + valid_knix);
+            if (!valid_knix)
+            {
+              importError = true;
+              $scope.errorMessage = "Invalid Amazon States Language (ASL) specification and/or KNIX ASL extensions.";
+              $uibModal.open({
+                animation: true,
+                scope: $scope,
+                templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                size: 'md',
+              });
+              return;
+            }
 
-           return;
-         }
-       }
+            workflowASLType = "KNIX-specific";
+        }
+        else
+        {
+            workflowASLType = "AWS-compatible";
+        }
+      }
 
-       var req = {
+      var req = {
          method: 'POST',
          url: urlPath,
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "uploadWorkflowJSON", "data" : { "user" : { "token" : token } , "workflow" : { "id" : workflowId, "json" : encodedWorkflowJSON } } })
+         data:  JSON.stringify({ "action" : "uploadWorkflowJSON", "data" : { "user" : { "token" : token } , "workflow" : { "id" : workflowId, "json" : encodedWorkflowJSON, "ASL_type": workflowASLType } } })
        }
        $http(req).then(function successCallback(response) {
 
