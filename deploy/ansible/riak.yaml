@@ -283,6 +283,18 @@
       regexp: "^anti_entropy = "
       line: "anti_entropy = passive"
 
+  - name: configure riak erlang.schedulers.force_wakeup_interval = 500
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^erlang.schedulers.force_wakeup_interval = "
+      line: "erlang.schedulers.force_wakeup_interval = 500"
+
+  - name: configure erlang.schedulers.compaction_of_load = false
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^erlang.schedulers.compaction_of_load = "
+      line: "erlang.schedulers.compaction_of_load = false"
+
   - name: configure /etc/security/limits.conf riak soft nofile 65536
     lineinfile:
       path: "/etc/security/limits.conf"

@@ -111,6 +111,11 @@ spec:
             value: "{{ .Values.riak.ErlangSchedulersTotal }}"
           - name: ERLANG_SCHEDULERS_ONLINE
             value: "{{ .Values.riak.ErlangSchedulersOnline }}"
+          - name: ERLANG_SCHEDULERS_FORCE_WAKEUP_INTERVAL
+            value: "{{ .Values.riak.ErlangSchedulersForceWakeupInterval }}"
+          - name: ERLANG_SCHEDULERS_COMPACTION_OF_LOAD
+            value: "{{ .Values.riak.ErlangSchedulersCompactionOfLoad }}"
+
         readinessProbe:
           exec:
             command:

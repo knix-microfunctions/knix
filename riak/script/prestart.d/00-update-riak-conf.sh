@@ -32,6 +32,8 @@ sed -i -r 's/^bitcask\.max_file_size .*$//' $RIAK_CONF
 sed -i -r 's/^anti_entropy .*//' $RIAK_CONF
 sed -i -r 's/^erlang\.schedulers\.total .*$//' $RIAK_CONF
 sed -i -r 's/^erlang\.schedulers\.online .*$//' $RIAK_CONF
+sed -i -r 's/^erlang\.schedulers\.force_wakeup_interval .*$//' $RIAK_CONF
+sed -i -r 's/^erlang\.schedulers\.compaction_of_load .*$//' $RIAK_CONF
 
 
 cat <<END >>$RIAK_CONF
@@ -53,6 +55,8 @@ bitcask.max_file_size = $BITCASK_MAX_FILE_SIZE
 anti_entropy = $ANTI_ENTROPY
 erlang.schedulers.total = $ERLANG_SCHEDULERS_TOTAL
 erlang.schedulers.online = $ERLANG_SCHEDULERS_ONLINE
+erlang.schedulers.force_wakeup_interval = $ERLANG_SCHEDULERS_FORCE_WAKEUP_INTERVAL
+erlang.schedulers.compaction_of_load = $ERLANG_SCHEDULERS_COMPACTION_OF_LOAD
 END
 
 # Maybe add user config items

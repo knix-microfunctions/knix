@@ -111,6 +111,8 @@ riak:
   # Should be <= resources.limits.cpu
   ErlangSchedulersTotal: 4
   ErlangSchedulersOnline: 4
+  ErlangSchedulersForceWakeupInterval: 500
+  ErlangSchedulersCompactionOfLoad: "false"
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs
