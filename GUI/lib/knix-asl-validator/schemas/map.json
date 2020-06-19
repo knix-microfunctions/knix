@@ -1,0 +1,95 @@
+{
+  "$id": "http://knix-asl-validator.cloud/map#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "Type": {
+      "type": "string",
+      "pattern": "^Map$"
+    },
+    "Next": {
+      "type": "string"
+    },
+    "End": {
+      "enum": [true]
+    },
+    "Comment": {
+      "type": "string"
+    },
+    "OutputPath": {
+      "type": ["string", "null"]
+    },
+    "InputPath": {
+      "type": ["string", "null"]
+    },
+    "ResultPath": {
+      "type": ["string", "null"]
+    },
+    "ItemsPath": {
+      "type": ["string", "null"]
+    },
+    "MaxConcurrency": {
+      "type": "number",
+      "minimum": 0
+    },
+    "Iterator": {
+      "$ref": "http://knix-asl-validator.cloud/state-machine#"
+    },
+    "Parameters": {
+      "type": "object"
+    },
+    "Retry": {
+      "type": "array",
+      "items": {
+        "types": "object",
+        "properties": {
+          "ErrorEquals": {
+            "type": "array",
+            "items": {
+              "types": "string"
+            }
+          },
+          "IntervalSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "MaxAttempts": {
+            "type": "number",
+            "minimum": 0
+          },
+          "BackoffRate": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": ["ErrorEquals"]
+      }
+    },
+    "Catch": {
+      "type": "array",
+      "items": {
+        "types": "object",
+        "properties": {
+          "ErrorEquals": {
+            "type": "array",
+            "items": {
+              "types": "string"
+            }
+          },
+          "Next": {
+            "type": "string"
+          }
+        },
+        "required": ["ErrorEquals", "Next"]
+      }
+    }
+  },
+  "oneOf": [{
+    "required": ["Next"]
+  }, {
+    "required": ["End"]
+  }],
+  "required": ["Type", "Iterator"],
+  "additionalProperties": false
+}
+

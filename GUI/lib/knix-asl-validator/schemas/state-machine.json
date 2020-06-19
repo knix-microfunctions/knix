@@ -1,0 +1,37 @@
+{
+  "$id": "http://knix-asl-validator.cloud/state-machine#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "Comment": {
+      "type": "string"
+    },
+    "StartAt": {
+      "type": "string"
+    },
+    "EnableCheckpoints": {
+        "enum": [true, false]
+    },
+    "AllowImmediateMessages": {
+        "enum": [true, false]
+    },
+    "States": {
+      "type": "object",
+      "patternProperties": {
+        "^.{1,128}$": {
+          "$ref": "http://knix-asl-validator.cloud/state#"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Version": {
+      "type": "string"
+    },
+    "TimeoutSeconds": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": ["StartAt", "States"]
+}

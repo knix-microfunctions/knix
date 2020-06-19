@@ -31,7 +31,7 @@ class WorkflowStateType:
     MAP_STATE_TYPE = "Map"
 
 class WorkflowNode:
-    def __init__(self, topic, nextNodes, potNext, gwftype, gwfstatename, gwfstateinfo, is_session_function, sgparams, logger):
+    def __init__(self, topic, nextNodes, potNext, gwftype, gwfstatename, gwfstateinfo, is_session_function, sfparams, logger):
 
         self.nodeId = topic
         self.nextMap = {}
@@ -53,7 +53,7 @@ class WorkflowNode:
             self.potentialNextMap[potnext_node] = True
 
         self._is_session_function = is_session_function
-        self._session_function_parameters = sgparams
+        self._session_function_parameters = sfparams
 
     def getNextMap(self):
         return self.nextMap
@@ -111,6 +111,7 @@ class Workflow:
 
         # whether the function workers should store backups of triggers to next functions
         self._enable_checkpoints = True
+        self._allow_immediate_messages = False
 
         self._has_error = False
 
@@ -127,6 +128,7 @@ class Workflow:
                 "name": "test_workflow",
                 "entry": "entryFunction",
                 "enable_checkpoints": False,
+                "allow_immediate_messages": True,
                 "exit": "exitName",
                 "functions": [
                     {
@@ -159,8 +161,12 @@ class Workflow:
         if "enable_checkpoints" in wfobj.keys():
             self._enable_checkpoints = wfobj["enable_checkpoints"]
 
-        # also include the exit as a potential destination for sending immediate trigger messages
-        self.workflowFunctionMap[self.workflowExitPoint] = True
+        if "allow_immediate_messages" in wfobj.keys():
+            self._allow_immediate_messages = wfobj["allow_immediate_messages"]
+
+        if self._allow_immediate_messages:
+            # also include the exit as a potential destination for sending immediate trigger messages
+            self.workflowFunctionMap[self.workflowExitPoint] = True
 
         self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
         self._logger.info("parseSAND: workflowExitTopic: " + self.workflowExitTopic)
@@ -172,8 +178,9 @@ class Workflow:
             if "resource" in function:
                 resource = function["resource"]
 
-            # keep a map of function names as potential destination for sending immediate trigger messages
-            self.workflowFunctionMap[gname] = True
+            if self._allow_immediate_messages:
+                # keep a map of function names as potential destination for sending immediate trigger messages
+                self.workflowFunctionMap[gname] = True
             topic = self.topicPrefix + gname
 
             #print("topic:", topic)
@@ -200,18 +207,17 @@ class Workflow:
             if "isSessionFunction" in function.keys():
                 is_session_function = function["isSessionFunction"]
 
-            sgparams = {}
-            if "sessionFunctionParameters" in function.keys():
-                sgparams = function["sessionFunctionParameters"]
+            sfparams = {}
+            if is_session_function and "sessionFunctionParameters" in function.keys():
+                sfparams = function["sessionFunctionParameters"]
 
-            wfnode = WorkflowNode(topic, nextNodes, potNext, gwftype, gwfstatename, gwfstateinfo, is_session_function, sgparams, self._logger)
+            wfnode = WorkflowNode(topic, nextNodes, potNext, gwftype, gwfstatename, gwfstateinfo, is_session_function, sfparams, self._logger)
 
             self.workflowNodeMap[topic] = wfnode
 
             if is_session_function:
                 self._is_session_workflow = True
                 self.workflowSessionFunctions[gname] = is_session_function
-
 
         # check whether all 'next' fields refer to existing functions
         # for (Map.Entry<String, WorkflowNode> entry: this.workflowNodeMap.entrySet())
@@ -244,18 +250,22 @@ class Workflow:
         self.workflowName = self.workflowId # there is no "Name" key in ASL
         self.workflowEntryPoint = wfobj["StartAt"]
         self.workflowEntryTopic = self.topicPrefix + self.workflowEntryPoint
+
+        if "EnableCheckpoints" in wfobj.keys():
+            self._enable_checkpoints = wfobj["EnableCheckpoints"]
+
+        if "AllowImmediateMessages" in wfobj.keys():
+            self._allow_immediate_messages = wfobj["AllowImmediateMessages"]
+
         self._logger.info("parseASL: workflowName: " + self.workflowName)
         self._logger.info("parseASL: workflowEntryPoint: " + self.workflowEntryTopic)
         workflowstates = wfobj["States"]
         self.parseStates(workflowstates)
 
-    def createAndAddASLWorkflowNode(self, gname, nextNodes, potNext, gwfstatetype, gwfstatename, gwfstateinfo):
+    def createAndAddASLWorkflowNode(self, gname, nextNodes, potNext, gwfstatetype, gwfstatename, gwfstateinfo, is_session_function=False, sfparams={}):
         topic = self.topicPrefix + gname
-        # ASL workflows do not support sessions
-        is_session_function = False
-        sgparams = {}
 
-        wfnode = WorkflowNode(topic, nextNodes, potNext, gwfstatetype, gwfstatename, gwfstateinfo, is_session_function, sgparams, self._logger)
+        wfnode = WorkflowNode(topic, nextNodes, potNext, gwfstatetype, gwfstatename, gwfstateinfo, is_session_function, sfparams, self._logger)
         self.workflowNodeMap[topic] = wfnode # add new node to workflow node map
 
     def insideMapBranchAlready(self):
@@ -322,6 +332,8 @@ class Workflow:
 
             if bool(value) and not (self.insideParallelBranchAlready() or self.insideMapBranchAlready()):
                 self.workflowExitPoint = "end"
+                if self._allow_immediate_messages:
+                    self.workflowFunctionMap[self.workflowExitPoint] = True
                 nextNodes.append(self.workflowExitPoint)
                 self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
             #else:
@@ -337,6 +349,21 @@ class Workflow:
             sizePotNext = len(potential)
             for j in range(sizePotNext):
                 potNext.append(potential[j])
+
+        is_session_function = False
+        if "SessionFunction" in taskstateinfo.keys():
+            is_session_function = taskstateinfo["SessionFunction"]
+
+        sfparams = {}
+        if is_session_function and "SessionFunctionParameters" in taskstateinfo.keys():
+            sfparams = taskstateinfo["SessionFunctionParameters"]
+
+        if is_session_function:
+            self._is_session_workflow = True
+            self.workflowSessionFunctions[taskstatename] = is_session_function
+
+        if self._allow_immediate_messages:
+            self.workflowFunctionMap[taskstatename] = True
 
         if "Catch" in taskstateinfo.keys(): # need to add Catch Next to potentialNext
             for catch in taskstateinfo["Catch"]:
@@ -358,7 +385,7 @@ class Workflow:
             taskstateinfo["ParentMapInfo"] = self.constructParentMapInfo()
 
         self._logger.info("parseTask: State info: " + str(taskstateinfo))
-        self.createAndAddASLWorkflowNode(taskstatename, nextNodes, potNext, WorkflowStateType.TASK_STATE_TYPE, taskstatename, taskstateinfo)
+        self.createAndAddASLWorkflowNode(taskstatename, nextNodes, potNext, WorkflowStateType.TASK_STATE_TYPE, taskstatename, taskstateinfo, is_session_function, sfparams)
 
     def parseChoiceState(self, choicestatename, choicestateinfo):
         potNext = []
@@ -440,7 +467,7 @@ class Workflow:
             succeedstateinfo["ParentParallelInfo"] = self.constructParentParallelInfo()
 
         if self.insideMapBranchAlready():
-            taskstateinfo["ParentMapInfo"] = self.constructParentMapInfo()
+            succeedstateinfo["ParentMapInfo"] = self.constructParentMapInfo()
 
         self._logger.info("parseSucceed: State info: " + str(succeedstateinfo))
         self.createAndAddASLWorkflowNode(gname, nextNodes, potNext, WorkflowStateType.SUCCEED_STATE_TYPE, succeedstatename, succeedstateinfo)

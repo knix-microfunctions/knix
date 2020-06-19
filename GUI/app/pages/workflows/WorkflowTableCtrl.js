@@ -92,17 +92,7 @@
       $http(req).then(function successCallback(response) {
 
           if (response.data.status=="success") {
-
             $scope.workflows = response.data.data.workflows;
-            /*for (var i=0;i<$scope.workflows.length;++i) {
-              if ($scope.workflows[i].name.startsWith('sand-internal-')) {
-                $scope.deployWorkflow(i, 'undeploy');
-                $scope.deleteWorkflow(i);
-                $scope.workflows.splice(i, 1);
-              }
-            }*/
-
-
             sharedData.setWorkflows(response.data.data.workflows);
           } else {
             console.log("Failure status returned by getWorkflows");
@@ -153,6 +143,12 @@
           }
           return dateFormat(new Date(parseFloat(timeStamp)*1000));
       } else return 'Not set';
+    };
+
+    $scope.showCompatibility = function(workflow) {
+      if(workflow.ASL_type) {
+          return workflow.ASL_type;
+      } else return 'unknown';
     };
 
     $scope.progressFunction = function() {
@@ -370,10 +366,9 @@
 
         if (version) {
           dat.data.workflow.version = version;
-          //dat.data.workflow.version = 30;
+          
         }
 
-        //console.log(JSON.stringify(dat));
         req = {
           method: 'POST',
           url: urlPath,

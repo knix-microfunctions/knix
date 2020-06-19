@@ -22,7 +22,7 @@ import unittest
 sys.path.append("../")
 from mfn_test_utils import MFNTest
 
-class DynamicParellelExecutionGroupsTest(unittest.TestCase):
+class DynamicParallelExecutionGroupsTest(unittest.TestCase):
 
     #@unittest.skip("")
     def test_wordcount(self):

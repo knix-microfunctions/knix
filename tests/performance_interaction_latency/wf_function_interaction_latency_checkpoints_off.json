@@ -1,15 +1,16 @@
 {
-"name": "wf_function_interaction_latency_checkpoints_off",
-"enable_checkpoints": false,
-"entry": "function1",
-"functions": [
-    {
-    "name": "function1",
-    "next": ["function2"]
+  "StartAt": "function1",
+  "EnableCheckpoints": false,
+  "States": {
+    "function1": {
+      "Type": "Task",
+      "Resource": "function1",
+      "Next": "function2"
     },
-    {
-    "name": "function2",
-    "next": ["end"]
+    "function2": {
+      "Type": "Task",
+      "Resource": "function2",
+      "End": true
     }
-    ]
+  }
 }
