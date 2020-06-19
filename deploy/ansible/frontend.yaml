@@ -78,13 +78,6 @@
   #    regexp: '^(appender.rolling.file\w+) = (\S+)$'
   #    replace: '\1 = ../\2'
 
-  ### Generate SSL certificate
-  - name: create keystore
-    command: keytool -genkey -keyalg RSA -noprompt -alias {{ ansible_hostname }} -storetype pkcs12 -keystore keystore -dname 'CN={{ ansible_fqdn }}, OU=Exemplary Services, O=Example Corporation, L=Stuttgart, S=Baden-Wuerttemberg, C=DE' -ext 'SAN=dns:{{ ansible_fqdn }},dns:{{ ansible_hostname }},{{ inventory_hostname | ipaddr() | ternary( "ip:", "dns:") }}{{ inventory_hostname }},ip:{{ ansible_default_ipv4.address }}' -keypass password -storepass password
-    args:
-      chdir: "{{ install_dir }}"
-      creates: "{{ install_dir }}/keystore"
- 
   ### Create new config
   - name: create config
     copy:
@@ -93,10 +86,6 @@
         http_host={{ ansible_hostname }}
         http_port=51000
         http_timeout_ms=60000
-        https_key_store_path=keystore
-        https_key_store_password=password
-        https_key_manager_password=password
-        https_port=51001
         mfn_datalayer={{ ansible_default_ipv4.address }}
         mfn_datalayer_port=4998
 
@@ -115,11 +104,6 @@
   #    path: "{{ install_dir }}/{{ frontend_config }}"
   #    regexp: ".*bind[^a-z_].*"
   #    line: "http_port = {{ 51000 }}"
-  #- name: config - update HTTPS port
-  #  lineinfile:
-  #    path: "{{ install_dir }}/{{ frontend_config }}"
-  #    regexp: ".*bind[^a-z_].*"
-  #    line: "https_port = {{ 51001 }}"
   #- name: config - update datalayer
   #  lineinfile:
   #    path: "{{ install_dir }}/{{ frontend_config }}"

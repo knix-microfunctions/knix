@@ -16,11 +16,8 @@
 package org.microfunctions.http_frontend;
 
 import java.io.FileInputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +32,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class HttpFrontendServer {
@@ -45,11 +41,6 @@ public class HttpFrontendServer {
 	private Server jettyServer = null;
 	private int maxServerThreads = Math.max(50, Math.min(500, 2 * Runtime.getRuntime().availableProcessors()));
 	
-	/*
-	public HttpFrontendServer(String httpHost, int httpPort, int httpTimeoutMs,
-			String httpsKeyStorePath, String httpsKeyStorePassword, String httpsKeyManagerPassword, int httpsPort,
-			String datalayerServerHost, int datalayerServerPort) throws InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException {
-	*/
 	public HttpFrontendServer(String httpHost, int httpPort, int httpTimeoutMs,
 			String datalayerServerHost, int datalayerServerPort) {
 		
@@ -60,19 +51,6 @@ public class HttpFrontendServer {
 		httpConnector.setPort(httpPort);
 		httpConnector.setIdleTimeout(httpTimeoutMs);
 		
-		/*if(httpsPort > 0) {
-			SslContextFactory.Server httpsContextFactory = new SslContextFactory.Server();
-			httpsContextFactory.setKeyStorePath(httpsKeyStorePath);
-			httpsContextFactory.setKeyStorePassword(httpsKeyStorePassword);
-			httpsContextFactory.setKeyManagerPassword(httpsKeyManagerPassword);
-			ServerConnector httpsConnector = new ServerConnector(jettyServer, httpsContextFactory);
-			httpsConnector.setHost(httpHost);
-			httpsConnector.setPort(httpsPort);
-			httpsConnector.setIdleTimeout(httpTimeoutMs);
-			jettyServer.setConnectors(new Connector[] {httpConnector, httpsConnector});
-		} else {
-			jettyServer.setConnectors(new Connector[] {httpConnector});
-		}*/
 		jettyServer.setConnectors(new Connector[] {httpConnector});
 
 		ServletContextHandler httpContextHandler = new ServletContextHandler();
@@ -108,19 +86,11 @@ public class HttpFrontendServer {
 	
 	public static void main(String[] args) {
 		List<String[]> params = new ArrayList<String[]>();
-//		params.add(new String[]{"server_id", ""});
 		params.add(new String[]{"http_host", "0.0.0.0"});
-		params.add(new String[]{"http_port", "80"});
+		params.add(new String[]{"http_port", "51000"});
 		params.add(new String[]{"http_timeout_ms", "30000"});
-//		params.add(new String[]{"https_key_store_path", ""});
-//		params.add(new String[]{"https_key_store_password", ""});
-//		params.add(new String[]{"https_key_manager_password", ""});
-//		params.add(new String[]{"https_port", "0"});
-//		params.add(new String[]{"kafka_connect", "localhost:9092"});
 		params.add(new String[]{"mfn_datalayer", ""});
 		params.add(new String[]{"mfn_datalayer_port", "4998"});
-//		params.add(new String[]{"kafka_replication_factor", "3"});
-//		params.add(new String[]{"hmac_secret", ""});
 		
 		Properties config = new Properties();
 		for(String[] entry : params) {
