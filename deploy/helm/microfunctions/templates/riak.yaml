@@ -107,6 +107,10 @@ spec:
             value: "{{ .Values.riak.BitcaskMaxFileSize }}"
           - name: ANTI_ENTROPY
             value: "{{ .Values.riak.AntiEntropy }}"
+          - name: ERLANG_SCHEDULERS_TOTAL
+            value: "{{ .Values.riak.ErlangSchedulersTotal }}"
+          - name: ERLANG_SCHEDULERS_ONLINE
+            value: "{{ .Values.riak.ErlangSchedulersOnline }}"
         readinessProbe:
           exec:
             command:

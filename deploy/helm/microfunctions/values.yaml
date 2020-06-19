@@ -108,6 +108,9 @@ riak:
   BitcaskMergeCheckInterval: "10m"
   BitcaskMaxFileSize: "500MB"
   AntiEntropy: "passive"
+  # Should be <= resources.limits.cpu
+  ErlangSchedulersTotal: 1
+  ErlangSchedulersOnline: 1
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs
