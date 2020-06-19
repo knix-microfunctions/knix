@@ -66,7 +66,7 @@ class MFNTest():
             self._workflow_folder = self._workflow_filename[:ind+1]
         else:
             self._workflow_folder = "./"
-        print("Workflow folder: " + self._workflow_folder)
+        #print("Workflow folder: " + self._workflow_folder)
 
         self._workflow_description = self._get_json_file(self._workflow_filename)
 
@@ -190,7 +190,6 @@ class MFNTest():
         elif "States" in workflow_description:
             states = workflow_description["States"]
             for sname in states:
-                print("State : " + sname)
                 state = states[sname]
                 if "Resource" in state:
                     resource_name = state["Resource"]
