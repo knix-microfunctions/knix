@@ -495,6 +495,8 @@ class MfnClient(object):
                     log.warn("Neither the ZIP file %s nor the source code %s was found for function %s" % (fzipname,fpyname,fname))
 
                 log.info("Adding function: " + fname)
+                print("Adding function: " + fname)
+
                 f = self.add_function(fname)
 
                 # Upload the .zip file

@@ -254,7 +254,10 @@ class Deployment:
         else:
             cmd = "python "
         cmd = cmd + "/opt/mfn/FunctionWorker/python/FunctionWorker.py"
-        cmd = cmd + " " + "/opt/mfn/workflow/states/" + state_name + "/worker_params.json"
+        #cmd = cmd + " " + "/opt/mfn/workflow/states/" + state_name + "/worker_params.json"
+        cmd = cmd + " " + '\"/opt/mfn/workflow/states/%s/worker_params.json\"' % state_name # state_name can contain whitespace
+
+        self._logger.info("command (after inserting state name): " + str(cmd))
 
         filename = '/opt/mfn/logs/function_' + state_name + '.log'
         log_handle = open(filename, 'a')

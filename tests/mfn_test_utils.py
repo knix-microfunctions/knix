@@ -190,6 +190,7 @@ class MFNTest():
         elif "States" in workflow_description:
             states = workflow_description["States"]
             for sname in states:
+                print("State : " + sname)
                 state = states[sname]
                 if "Resource" in state:
                     resource_name = state["Resource"]
@@ -378,8 +379,15 @@ class MFNTest():
                     #print("Total time to execute: " + str(t_total) + " (ms)")
 
                 if check_just_keys:
-                    if set(rn.keys()) == set(res.keys()):
-                        current_test_passed = True
+                     if isinstance(res, dict):
+                         if set(rn.keys()) == set(res.keys()):
+                             current_test_passed = True
+                     elif isinstance(res, str):
+                         if set(rn.keys()) == set(json.loads(res).keys()):
+                             current_test_passed = True
+                     else:
+                         raise Exception("Error: unsupported workflow result type")
+
                 else:
                     if rn == json.loads(res):
                         current_test_passed = True
