@@ -15,7 +15,7 @@
 FROM ubuntu:18.04
 
 RUN apt-get update
-RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo
+RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo cgroup-tools
 
 # Download riak package
 RUN mkdir -p /opt/mfn/riak/
@@ -43,13 +43,22 @@ COPY src/mfn_counter_triggers.erl /usr/lib/riak/lib/mfn_counter_triggers
 RUN mkdir /usr/lib/riak/lib/workflow_triggers
 COPY src/workflow_triggers.erl /usr/lib/riak/lib/workflow_triggers
 
-
 # Install custom start script
 COPY script/riak-cluster.sh $RIAK_HOME/riak-cluster.sh
 COPY script/shutdown.sh $RIAK_HOME/shutdown.sh
 RUN chmod a+x $RIAK_HOME/riak-cluster.sh
 RUN chmod a+x $RIAK_HOME/shutdown.sh
 RUN echo "riak soft nofile 65536\nriak hard nofile 200000" >>/etc/security/limits.conf
+
+# Enforce memory limit
+RUN echo "riak soft rss 7000000\nriak hard rss 7340032" >>/etc/security/limits.conf
+RUN echo "riak soft as 7000000\nriak hard as 7340032" >>/etc/security/limits.conf
+RUN cgcreate -g memory:riakGroup
+RUN echo 7G > /sys/fs/cgroup/memory/riakGroup/memory.limit_in_bytes
+RUN echo 1 > /sys/fs/cgroup/memory/riakGroup/memory.oom_control
+RUN cgexec -g memory:riakGroup /usr/bin/riak
+RUN cgexec -g memory:riakGroup /usr/sbin/riak
+RUN cgexec -g memory:riakGroup /usr/lib/riak/riak-cluster.sh
 
 # Install custom hooks
 COPY script/prestart.d /etc/riak/prestart.d
