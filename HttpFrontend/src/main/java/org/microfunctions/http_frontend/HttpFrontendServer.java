@@ -152,40 +152,12 @@ public class HttpFrontendServer {
 			}
 		}
 
-		/*		
-		if(config.get("server_id").toString().isEmpty()) {
-			try {
-				InetAddress la = InetAddress.getLocalHost();
-				String hostname = la.getHostName();
-				if (hostname.contains(".")) {
-					hostname = hostname.substring(0, hostname.indexOf("."));
-				}
-				config.put("server_id", hostname);
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			}
-		}
-		*/
-
 		HttpFrontendServer.logger.info("Using configuration:");
 		for (String[] param : params) {
 			String key = param[0];
 			HttpFrontendServer.logger.info("\t" + key + " = " + config.get(key).toString());
 		}
 		
-		/*
-		new HttpFrontendServer(
-				config.get("http_host").toString(), 
-				Integer.parseInt(config.get("http_port").toString()), 
-				Integer.parseInt(config.get("http_timeout_ms").toString()),
-				config.get("https_key_store_path").toString(),
-				config.get("https_key_store_password").toString(),
-				config.get("https_key_manager_password").toString(),
-				Integer.parseInt(config.get("https_port").toString()),
-				config.get("mfn_datalayer").toString(),
-				Integer.parseInt(config.get("mfn_datalayer_port").toString())
-			).run();
-		*/
 		new HttpFrontendServer(
 				config.get("http_host").toString(), 
 				Integer.parseInt(config.get("http_port").toString()), 
