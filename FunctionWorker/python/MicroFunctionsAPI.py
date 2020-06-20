@@ -135,7 +135,7 @@ class MicroFunctionsAPI:
 
         Args:
             rgid (string): the running long-running session function instance's id.
-            message (*): the 'message' to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
+            message (*): the message to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
             send_now (boolean): whether the message should be sent immediately or at the end of current function's execution; default: False.
 
         Returns:
@@ -167,8 +167,8 @@ class MicroFunctionsAPI:
         it is not to be confused with the 'alias' that may have been assigned to each long-running, session function instance.
 
         Args:
-            gname (string): the function name (i.e., function name) of the running long-running session function instance(s).
-            message (*): the 'message' to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
+            gname (string): the function name of the running long-running session function instance(s).
+            message (*): the message to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
             send_now (boolean): whether the message should be sent immediately or at the end of current function's execution; default: False.
 
         Returns:
@@ -197,7 +197,7 @@ class MicroFunctionsAPI:
         Send a message to all long-running session function instances in this session.
 
         Args:
-            message (*): the 'message' to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
+            message (*): the message to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
             send_now (boolean): whether the message should be sent immediately or at the end of current function's execution; default: False.
 
         Returns:
@@ -229,7 +229,7 @@ class MicroFunctionsAPI:
 
         Args:
             alias (string): the alias of the running long-running session function instance that is the destination of the message.
-            message (*): the 'message' to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
+            message (*): the message to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
             send_now (boolean): whether the message should be sent immediately or at the end of current function's execution; default: False.
 
         Returns:
@@ -699,7 +699,7 @@ class MicroFunctionsAPI:
 
         Args:
             destination (string): the destination of the message
-            value (*): message to be sent; must be a python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
+            value (*): the message to be sent; must be a python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
 
         Raises:
             MicroFunctionsWorkflowException: when either the destination is not a string or the value is not a python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).

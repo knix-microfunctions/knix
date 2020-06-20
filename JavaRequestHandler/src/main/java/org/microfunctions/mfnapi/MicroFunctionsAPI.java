@@ -218,11 +218,25 @@ public class MicroFunctionsAPI
     
     */
 	
-	public void updateMetadata(String metadataName, String metadataValue)
+	/**
+	 * Update the metadata that can be passed to other function instances and other components (e.g., recovery manager (not yet implemented)).
+	 * 
+	 * @param metadataName the key of the metadata to update
+	 * @param metadataValue the value of the metadata
+	 * 
+	**/
+    public void updateMetadata(String metadataName, String metadataValue)
 	{
 	    this.updateMetadata(metadataName, metadataValue, false);
 	}
 	
+	/**
+	 * Update the metadata that can be passed to other function instances and other components (e.g., recovery manager (not yet implemented)).
+	 * 
+	 * @param metadataName the key of the metadata to update
+	 * @param metadataValue the value of the metadata
+	 * @param isPrivilegedMetadata whether the metadata is privileged belonging to the management service
+	**/
 	public void updateMetadata(String metadataName, String metadataValue, boolean isPrivilegedMetadata)
 	{
 	    try
@@ -235,11 +249,28 @@ public class MicroFunctionsAPI
 	    }
 	}
 	
+	/**
+	 * Send a message to all long-running session function instances in this session.
+	 * 
+	 * @param message the message to be sent.
+	 * 
+	 * <b>Note:</b> The usage of this method is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 */
 	public void sendToAllRunningFunctionsInSession(Object message)
 	{
 	    this.sendToAllRunningFunctionsInSession(message, false);
 	}
 	
+	/**
+	 * Send a message to all long-running session function instances in this session.
+	 * 
+	 * @param message the message to be sent; can be HashMap, ArrayList, String, int, float or null.
+	 * @param sendNow whether the message should be sent immediately or at the end of current function's execution; default: False.
+	 * 
+	 * <b>Note:</b> The usage of this method is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 */
 	public void sendToAllRunningFunctionsInSession(Object message, boolean sendNow)
 	{
         FunctionAPIMessage fam = new FunctionAPIMessage(message);
@@ -253,12 +284,39 @@ public class MicroFunctionsAPI
 	        LOGGER.error("Error in API call (sendToAllRunningFunctionsInSession): " + e);
 	    }
 	}
-	
+
+	/**
+	 * Send a message to all long-running session function instances identified with their function name in this session.
+	 * There can be multiple instances with the same function name, which will all receive the message.
+	 * The function name refers to the function name;
+	 * it is not to be confused with the 'alias' that may have been assigned to each long-running, session function instance.
+	 * 
+	 * @param name the function name of the running long-running session function instance(s).
+	 * @param message the message to be sent.
+	 * 
+	 * <b>Note:</b>
+	 * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 */
 	public void sendToAllRunningFunctionsInSessionWithFunctionName(String name, Object message)
 	{
 	    this.sendToAllRunningFunctionsInSessionWithFunctionName(name, message, false);
 	}
 
+	/**
+	 * Send a message to all long-running session function instances identified with their function name in this session.
+	 * There can be multiple instances with the same function name, which will all receive the message.
+	 * The function name refers to the function name;
+	 * it is not to be confused with the 'alias' that may have been assigned to each long-running, session function instance.
+	 * 
+	 * @param name the function name of the running long-running session function instance(s).
+	 * @param message the message to be sent.
+	 * @param sendNow whether the message should be sent immediately or at the end of current function's execution; default: False.
+	 * 
+	 * <b>Note:</b>
+	 * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 */
 	public void sendToAllRunningFunctionsInSessionWithFunctionName(String name, Object message, boolean sendNow)
 	{
         FunctionAPIMessage fam = new FunctionAPIMessage(message);
@@ -273,11 +331,36 @@ public class MicroFunctionsAPI
 	    }
 	}
 	
+    /**
+     * Send a message to a long-running session function instance identified with its alias in this session.
+     * The alias would have to be assigned before calling this function.
+     * The alias can belong to only a single long-running, session function instance.
+     * 
+     * @param alias the alias of the running long-running session function instance that is the destination of the message.
+     * @param message the message to be sent.
+     * 
+     * <b>Note:</b>
+     * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+     * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+     */
     public void sendToRunningFunctionInSessionWithAlias(String alias, Object message)
     {
         this.sendToRunningFunctionInSessionWithAlias(alias, message, false);
     }
 
+    /**
+     * Send a message to a long-running session function instance identified with its alias in this session.
+     * The alias would have to be assigned before calling this function.
+     * The alias can belong to only a single long-running, session function instance.
+     * 
+     * @param alias the alias of the running long-running session function instance that is the destination of the message.
+     * @param meesage the message to be sent.
+     * @param sendNow whether the message should be sent immediately or at the end of current function's execution.
+     * 
+     * <b>Note:</b>
+     * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+     * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+     */
     public void sendToRunningFunctionInSessionWithAlias(String alias, Object message, boolean sendNow)
     {
         FunctionAPIMessage fam = new FunctionAPIMessage(message);
@@ -292,11 +375,32 @@ public class MicroFunctionsAPI
         }
     }
 
+    /**
+     * Send a message to a long-running session function instance identified with its id in this session.
+     * 
+     * @param sessionFunctionId the running long-running session function instance's id.
+     * @param message the message to be sent
+     * 
+     * <b>Note:</b>
+     * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+     * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+     */
     public void sendToRunningFunctionInSession(String sessionFunctionId, Object message)
 	{
 	    this.sendToRunningFunctionInSession(sessionFunctionId, message, false);
 	}
 	
+    /**
+     * Send a message to a long-running session function instance identified with its id in this session.
+     * 
+     * @param sessionFunctionId the running long-running session function instance's id.
+     * @param message the message to be sent
+     * @param sendNow whether the message should be sent immediately or at the end of current function's execution.
+     * 
+     * <b>Note:</b>
+     * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+     * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+     */
 	public void sendToRunningFunctionInSession(String sessionFunctionId, Object message, boolean sendNow)
 	{
         FunctionAPIMessage fam = new FunctionAPIMessage(message);
@@ -311,6 +415,25 @@ public class MicroFunctionsAPI
 	    }
 	}
 	
+	/**
+	 * Retrieve the list of update messages sent to a session function instance.
+	 * The list contains messages that were sent and delivered since the last time the session function instance has retrieved it.
+	 * These messages are retrieved via a local queue. There can be more than one message.
+	 * The optional count argument specifies how many messages should be retrieved.
+	 * If there are fewer messages than the requested count, all messages will be retrieved and returned.
+	 * 
+	 * @param count the number of messages to retrieve; default: 1
+	 * 
+	 * @return list of messages that were sent to the session function instance.
+	 * 
+	 * <b>Warns:</b>
+	 * When the calling function is not a session function.
+	 * 
+	 * <b>Note:</b>
+	 * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 * 
+	 */
 	public List<String> getSessionUpdateMessages(int count)
 	{
 	    List<String> msglist = null;
