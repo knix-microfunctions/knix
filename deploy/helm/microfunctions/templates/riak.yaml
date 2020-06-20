@@ -89,22 +89,10 @@ spec:
             value: "{{ .Values.riak.ErlangDistributionPortRangeMaximum }}"
           - name: LOG_CONSOLE_LEVEL
             value: "{{ .Values.riak.LogConsoleLevel }}"
-          - name: BITCASK_MERGE_POLICY
-            value: "{{ .Values.riak.BitcaskMergePolicy }}"
-          - name: BITCASK_MERGE_TRIGGERS_FRAGMENTATION
-            value: "{{ .Values.riak.BitcaskMergeTriggersFragmentation }}"
-          - name: BITCASK_MERGE_TRIGGERS_DEAD_BYTES
-            value: "{{ .Values.riak.BitcaskMergeTriggersDeadBytes }}"
-          - name: BITCASK_MERGE_THRESHOLDS_FRAGMENTATION
-            value: "{{ .Values.riak.BitcaskMergeThresholdsFragmentation }}"
-          - name: BITCASK_MERGE_THRESHOLDS_DEAD_BYTES
-            value: "{{ .Values.riak.BitcaskMergeThresholdsDeadBytes }}"
-          - name: BITCASK_MERGE_THRESHOLDS_SMALL_FILE
-            value: "{{ .Values.riak.BitcaskMergeThresholdsSmallFile }}"
-          - name: BITCASK_MERGE_CHECK_INTERVAL
-            value: "{{ .Values.riak.BitcaskMergeCheckInterval }}"
-          - name: BITCASK_MAX_FILE_SIZE
-            value: "{{ .Values.riak.BitcaskMaxFileSize }}"
+          - name: STORAGE_BACKEND
+            value: "{{ .Values.riak.StorageBackend }}"
+          - name: LEVEL_DB_MAXIMUM_MEMORY
+            value: "{{ .Values.riak.LevelDbMaximumMemory }}"
           - name: ANTI_ENTROPY
             value: "{{ .Values.riak.AntiEntropy }}"
           - name: ERLANG_SCHEDULERS_TOTAL

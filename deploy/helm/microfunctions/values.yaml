@@ -99,14 +99,8 @@ riak:
   ErlangDistributionPortRangeMinimum: 6000
   ErlangDistributionPortRangeMaximum: 6999
   LogConsoleLevel: "debug"
-  BitcaskMergePolicy: "always"
-  BitcaskMergeTriggersFragmentation: 60
-  BitcaskMergeTriggersDeadBytes: "128MB"
-  BitcaskMergeThresholdsFragmentation: 40
-  BitcaskMergeThresholdsDeadBytes: "32MB"
-  BitcaskMergeThresholdsSmallFile: "20MB"
-  BitcaskMergeCheckInterval: "10m"
-  BitcaskMaxFileSize: "500MB"
+  StorageBackend: "leveldb"
+  LevelDbMaximumMemory: 4194304
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
   ErlangSchedulersTotal: 4

@@ -229,53 +229,23 @@
       regexp: "^object.size.warning_threshold = "
       line: "object.size.warning_threshold = 100MB"
 
-  - name: configure riak bitcask.merge.policy = always
+  - name: configure riak storage_backend = leveldb
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
-      regexp: "^bitcask.merge.policy = "
-      line: "bitcask.merge.policy = always"
+      regexp: "^storage_backend = "
+      line: "storage_backend = leveldb"
 
-  - name: configure riak bitcask.merge_check_interval = 10m
+  - name: configure riak leveldb.maximum_memory = 4GB
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
-      regexp: "^bitcask.merge_check_interval = "
-      line: "bitcask.merge_check_interval = 10m"
+      regexp: "^leveldb.maximum_memory.percent = "
+      line: "leveldb.maximum_memory = 4194304"
 
-  - name: configure riak bitcask.merge.triggers.fragmentation = 60
+  - name: configure riak leveldb.maximum_memory = 4GB
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
-      regexp: "^bitcask.merge.triggers.fragmentation = "
-      line: "bitcask.merge.triggers.fragmentation = 60"
-
-  - name: configure riak bitcask.merge.triggers.dead_bytes = 128MB
-    lineinfile:
-      path: "{{ riak_server_config_filepath }}"
-      regexp: "^bitcask.merge.triggers.dead_bytes = "
-      line: "bitcask.merge.triggers.dead_bytes = 128MB"
-
-  - name: configure riak bitcask.merge.thresholds.fragmentation = 40
-    lineinfile:
-      path: "{{ riak_server_config_filepath }}"
-      regexp: "^bitcask.merge.thresholds.fragmentation = "
-      line: "bitcask.merge.thresholds.fragmentation = 40"
-
-  - name: configure riak bitcask.merge.thresholds.dead_bytes = 32MB
-    lineinfile:
-      path: "{{ riak_server_config_filepath }}"
-      regexp: "^bitcask.merge.thresholds.dead_bytes = "
-      line: "bitcask.merge.thresholds.dead_bytes = 32MB"
-
-  - name: configure riak bitcask.merge.thresholds.small_file = 20MB
-    lineinfile:
-      path: "{{ riak_server_config_filepath }}"
-      regexp: "^bitcask.merge.thresholds.small_file = "
-      line: "bitcask.merge.thresholds.small_file = 20MB"
-
-  - name: configure riak bitcask.max_file_size = 500MB
-    lineinfile:
-      path: "{{ riak_server_config_filepath }}"
-      regexp: "^bitcask.max_file_size = "
-      line: "bitcask.max_file_size = 500MB"
+      regexp: "^leveldb.maximum_memory = "
+      line: "leveldb.maximum_memory = 4194304"
 
   - name: configure riak anti_entropy = passive
     lineinfile:
