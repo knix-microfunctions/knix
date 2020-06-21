@@ -239,13 +239,13 @@
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
       regexp: "^leveldb.maximum_memory.percent = "
-      line: "leveldb.maximum_memory = 4194304"
+      line: "leveldb.maximum_memory = 4294967296"
 
   - name: configure riak leveldb.maximum_memory = 4GB
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
       regexp: "^leveldb.maximum_memory = "
-      line: "leveldb.maximum_memory = 4194304"
+      line: "leveldb.maximum_memory = 4294967296"
 
   - name: configure riak anti_entropy = passive
     lineinfile:

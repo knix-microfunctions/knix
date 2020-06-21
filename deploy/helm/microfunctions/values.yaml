@@ -100,7 +100,7 @@ riak:
   ErlangDistributionPortRangeMaximum: 6999
   LogConsoleLevel: "debug"
   StorageBackend: "leveldb"
-  LevelDbMaximumMemory: 4194304
+  LevelDbMaximumMemory: 4294967296
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
   ErlangSchedulersTotal: 4
