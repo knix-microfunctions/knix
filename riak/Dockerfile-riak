@@ -53,12 +53,12 @@ RUN echo "riak hard nofile 200000" >> /etc/security/limits.conf
 
 # Enforce memory limit
 RUN echo "riak soft rss 7340032" >> /etc/security/limits.conf
-RUN echo "riak hard rss 7500000" >> /etc/security/limits.conf
+RUN echo "riak hard rss 8388608" >> /etc/security/limits.conf
 RUN echo "riak soft as 7340032" >> /etc/security/limits.conf
-RUN echo "riak hard as 7500000" >> /etc/security/limits.conf
+RUN echo "riak hard as 8388608" >> /etc/security/limits.conf
 
 RUN cgcreate -g memory:riakGroup
-RUN echo 7G > /sys/fs/cgroup/memory/riakGroup/memory.limit_in_bytes
+RUN echo 6G > /sys/fs/cgroup/memory/riakGroup/memory.limit_in_bytes
 RUN echo 1 > /sys/fs/cgroup/memory/riakGroup/memory.oom_control
 
 # Install custom hooks
