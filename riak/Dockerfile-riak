@@ -56,9 +56,6 @@ RUN echo "riak soft as 7340032\nriak hard as 7500000" >>/etc/security/limits.con
 RUN cgcreate -g memory:riakGroup
 RUN echo 7G > /sys/fs/cgroup/memory/riakGroup/memory.limit_in_bytes
 RUN echo 1 > /sys/fs/cgroup/memory/riakGroup/memory.oom_control
-RUN cgexec -g memory:riakGroup /usr/bin/riak
-RUN cgexec -g memory:riakGroup /usr/sbin/riak
-RUN cgexec -g memory:riakGroup /usr/lib/riak/riak-cluster.sh
 
 # Install custom hooks
 COPY script/prestart.d /etc/riak/prestart.d
@@ -77,4 +74,4 @@ WORKDIR /var/lib/riak
 EXPOSE 8087
 EXPOSE 8098
 
-CMD ["/usr/lib/riak/riak-cluster.sh"]
+CMD ["cgexec -g memory:riakGroup /usr/lib/riak/riak-cluster.sh"]
