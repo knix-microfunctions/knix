@@ -15,7 +15,7 @@
 FROM ubuntu:18.04
 
 RUN apt-get update
-RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo cgroup-tools
+RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo
 
 # Download riak package
 RUN mkdir -p /opt/mfn/riak/
@@ -51,11 +51,6 @@ RUN chmod a+x $RIAK_HOME/shutdown.sh
 RUN echo "riak soft nofile 65536" >> /etc/security/limits.conf
 RUN echo "riak hard nofile 200000" >> /etc/security/limits.conf
 
-# Enforce memory limit
-RUN cgcreate -g memory:riakGroup
-RUN echo 6G > /sys/fs/cgroup/memory/riakGroup/memory.limit_in_bytes
-RUN echo 1 > /sys/fs/cgroup/memory/riakGroup/memory.oom_control
-
 # Install custom hooks
 COPY script/prestart.d /etc/riak/prestart.d
 COPY script/poststart.d /etc/riak/poststart.d
@@ -73,4 +68,4 @@ WORKDIR /var/lib/riak
 EXPOSE 8087
 EXPOSE 8098
 
-CMD ["cgexec","-g","memory:riakGroup","/usr/lib/riak/riak-cluster.sh"]
+CMD ["/usr/lib/riak/riak-cluster.sh"]
