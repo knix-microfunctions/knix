@@ -180,7 +180,6 @@
   - name: compile workflow_triggers
     shell: "cd {{ riak_server_dir }}/lib/workflow_triggers; {{ riak_server_dir }}/erts-5.10.3/bin/erlc workflow_triggers.erl"
 
-
   - name: configure riak nodename
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
@@ -235,11 +234,11 @@
       regexp: "^storage_backend = "
       line: "storage_backend = leveldb"
 
-  - name: configure riak leveldb.maximum_memory = 4GB
+  - name: disable riak leveldb.maximum_memory.percent = 70
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
       regexp: "^leveldb.maximum_memory.percent = "
-      line: "leveldb.maximum_memory = 4294967296"
+      line: "#leveldb.maximum_memory = 70"
 
   - name: configure riak leveldb.maximum_memory = 4GB
     lineinfile:
