@@ -25,7 +25,7 @@ define build_image
 			--build-arg https_proxy=$${HTTPS_PROXY:-$${https_proxy:-$(HTTP_PROXY)}} \
 			-f $(1) \
 			-t $(2) .; \
-	    NEWID=$$(docker images $(2) --format '{{.ID}}'|grep -v $OLDID); \
+	    NEWID=$$(docker images $(2) --format '{{.ID}}'|grep -v $$OLDID); \
 	    if [[ "$$OLDID" != "" && "$$OLDID" != "$$NEWID" ]]; then echo "Removing image $$OLDID"; docker rmi $$OLDID; fi; \
 	    break; \
 	  fi; \
