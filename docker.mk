@@ -26,7 +26,7 @@ define build_image
 			-f $(1) \
 			-t $(2) . || exit $$!; \
 	    NEWID=$$(docker images $(2) --format '{{.ID}}'|grep -v "$$OLDID"); \
-	    if [[ "$$OLDID" != "" && "$$OLDID" != "$$NEWID" ]]; then echo "Removing image $$OLDID"; docker rmi $$OLDID; fi; \
+	    if [[ ! -z "$$OLDID" && ! -z "$$NEWID" ]]; then echo "Removing image $$OLDID"; docker rmi $$OLDID; fi; \
 	    break; \
 	  fi; \
 	done; if [ "$$NEWID" == "" ]; then echo "Container image $(2) is already up-to-date"; fi
