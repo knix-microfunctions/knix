@@ -1,0 +1,78 @@
+{
+  "Comment": "An example of the Amazon States Language using a choice state.",
+  "StartAt": "FirstState",
+  "States": {
+    "FirstState": {
+      "Type": "Task",
+      "Resource": "apply_filter",
+      "Next": "ChoiceState"
+    },
+    "LookupCustomerInfo": {
+      "Type": "Parallel",
+      "End" : true,
+      "Branches": [
+        {
+         "StartAt": "LookupAddress",
+         "States": {
+           "LookupAddress": {
+             "Type": "Task",
+             "Resource": "resize",
+             "End": true
+
+           }
+         }
+       },
+       {
+         "StartAt": "LookupPhone",
+         "States": {
+           "LookupPhone": {
+             "Type": "Task",
+             "Resource": "postprocessing",
+             "End": true
+           }
+         }
+       }
+      ]
+    },
+    "ChoiceState": {
+      "Type" : "Choice",
+      "Choices": [
+        {
+          "Variable": "$.foo",
+          "NumericEquals": 1,
+          "Next": "FirstMatchState"
+        },
+        {
+          "Variable": "$.foo",
+          "NumericEquals": 2,
+          "Next": "SecondMatchState"
+        }
+      ],
+      "Default": "DefaultErrorState"
+    },
+
+    "FirstMatchState": {
+      "Type" : "Task",
+      "Resource": "convert",
+      "Next": "LookupCustomerInfo"
+    },
+
+    "SecondMatchState": {
+      "Type" : "Task",
+      "Resource": "none",
+      "Next": "NextState"
+    },
+
+    "DefaultErrorState": {
+      "Type": "Fail",
+      "Error": "DefaultStateError",
+      "Cause": "No Matches!"
+    },
+
+    "NextState": {
+      "Type": "Task",
+      "Resource": "none",
+      "End": true
+    }
+  }
+}

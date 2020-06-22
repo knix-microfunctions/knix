@@ -1,0 +1,30 @@
+{
+  "$id": "http://knix-asl-validator.cloud/state#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "oneOf": [{
+      "$ref": "http://knix-asl-validator.cloud/choice#"
+    },
+    {
+      "$ref": "http://knix-asl-validator.cloud/fail#"
+    },
+    {
+      "$ref": "http://knix-asl-validator.cloud/parallel#"
+    },
+    {
+      "$ref": "http://knix-asl-validator.cloud/map#"
+    },
+    {
+      "$ref": "http://knix-asl-validator.cloud/pass#"
+    },
+    {
+      "$ref": "http://knix-asl-validator.cloud/succeed#"
+    },
+    {
+      "$ref": "http://knix-asl-validator.cloud/task#"
+    },
+    {
+      "$ref": "http://knix-asl-validator.cloud/wait#"
+    }
+  ]
+}

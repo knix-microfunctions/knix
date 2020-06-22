@@ -1,0 +1,50 @@
+{
+  "Comment": "A simple AWS Step Functions state machine that automates a call center support session.",
+  "StartAt": "Open Case:;,\\|^~$#%&Function",
+  "States": {
+    "Assign Case Function": {
+      "Next": "Work On Case Function",
+      "Resource": "AssignCaseFunction",
+      "Type": "Task"
+    },
+    "Close Case Function": {
+      "End": true,
+      "Resource": "CloseCaseFunction",
+      "Type": "Task"
+    },
+    "Escalate Case Function": {
+      "Next": "Fail",
+      "Resource": "EscalateCaseFunction",
+      "Type": "Task"
+    },
+    "Fail": {
+      "Cause": "Engage Tier 2 Support.",
+      "Type": "Fail"
+    },
+    "Is Case Resolved": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Status",
+          "NumericEquals": 1,
+          "Next": "Close Case Function"
+        },
+        {
+          "Variable": "$.Status",
+          "NumericEquals": 0,
+          "Next": "Escalate Case Function"
+        }
+      ]
+    },
+    "Open Case:;,\\|^~$#%&Function": {
+      "Next": "Assign Case Function",
+      "Resource": "OpenCaseFunction",
+      "Type": "Task"
+    },
+    "Work On Case Function": {
+      "Next": "Is Case Resolved",
+      "Resource": "WorkOnCaseFunction",
+      "Type": "Task"
+    }
+  }
+}

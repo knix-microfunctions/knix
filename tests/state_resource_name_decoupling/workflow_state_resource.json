@@ -30,6 +30,6 @@
       "Type": "Task",
       "Resource": "my_function",
       "End": true
-    },
+    }
   }
 }

@@ -8,7 +8,6 @@
             "potentialNext": [
                 "getFunctionEnvironmentVariables",
                 "uploadFunctionEnvironmentVariables",
-                "getWorkflowDetails",
                 "undeployWorkflow",
                 "deployWorkflow",
                 "ManagementServiceExit",
@@ -142,11 +141,6 @@
             "name": "undeployWorkflow",
             "next": [],
             "potentialNext": ["ManagementServiceExit"]
-        },
-        {
-            "name": "getWorkflowDetails",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
         },
         {
             "name": "deleteWorkflow",

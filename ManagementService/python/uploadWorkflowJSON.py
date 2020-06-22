@@ -43,6 +43,11 @@ def handle(value, sapi):
                     workflow["json"] = workflow["json"].replace(" ", "+")
 
                     wf["modified"] = time.time()
+                    if "ASL_type" in workflow:
+                        wf["ASL_type"] = workflow["ASL_type"]
+                    else:
+                        wf["ASL_type"] = "unknown"
+
                     sapi.put(email + "_workflow_" + workflow["id"], json.dumps(wf), True, True)
 
                     #sapi.put(email + "_workflow_json_" + workflow["id"], workflow["json"], True, True)

@@ -1,12 +1,11 @@
 {
-"name": "wf_single_checkpoints_off",
-"entry": "echo",
-"enable_checkpoints": false,
-"functions": [
-	{
-	"name": "echo",
-	"next": ["end"]
-	}
-    ]
+  "StartAt": "echo",
+  "EnableCheckpoints": false,
+  "States": {
+    "echo": {
+      "Type": "Task",
+      "Resource": "echo",
+      "End": true
+    }
+  }
 }
-

@@ -25,12 +25,13 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 
     <https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html>
 
-## Prerequisites: on target machines
+2. Install dependencies required by ansible
 
-Note: The following steps should be handled by the init_once.yaml during the installation process.
-If you find something wrong or missing, please consider opening an issue on [GitHub](https://github.com/knix-microfunctions/knix)
-and/or letting us know in our [Slack workspace](https://knix.slack.com).
-Thank you!
+    ```bash
+    sudo pip install netaddr
+    ```
+
+## Prerequisites: on target machines
 
 1. You can ssh into the target machines/VMs without a password. If not then run (on host machine):
 
@@ -75,6 +76,9 @@ Thank you!
     cd ..
     sudo rm -rf knix
     ```
+
+*Note: If you find something wrong or missing, please consider opening an issue on [GitHub](https://github.com/knix-microfunctions/knix) and/or letting us know in our [Slack workspace](https://knix.slack.com). Thank you!*
+
 
 ## Installation Steps (to be executed on host machine)
 

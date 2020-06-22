@@ -1,5 +1,6 @@
 {
   "StartAt": "TestWorkflowManipulation",
+  "AllowImmediateMessages": true,
   "States": {
     "TestWorkflowManipulation": {
       "Type": "Task",

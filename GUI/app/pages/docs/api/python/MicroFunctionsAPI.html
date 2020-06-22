@@ -1462,7 +1462,7 @@ class MicroFunctionsAPI:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #   }
@@ -1491,7 +1491,7 @@ class MicroFunctionsAPI:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #   }
@@ -1500,45 +1500,6 @@ class MicroFunctionsAPI:
             print(&#34;Unable to add a storage trigger for workflow &#34; + workflowName + &#34;, Triggerable table &#34; + tableName + &#34;, &#34; + str(response))
             return False
         return True
-
-    def getWorkflowDetails(self, workflowName):
-        _nginx = self._nginx
-        _useremail = self._useremail
-        _usertoken = self._usertoken
-        _url = &#34;http://&#34; + _nginx + &#34;/workflow/sandservice/management/ManagementServiceEntry&#34;
-
-        request = \
-        {
-            &#34;action&#34;: &#34;getWorkflowDetails&#34;,
-            &#34;data&#34;: {
-                &#34;user&#34;: {&#34;token&#34;: _usertoken},
-                &#34;workflowname&#34;: workflowName
-            }
-        }
-        r = requests.post(_url, json=request, verify=False)
-        #print(r.text)
-        response = json.loads(r.text)
-        # {
-        #   &#39;status&#39;: &#39;success&#39;, 
-        #   &#39;data&#39;: {
-        #       &#39;email&#39;: &#39;...&#39;,
-        #       &#39;name&#39;: &#39;...&#39;,
-        #       &#39;id&#39;: &#39;...&#39;,
-        #       &#39;status&#39;: &#39;...&#39;,
-        #       &#39;endpoint&#39;: &#39;...&#39;,
-        #       &#39;entry_topic&#39;: &#39;...&#39;,
-        #       &#39;entry_grain&#39;: &#39;...&#39;,
-        #       &#39;modified&#39;: &#39;...&#39;,
-        #       &#39;associatedTriggerableTables&#39;: {
-        #           &#39;&lt;table-name-1&gt;&#39;: &#39;&#39;, 
-        #           &#39;&lt;table-name-2&gt;&#39;: &#39;&#39;, 
-        #           ...
-        #       }
-        #   }
-        # }
-        if response[&#34;status&#34;] != &#39;success&#39;:
-            print(&#34;Unable to fetch details for workflow: &#34; + workflowName + &#34;, error: &#34; + str(response))
-        return response
 
     def deleteTriggerableTable(self, tableName):
         _nginx = self._nginx
@@ -1558,7 +1519,7 @@ class MicroFunctionsAPI:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #   }
@@ -1587,7 +1548,7 @@ class MicroFunctionsAPI:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #   }
@@ -1614,7 +1575,7 @@ class MicroFunctionsAPI:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #       &#39;tables&#39;: {
@@ -1629,38 +1590,7 @@ class MicroFunctionsAPI:
         return response
 
 
-    def invokeManagementAction(self, request):
-        _nginx = self._nginx
-        _useremail = self._useremail
-        _usertoken = self._usertoken
-        _url = &#34;http://&#34; + _nginx + &#34;/workflow/sandservice/management/ManagementServiceEntry&#34;
-
-        # request = \
-        # {
-        #     &#34;action&#34;: &#34;getWorkflowDetails&#34;,
-        #     &#34;data&#34;: {
-        #         &#34;user&#34;: {&#34;token&#34;: &#34;&#34;},
-        #         &#34;&lt;other-stuff&gt;&#34;:
-        #     }
-        # }
-
-
-        if &#34;action&#34; not in request or &#34;data&#34; not in request or &#34;user&#34; not in request[&#34;data&#34;] or &#34;token&#34; not in request[&#34;data&#34;][&#34;user&#34;]:
-            return {&#34;status&#34;: &#34;failure&#34;, &#34;data&#34;: {&#34;message&#34;: &#34;Malformed request&#34;}}
-
-        request[&#34;data&#34;][&#34;user&#34;][&#34;token&#34;] = _usertoken
-        r = requests.post(_url, json=request, verify=False)
-        #print(r.text)
-        response = json.loads(r.text)
-        # {
-        #   &#39;status&#39;: &#39;success&#39;, 
-        #   &#39;data&#39;: {
-        #       &#39;message&#39;: &#39;...&#39;,
-        #   }
-        # }
-        if response[&#34;status&#34;] != &#39;success&#39;:
-            print(&#34;Unable to invoke action: &#34; + request[&#34;action&#34;] + &#34;, error: &#34; + str(response))
-        return response</code></pre>
+</code></pre>
 </details>
 </section>
 <section>
@@ -3111,7 +3041,7 @@ It enables operations related to the following features:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #   }
@@ -3140,7 +3070,7 @@ It enables operations related to the following features:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #   }
@@ -3149,45 +3079,6 @@ It enables operations related to the following features:
             print(&#34;Unable to add a storage trigger for workflow &#34; + workflowName + &#34;, Triggerable table &#34; + tableName + &#34;, &#34; + str(response))
             return False
         return True
-
-    def getWorkflowDetails(self, workflowName):
-        _nginx = self._nginx
-        _useremail = self._useremail
-        _usertoken = self._usertoken
-        _url = &#34;http://&#34; + _nginx + &#34;/workflow/sandservice/management/ManagementServiceEntry&#34;
-
-        request = \
-        {
-            &#34;action&#34;: &#34;getWorkflowDetails&#34;,
-            &#34;data&#34;: {
-                &#34;user&#34;: {&#34;token&#34;: _usertoken},
-                &#34;workflowname&#34;: workflowName
-            }
-        }
-        r = requests.post(_url, json=request, verify=False)
-        #print(r.text)
-        response = json.loads(r.text)
-        # {
-        #   &#39;status&#39;: &#39;success&#39;, 
-        #   &#39;data&#39;: {
-        #       &#39;email&#39;: &#39;...&#39;,
-        #       &#39;name&#39;: &#39;...&#39;,
-        #       &#39;id&#39;: &#39;...&#39;,
-        #       &#39;status&#39;: &#39;...&#39;,
-        #       &#39;endpoint&#39;: &#39;...&#39;,
-        #       &#39;entry_topic&#39;: &#39;...&#39;,
-        #       &#39;entry_grain&#39;: &#39;...&#39;,
-        #       &#39;modified&#39;: &#39;...&#39;,
-        #       &#39;associatedTriggerableTables&#39;: {
-        #           &#39;&lt;table-name-1&gt;&#39;: &#39;&#39;, 
-        #           &#39;&lt;table-name-2&gt;&#39;: &#39;&#39;, 
-        #           ...
-        #       }
-        #   }
-        # }
-        if response[&#34;status&#34;] != &#39;success&#39;:
-            print(&#34;Unable to fetch details for workflow: &#34; + workflowName + &#34;, error: &#34; + str(response))
-        return response
 
     def deleteTriggerableTable(self, tableName):
         _nginx = self._nginx
@@ -3207,7 +3098,7 @@ It enables operations related to the following features:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #   }
@@ -3236,7 +3127,7 @@ It enables operations related to the following features:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #   }
@@ -3263,7 +3154,7 @@ It enables operations related to the following features:
         #print(r.text)
         response = json.loads(r.text)
         # {
-        #   &#39;status&#39;: &#39;success&#39;, 
+        #   &#39;status&#39;: &#39;success&#39;,
         #   &#39;data&#39;: {
         #       &#39;message&#39;: &#39;...&#39;,
         #       &#39;tables&#39;: {
@@ -3277,39 +3168,7 @@ It enables operations related to the following features:
             print(&#34;Unable to fetch details for triggerable tables, error: &#34; + str(response))
         return response
 
-
-    def invokeManagementAction(self, request):
-        _nginx = self._nginx
-        _useremail = self._useremail
-        _usertoken = self._usertoken
-        _url = &#34;http://&#34; + _nginx + &#34;/workflow/sandservice/management/ManagementServiceEntry&#34;
-
-        # request = \
-        # {
-        #     &#34;action&#34;: &#34;getWorkflowDetails&#34;,
-        #     &#34;data&#34;: {
-        #         &#34;user&#34;: {&#34;token&#34;: &#34;&#34;},
-        #         &#34;&lt;other-stuff&gt;&#34;:
-        #     }
-        # }
-
-
-        if &#34;action&#34; not in request or &#34;data&#34; not in request or &#34;user&#34; not in request[&#34;data&#34;] or &#34;token&#34; not in request[&#34;data&#34;][&#34;user&#34;]:
-            return {&#34;status&#34;: &#34;failure&#34;, &#34;data&#34;: {&#34;message&#34;: &#34;Malformed request&#34;}}
-
-        request[&#34;data&#34;][&#34;user&#34;][&#34;token&#34;] = _usertoken
-        r = requests.post(_url, json=request, verify=False)
-        #print(r.text)
-        response = json.loads(r.text)
-        # {
-        #   &#39;status&#39;: &#39;success&#39;, 
-        #   &#39;data&#39;: {
-        #       &#39;message&#39;: &#39;...&#39;,
-        #   }
-        # }
-        if response[&#34;status&#34;] != &#39;success&#39;:
-            print(&#34;Unable to invoke action: &#34; + request[&#34;action&#34;] + &#34;, error: &#34; + str(response))
-        return response</code></pre>
+</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -3395,7 +3254,7 @@ It enables operations related to the following features:
     #print(r.text)
     response = json.loads(r.text)
     # {
-    #   &#39;status&#39;: &#39;success&#39;, 
+    #   &#39;status&#39;: &#39;success&#39;,
     #   &#39;data&#39;: {
     #       &#39;message&#39;: &#39;...&#39;,
     #   }
@@ -3433,7 +3292,7 @@ It enables operations related to the following features:
     #print(r.text)
     response = json.loads(r.text)
     # {
-    #   &#39;status&#39;: &#39;success&#39;, 
+    #   &#39;status&#39;: &#39;success&#39;,
     #   &#39;data&#39;: {
     #       &#39;message&#39;: &#39;...&#39;,
     #   }
@@ -4266,7 +4125,7 @@ If the 'value' field is not used, the 'next' function will be executed with an e
     #print(r.text)
     response = json.loads(r.text)
     # {
-    #   &#39;status&#39;: &#39;success&#39;, 
+    #   &#39;status&#39;: &#39;success&#39;,
     #   &#39;data&#39;: {
     #       &#39;message&#39;: &#39;...&#39;,
     #   }
@@ -4304,7 +4163,7 @@ If the 'value' field is not used, the 'next' function will be executed with an e
     #print(r.text)
     response = json.loads(r.text)
     # {
-    #   &#39;status&#39;: &#39;success&#39;, 
+    #   &#39;status&#39;: &#39;success&#39;,
     #   &#39;data&#39;: {
     #       &#39;message&#39;: &#39;...&#39;,
     #   }
@@ -4698,7 +4557,7 @@ so that the item will be retrieved from the global data layer.</p>
     #print(r.text)
     response = json.loads(r.text)
     # {
-    #   &#39;status&#39;: &#39;success&#39;, 
+    #   &#39;status&#39;: &#39;success&#39;,
     #   &#39;data&#39;: {
     #       &#39;message&#39;: &#39;...&#39;,
     #       &#39;tables&#39;: {
@@ -4710,55 +4569,6 @@ so that the item will be retrieved from the global data layer.</p>
     # }
     if response[&#34;status&#34;] != &#39;success&#39;:
         print(&#34;Unable to fetch details for triggerable tables, error: &#34; + str(response))
-    return response</code></pre>
-</details>
-</dd>
-<dt id="MicroFunctionsAPI.MicroFunctionsAPI.getWorkflowDetails"><code class="name flex">
-<span>def <span class="ident">getWorkflowDetails</span></span>(<span>self, workflowName)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def getWorkflowDetails(self, workflowName):
-    _nginx = self._nginx
-    _useremail = self._useremail
-    _usertoken = self._usertoken
-    _url = &#34;http://&#34; + _nginx + &#34;/workflow/sandservice/management/ManagementServiceEntry&#34;
-
-    request = \
-    {
-        &#34;action&#34;: &#34;getWorkflowDetails&#34;,
-        &#34;data&#34;: {
-            &#34;user&#34;: {&#34;token&#34;: _usertoken},
-            &#34;workflowname&#34;: workflowName
-        }
-    }
-    r = requests.post(_url, json=request, verify=False)
-    #print(r.text)
-    response = json.loads(r.text)
-    # {
-    #   &#39;status&#39;: &#39;success&#39;, 
-    #   &#39;data&#39;: {
-    #       &#39;email&#39;: &#39;...&#39;,
-    #       &#39;name&#39;: &#39;...&#39;,
-    #       &#39;id&#39;: &#39;...&#39;,
-    #       &#39;status&#39;: &#39;...&#39;,
-    #       &#39;endpoint&#39;: &#39;...&#39;,
-    #       &#39;entry_topic&#39;: &#39;...&#39;,
-    #       &#39;entry_grain&#39;: &#39;...&#39;,
-    #       &#39;modified&#39;: &#39;...&#39;,
-    #       &#39;associatedTriggerableTables&#39;: {
-    #           &#39;&lt;table-name-1&gt;&#39;: &#39;&#39;, 
-    #           &#39;&lt;table-name-2&gt;&#39;: &#39;&#39;, 
-    #           ...
-    #       }
-    #   }
-    # }
-    if response[&#34;status&#34;] != &#39;success&#39;:
-        print(&#34;Unable to fetch details for workflow: &#34; + workflowName + &#34;, error: &#34; + str(response))
     return response</code></pre>
 </details>
 </dd>
@@ -5336,49 +5146,6 @@ when the function instance finishes.</p></section>
         errmsg = &#34;MicroFunctionsAPI.incrementCounter(countername, increment) accepts a string as &#39;countername&#39; and an integer as &#39;increment&#39;.&#34;
         errmsg = errmsg + &#34;\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False.&#34;
         raise MicroFunctionsDataLayerException(errmsg)</code></pre>
-</details>
-</dd>
-<dt id="MicroFunctionsAPI.MicroFunctionsAPI.invokeManagementAction"><code class="name flex">
-<span>def <span class="ident">invokeManagementAction</span></span>(<span>self, request)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def invokeManagementAction(self, request):
-    _nginx = self._nginx
-    _useremail = self._useremail
-    _usertoken = self._usertoken
-    _url = &#34;http://&#34; + _nginx + &#34;/workflow/sandservice/management/ManagementServiceEntry&#34;
-
-    # request = \
-    # {
-    #     &#34;action&#34;: &#34;getWorkflowDetails&#34;,
-    #     &#34;data&#34;: {
-    #         &#34;user&#34;: {&#34;token&#34;: &#34;&#34;},
-    #         &#34;&lt;other-stuff&gt;&#34;:
-    #     }
-    # }
-
-
-    if &#34;action&#34; not in request or &#34;data&#34; not in request or &#34;user&#34; not in request[&#34;data&#34;] or &#34;token&#34; not in request[&#34;data&#34;][&#34;user&#34;]:
-        return {&#34;status&#34;: &#34;failure&#34;, &#34;data&#34;: {&#34;message&#34;: &#34;Malformed request&#34;}}
-
-    request[&#34;data&#34;][&#34;user&#34;][&#34;token&#34;] = _usertoken
-    r = requests.post(_url, json=request, verify=False)
-    #print(r.text)
-    response = json.loads(r.text)
-    # {
-    #   &#39;status&#39;: &#39;success&#39;, 
-    #   &#39;data&#39;: {
-    #       &#39;message&#39;: &#39;...&#39;,
-    #   }
-    # }
-    if response[&#34;status&#34;] != &#39;success&#39;:
-        print(&#34;Unable to invoke action: &#34; + request[&#34;action&#34;] + &#34;, error: &#34; + str(response))
-    return response</code></pre>
 </details>
 </dd>
 <dt id="MicroFunctionsAPI.MicroFunctionsAPI.is_still_running"><code class="name flex">
@@ -6355,7 +6122,6 @@ When no session function instance exists with the given session function id.</p>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.getMapNames" href="#MicroFunctionsAPI.MicroFunctionsAPI.getMapNames">getMapNames</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.getSetNames" href="#MicroFunctionsAPI.MicroFunctionsAPI.getSetNames">getSetNames</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.getTriggerableTables" href="#MicroFunctionsAPI.MicroFunctionsAPI.getTriggerableTables">getTriggerableTables</a></code></li>
-<li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.getWorkflowDetails" href="#MicroFunctionsAPI.MicroFunctionsAPI.getWorkflowDetails">getWorkflowDetails</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.get_alias_summary" href="#MicroFunctionsAPI.MicroFunctionsAPI.get_alias_summary">get_alias_summary</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.get_all_session_function_aliases" href="#MicroFunctionsAPI.MicroFunctionsAPI.get_all_session_function_aliases">get_all_session_function_aliases</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.get_all_session_function_ids" href="#MicroFunctionsAPI.MicroFunctionsAPI.get_all_session_function_ids">get_all_session_function_ids</a></code></li>
@@ -6373,7 +6139,6 @@ When no session function instance exists with the given session function id.</p>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.get_session_update_messages" href="#MicroFunctionsAPI.MicroFunctionsAPI.get_session_update_messages">get_session_update_messages</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.get_transient_data_output" href="#MicroFunctionsAPI.MicroFunctionsAPI.get_transient_data_output">get_transient_data_output</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.incrementCounter" href="#MicroFunctionsAPI.MicroFunctionsAPI.incrementCounter">incrementCounter</a></code></li>
-<li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.invokeManagementAction" href="#MicroFunctionsAPI.MicroFunctionsAPI.invokeManagementAction">invokeManagementAction</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.is_still_running" href="#MicroFunctionsAPI.MicroFunctionsAPI.is_still_running">is_still_running</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.log" href="#MicroFunctionsAPI.MicroFunctionsAPI.log">log</a></code></li>
 <li><code><a title="MicroFunctionsAPI.MicroFunctionsAPI.ping" href="#MicroFunctionsAPI.MicroFunctionsAPI.ping">ping</a></code></li>
