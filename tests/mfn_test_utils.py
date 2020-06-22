@@ -378,14 +378,13 @@ class MFNTest():
                     #print("Total time to execute: " + str(t_total) + " (ms)")
 
                 if check_just_keys:
-                     if isinstance(res, dict):
-                         if set(rn.keys()) == set(res.keys()):
-                             current_test_passed = True
-                     elif isinstance(res, str):
-                         if set(rn.keys()) == set(json.loads(res).keys()):
-                             current_test_passed = True
-                     else:
-                         raise Exception("Error: unsupported workflow result type")
+                    if isinstance(res, str):
+                        res = json.loads(res)
+
+                    if set(rn.keys()) == set(res.keys()):
+                         current_test_passed = True
+                    else:
+                        raise Exception("Error: unsupported workflow result type")
 
                 else:
                     if rn == json.loads(res):
