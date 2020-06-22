@@ -17,6 +17,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: "{{ template "elastic.fullname" . }}-esconfig"
+  namespace: {{ .Release.Namespace }}
   labels:
     app: "microfunctions-elasticsearch"
     release: {{ .Release.Name | quote }}
@@ -82,6 +83,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ template "elastic.fullname" . }}-headless
+  namespace: {{ .Release.Namespace }}
   labels:
     app: "microfunctions-elasticsearch"
     release: {{ .Release.Name | quote }}
@@ -101,6 +103,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ template "elastic.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: "microfunctions-elasticsearch"
     release: {{ .Release.Name | quote }}
@@ -120,6 +123,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ template "elastic.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: "microfunctions-elasticsearch"
     release: {{ .Release.Name | quote }}
