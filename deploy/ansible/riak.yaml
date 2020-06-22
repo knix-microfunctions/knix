@@ -238,7 +238,7 @@
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
       regexp: "^leveldb.maximum_memory.percent = "
-      line: "#leveldb.maximum_memory = 70"
+      line: "#leveldb.maximum_memory.percent = 70"
 
   - name: configure riak leveldb.maximum_memory = 4GB
     lineinfile:
