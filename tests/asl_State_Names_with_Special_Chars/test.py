@@ -24,13 +24,13 @@ class CallCenterTest(unittest.TestCase):
 
     """
     def test_cc(self):
-        """ creates and executes the Choice state test with test data """
-        # build pairs of input and expected output values
+        for nn in ["whitespaces", "other_special_chars"]:
+            """ creates and executes the Call Center state test with test data """
 
-        testtuplelist = [('{"inputCaseID": "001"}', '{"Case": "001", "Status": 1, "Message": "Case 001: opened...assigned...closed."}')]
-
-        test = MFNTest(test_name = "CallCenter Test")
-        #test.exec_tests(testtuplelist)
-        test.exec_keys_check(testtuplelist)
-        #print(str(test.exec_only('"a"')))
+            # build pairs of input and expected output values
+            testtuplelist = [('{"inputCaseID": "001"}', '{"Case": "001", "Status": 1, "Message": "Case 001: opened...assigned...closed."}')]
+            # define the test
+            test = MFNTest(test_name="State Names with special chars test", workflow_filename=("workflow_state_name_characters_test_%s.json" % nn))
+            # execute the test
+            test.exec_keys_check(testtuplelist)
 

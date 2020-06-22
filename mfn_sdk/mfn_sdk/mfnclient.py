@@ -443,10 +443,8 @@ class MfnClient(object):
 
             if state_type == 'Map':
                 branch = state['Iterator']
-                print("BRANCH: "+ str(branch))
                 map_state_list = self._get_state_names_and_resource(desired_state_type, branch)
                 state_list = state_list + map_state_list
-                print("STATE_LIST: "+ str(state_list))
 
         return state_list
 
@@ -495,7 +493,6 @@ class MfnClient(object):
                     log.warn("Neither the ZIP file %s nor the source code %s was found for function %s" % (fzipname,fpyname,fname))
 
                 log.info("Adding function: " + fname)
-                print("Adding function: " + fname)
 
                 f = self.add_function(fname)
 
