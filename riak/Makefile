@@ -33,12 +33,5 @@ image: Dockerfile-riak \
 		$(shell find script/ -type f)
 	$(call build_image,Dockerfile-riak,microfn/riak)
 
-oldimage: Dockerfile-riak-old \
-		lib/jiffy.tgz \
-		src/mfn_counter_triggers.erl \
-		src/workflow_triggers.erl \
-		$(shell find script/ -type f)
-	$(call build_image,Dockerfile-riak-old,microfn/riakold)
-
 push: image
 	$(call push_image,microfn/riak)
