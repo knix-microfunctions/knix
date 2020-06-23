@@ -82,6 +82,20 @@
           </execution>
         </executions>
       </plugin>
+       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.1.1</version>
+        <configuration>
+          <doctitle>KNIX MicroFunctions Java API</doctitle>
+          <windowtitle>KNIX MicroFunctions Java API</windowtitle>
+          <notree>true</notree>
+          <sourceFileIncludes>
+              <include>MicroFunctionsAPI.java</include>
+          </sourceFileIncludes>
+          <sourcepath>${basedir}/src/main/java/org/microfunctions/mfnapi</sourcepath>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

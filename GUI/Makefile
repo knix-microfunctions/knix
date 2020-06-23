@@ -14,7 +14,10 @@
 
 SHELL := /bin/bash
 
-default: app/pages/docs/sdk/cli.md app/pages/docs/sdk/sdk.md
+default: app/pages/docs/sdk/cli.md app/pages/docs/sdk/sdk.md app/pages/docs/api/python/MicroFunctionsAPI.html
+
+app/pages/docs/api/python/MicroFunctionsAPI.html:
+	cd ../FunctionWorker; make; cd -;
 
 app/pages/docs/sdk/sdk.md: ../mfn_sdk/README.md
 	cp ../mfn_sdk/README.md app/pages/docs/sdk/sdk.md
@@ -25,9 +28,10 @@ app/pages/docs/sdk/cli.md: ../mfn_cli/README.md
 -include ../proxy.mk
 include ../docker.mk
 
-image: $(shell find ./ -type f|grep -v -e Makefile -e app/pages/docs/sdk/sdk.md -e app/pages/docs/sdk/cli.md) \
+image: $(shell find ./ -type f|grep -v -e Makefile -e app/pages/docs/sdk/sdk.md -e app/pages/docs/sdk/cli.md -e app/pages/docs/api/python/MicroFunctionsAPI.html) \
 	app/pages/docs/sdk/cli.md \
-	app/pages/docs/sdk/sdk.md
+	app/pages/docs/sdk/sdk.md \
+	app/pages/docs/api/python/MicroFunctionsAPI.html
 	$(call build_image,Dockerfile,microfn/nginx)
 
 push: image
