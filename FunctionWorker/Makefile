@@ -1,21 +1,46 @@
-default: mfn_api
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 
-mfn_api:
-	cp -r ../ManagementService/data_layer/ python/
+SHELL := /bin/bash
+-include ../proxy.mk
+include ../docker.mk
+include ../build_env.mk
+UID:=`id -u`
+GID:=`id -g`
+
+default: python_api_doc
+
+thrift_data_layer: ../build_env.mk \
+	../DataLayerService/thrift/DataLayerMessage.thrift \
+	../DataLayerService/thrift/DataLayerService.thrift
+	docker run --user $(UID):$(GID) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
+		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \
+		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift'
+
+python_api_doc: thrift_data_layer
 	docker run --rm -it \
-                --name mfn_api_generation \
-                -e http_proxy=\${http_proxy} \
-                -e https_proxy=\${https_proxy} \
-                -v $(CURDIR):/root/mfn_api \
-                -w /root/mfn_api/python \
+		--name mfnapi_doc_gen \
+		-v $(CURDIR):/opt/mfnapi \
+		-w /opt/mfnapi \
 		python:3.6 \
-                /bin/bash -c 'pip install requests;pip install thrift; pip install pdoc3; pdoc3 --html --output-dir /root/mfn_api/python/doc --force MicroFunctionsAPI.py'
-	sed -i 's/<body>/<body bgcolor="#fff">/g' python/doc/MicroFunctionsAPI.html
-	mkdir -p ../GUI/app/pages/docs/api/python
-	cp python/doc/MicroFunctionsAPI.html ../GUI/app/pages/docs/api/python/
-	rm -rf python/data_layer
+		/bin/bash -c '\
+		pip3 install --upgrade pip; \
+		pip3 install pdoc3; \
+		pip3 install requests; \
+		pip3 install thrift; \
+		pdoc3 --html --output-dir doc --force /opt/mfnapi/python/MicroFunctionsAPI.py'
 
 clean:
-	rm -rf python/data_layer
 	rm -rf python/doc
 

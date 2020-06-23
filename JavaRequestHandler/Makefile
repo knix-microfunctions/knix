@@ -27,7 +27,6 @@ build_thrift:
 
 mfnapi:
 	cd target/classes; jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class; mv mfnapi.jar ../../.; cd ../..
-	mkdir -p ../GUI/app/pages/docs/api/javadoc; cp -r target/site/apidocs/* ../GUI/app/pages/docs/api/javadoc
 
 src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: ../build_env.mk \
 	../FunctionWorker/MicroFunctionsAPI.thrift
@@ -67,12 +66,18 @@ target/javaworker.jar: $(JAVA_SOURCES) \
 	-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
 	maven:3.6.1-jdk-8 \
 	mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e package; 
+
+java_api_doc: $(JAVA_SOURCES) \
+		src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java \
+		target/javaworker.jar \
+		mfnapi \
+		~/.m2/settings-docker.xml
 	docker run --rm -it --name javaworker \
-	--user $(UID):$(GID) \
-	-v ~/.m2:/usr/share/maven/ref \
-	-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
-	maven:3.6.1-jdk-8 \
-	mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e javadoc:javadoc;
+		--user $(UID):$(GID) \
+		-v ~/.m2:/usr/share/maven/ref \
+		-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
+		maven:3.6.1-jdk-8 \
+		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e javadoc:javadoc;
 
 clean:
 	rm -rf target/
