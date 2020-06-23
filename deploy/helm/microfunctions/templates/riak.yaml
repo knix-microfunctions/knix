@@ -105,8 +105,18 @@ spec:
             - /usr/sbin/riak
             - ping
           initialDelaySeconds: 45
-          timeoutSeconds: 30
-          failureThreshold: 10
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          exec:
+            command:
+            - /usr/sbin/riak
+            - ping
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
         resources:
 {{ toYaml .Values.riak.resources | indent 10 }}
         volumeMounts:
