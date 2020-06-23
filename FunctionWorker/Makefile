@@ -29,18 +29,17 @@ thrift_data_layer: ../build_env.mk \
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift'
 
 python_api_doc: thrift_data_layer
-	docker run --rm -it \
+	docker run --user $(UID):$(GID) --rm -it \
 		--name mfnapi_doc_gen \
 		-v $(CURDIR):/opt/mfnapi \
 		-w /opt/mfnapi \
 		python:3.6 \
 		/bin/bash -c '\
-		pip3 install --upgrade pip; \
-		pip3 install pdoc3; \
-		pip3 install requests; \
-		pip3 install thrift; \
-		pdoc3 --html --output-dir doc --force /opt/mfnapi/python/MicroFunctionsAPI.py'
-
+		pip3 install pdoc3 --target /opt/mfnapi/tmppip/pdoc3; \
+		pip3 install requests --target /opt/mfnapi/tmppip/requests; \
+		pip3 install thrift --target /opt/mfnapi/tmppip/thrift; \
+		PYTHONPATH=/opt/mfnapi/tmppip/pdoc3:/opt/mfnapi/tmppip/requests:/opt/mfnapi/tmppip/thrift tmppip/pdoc3/bin/pdoc3 --html --output-dir doc --force /opt/mfnapi/python/MicroFunctionsAPI.py'; \
+		rm -rf tmppip
 clean:
-	rm -rf python/doc
+	rm -rf doc
 
