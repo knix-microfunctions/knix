@@ -354,7 +354,7 @@ public class MicroFunctionsAPI
      * The alias can belong to only a single long-running, session function instance.
      * 
      * @param alias the alias of the running long-running session function instance that is the destination of the message.
-     * @param meesage the message to be sent.
+     * @param message the message to be sent.
      * @param sendNow whether the message should be sent immediately or at the end of current function's execution.
      * 
      * <b>Note:</b>
