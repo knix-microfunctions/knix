@@ -106,7 +106,7 @@ spec:
             - ping
           initialDelaySeconds: 45
           periodSeconds: 10
-          timeoutSeconds: 10
+          timeoutSeconds: 30
           failureThreshold: 3
         livenessProbe:
           exec:
@@ -115,7 +115,7 @@ spec:
             - ping
           initialDelaySeconds: 60
           periodSeconds: 60
-          timeoutSeconds: 10
+          timeoutSeconds: 30
           failureThreshold: 3
         resources:
 {{ toYaml .Values.riak.resources | indent 10 }}
