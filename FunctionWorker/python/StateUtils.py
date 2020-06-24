@@ -522,7 +522,7 @@ class StateUtils:
         sapi.put(workflow_instance_metadata_storage_key, json.dumps(metadata))
 
         #assert py3utils.is_string(workflow_instance_outputkeys_set_key)
-        # sapi.createSet(workflow_instance_outputkeys_set_key) # obsolete statement
+        #sapi.createSet(workflow_instance_outputkeys_set_key) # obsolete statement
 
 
         # Now provide each branch with its own input
@@ -707,6 +707,7 @@ class StateUtils:
         return post_map_output_values, full_metadata
 
     def evaluateParallelState(self, function_input, key, metadata, sapi):
+        print("Hello from evaluateParallelState!")
         name_prefix = self.functiontopic + "_" + key
         total_branch_count = self.parsedfunctionstateinfo["BranchCount"]
         assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
@@ -734,8 +735,11 @@ class StateUtils:
 
         klist = k_list
 
-        counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
+        counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
 
+        counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
+        counter_name_key = key
+ 
         # dynamic values
         branch_out_keys = []
         for i in range(total_branch_count):
@@ -817,8 +821,8 @@ class StateUtils:
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
         sapi.put(workflow_instance_metadata_storage_key, json.dumps(metadata))
 
-        assert py3utils.is_string(workflow_instance_outputkeys_set_key)
-        sapi.createSet(workflow_instance_outputkeys_set_key)
+        #assert py3utils.is_string(workflow_instance_outputkeys_set_key)
+        #sapi.createSet(workflow_instance_outputkeys_set_key)
 
         branches = self.parsedfunctionstateinfo["Branches"]
         for branch in branches:
