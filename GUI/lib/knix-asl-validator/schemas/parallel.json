@@ -30,7 +30,7 @@
        "items": {
         "type":"integer"}
     },
-    "Branches": {
+     "Branches": {
       "type": "array",
       "items": {
         "types": {

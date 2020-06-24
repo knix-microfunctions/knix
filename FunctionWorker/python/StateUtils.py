@@ -464,6 +464,7 @@ class StateUtils:
         counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
 
         CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
+
         # prepare mapInfo metadata 
         workflow_instance_outputkeys_set_key = key +"_"+ self.functionstatename + "_outputkeys_set"
         mapInfo = {}
@@ -480,20 +481,6 @@ class StateUtils:
         mapInfo_key = self.functionstatename + "_" + key  + "_map_info"
 
         metadata[mapInfo_key] = mapInfo
-
-        self._logger.debug("[StateUtils] evaluateMapState: ")
-        self._logger.debug("\t CounterName:" + CounterName)
-        self._logger.debug("\t counter_name_topic:" + counter_name_topic)
-        self._logger.debug("\t counter_name_key: " + counter_name_key)
-        self._logger.debug("\t counter_name_trigger_metadata:" + json.dumps(counter_name_trigger_metadata))
-        self._logger.debug("\t counter_name_value_metadata:" + json.dumps(counter_name_value_metadata))
-        self._logger.debug("\t counter_name_value_encoded: " + json.dumps(counter_name_value))
-        self._logger.debug("\t mapInfo_key:" + mapInfo_key)
-        #self._logger.debug("\t mapInfo:" + json.dumps(mapInfo))
-        self._logger.debug("\t workflow_instance_metadata_storage_key: " + workflow_instance_metadata_storage_key)
-        #self._logger.debug("\t metadata " + json.dumps(metadata))
-        self._logger.debug("\t total_branch_count:" + str(total_branch_count))
-        self._logger.debug("\t branch_out_keys:" + ",".join(branch_out_keys))
 
         # create counter for Map equivalent Parallel state
         assert py3utils.is_string(CounterName)
@@ -515,24 +502,16 @@ class StateUtils:
         finally:
             dlc.shutdown()
 
-
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
         self._logger.debug("[StateUtils] full_metadata_encoded put key: " + str(workflow_instance_metadata_storage_key))
 
         sapi.put(workflow_instance_metadata_storage_key, json.dumps(metadata))
 
-        #assert py3utils.is_string(workflow_instance_outputkeys_set_key)
-        #sapi.createSet(workflow_instance_outputkeys_set_key) # obsolete statement
-
-
         # Now provide each branch with its own input
 
-        #branches = self.parsedfunctionstateinfo["Branches"]
         branch = self.parsedfunctionstateinfo["Iterator"] # this is just onee set
-        #for branch in branches:
-        # lauch a branch for each input element
+        # launch a branch for each input element
         startat = str(branch["StartAt"])
-
 
         for i in range(len(function_input)):
             sapi.add_dynamic_next(startat, function_input[i]) # Alias for add_workflow_next(self, next, value)
@@ -707,12 +686,9 @@ class StateUtils:
         return post_map_output_values, full_metadata
 
     def evaluateParallelState(self, function_input, key, metadata, sapi):
-        print("Hello from evaluateParallelState!")
         name_prefix = self.functiontopic + "_" + key
         total_branch_count = self.parsedfunctionstateinfo["BranchCount"]
         assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
-
-        #klist = [total_branch_count]
 
         k_list = []
         if "WaitForNumBranches" in self.parsedfunctionstateinfo:
@@ -731,12 +707,9 @@ class StateUtils:
         else:
             k_list.append(total_branch_count)
 
-        self._logger.info("k_list: " + str(k_list)) 
-
         klist = k_list
 
         counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
-
         counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
         counter_name_key = key
  
@@ -759,17 +732,12 @@ class StateUtils:
         counter_metadata["FunctionTopic"] = self.functiontopic
         counter_metadata["Endpoint"] = self._internal_endpoint
 
-        #counter_metadata["Klist"] = [2]
-
-
         # prepare counter name value metadata
         counter_name_value_metadata = copy.deepcopy(metadata)
         counter_name_value_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
         counter_name_value_metadata["CounterValue"] = 0 # this should be updated by riak hook
         counter_name_value_metadata["__state_action"] = "post_parallel_processing"
         counter_name_value_metadata["state_counter"] = metadata["state_counter"]
-        #self._logger.debug("[StateUtils] evaluateParallelState, metadata[state_counter]: " + str(metadata["state_counter"]))
-        #self.parallelStateCounter = int(metadata["state_counter"])
 
         counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
 
@@ -780,7 +748,6 @@ class StateUtils:
         workflow_instance_outputkeys_set_key = name_prefix + "_outputkeys_set"
 
         # prepare parallelInfo metadata
-         
         parallelInfo = {}
         parallelInfo["CounterName"] = CounterName
         parallelInfo["BranchOutputKeys"] = branch_out_keys
@@ -794,21 +761,12 @@ class StateUtils:
         parallelInfo_key = self.functionstatename + "_" + key + "_parallel_info"
         metadata[parallelInfo_key] = parallelInfo
 
-        #self._logger.debug("[StateUtils] evaluateParallelState: ")
-        #self._logger.debug("\t CounterName:" + CounterName)
-        #self._logger.debug("\t CounterMetadata: " + json.dumps(counter_metadata))
-        #self._logger.debug("\t parallelInfo_key:" + parallelInfo_key)
-        #self._logger.debug("\t parallelInfo:" + json.dumps(parallelInfo))
-        #self._logger.debug("\t total_branch_count:" + str(total_branch_count))
-        #self._logger.debug("\t branch_out_keys:" + ",".join(branch_out_keys))
-
         assert py3utils.is_string(CounterName)
         try:
             dlc = DataLayerClient(locality=1, suid=self._storage_userid, is_wf_private=False, connect=self._datalayer)
 
             # create a triggerable counter to start the post-parallel when parallel state finishes
             dlc.createCounter(CounterName, 0, tableName=dlc.countertriggerstable)
-
             dlc.put(counter_metadata_key_name, json.dumps(counter_metadata), tableName=dlc.countertriggersinfotable)
 
         except Exception as exc:
@@ -821,15 +779,10 @@ class StateUtils:
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
         sapi.put(workflow_instance_metadata_storage_key, json.dumps(metadata))
 
-        #assert py3utils.is_string(workflow_instance_outputkeys_set_key)
-        #sapi.createSet(workflow_instance_outputkeys_set_key)
-
         branches = self.parsedfunctionstateinfo["Branches"]
         for branch in branches:
             startat = str(branch["StartAt"])
             sapi.add_dynamic_next(startat, function_input)
-            #self._logger.debug("\t Branch StartAt:" + startat)
-            #self._logger.debug("\t Branch input:" + str(function_input))
 
         return function_input, metadata
 
