@@ -10,7 +10,7 @@
         "LaunchParallel": {
             "Type": "Parallel",
             "Next": "LambdaAfter",
-            "WaitForNumBranches": [2,3],
+            "WaitForNumBranches": [2],
             "Branches": [
                 {
                     "StartAt": "Branch1Entry",

@@ -413,7 +413,6 @@ class StateUtils:
             mapParameters = {}
 
         self._logger.debug("[StateUtils] evaluateMapState, maxConcurrency: " + str(maxConcurrency))
-
         self._logger.debug("[StateUtils] evaluateMapState metadata: " + str(metadata))
 
         counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
@@ -425,7 +424,7 @@ class StateUtils:
         self.parsedfunctionstateinfo["BranchCount"] = int(total_branch_count) # overwrite parsed BranchCount with new value
         self._logger.debug("[StateUtils] evaluateMapState, total_branch_count: " + str(total_branch_count))
 
-        # translated from Parallel
+        # prepare counter metadata
         counter_metadata = {}
         counter_metadata["__state_action"] = "post_map_processing"
         counter_metadata["__async_execution"] = metadata["__async_execution"]
@@ -440,7 +439,7 @@ class StateUtils:
 
         iterator = self.parsedfunctionstateinfo["Iterator"]
 
-        #assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
+        assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
 
         k_list = [total_branch_count]
 
@@ -453,6 +452,7 @@ class StateUtils:
             branch_out_key = key + "-branch-" + str(i+1)
             branch_out_keys.append(branch_out_key)
 
+        # prepare counter name value metadata
         counter_name_value_metadata = copy.deepcopy(metadata)
         counter_name_value_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
         counter_name_value_metadata["CounterValue"] = 0 # this should be updated by riak hook
@@ -464,7 +464,7 @@ class StateUtils:
         counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
 
         CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
-
+        # prepare mapInfo metadata 
         workflow_instance_outputkeys_set_key = key +"_"+ self.functionstatename + "_outputkeys_set"
         mapInfo = {}
         mapInfo["CounterTopicName"] = counter_name_topic
@@ -711,7 +711,30 @@ class StateUtils:
         total_branch_count = self.parsedfunctionstateinfo["BranchCount"]
         assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
 
-        klist = [total_branch_count]
+        #klist = [total_branch_count]
+
+        k_list = []
+        if "WaitForNumBranches" in self.parsedfunctionstateinfo:
+            k_list = self.parsedfunctionstateinfo["WaitForNumBranches"]
+            if not isinstance(k_list, list):
+                self._logger.info("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
+                raise Exception("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
+            k_list.sort()
+            for k in k_list:
+                if not isinstance(k, int):
+                    self._logger.info("(StateUtils) Values inside WaitForNumBranches must be integers")
+                    raise Exception("(StateUtils) Values inside WaitForNumBranches must be integers")
+                if k > total_branch_count:
+                    self._logger.info("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
+                    raise Exception("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
+        else:
+            k_list.append(total_branch_count)
+
+        self._logger.info("k_list: " + str(k_list)) 
+
+        klist = k_list
+
+        counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
 
         # dynamic values
         branch_out_keys = []
@@ -719,6 +742,7 @@ class StateUtils:
             branch_out_key = name_prefix + "_branch_" + str(i+1)
             branch_out_keys.append(branch_out_key)
 
+        # prepare counter metadata
         counter_metadata = {}
         counter_metadata["__state_action"] = "post_parallel_processing"
         counter_metadata["__async_execution"] = metadata["__async_execution"]
@@ -731,10 +755,28 @@ class StateUtils:
         counter_metadata["FunctionTopic"] = self.functiontopic
         counter_metadata["Endpoint"] = self._internal_endpoint
 
-        CounterName = name_prefix + "_counter"
+        #counter_metadata["Klist"] = [2]
+
+
+        # prepare counter name value metadata
+        counter_name_value_metadata = copy.deepcopy(metadata)
+        counter_name_value_metadata["WorkflowInstanceMetadataStorageKey"] = workflow_instance_metadata_storage_key
+        counter_name_value_metadata["CounterValue"] = 0 # this should be updated by riak hook
+        counter_name_value_metadata["__state_action"] = "post_parallel_processing"
+        counter_name_value_metadata["state_counter"] = metadata["state_counter"]
+        #self._logger.debug("[StateUtils] evaluateParallelState, metadata[state_counter]: " + str(metadata["state_counter"]))
+        #self.parallelStateCounter = int(metadata["state_counter"])
+
+        counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
+
+        CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
+ 
+        #CounterName = name_prefix + "_counter"
         counter_metadata_key_name = CounterName + "_metadata"
         workflow_instance_outputkeys_set_key = name_prefix + "_outputkeys_set"
 
+        # prepare parallelInfo metadata
+         
         parallelInfo = {}
         parallelInfo["CounterName"] = CounterName
         parallelInfo["BranchOutputKeys"] = branch_out_keys
@@ -983,7 +1025,7 @@ class StateUtils:
         for outputkey in parallelInfo["BranchOutputKeys"]:
             outputkey = str(outputkey)
             if outputkey in branchOutputKeysSet:
-                #self._logger.debug("\t BranchOutputKey:" + outputkey)
+                self._logger.debug("\t BranchOutputKey:" + outputkey)
                 while sapi.get(outputkey) == "":
                     time.sleep(0.1) # wait until value is available
 

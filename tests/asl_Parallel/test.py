@@ -25,9 +25,9 @@ class ParallelTest(unittest.TestCase):
     """ Parallel state test
 
     """
-
+    """
     def test_parallel(self):
-        """ creates and executes the parallel workflow from the ASL description """
+        "" creates and executes the parallel workflow from the ASL description ""
         testtuplelist = []
 
         event = [10, 20]
@@ -47,7 +47,7 @@ class ParallelTest(unittest.TestCase):
 
         test = MFNTest(test_name="Parallel", workflow_filename="workflow_parallel_state_test.json")
         test.exec_tests(testtuplelist)
-
+        """
     def test_parallel_waitfornumbranches(self):
         """ creates and executes the parallel workflow from the ASL description containing waitfornumbranches"""
         testtuplelist = []

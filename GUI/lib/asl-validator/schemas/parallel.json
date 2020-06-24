@@ -25,6 +25,11 @@
     "ResultPath": {
       "type": ["string", "null"]
     },
+    "WaitForNumBranches": {
+      "type": "array",
+       "items": {
+        "type":"integer"}
+    },
     "Branches": {
       "type": "array",
       "items": {
