@@ -36,8 +36,10 @@ class Execution(object):
         self.url=url
 
     def get(self, timeout=60):
+        newHeaders = {'Content-type': 'application/json'}
         try:
             r = self.client._s.post(self.url,
+                headers=newHeaders,
                 timeout=timeout)
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
             raise Exception("Retrieving result of workflow '"+self.name+"' from URL '"+self.url+"' failed due to "+type(e).__name__).with_traceback(sys.exc_info()[2])
@@ -222,7 +224,7 @@ class Workflow(object):
         """ execute a workflow asynchronously and returns an Execution object
 
         The function delivers an event to the frontend and returns an Execution object. Note that the timeout here applies to the delivery of the event, another timeout can be used when fetching the result with the Execution.get(timeout) method
-        see Execution.get()
+        see Executio execute_async execute_asyncn.get()
 
         :param data: the event dictionary passed to the workflow
         :type data: dict()
@@ -248,8 +250,10 @@ class Workflow(object):
                 timeout=timeout)
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
             raise Exception("Asynchronous execution of workflow '"+self.name+"' at URL '"+url+"' failed due to "+type(e).__name__)
+
         r.raise_for_status()
-        return Execution(self.client, self.client.host+r.headers['Location'])
+        return Execution(self.client, url)
+        #return Execution(self.client, host+r.headers['Location'])
 
     def execute(self,data,timeout=60, check_duration=False):
         """ execute a workflow synchronously

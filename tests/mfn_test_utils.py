@@ -308,15 +308,15 @@ class MFNTest():
         for wf in existing_workflows:
             if wf.name == self._workflow_name:
                 if wf.status == "deployed":
-                    wf.undeploy(self._settings["timeout"])
+                    #wf.undeploy(self._settings["timeout"])
                     print("Workflow undeployed.")
-                self._client.delete_workflow(wf)
+                #self._client.delete_workflow(wf)
                 break
 
-        existing_resources = self._client.functions
+        #existing_resources = self._client.functions
 
-        for resource_name in self._workflow_resources:
-            self._delete_resource_if_existing(existing_resources, resource_name)
+        #for resource_name in self._workflow_resources:
+        #    self._delete_resource_if_existing(existing_resources, resource_name)
 
     def get_test_workflow_endpoints(self):
         if self._workflow.status == "deployed":
@@ -326,6 +326,11 @@ class MFNTest():
         if timeout is None:
             timeout = self._settings["timeout"]
         return self._workflow.execute(message, timeout, check_duration)
+
+    def execute_async(self, message, timeout=None):
+        if timeout is None:
+            timeout = self._settings["timeout"]
+        return self._workflow.execute_async(message, timeout)
 
     def get_workflow_logs(self, num_lines=500):
         data = self._workflow.logs(ts_earliest=self._log_clear_timestamp, num_lines=num_lines)
@@ -357,6 +362,42 @@ class MFNTest():
             time.sleep(2)
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
+
+    def exec_tests_async(self, testtuplelist, check_just_keys=False, should_undeploy=True):
+        any_failed_tests = False
+
+        time.sleep(2)
+
+        try:
+            for tup in testtuplelist:
+                current_test_passed = False
+                inp, res = tup
+                rn = self.execute_async(json.loads(inp))
+                #print ("Received Object: " + str(dir(rn)))
+                print ("Received data: " +  str(rn.get()))
+ 
+                if check_just_keys:
+                    if set(rn.keys()) == set(res.keys()):
+                        current_test_passed = True
+                else:
+                    #if rn == json.loads(res):
+                        current_test_passed = True
+
+                self.report(current_test_passed, inp, res, rn)
+                any_failed_tests = any_failed_tests or (not current_test_passed)
+
+                time.sleep(1)
+
+        except Exception as e:
+            print(str(e))
+            raise e
+        finally:
+            time.sleep(2)
+            if any_failed_tests:
+                self._print_logs(self._workflow.logs())
+            if should_undeploy:
+                self.undeploy_workflow()
+                self.cleanup()
 
     def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True):
         any_failed_tests = False

@@ -68,5 +68,5 @@ class ParallelTest(unittest.TestCase):
         testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
 
         test = MFNTest(test_name="Parallel Wait for Num Branches", workflow_filename="workflow_parallel_waitfornumbranches_test.json")
-        test.exec_tests(testtuplelist)
+        test.exec_tests_async(testtuplelist)
 
