@@ -16,10 +16,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: store-{{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: microfunctions-store
     release: {{ .Release.Name | quote }}
 spec:
+  clusterIP: None
   ports:
   - name: http
     port: 80
@@ -32,6 +34,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: store-{{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: microfunctions-store
     release: {{ .Release.Name | quote }}

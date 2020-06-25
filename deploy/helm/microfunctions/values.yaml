@@ -126,6 +126,22 @@ elastic:
       memory: 2Gi
 
 #------------------------------------------------------------------------------
+# Ingress
+#------------------------------------------------------------------------------
+ingress:
+  host: example.com
+  # Knative Serving creates an FQDN for the management kservice "wf-{{ .Release.Name }}-management".
+  # In most installations, it would be {ksvc}.{namespace}.example.com
+  # Please use --set ingress.managementService to specify the FQDN that the service will get from your Knative setup
+  # _helpers.tpl would default it to wf-mfn1-management.knix.example.com
+  #managementService: wf-mfn1-management.knix.example.com
+  # If httpsCert is defined, the Base64 encoded certificate and key are required to configure k8s ingress
+  #httpsCert: <base64-encoded cert>
+  #httpsKey: <base64-encoded key>
+  # All paths (/management, /storage) will be relative to the base path (default: /)
+  base: /
+
+#------------------------------------------------------------------------------
 # Nginx with MicroFunctions web GUI and Storage API
 #------------------------------------------------------------------------------
 nginx:
@@ -142,11 +158,6 @@ nginx:
   imageTag: "latest"
   httpPort: 32180
   location: "/"
-# If httpsPort is defined, the Base64 encoded certificate authority, certificate and key are required to serve securely from the Pod
-#  httpsPort: 32443
-#  httpsCa: <base64-encoded certificate authority cert>
-#  httpsCert: <base64-encoded cert>
-#  httpsKey: <base64-encoded key>
   imagePullPolicy: "Always"
   resources:
     limits:

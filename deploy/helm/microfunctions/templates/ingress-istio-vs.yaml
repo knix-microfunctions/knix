@@ -18,7 +18,7 @@ metadata:
   name: frontend
 spec:
   hosts:
-  - mfn.dyn.nesc.nokia.net
+  - {{ .Values.ingress.host }}
   gateways:
   - knative-ingress-gateway.knative-serving.svc.cluster.local
   http:
@@ -28,7 +28,7 @@ spec:
     rewrite:
       # Rewrite the original host header to the host header of Search service
       # in order to redirect requests to Search service.
-      authority: wf-{{ .Release.Name }}-management.mfn.dyn.nesc.nokia.net
+      authority: wf-{{ .Release.Name }}-management.svc.cluster.local
     route:
       - destination:
           host: istio-ingressgateway.istio-system.svc.cluster.local

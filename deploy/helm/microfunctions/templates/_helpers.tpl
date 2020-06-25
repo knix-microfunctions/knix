@@ -48,8 +48,12 @@
 {{- printf "nx-%s" .Release.Name | trunc 40 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "nginx.mgmtService" -}}
-{{- default (printf "wf-%s-management.%s.example.com" .Release.Name .Release.Namespace) .Values.nginx.managementService -}}
+{{- define "ingress.mgmtService" -}}
+{{- if (.Values.ingress.domain) -}}
+{{- printf "wf-%s-management.%s" .Release.Name .Values.ingress.domain -}}
+{{- else -}}
+{{- printf "wf-%s-management.%s.svc.cluster.local" .Release.Name .Release.Namespace -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "nxConnect.url" }}
