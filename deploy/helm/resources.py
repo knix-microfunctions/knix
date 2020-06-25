@@ -73,8 +73,7 @@ comp = [
         "name": "Nginx",
         "num": values["nginx"]["Replicas"],
         "container": {
-            "server": values["nginx"]["resources"],
-            "frontend": values["nginx"]["frontendResources"],
+            "server": values["nginx"]["resources"]
         },
         "storage": {}
     }]

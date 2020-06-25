@@ -136,8 +136,6 @@ nginx:
   # Please use --set nginx.managementService to specify the FQDN that the service will get from your Knative setup
   # _helpers.tpl would default it to wf-mfn1-management.knix.example.com
   #managementService: wf-mfn1-management.knix.example.com
-  frontendImagePath: "/microfn/frontend"
-  frontendImageTag: "latest"
   imagePath: "/microfn/nginx"
   imageTag: "latest"
   httpPort: 32180
@@ -149,13 +147,6 @@ nginx:
 #  httpsKey: <base64-encoded key>
   imagePullPolicy: "Always"
   resources:
-    limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 100m
-      memory: 1Gi
-  frontendResources:
     limits:
       cpu: 500m
       memory: 1Gi

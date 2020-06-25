@@ -45,7 +45,6 @@ Our helm chart by default installs container images from a [private registry](ht
 [user@vm knix]# make -C ManagementService push
 [user@vm knix]# make -C DataLayerService push
 [user@vm knix]# make -C riak push
-[user@vm knix]# make -C HttpFrontend push
 [user@vm knix]# make -C GUI push
 ```
 
