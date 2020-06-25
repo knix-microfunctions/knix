@@ -25,7 +25,7 @@ class ParallelTest(unittest.TestCase):
     """ Parallel state test
 
     """
-    
+
     def test_parallel(self):
         """ creates and executes the parallel workflow from the ASL description """
         testtuplelist = []

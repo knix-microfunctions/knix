@@ -909,11 +909,6 @@ class StateUtils:
                 raise Exception("processBranchTerminalState Unable to find MapInfo")
 
     def evaluatePostParallel(self, function_input, key, metadata, sapi):
-        #self._logger.debug("[StateUtils] evaluatePostParallel: ")
-        #self._logger.debug("\t key:" + key)
-        #self._logger.debug("\t metadata:" + json.dumps(metadata))
-        #self._logger.debug("\t function_input: " + str(function_input))
-
         action = metadata["__state_action"]
         assert action == "post_parallel_processing"
         counterValue = function_input["CounterValue"]
@@ -921,7 +916,6 @@ class StateUtils:
         workflow_instance_metadata_storage_key = str(function_input["WorkflowInstanceMetadataStorageKey"])
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
         full_metadata_encoded = sapi.get(workflow_instance_metadata_storage_key)
-        # self._logger.debug("[StateUtils] full_metadata_encoded: " + str(full_metadata_encoded))
 
         full_metadata = json.loads(full_metadata_encoded)
 
@@ -935,24 +929,10 @@ class StateUtils:
             raise Exception("[StateUtils] branchOutputKeysSet is empty")
 
         k_list = parallelInfo["Klist"]
-
-        #self._logger.debug("\t action: " + action)
-        #self._logger.debug("\t counterValue:" + str(counterValue))
-        #self._logger.debug("\t WorkflowInstanceMetadataStorageKey:" + metadata["WorkflowInstanceMetadataStorageKey"])
-        #self._logger.debug("\t full_metadata:" + full_metadata_encoded)
-        #self._logger.debug("\t parallelInfoKey:" + parallelInfoKey)
-        #self._logger.debug("\t parallelInfo:" + json.dumps(parallelInfo))
-        #self._logger.debug("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
-        #self._logger.debug("\t branchOutputKeysSet:" + str(branchOutputKeysSet))
-        #self._logger.debug("\t k_list:" + str(k_list))
-
         NumBranchesFinished = abs(counterValue)
-        #self._logger.debug("\t NumBranchesFinished:" + str(NumBranchesFinished))
         do_cleanup = False
         if k_list[-1] == NumBranchesFinished:
             do_cleanup = True
-
-        #self._logger.debug("\t do_cleanup:" + str(do_cleanup))
 
         counterName = str(parallelInfo["CounterName"])
         assert py3utils.is_string(counterName)
@@ -973,49 +953,34 @@ class StateUtils:
                 raise
             finally:
                 dlc.shutdown()
-
-            #self._logger.debug("\t deleted Counter: " + counterName)
             sapi.delete(workflow_instance_metadata_storage_key)
 
         post_parallel_output_values = []
-        #self._logger.debug("\t parallelInfo_BranchOutputKeys:" + str(parallelInfo["BranchOutputKeys"]))
         for outputkey in parallelInfo["BranchOutputKeys"]:
             outputkey = str(outputkey)
             if outputkey in branchOutputKeysSet:
-                self._logger.debug("\t BranchOutputKey:" + outputkey)
                 while sapi.get(outputkey) == "":
                     time.sleep(0.1) # wait until value is available
 
                 branchOutput = sapi.get(outputkey)
                 branchOutput_decoded = json.loads(branchOutput)
-                #self._logger.debug("\t branchOutput(type):" + str(type(branchOutput)))
-                #self._logger.debug("\t branchOutput:" + branchOutput)
-                #self._logger.debug("\t branchOutput_decoded(type):" + str(type(branchOutput_decoded)))
-                #self._logger.debug("\t branchOutput_decoded:" + str(branchOutput_decoded))
                 post_parallel_output_values = post_parallel_output_values + [branchOutput_decoded]
                 if do_cleanup:
                     sapi.delete(outputkey) # cleanup the key from data layer
-                    #self._logger.debug("\t cleaned output key:" + outputkey)
             else:
                 post_parallel_output_values = post_parallel_output_values + [None]
 
-        #self._logger.debug("\t post_parallel_output_values:" + str(post_parallel_output_values))
         if do_cleanup:
             sapi.deleteSet(branchOutputKeysSetKey)
 
         if "Next" in self.parsedfunctionstateinfo:
-            #self._logger.debug("\t add_dynamic_next:" + self.parsedfunctionstateinfo["Next"])
             sapi.add_dynamic_next(self.parsedfunctionstateinfo["Next"], post_parallel_output_values)
-
-        #ToDo: need to check if Parallel state itself is terminal state
 
         if "End" in self.parsedfunctionstateinfo:
             if self.parsedfunctionstateinfo["End"]:
-            #self._logger.debug("\t add_dynamic_next:" + self.parsedfunctionstateinfo["Next"])
                 sapi.add_dynamic_next("end", post_parallel_output_values)
 
         return function_input, full_metadata
-
 
     def evaluateNonTaskState(self, function_input, key, metadata, sapi):
         # 3. Evaluate Non Task states
