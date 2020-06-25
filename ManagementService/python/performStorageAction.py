@@ -28,7 +28,7 @@ def handle(value, sapi):
         '''
         {
             "action": "performStorageAction", 
-            "data": { 
+            "data": {                          <this is what is contained in 'data' variable of this function>
                 "user": { "token" : token },   <must come as part of user request>
                 "storage": {...}               <must come as part of user request> (see handleStorageAction) 
                 "email": "...",                <added automatically by management service entry>
@@ -49,7 +49,7 @@ def handle(value, sapi):
 
     except Exception as e:
         success = False
-        message = "Error while performing storage operation; "+str(e)
+        message = "Exception: " + str(e)
 
     if dlc != None:
         dlc.shutdown()
@@ -60,18 +60,18 @@ def handle(value, sapi):
         response["data"] = response_data
     else:
         response["status"] = "failure"
-        response_data["message"] = "Error while performing storage operation; "+str(e)
+        response_data["message"] = "Error while performing storage operation; " + message
         response["data"] = response_data
-        print(str(response))
+        print("[StorageAction] Error: " + str(response_data))
 
     '''
     {
-        "status": "success" or "failure",
+        "status": "success" or "failure",    <always included in response>
         "data": {
-            "message": "...",
-            "status": True or False  <boolean>
-            "value": ""  <incase of getdata request>
-            "keylist": []  <incase of listkeys request>
+            "message": "...",    <always included in response>
+            "status": True or False  <boolean, always included in reponse> 
+            "value": "..."  <string, incase of getdata request>
+            "keylist": []  <list, incase of listkeys request>
         }
     }
     '''
@@ -80,10 +80,10 @@ def handle(value, sapi):
 def handleStorageAction(storage, dlc):
     '''
     "storage": {
-        "action": "getdata",  OR  "deletedata",  OR  "putdata",  OR  "listkeys",
+        "action": "getdata",  OR  "deletedata",  OR  "putdata",  OR  "listkeys",  <case insensitive>
         "table": "tablename",
-        "key": "keyname",              (for get, delete, and put)
-        "value": "stringdata",         (for put)
+        "key": "keyname",              (for getdata, deletedata, and putdata)
+        "value": "stringdata",         (for putdata)
         "start": 1,                    (int, for listkeys)
         "count": 500,                  (int, for listkeys)
     }
@@ -91,33 +91,36 @@ def handleStorageAction(storage, dlc):
 
     message = ''
     response_data = {"status": False}
-    storage_action = storage['action']
+    storage_action = storage['action'].lower()
 
     if storage_action == 'getdata':
-        message = "getdata: key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        message = "getdata, key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        print("[StorageAction] " + message)
         val = dlc.get(storage['key'], tableName=storage['table'])
+        response_data['value'] = val
         if val == None:
             return False, "getdata returned None value. " + message, response_data
-        response_data['value'] = val
 
     elif storage_action == 'deletedata':
-        message = "deletedata: key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        message = "deletedata, key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        print("[StorageAction] " + message)
         status = dlc.delete(storage['key'], tableName=storage['table'])
         if status == False:
             return False, "deletedata returned False. " + message, response_data
 
     elif storage_action == 'putdata':
-        message = "putdata: key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        message = "putdata, key: " + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        print("[StorageAction] " + message)
         status = dlc.put(storage['key'], storage['value'], tableName=storage['table'])
         if status == False:
             return False, "putdata returned False. " + message, response_data
 
     elif storage_action == 'listkeys':
-        message = "listkeys: key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
-        keylist = dlc.listKeys(storage['start'], storage['count'], tableName=storage['table'])
-        response_data['keylist'] = keylist 
-        if keylist == []:
-            return False, "listkeys returned and empty list. " + message, response_data
+        message = "listkeys, start: " + str(storage['start']) + ", count: " + str(storage['count']) + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        print("[StorageAction] " + message)
+        listkeys_response = dlc.listKeys(storage['start'], storage['count'], tableName=storage['table'])
+        response_data['keylist'] = listkeys_response   # should always be a list. Empty list is a valid response
+
     else:
         return False, "Invalid operation specified", response_data
     
@@ -145,7 +148,7 @@ def verifyData(data):
     if verified == False: 
         return False, "Invalid table specified. " + message
 
-    action = storage['action']
+    action = storage['action'].lower()
     validActions = set(['getdata', 'deletedata', 'putdata', 'listkeys'])
     if action not in validActions:
         return False, "Unknown storage action specified: " + action
@@ -167,7 +170,9 @@ def verifyData(data):
 
         verified, message = isValidInt(storage, 'count')
         if verified == False:
-            return False, "Invalid count specified. " + message 
+            return False, "Invalid count specified. " + message
+        if storage['count'] > 1000000:
+            return False, "Invalid count specified. 'count' too high. It should be < 1000000."
 
     return True, "verified"
 
@@ -189,5 +194,7 @@ def isValidInt(data, keyname):
         return False, "'" + keyname + "' is None."
     if not isinstance(data[keyname], int):
         return False, "'" + keyname + "' is not an int."
+    if data[keyname] < 0:
+        return False, "'" + keyname + "' is an int smaller than 0. It should be >= 0."
     return True, "verified"
 

@@ -567,14 +567,14 @@ class DataLayerClient:
         return status
 
     def listKeys(self, start, count, tableName=None):
-        keylist = []
+        listkeys_response = []
         table = self.tablename if tableName is None else tableName
         
         for retry in range(MAX_RETRIES):
             try:
-                keylist = self.datalayer.selectKeys(self.keyspace, table, start, count, self.locality)
-                if keylist == None or type(keylist) != type([]) or keylist == []:
-                    keylist = []
+                listkeys_response = self.datalayer.selectKeys(self.keyspace, table, start, count, self.locality)
+                if listkeys_response == None or type(listkeys_response) != type([]):
+                    listkeys_response = []
                 break
             except TTransport.TTransportException as exc:
                 print("[DataLayerClient] Reconnecting because of failed selectKeys: " + str(exc))
@@ -583,7 +583,7 @@ class DataLayerClient:
                 print("[DataLayerClient] failed selectKeys: " + str(exc))
                 raise
 
-        return keylist
+        return listkeys_response
 
     def shutdown(self):
         try:
