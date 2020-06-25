@@ -17,6 +17,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "nginx.fullname" . | quote }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "nginx.name" . | quote }}
     release: {{ .Release.Name | quote }}
@@ -41,6 +42,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: "{{ template "nginx.fullname" . }}-nginx-conf"
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "nginx.name" . | quote }}
     release: {{ .Release.Name | quote }}
@@ -113,6 +115,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "nginx.fullname" . | quote }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "nginx.name" . | quote }}
     release: {{ .Release.Name | quote }}
@@ -187,6 +190,7 @@ data:
 kind: Secret
 metadata:
   name: "{{ template "nginx.fullname" . }}-nginx-ssl"
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "nginx.name" . | quote }}
     release: {{ .Release.Name | quote }}

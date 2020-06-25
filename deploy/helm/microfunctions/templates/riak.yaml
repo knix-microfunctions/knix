@@ -17,12 +17,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "riak.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "riak.name" . | quote }}
     release: {{ .Release.Name | quote }}
     heritage: {{ .Release.Service | quote }}
 spec:
-  type: ClusterIP
+  clusterIP: None
   ports:
     - port: {{ .Values.riak.ClientPortHttp }}
       name: http
@@ -32,10 +33,33 @@ spec:
     app: {{ include "riak.name" . | quote }}
     release: {{ .Release.Name | quote }}
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "riak.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+data:
+  COORDINATOR_NODE: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+  WAIT_FOR_ERLANG: "{{ .Values.riak.WaitForErlang }}"
+  CLUSTER_NAME: "{{ .Values.riak.ClusterName }}"
+  PB_PORT: "{{ .Values.riak.ClientPortProtobuf }}"
+  HTTP_PORT: "{{ .Values.riak.ClientPortHttp }}"
+  ERLANG_DISTRIBUTION_PORT_RANGE_MINIMUM: "{{ .Values.riak.ErlangDistributionPortRangeMinimum }}"
+  ERLANG_DISTRIBUTION_PORT_RANGE_MAXIMUM: "{{ .Values.riak.ErlangDistributionPortRangeMaximum }}"
+  LOG_CONSOLE_LEVEL: "{{ .Values.riak.LogConsoleLevel }}"
+  STORAGE_BACKEND: "{{ .Values.riak.StorageBackend }}"
+  LEVEL_DB_MAXIMUM_MEMORY: "{{ .Values.riak.LevelDbMaximumMemory | int }}"
+  ANTI_ENTROPY: "{{ .Values.riak.AntiEntropy }}"
+  ERLANG_SCHEDULERS_TOTAL: "{{ .Values.riak.ErlangSchedulersTotal }}"
+  ERLANG_SCHEDULERS_ONLINE: "{{ .Values.riak.ErlangSchedulersOnline }}"
+  ERLANG_SCHEDULERS_FORCE_WAKEUP_INTERVAL: "{{ .Values.riak.ErlangSchedulersForceWakeupInterval }}"
+  ERLANG_SCHEDULERS_COMPACTION_OF_LOAD: "{{ .Values.riak.ErlangSchedulersCompactionOfLoad }}"
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ template "riak.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "riak.name" . | quote }}
     release: {{ .Release.Name | quote }}
@@ -72,47 +96,27 @@ spec:
       - name: riak
         image: "{{ .Values.imageRepo }}{{ .Values.riak.imagePath }}:{{ .Values.riak.imageTag }}"
         imagePullPolicy: "{{ .Values.riak.imagePullPolicy }}"    
-        env:     
-          - name: COORDINATOR_NODE
-            value: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
-          - name: WAIT_FOR_ERLANG
-            value: "{{ .Values.riak.WaitForErlang }}"
-          - name: CLUSTER_NAME
-            value: "{{ .Values.riak.ClusterName }}"
-          - name: PB_PORT
-            value: "{{ .Values.riak.ClientPortProtobuf }}"
-          - name: HTTP_PORT
-            value: "{{ .Values.riak.ClientPortHttp }}"
-          - name: ERLANG_DISTRIBUTION_PORT_RANGE_MINIMUM
-            value: "{{ .Values.riak.ErlangDistributionPortRangeMinimum }}"
-          - name: ERLANG_DISTRIBUTION_PORT_RANGE_MAXIMUM
-            value: "{{ .Values.riak.ErlangDistributionPortRangeMaximum }}"
-          - name: LOG_CONSOLE_LEVEL
-            value: "{{ .Values.riak.LogConsoleLevel }}"
-          - name: BITCASK_MERGE_POLICY
-            value: "{{ .Values.riak.BitcaskMergePolicy }}"
-          - name: BITCASK_MERGE_TRIGGERS_FRAGMENTATION
-            value: "{{ .Values.riak.BitcaskMergeTriggersFragmentation }}"
-          - name: BITCASK_MERGE_TRIGGERS_DEAD_BYTES
-            value: "{{ .Values.riak.BitcaskMergeTriggersDeadBytes }}"
-          - name: BITCASK_MERGE_THRESHOLDS_FRAGMENTATION
-            value: "{{ .Values.riak.BitcaskMergeThresholdsFragmentation }}"
-          - name: BITCASK_MERGE_THRESHOLDS_DEAD_BYTES
-            value: "{{ .Values.riak.BitcaskMergeThresholdsDeadBytes }}"
-          - name: BITCASK_MERGE_THRESHOLDS_SMALL_FILE
-            value: "{{ .Values.riak.BitcaskMergeThresholdsSmallFile }}"
-          - name: BITCASK_MERGE_CHECK_INTERVAL
-            value: "{{ .Values.riak.BitcaskMergeCheckInterval }}"
-          - name: BITCASK_MAX_FILE_SIZE
-            value: "{{ .Values.riak.BitcaskMaxFileSize }}"
+        envFrom:
+        - configMapRef:
+            name: {{ include "riak.fullname" . }}-config
         readinessProbe:
           exec:
             command:
             - /usr/sbin/riak
             - ping
           initialDelaySeconds: 45
+          periodSeconds: 10
           timeoutSeconds: 30
-          failureThreshold: 10
+          failureThreshold: 3
+        livenessProbe:
+          exec:
+            command:
+            - /usr/sbin/riak
+            - ping
+          initialDelaySeconds: 60
+          periodSeconds: 60
+          timeoutSeconds: 30
+          failureThreshold: 3
         resources:
 {{ toYaml .Values.riak.resources | indent 10 }}
         volumeMounts:
