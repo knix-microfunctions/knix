@@ -34,28 +34,6 @@ class ASL_ParallelTest(unittest.TestCase):
 
     @unittest.skip("")
     def test_parallel_waitfornumbranches(self):
-        """ creates and executes the parallel workflow from the ASL description """
-        testtuplelist = []
-
-        event = [10, 20]
-        expectedResponse = [[10, 20, 'Branch1Task.py'], [10, 20, 'Branch2Task.py'], [10, 20, 'Branch3Task.py']]
-
-        testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
-
-        event = 'a'
-        expectedResponse = ['a Branch1Task.py', 'a Branch2Task.py', 'a Branch3Task.py']
-
-        testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
-
-        event = {"a": "b"}
-        expectedResponse = [{"a": "b", "functionName": "Branch1Task.py"}, {"a": "b", "functionName": "Branch2Task.py"}, {"a": "b", "functionName": "Branch3Task.py"}]
-
-        testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
-
-        test = MFNTest(test_name="Parallel", workflow_filename="workflow_parallel_state_test.json")
-        test.exec_tests(testtuplelist)
-        
-    def test_parallel_waitfornumbranches(self):
         """ creates and executes the parallel workflow from the ASL description containing waitfornumbranches"""
         testtuplelist = []
 
