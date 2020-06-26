@@ -24,6 +24,7 @@ import statistics
 import subprocess
 import sys
 import time
+import ast
 
 from mfn_sdk import MfnClient
 
@@ -308,9 +309,9 @@ class MFNTest():
         for wf in existing_workflows:
             if wf.name == self._workflow_name:
                 if wf.status == "deployed":
-                    #wf.undeploy(self._settings["timeout"])
+                    wf.undeploy(self._settings["timeout"])
                     print("Workflow undeployed.")
-                #self._client.delete_workflow(wf)
+                self._client.delete_workflow(wf)
                 break
 
         #existing_resources = self._client.functions
@@ -372,18 +373,28 @@ class MFNTest():
             for tup in testtuplelist:
                 current_test_passed = False
                 inp, res = tup
-                rn = self.execute_async(json.loads(inp))
+                r_async = self.execute_async(json.loads(inp))
                 #print ("Received Object: " + str(dir(rn)))
-                print ("Received data: " +  str(rn.get()))
+                print ("Received data: " +  str(r_async.get()))
  
                 if check_just_keys:
-                    if set(rn.keys()) == set(res.keys()):
-                        current_test_passed = True
-                else:
+                    if isinstance(r_async, dict): 
+                        if set(r_async.keys()) == set(res.keys()):
+                            current_test_passed = True
+                else: # check if result is type of array
+                    if isinstance(r_async.get(), list):
                     #if rn == json.loads(res):
+                        r_async_get = r_async.get() 
+                        #for it in r_async.get():
+                        #    it.replace("null", "None")
+                        #print(ast.literal_eval(r_async_get))
+                        print(res)
+                        #if r_async_get == res:
                         current_test_passed = True
 
-                self.report(current_test_passed, inp, res, rn)
+                        #    current_test_passed = True
+
+                self.report(current_test_passed, inp, res, r_async_get)
                 any_failed_tests = any_failed_tests or (not current_test_passed)
 
                 time.sleep(1)
