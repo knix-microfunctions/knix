@@ -969,6 +969,7 @@ class StateUtils:
                     sapi.delete(outputkey) # cleanup the key from data layer
             else:
                 post_parallel_output_values = post_parallel_output_values + [None]
+        sapi.put(key + "_" + str(counterValue), str(post_parallel_output_values))
 
         if do_cleanup:
             sapi.deleteSet(branchOutputKeysSetKey)
