@@ -35,7 +35,12 @@ endef
 define push_image
 	@#echo local image name $(1)
 	@ID=$$(docker images $(1) --format '{{.ID}}'); \
-	RID=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' $(REGISTRY)/v2/$(1)/manifests/$(VERSION)|python -c 'import json; import sys; print(json.load(sys.stdin)["config"]["digest"].split(":")[1])'); \
+	RID2=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' $(REGISTRY)/v2/$(1)/manifests/$(VERSION)); \
+	if [[ "$${RID2}" != "" ]]; then \
+		RID=$$(echo $${RID2}|python -c 'import json; import sys; print(json.load(sys.stdin)["config"]["digest"].split(":")[1])'); \
+	else \
+		RID=""; \
+	fi; \
 	if [[ "$${RID}" == "$${ID}"* ]]; then \
 		echo "Already pushed local image $(1) ($${ID}) as $(REGISTRY)/$(1):$(VERSION) ($${RID})"; \
 	else \
