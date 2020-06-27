@@ -16,6 +16,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: "{{ .Release.Name }}-predel-job"
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "manager.name" . | quote }}
     release: {{ .Release.Name | quote }}
@@ -49,7 +50,7 @@ spec:
 {{ toYaml .Values.manager.setup.resources | indent 10}}
         command:
         - python3
-        - /opt/mfn/management_cleanup.py
+        - /opt/mfn/ManagementService/management_cleanup.py
         volumeMounts:
         - name: new-workflow-conf
           mountPath: /opt/mfn/conf

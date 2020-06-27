@@ -19,7 +19,7 @@
 
     <thead>
     <tr style="padding: 0;border: 0;"><td colspan=5 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-      <button class="btn btn-primary" ng-click="addWorkflow()">Add Workflow</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="importWorkflow()">Import Workflow</button>
+      <button class="btn btn-primary" ng-click="addWorkflow()">Add Workflow</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="importWorkflow()">Import Workflow</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadWorkflows()">Refresh</button>
     </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/></td></tr>
     <tr>
 
@@ -28,6 +28,7 @@
     <th style="text-align:left;border:0;" st-sort="name"><b>Name</b></th>
     <th style="border:0;" st-sort="status" st-sort-default="false"><b>Status</b></th>
     <th style="border:0;"><b>Endpoint</b></th>
+    <th style="border:0;"><b>Compatibility</b></th>
     <th id="sortHeader" style="border:0;" st-sort="modified" st-sort-default="reverse"><b>Last Modified</b></th>
     <th style="border:0;"><b>Actions</b></th>
   </tr>
@@ -58,6 +59,11 @@
 
         </span>
     </td>
+    <td>
+      <span e-name="modified" e-form="rowform">
+        {{ showCompatibility(workflow) }}
+      </span>
+  </td>
     <td>
         <span e-name="modified" e-form="rowform">
           {{ showLastModified(workflow) }}

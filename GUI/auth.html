@@ -32,6 +32,37 @@
   <link rel="stylesheet" href="app/auth.css">
   <script>
   
+    document.onreadystatechange = getVersion;
+    function getVersion() {
+      var xhr = new XMLHttpRequest();
+      var url = "/management";
+
+      xhr.open("POST", url, true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          var success = false;
+          if(xhr.status === 200) {
+            var json = JSON.parse(xhr.responseText.toString());
+            if (json.status==='success') {
+              success = true;
+            }
+          }
+          if (success) {
+            document.getElementById("auth-block").style.display = "block";
+            document.getElementById("unavailable-block").style.display = "none";
+            document.getElementById("version").innerHTML = json.data.message;
+          } else {
+            document.getElementById("auth-block").style.display = "none";
+            document.getElementById("unavailable-block").style.display = "block";
+            document.getElementById("version").innerHTML = "";
+            window.setTimeout(getVersion, 5000);
+          }
+        }
+      };
+      var jsonData = '{"action" : "version", "data" : {}}';
+      xhr.setRequestHeader("Content-type", "application/json;charset=UTF-8");
+      xhr.send(jsonData);
+    };
     function auth() {
 
       var xhr = new XMLHttpRequest();
@@ -65,7 +96,13 @@
 </head>
 <body>
 <main class="auth-main">
-  <div class="auth-block">
+  <div class="auth-block" id="unavailable-block" style="display: block;">
+    <center><h1><b>KNIX</b> Micro<b>Functions</b><br>is currently down</h1></center>
+    <div style="color:#2dacd1;font-size:20px;">
+      <center>We'll be back shortly.</center>
+    </div>
+  </div>
+  <div class="auth-block" id="auth-block" style="display: none;">
     <center><h1>Sign in to <b>KNIX</b> Micro<b>Functions</b></h1></center>
     <div id="message" style="color:#2dacd1;font-size:20px;">
       <a href="reg.html" class="auth-link" style="color:#2dacd1;font-size:20px;">New to <b>KNIX</b> MicroFunctions? Sign up!</a>
@@ -91,6 +128,8 @@
           <button type="button" onclick="javascript:auth();" class="btn btn-info btn-auth">Sign in</button>
           <!--<a href class="forgot-pass" style="color:#fff">Forgot password?</a>-->
         </div>
+      </div>
+      <div id="version" style="color:#4d5658;font-size:10px;">
       </div>
     </form>
 

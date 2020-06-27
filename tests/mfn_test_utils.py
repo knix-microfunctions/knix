@@ -66,7 +66,7 @@ class MFNTest():
             self._workflow_folder = self._workflow_filename[:ind+1]
         else:
             self._workflow_folder = "./"
-        print("Workflow folder: " + self._workflow_folder)
+        #print("Workflow folder: " + self._workflow_folder)
 
         self._workflow_description = self._get_json_file(self._workflow_filename)
 
@@ -378,8 +378,14 @@ class MFNTest():
                     #print("Total time to execute: " + str(t_total) + " (ms)")
 
                 if check_just_keys:
+                    if isinstance(res, str):
+                        res = json.loads(res)
+
                     if set(rn.keys()) == set(res.keys()):
-                        current_test_passed = True
+                         current_test_passed = True
+                    else:
+                        raise Exception("Error: unsupported workflow result type")
+
                 else:
                     if rn == json.loads(res):
                         current_test_passed = True

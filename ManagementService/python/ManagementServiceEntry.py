@@ -322,7 +322,6 @@ def actionOther(action, data, sapi):
     possibleActions["uploadWorkflowJSON"] = True
     possibleActions["retrieveAllWorkflowLogs"] = True
     possibleActions["clearAllWorkflowLogs"] = True
-    possibleActions["getWorkflowDetails"] = True
     possibleActions["addTriggerableTable"] = True
     possibleActions["addStorageTriggerForWorkflow"] = True
     possibleActions["getTriggerableTables"] = True
@@ -333,6 +332,7 @@ def actionOther(action, data, sapi):
     deprecatedActions["prepareWorkflowLog"] = True
     deprecatedActions["prepareAllWorkflowLogs"] = True
     deprecatedActions["retrieveWorkflowLog"] = True
+    deprecatedActions["getWorkflowDetails"] = True
 
     if action in deprecatedActions:
         message = "[WARNING] Deprecated action: '" + action + "'"

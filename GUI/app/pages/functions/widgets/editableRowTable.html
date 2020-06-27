@@ -18,7 +18,7 @@
 
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-    <button class="btn btn-primary" ng-click="addFunction()">Add Function</button>
+    <button class="btn btn-primary" ng-click="addFunction()">Add Function</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadFunctions()">Refresh</button>
   </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/></td></tr>
 
 
@@ -80,14 +80,14 @@
   </tr>
   </tbody>
   <tfoot>
-			<tr style="border: 0;">
-				<td colspan="5" class="text-center" style="border: 0;">
+            <tr style="border: 0;">
+                <td colspan="5" class="text-center" style="border: 0;">
           <br>
-					<div id="functionPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
+                    <div id="functionPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
           <br>
-				</td>
+                </td>
 
-			</tr>
+            </tr>
 
-	</tfoot>
+    </tfoot>
 </table>

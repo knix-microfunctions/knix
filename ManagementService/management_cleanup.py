@@ -45,7 +45,7 @@ kubeurl = "https://"+os.environ["KUBERNETES_SERVICE_HOST"]+":"+os.environ["KUBER
 if __name__ == "__main__":
     print('Checking if deployment exists')
     resp = requests.get(
-        kubeurl+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services,
+        kubeurl+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
         headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
         verify=cafile,
         proxies={"https":""})

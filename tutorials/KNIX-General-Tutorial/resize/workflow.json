@@ -1,0 +1,11 @@
+{
+	"Comment": "resize Workflow",
+	"StartAt": "resize",
+	"States": {
+		"resize": {
+			"Type": "Task",
+			"Resource": "resize",
+			"End": true
+		}
+	}
+}

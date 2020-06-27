@@ -24,7 +24,9 @@ all: build_thrift \
 build_thrift:
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
-src/main/java/data_layer: ../build_env.mk
+THRIFT=$(shell find src/main/java/org/microfunctions/data_layer -type f -size +1c) src/main/java/org/microfunctions/data_layer
+
+$(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerService/thrift/DataLayerService.thrift ../build_env.mk
 	docker run --rm -it --name frontend-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../DataLayerService:/usr/src/datalayer \
@@ -48,7 +50,8 @@ src/main/java/data_layer: ../build_env.mk
 	mv $@.tmp $@
 
 GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
-target/frontend.jar: src/main/java/data_layer ~/.m2/settings-docker.xml
+SOURCES=$(shell find ./src/main -type f -size +1c)
+target/frontend.jar: $(SOURCES) pom.xml ~/.m2/settings-docker.xml
 	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
 	docker run --rm --name frontend-maven \
 	--user $(UID):$(GID) \
