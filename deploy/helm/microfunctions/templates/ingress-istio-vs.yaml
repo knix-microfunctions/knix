@@ -29,22 +29,24 @@ spec:
     rewrite:
       # Rewrite the original host header to the host header of Search service
       # in order to redirect requests to Search service.
-      authority: wf-{{ .Release.Name }}-management.svc.cluster.local
+      authority: wf-{{ .Release.Name }}-management.{{ .Values.ingress.host }}
     route:
-      - destination:
-          host: istio-ingressgateway.istio-system.svc.cluster.local
-          port:
-            number: 80
-        weight: 100
+    - destination:
+        host: istio-ingressgateway.istio-system.svc.cluster.local
+        port:
+          number: 80
+      weight: 100
   - match:
     - uri:
         prefix: /storage
     route:
     - destination:
         host: store-{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
+      weight: 100
   - match:
     - uri:
         prefix: /
     route:
     - destination:
         host: nx-{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
+      weight: 100
