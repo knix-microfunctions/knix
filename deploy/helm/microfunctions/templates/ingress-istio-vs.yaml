@@ -16,6 +16,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: frontend
+  namespace: {{ .Release.Namespace }}
 spec:
   hosts:
   - {{ .Values.ingress.host }}
