@@ -20,18 +20,17 @@ GID:=`id -g`
 
 all: build_thrift \
 	target/javaworker.jar \
-	mfnapi
+	mfnapi.jar
 
 build_thrift:
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
-mfnapi:
+mfnapi.jar: target/classes/org/microfunctions/mfnapi/*.class
 	docker run --rm --name mfnapijava \
 	--user $(UID):$(GID) \
-	-v $(CURDIR)/target/classes:/usr/src/mfnapijava -w /usr/src/mfnapijava \
+	-v $(CURDIR):/usr/src/mfnapijava -w /usr/src/mfnapijava \
 	openjdk:8-jdk-stretch \
-	bash -c 'jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class'; \
-	mv -v target/classes/mfnapi.jar .
+	bash -c 'jar -cvf mfnapi.jar -C target/classes org/microfunctions/mfnapi/*.class'
 
 src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: ../build_env.mk \
 	../FunctionWorker/MicroFunctionsAPI.thrift
@@ -72,10 +71,10 @@ target/javaworker.jar: $(JAVA_SOURCES) \
 	maven:3.6.1-jdk-8 \
 	mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e package; 
 
-java_api_doc: $(JAVA_SOURCES) \
+target/site/apidocs/index.html: $(JAVA_SOURCES) \
 		src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java \
 		target/javaworker.jar \
-		mfnapi \
+		mfnapi.jar \
 		~/.m2/settings-docker.xml
 	docker run --rm -it --name javaworker \
 		--user $(UID):$(GID) \
@@ -86,5 +85,4 @@ java_api_doc: $(JAVA_SOURCES) \
 
 clean:
 	rm -rf target/
-	rm -f mfnapi.jar
 

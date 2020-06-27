@@ -29,7 +29,7 @@ define build_image
 	    if [[ ! -z "$$OLDID" && ! -z "$$NEWID" ]]; then echo "Removing image $$OLDID"; docker rmi $$OLDID; fi; \
 	    break; \
 	  fi; \
-	done; if [ "$$NEWID" == "" ]; then echo "Container image $(2) is already up-to-date"; fi
+	done; if [ -z "$$NEWID" ]; then echo "Container image $(2) is already up-to-date"; fi
 endef
 
 define push_image

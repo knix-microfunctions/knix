@@ -18,23 +18,20 @@ include ../docker.mk
 
 default: app/pages/docs/sdk/cli.md \
 	app/pages/docs/sdk/sdk.md \
-	app/pages/docs/api/java \
+	app/pages/docs/api/javadoc \
 	app/pages/docs/api/python
 
-app/pages/docs/api/python:
+app/pages/docs/api/python/MicroFunctionsAPI.html: ../FunctionWorker/doc/MicroFunctionsAPI.html
 	mkdir -p app/pages/docs/api/python; \
-	cd ../FunctionWorker; \
-	make python_api_doc; \
-	cd -; \
-	cp ../FunctionWorker/doc/MicroFunctionsAPI.html app/pages/docs/api/python/; \
-	sed -i 's/<body>/<body bgcolor="#fff">/g' app/pages/docs/api/python/MicroFunctionsAPI.html
+	make -C ../FunctionWorker doc/MicroFunctionsAPI.html
+	cp $^ app/pages/docs/api/python/; \
+	sed -i 's/<body>/<body bgcolor="#fff">/g' $@
 
-app/pages/docs/api/java:
-	mkdir -p app/pages/docs/api/javadoc; \
-	cd ../JavaRequestHandler; \
-	make java_api_doc; \
-	cd -; \
-	cp -r ../JavaRequestHandler/target/site/apidocs/* app/pages/docs/api/javadoc
+app/pages/docs/api/javadoc/index.html: ../JavaRequestHandler/target/site/apidocs $(shell find ../JavaRequestHandler/target/site/apidocs/ -type f)
+	mkdir -p app/pages/docs/api/javadoc
+	make -C ../JavaRequestHandler java_api_doc
+	cp -r ../JavaRequestHandler/target/site/apidocs/* app/pages/docs/api/javadoc/
+	touch $@ 
 
 app/pages/docs/sdk/sdk.md: ../mfn_sdk/README.md
 	cp ../mfn_sdk/README.md app/pages/docs/sdk/sdk.md
@@ -44,8 +41,8 @@ app/pages/docs/sdk/cli.md: ../mfn_cli/README.md
 
 image:	app/pages/docs/sdk/cli.md \
 	app/pages/docs/sdk/sdk.md \
-	app/pages/docs/api/java \
-	app/pages/docs/api/python
+	app/pages/docs/api/javadoc/index.html \
+	app/pages/docs/api/python/MicroFunctionsAPI.html
 	$(call build_image,Dockerfile,microfn/nginx)
 
 push: image
