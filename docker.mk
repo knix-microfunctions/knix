@@ -37,7 +37,7 @@ define push_image
 	@ID=$$(docker images $(1) --format '{{.ID}}'); \
 	RID2=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' $(REGISTRY)/v2/$(1)/manifests/$(VERSION)); \
 	if [[ "$${RID2}" != "" ]]; then \
-		RID=$$(echo $${RID2}|python -c 'import json; import sys; print(json.load(sys.stdin)["config"]["digest"].split(":")[1])'); \
+		RID=$$(echo $${RID2}|python -c 'import json; import sys; tmp=json.load(sys.stdin); print(tmp["config"]["digest"].split(":")[1])'); \
 	else \
 		RID=""; \
 	fi; \
