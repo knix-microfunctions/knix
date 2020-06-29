@@ -31,7 +31,7 @@ mfnapi.jar: $(CLASSFILES)
 	--user $(UID):$(GID) \
 	-v $(CURDIR):/usr/src/mfnapijava -w /usr/src/mfnapijava \
 	openjdk:8-jdk-stretch \
-	bash -c 'cd target/classes; jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class'
+	bash -c 'cd target/classes; jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class; mv mfnapi.jar ../../'
 
 src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: ../build_env.mk \
 	../FunctionWorker/MicroFunctionsAPI.thrift
@@ -86,4 +86,5 @@ target/site/apidocs/index.html: $(JAVA_SOURCES) \
 
 clean:
 	rm -rf target/
+	rm mfnapi.jar
 
