@@ -21,15 +21,20 @@ default: app/pages/docs/sdk/cli.md \
 	app/pages/docs/api/javadoc/index.html \
 	app/pages/docs/api/python/MicroFunctionsAPI.html
 
+../FunctionWorker/doc/MicroFunctionsAPI.html:
+	make -C ../FunctionWorker doc/MicroFunctionsAPI.html
+
 app/pages/docs/api/python/MicroFunctionsAPI.html: ../FunctionWorker/doc/MicroFunctionsAPI.html
 	mkdir -p app/pages/docs/api/python; \
-	make -C ../FunctionWorker doc/MicroFunctionsAPI.html
 	cp $^ app/pages/docs/api/python/; \
 	sed -i 's/<body>/<body bgcolor="#fff">/g' $@
 
-app/pages/docs/api/javadoc/index.html: ../JavaRequestHandler/target/site/apidocs $(shell find ../JavaRequestHandler/target/site/apidocs/ -type f)
-	mkdir -p app/pages/docs/api/javadoc
+JAVADOC=../JavaRequestHandler/target/site/apidocs $(shell find ../JavaRequestHandler/target/site/apidocs/ -type f)
+$(JAVADOC):
 	make -C ../JavaRequestHandler target/site/apidocs/index.html
+
+app/pages/docs/api/javadoc/index.html: $(JAVADOC)
+	mkdir -p app/pages/docs/api/javadoc
 	cp -r ../JavaRequestHandler/target/site/apidocs/* app/pages/docs/api/javadoc/
 	touch $@
 

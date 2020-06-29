@@ -21,14 +21,15 @@ GID:=`id -g`
 
 default: doc/MicroFunctionsAPI.html
 
-thrift_data_layer: ../build_env.mk \
+PYTHON_DATALAYER=$(shell find python/data_layer -type f -size +1c) python/data_layer
+$(PYTHON_DATALAYER): ../build_env.mk \
 	../DataLayerService/thrift/DataLayerMessage.thrift \
 	../DataLayerService/thrift/DataLayerService.thrift
 	docker run --user $(UID):$(GID) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift'
 
-doc/MicroFunctionsAPI.html: thrift_data_layer
+doc/MicroFunctionsAPI.html: $(PYTHON_DATALAYER)
 	docker run --user $(UID):$(GID) --rm -it \
 		--name mfnapi_doc_gen \
 		-v $(CURDIR):/opt/mfnapi \
