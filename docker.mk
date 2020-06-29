@@ -29,13 +29,13 @@ define build_image
 	    if [[ ! -z "$$OLDID" && ! -z "$$NEWID" ]]; then echo "Removing image $$OLDID"; docker rmi $$OLDID; fi; \
 	    break; \
 	  fi; \
-	done; if [ "$$NEWID" == "" ]; then echo "Container image $(2) is already up-to-date"; fi
+	done; if [ -z "$$NEWID" ]; then echo "Container image $(2) is already up-to-date"; fi
 endef
 
 define push_image
 	@#echo local image name $(1)
 	@ID=$$(docker images $(1) --format '{{.ID}}'); \
-	RID=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' $(REGISTRY)/v2/$(1)/manifests/$(VERSION)|python -c 'import json; import sys; print(json.load(sys.stdin)["config"]["digest"].split(":")[1])'); \
+	RID=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' $(REGISTRY)/v2/$(1)/manifests/$(VERSION)|python -c 'import json; import sys; print(json.load(sys.stdin).get("config",{}).get("digest",":").split(":")[1])'); \
 	if [[ "$${RID}" == "$${ID}"* ]]; then \
 		echo "Already pushed local image $(1) ($${ID}) as $(REGISTRY)/$(1):$(VERSION) ($${RID})"; \
 	else \

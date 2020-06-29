@@ -19,20 +19,23 @@ include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
 
-default: python_api_doc
+default: doc/MicroFunctionsAPI.html
 
-thrift_data_layer: ../build_env.mk \
+PYTHON_DATALAYER=$(shell find python/data_layer -type f -size +1c) python/data_layer
+$(PYTHON_DATALAYER): ../build_env.mk \
 	../DataLayerService/thrift/DataLayerMessage.thrift \
 	../DataLayerService/thrift/DataLayerService.thrift
 	docker run --user $(UID):$(GID) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift'
 
-python_api_doc: thrift_data_layer
+doc/MicroFunctionsAPI.html: $(PYTHON_DATALAYER)
 	docker run --user $(UID):$(GID) --rm -it \
 		--name mfnapi_doc_gen \
 		-v $(CURDIR):/opt/mfnapi \
 		-w /opt/mfnapi \
+		-e http_proxy \
+		-e https_proxy \
 		python:3.6 \
 		/bin/bash -c '\
 		pip3 install pdoc3 --target /opt/mfnapi/tmppip/pdoc3; \

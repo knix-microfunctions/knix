@@ -1,3 +1,5 @@
-data_layer/
-DataLayerClient.py
-management_deployment_package.tar.gz
+/data_layer/
+/DataLayerClient.py
+/management_deployment_package.tar.gz
+__init__.py
+__pycache__
