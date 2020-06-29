@@ -60,7 +60,7 @@ export ERLANG_SCHEDULERS_FORCE_WAKEUP_INTERVAL=${ERLANG_SCHEDULERS_FORCE_WAKEUP_
 export ERLANG_SCHEDULERS_COMPACTION_OF_LOAD=${ERLANG_SCHEDULERS_COMPACTION_OF_LOAD:-false}
 
 # Run all prestart scripts
-PRESTART=$(find /etc/riak/prestart.d -name *.sh -print | sort)
+PRESTART=$(find /etc/riak/prestart.d -name '*.sh' -print | sort)
 for s in $PRESTART; do
   . $s
 done
@@ -71,7 +71,7 @@ WAIT_FOR_ERLANG=${WAIT_FOR_ERLANG} ${RIAK} start
 $RIAK_ADMIN wait-for-service riak_kv
 
 # Run all poststart scripts
-POSTSTART=$(find /etc/riak/poststart.d -name *.sh -print | sort)
+POSTSTART=$(find /etc/riak/poststart.d -name '*.sh' -print | sort)
 for s in $POSTSTART; do
   . $s
 done
