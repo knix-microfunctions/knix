@@ -61,6 +61,7 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 
         ```bash
         sudo usermod -a -G docker your-username
+        newgrp docker
         ```
 
     * Set docker proxies by updating `/etc/systemd/system/docker.service.d/http-proxy.conf`
