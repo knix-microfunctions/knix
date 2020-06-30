@@ -237,7 +237,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       if async {
         log.Printf("handler: Result not yet available of execution ID %s, redirecting", id)
         // TODO: 300 location redirect
-        http.Redirect(w, r, r.URL.String() + "executionId=" + id, http.StatusMovedPermanently)
+        http.Redirect(w, r, r.URL.Scheme + "://" + r.URL.Host + r.URL.Path + "?executionId=" + id, http.StatusTemporaryRedirect)
       } else {
         log.Printf("handler: Result not yet available of execution ID %s, waiting", id)
         e, ok := ExecutionResults[id]
