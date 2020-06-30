@@ -249,7 +249,7 @@ class Workflow(object):
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
             raise Exception("Asynchronous execution of workflow '"+self.name+"' at URL '"+url+"' failed due to "+type(e).__name__)
         r.raise_for_status()
-        return Execution(self.client, self.client.host+r.headers['Location'])
+        return Execution(self.client, self.client.mgmturl+r.headers['Location'])
 
     def execute(self,data,timeout=60, check_duration=False):
         """ execute a workflow synchronously

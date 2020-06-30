@@ -111,6 +111,9 @@ class MFNTest():
 
         if len(settings) == 0:
             raise Exception("Empty settings")
+        
+        # Defaults
+        settings.setdefault("timeout",60)
 
         return settings
 
