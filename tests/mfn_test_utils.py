@@ -364,7 +364,7 @@ class MFNTest():
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
 
-    def exec_tests_async(self, testtuplelist, check_just_keys=False, should_undeploy=True):
+    def exec_tests_waitfornumbranches_async(self, testtuplelist, check_just_keys=False, should_undeploy=True):
         any_failed_tests = False
 
         time.sleep(2)
@@ -374,28 +374,36 @@ class MFNTest():
             for tup in testtuplelist:
                 current_test_passed = False
                 inp, res = tup
-
                 a_list = json.loads(res)
-                
+
                 r_async = self.execute_async(json.loads(inp))
-                r_async_get = r_async.get(5)
-                res0 = [10, 20, "Branch1Task.py"] #a_list[0]
+                time.sleep(1)
+
+                r_async_get = (r_async.get(5)) # is a list
+                
+                
+                res0 = a_list[0]
+                res1 = a_list[1]
+                res2 = a_list[2]
+                #null = None
+                r_async_get_str = str(json.loads(json.dumps(r_async_get['__mfnuserdata']))).replace("null", "None")
+                # preparing data for iteration on k-list[0]
                 a_list[0] = None
-
-                if r_async_get == a_list:
+                if r_async_get_str == str(a_list).replace("'", '"'):
                     current_test_passed = True
-                    res = str(a_list)
-                self.report(current_test_passed, inp, res, r_async_get)
+                self.report(current_test_passed, inp, res, r_async_get_str)
 
-                time.sleep(10)
                 current_test_passed = False
+                time.sleep(10) # wait for termination for k-list[0]
 
+                # preparing data for iteration on k-list[1]
                 a_list[0] = res0
                 r_async_get = r_async.get(5)
-                if str(r_async_get['__mfnuserdata']) == str(a_list).replace("'", '"'):
+                r_async_get_str = str(json.loads(json.dumps(r_async_get['__mfnuserdata']))).replace("null", "None")
+                # if str(r_async_get['__mfnuserdata']) == str(a_list).replace("'", '"'):
+                if r_async_get_str == str(a_list).replace("'", '"'):
                     current_test_passed = True
-                    res = str(a_list)
-                self.report(current_test_passed, inp, res, r_async_get)
+                self.report(current_test_passed, inp, res, r_async_get_str)
 
                 any_failed_tests = any_failed_tests or (not current_test_passed)
 

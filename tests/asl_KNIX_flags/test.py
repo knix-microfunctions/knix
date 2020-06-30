@@ -28,7 +28,7 @@ from mfn_test_utils import MFNTest
 
 class ASL_ParallelTest(unittest.TestCase):
 
-    """ Parallel state test using KNIX WaitWorWumBranches parameter
+    """ Parallel state test using KNIX WaitForNumBranches parameter
 
     """
 
@@ -38,22 +38,23 @@ class ASL_ParallelTest(unittest.TestCase):
         testtuplelist = []
 
         event = [10,20]
-        expectedResponse = [None, [10, 20, 'Branch2Task.py'], [10, 20, 'Branch3Task.py']]
+        expectedResponse = [[10, 20, 'Branch1Task.py'], [10, 20, 'Branch2Task.py'], [10, 20, 'Branch3Task.py']]
 
         testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
-        """
+        #test = MFNTest(test_name="Parallel Wait for Num Branches", workflow_filename="wf_asl_parallel_waitfornumbranches.json")
         event = 'a'
-        expectedResponse = [None, 'a Branch2Task.py', 'a Branch3Task.py']
+        expectedResponse = ['a Branch1Task.py', 'a Branch2Task.py', 'a Branch3Task.py']
 
         testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
 
         event = {"a": "b"}
-        expectedResponse = [None, {"a": "b", "functionName": "Branch2Task.py"}, {"a": "b", "functionName": "Branch3Task.py"}]
+        expectedResponse = [{"a": "b", "functionName": "Branch1Task.py"}, {"a": "b", "functionName": "Branch2Task.py"}, {"a": "b", "functionName": "Branch3Task.py"}]
 
         testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
-        """
-        test = MFNTest(test_name="Parallel Wait for Num Branches", workflow_filename="wf_asl_parallel_waitfornumbranches.json")
-        test.exec_tests_async(testtuplelist)
+
+        test = MFNTest(test_name="Parallel", workflow_filename="wf_asl_parallel_waitfornumbranches.json")
+        #test.exec_tests(testtuplelist)
+        test.exec_tests_waitfornumbranches_async(testtuplelist)
 
 
 
