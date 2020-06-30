@@ -370,31 +370,33 @@ class MFNTest():
         time.sleep(2)
 
         try:
+            current_test_passed = False
             for tup in testtuplelist:
                 current_test_passed = False
                 inp, res = tup
+
+                a_list = json.loads(res)
+                
                 r_async = self.execute_async(json.loads(inp))
-                #print ("Received Object: " + str(dir(rn)))
-                print ("Received data: " +  str(r_async.get()))
- 
-                if check_just_keys:
-                    if isinstance(r_async, dict): 
-                        if set(r_async.keys()) == set(res.keys()):
-                            current_test_passed = True
-                else: # check if result is type of array
-                    if isinstance(r_async.get(), list):
-                    #if rn == json.loads(res):
-                        r_async_get = r_async.get() 
-                        #for it in r_async.get():
-                        #    it.replace("null", "None")
-                        #print(ast.literal_eval(r_async_get))
-                        print(res)
-                        #if r_async_get == res:
-                        current_test_passed = True
+                r_async_get = r_async.get(5)
+                res0 = [10, 20, "Branch1Task.py"] #a_list[0]
+                a_list[0] = None
 
-                        #    current_test_passed = True
-
+                if r_async_get == a_list:
+                    current_test_passed = True
+                    res = str(a_list)
                 self.report(current_test_passed, inp, res, r_async_get)
+
+                time.sleep(10)
+                current_test_passed = False
+
+                a_list[0] = res0
+                r_async_get = r_async.get(5)
+                if str(r_async_get['__mfnuserdata']) == str(a_list).replace("'", '"'):
+                    current_test_passed = True
+                    res = str(a_list)
+                self.report(current_test_passed, inp, res, r_async_get)
+
                 any_failed_tests = any_failed_tests or (not current_test_passed)
 
                 time.sleep(1)

@@ -36,13 +36,11 @@ class Execution(object):
         self.url=url
 
     def get(self, timeout=60):
-        newHeaders = {'Content-type': 'application/json'}
         try:
             r = self.client._s.post(self.url,
-                headers=newHeaders,
                 timeout=timeout)
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
-            raise Exception("Retrieving result of workflow '"+self.name+"' from URL '"+self.url+"' failed due to "+type(e).__name__).with_traceback(sys.exc_info()[2])
+            raise Exception("Retrieving result of workflow from URL '"+self.url+"' failed due to "+type(e).__name__).with_traceback(sys.exc_info()[2])
         r.raise_for_status()
         return r.json()
 
@@ -242,6 +240,7 @@ class Workflow(object):
 
         # we are already deployed and have the endpoints stored in self._endpoints
         url = random.choice(self._endpoints)
+
         try:
             r = self.client._s.post(url,
                 params={'async':'True'},
@@ -249,11 +248,11 @@ class Workflow(object):
                 allow_redirects=False,
                 timeout=timeout)
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
-            raise Exception("Asynchronous execution of workflow '"+self.name+"' at URL '"+url+"' failed due to "+type(e).__name__)
+            raise Exception("Asynchronous execution of workflow at URL '"+url+"' failed due to "+type(e).__name__)
 
         r.raise_for_status()
-        return Execution(self.client, url)
-        #return Execution(self.client, host+r.headers['Location'])
+        myURL = url + "/?executionId=" + r.text.replace("-", "")
+        return Execution(self.client, myURL)
 
     def execute(self,data,timeout=60, check_duration=False):
         """ execute a workflow synchronously

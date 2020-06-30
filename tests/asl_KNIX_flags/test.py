@@ -32,7 +32,7 @@ class ASL_ParallelTest(unittest.TestCase):
 
     """
 
-    @unittest.skip("")
+    unittest.skip("")
     def test_parallel_waitfornumbranches(self):
         """ creates and executes the parallel workflow from the ASL description containing waitfornumbranches"""
         testtuplelist = []
@@ -41,7 +41,7 @@ class ASL_ParallelTest(unittest.TestCase):
         expectedResponse = [None, [10, 20, 'Branch2Task.py'], [10, 20, 'Branch3Task.py']]
 
         testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
-
+        """
         event = 'a'
         expectedResponse = [None, 'a Branch2Task.py', 'a Branch3Task.py']
 
@@ -51,14 +51,16 @@ class ASL_ParallelTest(unittest.TestCase):
         expectedResponse = [None, {"a": "b", "functionName": "Branch2Task.py"}, {"a": "b", "functionName": "Branch3Task.py"}]
 
         testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
-
+        """
         test = MFNTest(test_name="Parallel Wait for Num Branches", workflow_filename="wf_asl_parallel_waitfornumbranches.json")
         test.exec_tests_async(testtuplelist)
+
 
 
 class ASL_SessionSupportTest(unittest.TestCase):
 
     @classmethod
+    @unittest.skip("")
     def setUpClass(self):
         # 1. parse and obtain workflow
         self._test = MFNTest(workflow_filename="wf_asl_session_all.json")
@@ -68,7 +70,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
         self._session_id = self._setup_new_session()
         time.sleep(1)
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_session_setup(self):
         self._clear_workflow_logs()
         session_info = self._get_session_info()
@@ -81,7 +83,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
         else:
             self._test.report(True, "session_setup", True, True)
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_send_message_to_entire_session(self):
         success = True
 
@@ -105,7 +107,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
         if success:
             self._test.report(True, "send_message_to_session", True, True)
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_send_message_with_function_name(self):
         success = True
 
@@ -134,7 +136,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
         if success:
             self._test.report(True, "send_message_to_function", True, True)
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_send_message_with_session_function_id(self):
         success = True
 
@@ -169,7 +171,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
         if success:
             self._test.report(True, "send_message_to_function", True, True)
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_session_session_alias_operations(self):
         session_alias_summary = self._get_session_alias_summary()
 
@@ -220,7 +222,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
         else:
             self._test.report(True, "alias_summary: unset", True, True)
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_session_function_alias_operations(self):
         session_alias_summary = self._get_session_alias_summary()
 
@@ -352,7 +354,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
         if success:
             self._test.report(True, "alias_summary: unset", True, True)
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_stop_session(self):
         self._clear_workflow_logs()
         old_session_id = self._session_id
@@ -373,7 +375,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
             self._test.report(True, "session_stop", True, True)
 
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_send_heartbeat_update_message(self):
         # old heartbeat was 15000ms, new heartbeat should be 7500ms
         old_heartbeat_interval = 15000.0
@@ -618,7 +620,7 @@ class ASL_SessionSupportTest(unittest.TestCase):
 
 class ASL_DynamicParallelExecutionGroupsTest(unittest.TestCase):
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_wordcount(self):
         # test parameters
         size=100
@@ -654,7 +656,7 @@ class ASL_DynamicParallelExecutionGroupsTest(unittest.TestCase):
         print("Simple time total (ms): " + str(total_time_simple))
         print("MFN time total (ms): " + str(total_time))
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_wordcount_nested(self):
         # test parameters
         size = 5000
@@ -698,7 +700,7 @@ class ASL_DynamicParallelExecutionGroupsTest(unittest.TestCase):
         print("Simple time total (ms): " + str(total_time_simple))
         print("MFN time total (ms): " + str(total_time))
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_mergesort(self):
         # test parameters
         size = 200
