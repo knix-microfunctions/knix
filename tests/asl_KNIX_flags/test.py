@@ -63,7 +63,7 @@ class ASL_ParallelTest(unittest.TestCase):
         test = MFNTest(test_name="Parallel", workflow_filename="wf_asl_parallel_waitfornumbranches.json")
         test.exec_tests(testtuplelist, async=True)
 
-'''
+
 class ASL_SessionSupportTest(unittest.TestCase):
 
     @classmethod
@@ -334,7 +334,7 @@ class ASL_PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         print("Checkpoints off:")
         test.exec_tests(test_tuple_list, check_duration=True)
         #test.plot_latency_breakdown(20)
-'''
+
 def main():
     unittest.main()
 

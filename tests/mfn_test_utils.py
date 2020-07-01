@@ -446,19 +446,22 @@ class MFNTest():
                     durations.append(t_total)
                     #print("Total time to execute: " + str(t_total) + " (ms)")
 
-                # hold on to the Execution object, so that we can retrieve more results if needed
-                if async:
-                    rn_async = rn
-
                 if isinstance(res, str):
                     res = json.loads(res)
 
                 res_to_check = []
-                if not isinstance(res, list):
-                    res_to_check.append(res)
-                else:
-                    res_to_check = res
 
+                # hold on to the Execution object, so that we can retrieve more results if needed
+                if async:
+                    rn_async = rn
+
+                    if not isinstance(res, list):
+                        res_to_check.append(res)
+                    else:
+                        res_to_check = res
+                else:
+                    # some expected results can be lists
+                    res_to_check.append(res)
 
                 for cur_res in res_to_check:
                     # before we can compare results, we need to ensure that we get the actual result
