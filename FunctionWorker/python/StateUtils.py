@@ -43,7 +43,7 @@ class StateUtils:
     waitStateType = 'Wait'
     parallelStateType = 'Parallel'
     mapStateType = 'Map'
-    _instcnt = 0  # instance counter
+
     mapFunctionOutput =  {}
 
     def __init__(self, functionstatetype=defaultStateType, functionstatename='', functionstateinfo='{}', functionruntime="", logger=None, workflowid=None, sandboxid=None, functiontopic=None, datalayer=None, storage_userid=None, internal_endpoint=None):
@@ -85,9 +85,6 @@ class StateUtils:
         self.choiceNext = ''
 
         self.mapStateCounter = 0
-        #self._mapStateInfo = {}
-        #self.batchAlreadyLaunched = []
-        #self.currentMapInputMetadata = {} # initialise with empty dicts
         self.evaluateCounter = 0
 
         self.catcher_list = []
@@ -175,22 +172,12 @@ class StateUtils:
         #           in = raw_state_input[InputPath]
         #
         try:
-            #self._logger.debug("Current Function Type: " + self.functionstatetype)
-            #self._logger.debug("StateUtils: Input Path Dict: " + json.dumps(self.input_path_dict))
 
             function_input = raw_state_input
             if self.input_path_dict and 'InputPath' in self.input_path_dict:
-                #t_start = time.time()
                 function_input = self.process_input_path(self.input_path_dict, function_input)
-                #t_end = time.time()
-                #timestr = "%.15f" % ((t_end-t_start)*1.0E9)
-                #self._logger.debug("Input Path Processing Time (ns): " + timestr)
-            #self._logger.debug("StateUtils: Processed Value: " + json.dumps(function_input))
             return function_input
         except Exception:
-            #self._logger.exception("Input path processing exception")
-            #sys.stdout.flush()
-            #os._exit(1)
             raise Exception("Input path processing exception")
 
     # send a request to the java worker and get the result
@@ -517,9 +504,6 @@ class StateUtils:
             sapi.put(name_prefix + "_" + "mapStateInputValue", str(function_input[i]))
             sapi.put(name_prefix + "_" + "mapStateInputIndex", str(i))
 
-            #self._mapStateInfo["mapStateInputValue"] = str(function_input[i])
-            #self._mapStateInfo["mapStateInputIndex"] = str(i)
-
             self._logger.debug("\t Map State StartAt:" + startat)
             self._logger.debug("\t Map State input:" + str(function_input[i]))
 
@@ -529,24 +513,16 @@ class StateUtils:
 
         name_prefix = self.functiontopic + "_" + key
 
-        # function is triggered by post-commit hook with metadata containing information abaout state results in buckets.
+        # function is triggered by post-commit hook with metadata containing information about state results in buckets.
         # It collects these results and returns metadata and post_map_output_results
-
-        #self._logger.debug("[StateUtils] evaluatePostMap: ")
-        #self._logger.debug("\t key:" + key)
-        #self._logger.debug("\t metadata:" + json.dumps(metadata))
-        #self._logger.debug("\t function_input: " + str(function_input))
 
         action = metadata["__state_action"]
         assert action == "post_map_processing"
-        #counterValue = metadata["CounterValue"]
         counterValue = function_input["CounterValue"]
 
         state_counter = 0
         if "state_counter" in metadata:
             state_counter = metadata["state_counter"]
-
-        #self._logger.debug("[StateUtils] evaluatePostMap, metadata[state_counter]: " + str(metadata["state_counter"]))
 
         self._logger.debug("\t metadata:" + json.dumps(metadata))
 
@@ -558,7 +534,6 @@ class StateUtils:
         full_metadata = json.loads(full_metadata_encoded)
         full_metadata["state_counter"] = state_counter
 
-        #mapInfoKey = key + "_" + self.functionstatename + "_map_info"
         mapInfoKey = self.functionstatename + "_" + key  + "_map_info"
         mapInfo = full_metadata[mapInfoKey]
 
@@ -572,15 +547,15 @@ class StateUtils:
 
         k_list = mapInfo["k_list"]
 
-        self._logger.debug("\t action: " + action)
-        self._logger.debug("\t counterValue:" + str(counterValue))
+        #self._logger.debug("\t action: " + action)
+        #self._logger.debug("\t counterValue:" + str(counterValue))
         #self._logger.debug("\t WorkflowInstanceMetadataStorageKey:" + metadata["WorkflowInstanceMetadataStorageKey"])
         #self._logger.debug("\t full_metadata:" + full_metadata_encoded)
-        self._logger.debug("\t mapInfoKey: " + mapInfoKey)
+        #self._logger.debug("\t mapInfoKey: " + mapInfoKey)
         #self._logger.debug("\t mapInfo:" + json.dumps(mapInfo))
-        self._logger.debug("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
-        self._logger.debug("\t branchOutputKeysSet:" + str(branchOutputKeysSet))
-        self._logger.debug("\t k_list:" + str(k_list))
+        #self._logger.debug("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
+        #self._logger.debug("\t branchOutputKeysSet:" + str(branchOutputKeysSet))
+        #self._logger.debug("\t k_list:" + str(k_list))
 
         NumBranchesFinished = abs(counterValue)
         self._logger.debug("\t NumBranchesFinished:" + str(NumBranchesFinished))
@@ -645,11 +620,9 @@ class StateUtils:
             time.sleep(0.1) # wait until value is available
 
         mapStatePartialResult = ast.literal_eval(sapi.get(name_prefix + "_" + "mapStatePartialResult"))
-        #mapStatePartialResult = ast.literal_eval(self._mapStateInfo["mapStatePartialResult"])
 
         mapStatePartialResult += post_map_output_values
         sapi.put(name_prefix + "_" + "mapStatePartialResult", str(mapStatePartialResult))
-        #self._mapStateInfo["mapStatePartialResult"] = str(mapStatePartialResult)
 
         # now apply ResultPath and OutputPath
         if do_cleanup:
@@ -657,12 +630,10 @@ class StateUtils:
             sapi.deleteSet(branchOutputKeysSetKey)
 
         if ast.literal_eval(sapi.get(name_prefix + "_" + "mapInputCount")) == len(mapStatePartialResult):
-        # if ast.literal_eval(self._mapStateInfo["mapInputCount"]) == len(mapStatePartialResult):
 
             # we are ready to publish  but need to honour ResultPath and OutputPath
             res_raw = ast.literal_eval(sapi.get(name_prefix + "_" +"mapStatePartialResult"))
-            #res_raw = ast.literal_eval(self._mapStateInfo["mapStatePartialResult"])
-
+            
             # remove unwanted keys from input before publishing
             function_input = {}
 
@@ -843,11 +814,8 @@ class StateUtils:
 
             parentMapInfo = self.parsedfunctionstateinfo["ParentMapInfo"]
 
-            #self._logger.debug("[StateUtils] processBranchTerminalState:parentMapInfo: " + str(parentMapInfo))
             mapName = parentMapInfo["Name"]
-            #self._logger.debug("[StateUtils] processBranchTerminalState:mapName: " + str(mapName))
             mapInfoKey = mapName + "_" + key + "_map_info"
-            #self._logger.debug("[StateUtils] processBranchTerminalState:mapInfoKey: " + str(mapInfoKey))
 
             branchCounter = parentMapInfo["BranchCounter"]
 
@@ -875,7 +843,6 @@ class StateUtils:
 
                 counterName = str(mapInfo["CounterName"])
                 branchOutputKeys = mapInfo["BranchOutputKeys"]
-                #branchOutputKey = str(branchOutputKeys[branchCounter-1])
                 branchOutputKey = str(branchOutputKeys[current_index])
 
                 branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
@@ -967,7 +934,6 @@ class StateUtils:
                     sapi.delete(outputkey) # cleanup the key from data layer
             else:
                 post_parallel_output_values = post_parallel_output_values + [None]
-        sapi.put(key + "_" + str(counterValue), str(post_parallel_output_values))
 
         if do_cleanup:
             sapi.deleteSet(branchOutputKeysSetKey)
@@ -1055,7 +1021,6 @@ class StateUtils:
                     raise Exception("Wait state timestamp target lies in the past!" + str(wait_state_timestamppath_data[0]))
 
             else:
-                #self._logger.exception("[StateUtils] Wait state: Missing required field")
                 raise Exception("Wait state: Missing required field")
 
 
@@ -1123,18 +1088,10 @@ class StateUtils:
                 sapi.put(name_prefix + "_" + "mapStatePartialResult", "[]") # initialise the collector variable
                 sapi.put(name_prefix + "_" + "mapInputCount", str(len(function_input)))
 
-                """
-                metadata["tobeProcessedlater"] = str(tobeProcessedlater) # store elements to be processed on DL
-                metadata["mapStatePartialResult"] = "[]" # initialise the collector variable
-                metadata["mapInputCount"] =  str(len(function_input))
-
-                """
-
                 function_output, metadata = self.evaluateMapState(tobeProcessednow, key, metadata, sapi)
 
             elif metadata["__state_action"] == "post_map_processing":
                         tobeProcessedlater = ast.literal_eval(sapi.get(name_prefix + "_" + "tobeProcessedlater")) # get all elements that have not yet been processed
-                        #tobeProcessedlater = ast.literal_eval(self._mapStateInfo["tobeProcessedlater"]) # get all elements that have not yet been processed
                         self._logger.debug("[StateUtils] Map state post_map processing input:" + str(tobeProcessedlater))
                         # we need to decide at this point if there is a need for more batches. if so:
 
@@ -1142,8 +1099,8 @@ class StateUtils:
                             function_output, metadata2 = self.evaluatePostMap(function_input, key, metadata, sapi) # take care not to overwrite metadata
                             function_output, metadata = self.evaluateMapState(tobeProcessedlater[:maxConcurrency], key, metadata, sapi) # start a new batch
                             sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
-                            #self._mapStateInfo["tobeProcessedlater"] = str(tobeProcessedlater[maxConcurrency:]) # store remaining elements to be processed on DL
-                        else: # no more batches required. we are at the iteration end, publish the final result
+
+                        else:# no more batches required. we are at the iteration end, publish the final result
                             self._logger.debug("[StateUtils] Map state input final stage: " + str(function_input))
                             function_output, metadata = self.evaluatePostMap(function_input, key, metadata, sapi)
 
@@ -1279,7 +1236,6 @@ class StateUtils:
             if "Default" in statedef:
                 self.default_next_choice.append(statedef["Default"])
                 self._logger.debug("DefaultTarget: " + str(self.default_next_choice))
-            #choice_state_default = statedef['Default']
 
             choices_list = statedef['Choices'] # get the choice rule list for this state
             self._logger.debug("Choice state rules list: " + str(choices_list))
@@ -1326,20 +1282,8 @@ class StateUtils:
                         hostname = self.nodelist[-(i+no_childs+1)].split("/{")[0]
                         previousnode = anytree.Node(childname, key_dict[hostname])
 
-                #test = EvaluateNode(root.children[0])
-                #self._logger.debug("Evaluate: " + str(test) + ", Next: " + choices['Next']) # + str(json.dumps(value))
-                #input_json={}
-                #self._logger.debug("value type: " + value)
-                #for key in value.keys():
-                    #if key in test:
-                        #self._logger.debug("Modified Evaluate: " + key)
-                        #test.replace(key, test[key])
-                        #self._logger.debug("Modified Evaluate: " + test)
-                ##self._logger.debug("Resulting Rendered Tree: " + str(anytree.RenderTree(root)))
+                #self._logger.debug("Resulting Rendered Tree: " + str(anytree.RenderTree(root)))
                 self.parsed_trees.append(root)
-
-            #if statedef[substates]['Type'] == "Task":
-            #    self._logger.debug("Task state: " + json.dumps(statedef[substates]))
 
         if statetype == StateUtils.passStateType:
             self._logger.debug("[StateUtils] Pass state parsing")
@@ -1360,8 +1304,6 @@ class StateUtils:
                 self.parameters_dict['Parameters'] = statedef['Parameters']
                 self._logger.debug("found Parameters: " + json.dumps(self.parameters_dict['Parameters']))
 
-            #self._logger.debug("found Next:  " + json.dumps(statedef['Next']))
-            #self._logger.debug("found Result:  " + json.dumps(statedef['Result']))
 
         if statetype == StateUtils.parallelStateType:
             #self._logger.debug("[StateUtils] Parallel state parsing")
