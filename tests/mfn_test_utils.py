@@ -24,6 +24,7 @@ import statistics
 import subprocess
 import sys
 import time
+import ast
 
 from mfn_sdk import MfnClient
 
@@ -383,30 +384,43 @@ class MFNTest():
                     durations.append(t_total)
                     #print("Total time to execute: " + str(t_total) + " (ms)")
 
-                # before we can compare results, we need to ensure that we get the actual result
-                # if we executed asynchronously, we'll have to wait until we get the result
-                # the 'rn' variable here would be an Execution object
+                if isinstance(res, str):
+                    res = json.loads(res)
+
+                res_to_check = []
+
+                # hold on to the Execution object, so that we can retrieve more results if needed
                 if async:
-                    ret = rn.get()
-                    rn = ret
+                    rn_async = rn
 
-                if check_just_keys:
-                    if isinstance(res, str):
-                        res = json.loads(res)
-
-                    if set(rn.keys()) == set(res.keys()):
-                         current_test_passed = True
+                    if not isinstance(res, list):
+                        res_to_check.append(res)
                     else:
-                        raise Exception("Error: unsupported workflow result type")
-
+                        res_to_check = res
                 else:
-                    if rn == json.loads(res):
-                        current_test_passed = True
+                    # some expected results can be lists
+                    res_to_check.append(res)
 
-                self.report(current_test_passed, inp, res, rn)
-                any_failed_tests = any_failed_tests or (not current_test_passed)
+                for cur_res in res_to_check:
+                    # before we can compare results, we need to ensure that we get the actual result
+                    # if we executed asynchronously, we'll have to wait until we get the result
+                    if async:
+                        rn = rn_async.get()
 
-                time.sleep(1)
+                    if check_just_keys:
+                        if set(rn.keys()) == set(cur_res.keys()):
+                             current_test_passed = True
+                        else:
+                            raise Exception("Error: unsupported workflow result type")
+
+                    else:
+                        if rn == cur_res:
+                            current_test_passed = True
+
+                    self.report(current_test_passed, inp, cur_res, rn)
+                    any_failed_tests = any_failed_tests or (not current_test_passed)
+
+                    time.sleep(1)
 
         except Exception as e:
             print(str(e))

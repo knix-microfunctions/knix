@@ -26,9 +26,48 @@ import random
 sys.path.append("../")
 from mfn_test_utils import MFNTest
 
+class ASL_ParallelTest(unittest.TestCase):
+
+    """ Parallel state test using KNIX WaitForNumBranches parameter
+
+    """
+
+    def test_parallel_waitfornumbranches(self):
+        """ creates and executes the parallel workflow from the ASL description containing waitfornumbranches"""
+        testtuplelist = []
+
+        event = [10,20]
+        expectedResponses = []
+        er1 = [None, [10, 20, 'Branch2Task.py'], [10, 20, 'Branch3Task.py']]
+        er2 = [[10, 20, 'Branch1Task.py'], [10, 20, 'Branch2Task.py'], [10, 20, 'Branch3Task.py']]
+        expectedResponses.append(er1)
+        expectedResponses.append(er2)
+        testtuplelist.append((json.dumps(event), json.dumps(expectedResponses)))
+
+        event = 'a'
+        expectedResponses = []
+        er1 = [None, 'a Branch2Task.py', 'a Branch3Task.py']
+        er2 = ['a Branch1Task.py', 'a Branch2Task.py', 'a Branch3Task.py']
+        expectedResponses.append(er1)
+        expectedResponses.append(er2)
+        testtuplelist.append((json.dumps(event), json.dumps(expectedResponses)))
+
+        event = {"a": "b"}
+        expectedResponses = []
+        er1 = [None, {"a": "b", "functionName": "Branch2Task.py"}, {"a": "b", "functionName": "Branch3Task.py"}]
+        er2 = [{"a": "b", "functionName": "Branch1Task.py"}, {"a": "b", "functionName": "Branch2Task.py"}, {"a": "b", "functionName": "Branch3Task.py"}]
+        expectedResponses.append(er1)
+        expectedResponses.append(er2)
+        testtuplelist.append((json.dumps(event), json.dumps(expectedResponses)))
+
+        test = MFNTest(test_name="Parallel", workflow_filename="wf_asl_parallel_waitfornumbranches.json")
+        test.exec_tests(testtuplelist, async=True)
+
+
 class ASL_SessionSupportTest(unittest.TestCase):
 
     @classmethod
+    #@unittest.skip("")
     def setUpClass(self):
         # 1. parse and obtain workflow
         self._test = MFNTest(workflow_filename="wf_asl_session_all.json")
