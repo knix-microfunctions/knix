@@ -426,9 +426,7 @@ class StateUtils:
 
         iterator = self.parsedfunctionstateinfo["Iterator"]
 
-        k_list = [total_branch_count]
-
-        counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
+        counter_name_trigger_metadata = {"k-list": klist, "total-branches": total_branch_count}
 
         # dynamic values used for generation of branches
         counter_name_key = key
@@ -461,7 +459,7 @@ class StateUtils:
         mapInfo["CounterName"] = CounterName
         mapInfo["MaxConcurrency"] = maxConcurrency
         mapInfo["BranchOutputKeysSetKey"] = workflow_instance_outputkeys_set_key
-        mapInfo["k_list"] = k_list
+        mapInfo["Klist"] = klist
 
         mapInfo_key = self.functionstatename + "_" + key  + "_map_info"
 
@@ -545,7 +543,7 @@ class StateUtils:
             self._logger.error("[StateUtils] branchOutputKeysSet is empty")
             raise Exception("[StateUtils] branchOutputKeysSet is empty")
 
-        k_list = mapInfo["k_list"]
+        klist = mapInfo["Klist"]
 
         #self._logger.debug("\t action: " + action)
         #self._logger.debug("\t counterValue:" + str(counterValue))
@@ -555,14 +553,14 @@ class StateUtils:
         #self._logger.debug("\t mapInfo:" + json.dumps(mapInfo))
         #self._logger.debug("\t branchOutputKeysSetKey:" + branchOutputKeysSetKey)
         #self._logger.debug("\t branchOutputKeysSet:" + str(branchOutputKeysSet))
-        #self._logger.debug("\t k_list:" + str(k_list))
+        #self._logger.debug("\t klist:" + str(klist))
 
         NumBranchesFinished = abs(counterValue)
         self._logger.debug("\t NumBranchesFinished:" + str(NumBranchesFinished))
 
         do_cleanup = False
 
-        if k_list[-1] == NumBranchesFinished:
+        if klist[-1] == NumBranchesFinished:
             do_cleanup = True
 
         self._logger.debug("\t do_cleanup:" + str(do_cleanup))
@@ -633,7 +631,7 @@ class StateUtils:
 
             # we are ready to publish  but need to honour ResultPath and OutputPath
             res_raw = ast.literal_eval(sapi.get(name_prefix + "_" +"mapStatePartialResult"))
-            
+
             # remove unwanted keys from input before publishing
             function_input = {}
 
@@ -659,14 +657,14 @@ class StateUtils:
         total_branch_count = self.parsedfunctionstateinfo["BranchCount"]
         assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
 
-        k_list = []
+        klist = []
         if "WaitForNumBranches" in self.parsedfunctionstateinfo:
-            k_list = self.parsedfunctionstateinfo["WaitForNumBranches"]
-            if not isinstance(k_list, list):
+            klist = self.parsedfunctionstateinfo["WaitForNumBranches"]
+            if not isinstance(klist, list):
                 self._logger.info("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
                 raise Exception("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
-            k_list.sort()
-            for k in k_list:
+            klist.sort()
+            for k in klist:
                 if not isinstance(k, int):
                     self._logger.info("(StateUtils) Values inside WaitForNumBranches must be integers")
                     raise Exception("(StateUtils) Values inside WaitForNumBranches must be integers")
@@ -674,12 +672,10 @@ class StateUtils:
                     self._logger.info("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
                     raise Exception("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
         else:
-            k_list.append(total_branch_count)
-
-        klist = k_list
+            klist.append(total_branch_count)
 
         counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
-        counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
+        counter_name_trigger_metadata = {"k-list": klist, "total-branches": total_branch_count}
         counter_name_key = key
 
         # dynamic values
@@ -893,10 +889,10 @@ class StateUtils:
             self._logger.error("[StateUtils] branchOutputKeysSet is empty")
             raise Exception("[StateUtils] branchOutputKeysSet is empty")
 
-        k_list = parallelInfo["Klist"]
+        klist = parallelInfo["Klist"]
         NumBranchesFinished = abs(counterValue)
         do_cleanup = False
-        if k_list[-1] == NumBranchesFinished:
+        if klist[-1] == NumBranchesFinished:
             do_cleanup = True
 
         counterName = str(parallelInfo["CounterName"])

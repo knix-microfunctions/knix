@@ -317,10 +317,10 @@ class MFNTest():
                 self._client.delete_workflow(wf)
                 break
 
-        #existing_resources = self._client.functions
+        existing_resources = self._client.functions
 
-        #for resource_name in self._workflow_resources:
-        #    self._delete_resource_if_existing(existing_resources, resource_name)
+        for resource_name in self._workflow_resources:
+            self._delete_resource_if_existing(existing_resources, resource_name)
 
     def get_test_workflow_endpoints(self):
         if self._workflow.status == "deployed":
