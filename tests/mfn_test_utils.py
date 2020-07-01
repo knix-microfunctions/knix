@@ -334,11 +334,6 @@ class MFNTest():
         else:
             return self._workflow.execute(message, timeout, check_duration)
 
-    def execute_async(self, message, timeout=None):
-        if timeout is None:
-            timeout = self._settings["timeout"]
-        return self._workflow.execute_async(message, timeout)
-
     def get_workflow_logs(self, num_lines=500):
         data = self._workflow.logs(ts_earliest=self._log_clear_timestamp, num_lines=num_lines)
         return data
@@ -370,63 +365,6 @@ class MFNTest():
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
 
-    '''
-    def exec_tests_waitfornumbranches_async(self, testtuplelist, check_just_keys=False, should_undeploy=True):
-        any_failed_tests = False
-
-        time.sleep(2)
-
-        try:
-            current_test_passed = False
-            for tup in testtuplelist:
-                current_test_passed = False
-                inp, res = tup
-                a_list = json.loads(res)
-
-                r_async = self.execute_async(json.loads(inp))
-                time.sleep(1)
-
-                r_async_get = (r_async.get(5)) # is a list
-
-
-                res0 = a_list[0]
-                res1 = a_list[1]
-                res2 = a_list[2]
-                #null = None
-                r_async_get_str = str(json.loads(json.dumps(r_async_get['__mfnuserdata']))).replace("null", "None")
-                # preparing data for iteration on k-list[0]
-                a_list[0] = None
-                if r_async_get_str == str(a_list).replace("'", '"'):
-                    current_test_passed = True
-                self.report(current_test_passed, inp, res, r_async_get_str)
-
-                current_test_passed = False
-                time.sleep(10) # wait for termination for k-list[0]
-
-                # preparing data for iteration on k-list[1]
-                a_list[0] = res0
-                r_async_get = r_async.get(5)
-                r_async_get_str = str(json.loads(json.dumps(r_async_get['__mfnuserdata']))).replace("null", "None")
-                # if str(r_async_get['__mfnuserdata']) == str(a_list).replace("'", '"'):
-                if r_async_get_str == str(a_list).replace("'", '"'):
-                    current_test_passed = True
-                self.report(current_test_passed, inp, res, r_async_get_str)
-
-                any_failed_tests = any_failed_tests or (not current_test_passed)
-
-                time.sleep(1)
-
-        except Exception as e:
-            print(str(e))
-            raise e
-        finally:
-            time.sleep(2)
-            if any_failed_tests:
-                self._print_logs(self._workflow.logs())
-            if should_undeploy:
-                self.undeploy_workflow()
-                self.cleanup()
-    '''
     def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async=False):
         any_failed_tests = False
         durations = []
