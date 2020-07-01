@@ -223,7 +223,7 @@ class Workflow(object):
         """ execute a workflow asynchronously and returns an Execution object
 
         The function delivers an event to the frontend and returns an Execution object. Note that the timeout here applies to the delivery of the event, another timeout can be used when fetching the result with the Execution.get(timeout) method
-        see Executio execute_async execute_asyncn.get()
+        see Execution execute_async execute_async.get()
 
         :param data: the event dictionary passed to the workflow
         :type data: dict()
