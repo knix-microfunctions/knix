@@ -34,6 +34,8 @@ $(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerServic
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ /usr/src/datalayer/thrift/DataLayerMessage.thrift; thrift --gen java -out ./src/main/java/ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
+x: $(THRIFT)
+
 # In case the user doesn't have maven configurations in the home directory, we need to create it
 ~/.m2/settings-docker.xml: settings-docker.xml.sample
 	if [ ! -e ~/.m2 ]; then mkdir ~/.m2; fi
@@ -51,7 +53,7 @@ $(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerServic
 
 GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 SOURCES=$(shell find ./src/main -type f -size +1c)
-target/frontend.jar: $(SOURCES) pom.xml ~/.m2/settings-docker.xml
+target/frontend.jar: $(SOURCES) $(THRIFT) pom.xml ~/.m2/settings-docker.xml
 	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
 	docker run --rm --name frontend-maven \
 	--user $(UID):$(GID) \
