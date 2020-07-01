@@ -414,7 +414,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       http.Error(w, "Error submitting event to system", http.StatusInternalServerError)
     } else {
-      w.Write(mid)
+      w.Write([]byte(id))
     }
   } else {
     // Create entry and lock to wait on

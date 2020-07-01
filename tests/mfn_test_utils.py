@@ -111,9 +111,9 @@ class MFNTest():
 
         if len(settings) == 0:
             raise Exception("Empty settings")
-        
+
         # Defaults
-        settings.setdefault("timeout",60)
+        settings.setdefault("timeout", 60)
 
         return settings
 
@@ -325,10 +325,13 @@ class MFNTest():
         if self._workflow.status == "deployed":
             return self._workflow.endpoints
 
-    def execute(self, message, timeout=None, check_duration=False):
+    def execute(self, message, timeout=None, check_duration=False, async=False):
         if timeout is None:
             timeout = self._settings["timeout"]
-        return self._workflow.execute(message, timeout, check_duration)
+        if async:
+            return self._workflow.execute_async(message, timeout)
+        else:
+            return self._workflow.execute(message, timeout, check_duration)
 
     def get_workflow_logs(self, num_lines=500):
         data = self._workflow.logs(ts_earliest=self._log_clear_timestamp, num_lines=num_lines)
@@ -361,7 +364,7 @@ class MFNTest():
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
 
-    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True):
+    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async=False):
         any_failed_tests = False
         durations = []
 
@@ -374,11 +377,18 @@ class MFNTest():
                 if check_duration:
                     rn, t_total = self.execute(json.loads(inp), check_duration=check_duration)
                 else:
-                    rn = self.execute(json.loads(inp))
+                    rn = self.execute(json.loads(inp), async=async)
 
                 if check_duration:
                     durations.append(t_total)
                     #print("Total time to execute: " + str(t_total) + " (ms)")
+
+                # before we can compare results, we need to ensure that we get the actual result
+                # if we executed asynchronously, we'll have to wait until we get the result
+                # the 'rn' variable here would be an Execution object
+                if async:
+                    ret = rn.get()
+                    rn = ret
 
                 if check_just_keys:
                     if isinstance(res, str):
