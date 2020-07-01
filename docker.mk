@@ -40,7 +40,7 @@ define push_image
 		MANIFEST=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' http://$(REGISTRY)/v2/$(1)/manifests/$(VERSION) || echo ""); \
 	fi; \
 	RID=$$(echo $$MANIFEST|python -c 'import json; import sys; print(json.loads(sys.stdin.read())["config"]["digest"].split(":")[1])' 2>/dev/null|| echo ""); \
-	if [[ ! -z "$${RID}" && "$${RID}" == "$${ID}"* ]]; then \
+	if [[ ! -z "$${ID}" && ! -z "$${RID}" && "$${RID}" == "$${ID}"* ]]; then \
 		echo "Already pushed local image $(1) ($${ID}) as $(REGISTRY)/$(1):$(VERSION) ($${RID})"; \
 	else \
 		echo "Tagging and pushing $(1) as $(REGISTRY)/$(1):$(VERSION)"; \

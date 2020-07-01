@@ -44,7 +44,8 @@ app/pages/docs/sdk/sdk.md: ../mfn_sdk/README.md
 app/pages/docs/sdk/cli.md: ../mfn_cli/README.md
 	cp ../mfn_cli/README.md app/pages/docs/sdk/cli.md
 
-image:	app/pages/docs/sdk/cli.md \
+image:	$(shell find . -type f -not -name Makefile) \
+	app/pages/docs/sdk/cli.md \
 	app/pages/docs/sdk/sdk.md \
 	app/pages/docs/api/javadoc/index.html \
 	app/pages/docs/api/python/MicroFunctionsAPI.html

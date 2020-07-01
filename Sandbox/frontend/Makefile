@@ -85,24 +85,3 @@ frontend: mfnmessage.go localqueueservice datalayermessage datalayerservice $(SO
 
 clean:
 	rm -rf frontend mfnmessage.go mfnworkflow.go localqueueservice datalayermessage datalayerservice
-
-test: frontend
-	mkdir -p logs
-	MFN_DATALAYER=192.168.137.111:4998 \
-	MFN_QUEUE=192.168.137.111:4999 \
-	MFN_QUEUE=192.168.137.111:4999 \
-	MFN_ENTRYTOPIC=abc \
-	MFN_RESULTTOPIC=abc \
-	USERID=admin@management \
-	SANDBOXID=Management \
-	WORKFLOWID=Management \
-	PORT=33333 \
-	./frontend &
-	sleep 3
-	curl -sS -H 'Content-type: application/json' --data '{"foo":"bar","mybool":true,"mynum":5.5}' "http://127.0.0.1:33333/"
-	sleep 1
-	EID=$$(curl -sS --max-redirs 0 -H 'Content-type: application/json' --data '{"foo":"bar","mybool":true,"mynum":5.5}' "http://127.0.0.1:33333/?async=1"); echo ""; echo "Fetching result of $$EID (first async attempt)"; echo $$(curl -sS -H 'Content-type: application/json' "http://127.0.0.1:33333/?executionId=$${EID}&async=true"); sleep 2; echo "Fetching result of $$EID (second async attempt)"; echo $$(curl -sS -H 'Content-type: application/json' "http://127.0.0.1:33333/?executionId=$${EID}&async=true")
-	sleep 2
-	EID=$$(curl -sS --max-redirs 0 -H 'Content-type: application/json' --data '{"foo":"bar","mybool":true,"mynum":5.5}' "http://127.0.0.1:33333/?async=1"); echo ""; echo "Fetching result of $$EID (concurrent synchronous attempts)"; for (( x=0;x<5;x++ )); do echo $$(curl -sS -H 'Content-type: application/json' "http://127.0.0.1:33333/?executionId=$${EID}") & done; echo ""
-	sleep 2
-	pkill frontend
