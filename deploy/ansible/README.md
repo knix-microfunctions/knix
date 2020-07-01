@@ -61,7 +61,7 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 
         ```bash
         sudo usermod -a -G docker your-username
-        newgrp docker
+        #newgrp docker (if you don't want to log out and in to activate the change to group)
         ```
 
     * Set docker proxies by updating `/etc/systemd/system/docker.service.d/http-proxy.conf`
@@ -114,6 +114,7 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 
 3. Update `settings.json`
     * `mfn_server_installation_folder`: folder where KNIX will be installed
+    * `riak_leveldb_maximum_memory`: total memory (in bytes) assigned to each Riak storage node's LevelDB backend
     * `nginx_http_listen_port`: http port the ngix server, serving the KNIX GUI, will listen on
     * `nginx_https_listen_port`: https port the ngix server, serving the KNIX GUI, will listen on
     * `management_service_exposed_port`: http port management service of KNIX will listen on
