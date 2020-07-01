@@ -88,25 +88,26 @@ riak:
   ClientPortProtobuf: 8087
   resources:
     limits:
-      cpu: 1
-      memory: 3Gi
+      cpu: 4
+      memory: 8Gi
     requests:
-     cpu: 1
-     memory: 1Gi
-  DataStorage: 2Gi
+      cpu: 4
+      memory: 8Gi
+  DataStorage: 8Gi
+  #DataStorageClass: local-volume 
   ClusterName: "riak"
   WaitForErlang: 180
   ErlangDistributionPortRangeMinimum: 6000
   ErlangDistributionPortRangeMaximum: 6999
   LogConsoleLevel: "debug"
-  BitcaskMergePolicy: "always"
-  BitcaskMergeTriggersFragmentation: 20
-  BitcaskMergeTriggersDeadBytes: "2MB"
-  BitcaskMergeThresholdsFragmentation: 10
-  BitcaskMergeThresholdsDeadBytes: "1MB"
-  BitcaskMergeThresholdsSmallFile: "512GB"
-  BitcaskMergeCheckInterval: "1m"
-  BitcaskMaxFileSize: "100MB"
+  StorageBackend: "leveldb"
+  LevelDbMaximumMemory: 4294967296
+  AntiEntropy: "passive"
+  # Should be <= resources.limits.cpu
+  ErlangSchedulersTotal: 4
+  ErlangSchedulersOnline: 4
+  ErlangSchedulersForceWakeupInterval: 500
+  ErlangSchedulersCompactionOfLoad: "false"
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs

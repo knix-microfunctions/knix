@@ -28,7 +28,7 @@ def handle(event, context):
 	float_add = 10.0
 	print('Hello from ' + name)
 	print(type(event))
-	time.sleep(2)
+	time.sleep(5)
 	if type(event) == type({}):
 		print_dict(event)
 		event['functionName'] = name

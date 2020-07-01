@@ -32,7 +32,7 @@ build_thrift:
 ##############################
 ## Build
 
-frontend/frontend: $(shell find frontend/ -type f)
+frontend/frontend: $(shell find frontend/ -type f -not -wholename frontend/frontend)
 	make -C frontend
 
 SBASOURCE = $(shell find ../SandboxAgent)

@@ -1,4 +1,4 @@
-target/
-mfnapi.jar
-src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java
+/target/
+/mfnapi.jar
+/src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java
 .settings/

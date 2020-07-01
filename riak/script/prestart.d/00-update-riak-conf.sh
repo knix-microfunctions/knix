@@ -21,14 +21,15 @@ sed -i -r 's/^listener\.http\.internal .*$//' $RIAK_CONF
 sed -i -r 's/^erlang\.distribution\.port_range\.minimum .*$//' $RIAK_CONF
 sed -i -r 's/^erlang\.distribution\.port_range\.maximum .*$//' $RIAK_CONF
 sed -i -r 's/^log\.console\.level .*$//' $RIAK_CONF
-sed -i -r 's/^bitcask\.merge\.policy .*$//' $RIAK_CONF
-sed -i -r 's/^bitcask\.merge\.triggers\.fragmentation .*$//' $RIAK_CONF
-sed -i -r 's/^bitcask\.merge\.triggers\.dead_bytes .*$//' $RIAK_CONF
-sed -i -r 's/^bitcask\.merge\.thresholds\.fragmentation .*$//' $RIAK_CONF
-sed -i -r 's/^bitcask\.merge\.thresholds\.dead_bytes .*$//' $RIAK_CONF
-sed -i -r 's/^bitcask\.merge\.thresholds\.small_file .*$//' $RIAK_CONF
-sed -i -r 's/^bitcask\.merge_check_interval .*$//' $RIAK_CONF
-sed -i -r 's/^bitcask\.max_file_size .*$//' $RIAK_CONF
+sed -i -r 's/^storage_backend .*$//' $RIAK_CONF
+sed -i -r 's/^leveldb\.maximum_memory\.percent .*$//' $RIAK_CONF
+sed -i -r 's/^leveldb\.maximum_memory .*$//' $RIAK_CONF
+sed -i -r 's/^anti_entropy .*$//' $RIAK_CONF
+sed -i -r 's/^erlang\.schedulers\.total .*$//' $RIAK_CONF
+sed -i -r 's/^erlang\.schedulers\.online .*$//' $RIAK_CONF
+sed -i -r 's/^erlang\.schedulers\.force_wakeup_interval .*$//' $RIAK_CONF
+sed -i -r 's/^erlang\.schedulers\.compaction_of_load .*$//' $RIAK_CONF
+
 
 cat <<END >>$RIAK_CONF
 nodename = riak@$HOSTNAME
@@ -38,14 +39,13 @@ listener.http.internal = 0.0.0.0:$HTTP_PORT
 erlang.distribution.port_range.minimum = $ERLANG_DISTRIBUTION_PORT_RANGE_MINIMUM
 erlang.distribution.port_range.maximum = $ERLANG_DISTRIBUTION_PORT_RANGE_MAXIMUM
 log.console.level = $LOG_CONSOLE_LEVEL
-bitcask.merge.policy = $BITCASK_MERGE_POLICY
-bitcask.merge_check_interval = $BITCASK_MERGE_CHECK_INTERVAL
-bitcask.merge.triggers.fragmentation = $BITCASK_MERGE_TRIGGERS_FRAGMENTATION
-bitcask.merge.triggers.dead_bytes = $BITCASK_MERGE_TRIGGERS_DEAD_BYTES
-bitcask.merge.thresholds.fragmentation = $BITCASK_MERGE_THRESHOLDS_FRAGMENTATION
-bitcask.merge.thresholds.dead_bytes = $BITCASK_MERGE_THRESHOLDS_DEAD_BYTES
-bitcask.merge.thresholds.small_file = $BITCASK_MERGE_THRESHOLDS_SMALL_FILE
-bitcask.max_file_size = $BITCASK_MAX_FILE_SIZE
+storage_backend = $STORAGE_BACKEND
+leveldb.maximum_memory = $LEVEL_DB_MAXIMUM_MEMORY
+anti_entropy = $ANTI_ENTROPY
+erlang.schedulers.total = $ERLANG_SCHEDULERS_TOTAL
+erlang.schedulers.online = $ERLANG_SCHEDULERS_ONLINE
+erlang.schedulers.force_wakeup_interval = $ERLANG_SCHEDULERS_FORCE_WAKEUP_INTERVAL
+erlang.schedulers.compaction_of_load = $ERLANG_SCHEDULERS_COMPACTION_OF_LOAD
 END
 
 # Maybe add user config items

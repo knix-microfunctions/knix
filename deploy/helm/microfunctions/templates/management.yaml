@@ -19,13 +19,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: "{{ template "manager.fullname" . }}"
-  namespace: "{{.Release.Namespace}}"
+  namespace: {{ .Release.Namespace }}
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: "{{ template "manager.fullname" . }}-role"
-  namespace: "{{.Release.Namespace}}"
+  namespace: {{ .Release.Namespace }}
 rules:
   # Allow reading/writing "knative services" 
   - apiGroups: ["serving.knative.dev"]
@@ -44,7 +44,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: "{{ template "manager.fullname" . }}-role-binding"
-  namespace: "{{.Release.Namespace}}"
+  namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -64,7 +64,7 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: "wf-{{ .Release.Name }}-role"
-  namespace: "{{.Release.Namespace}}"
+  namespace: {{ .Release.Namespace }}
 rules:
   # Allow reading "endpoints" 
   - apiGroups: [""]
@@ -75,7 +75,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: "wf-{{ .Release.Name }}-role-binding"
-  namespace: "{{.Release.Namespace}}"
+  namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -93,6 +93,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "manager.fullname" .  }}-new-workflow-conf
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "manager.name" . | quote }}
     release: {{ .Release.Name | quote }}
@@ -206,6 +207,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "manager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "manager.name" . | quote }}
     release: {{ .Release.Name | quote }}

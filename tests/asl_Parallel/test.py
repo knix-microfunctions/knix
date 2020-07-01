@@ -47,5 +47,18 @@ class ParallelTest(unittest.TestCase):
 
         test = MFNTest(test_name="Parallel", workflow_filename="workflow_parallel_state_test.json")
         test.exec_tests(testtuplelist)
-        
 
+    def test_parallel_fun_with_math(self):
+        """ creates and executes the parallel fun with math workflow from the ASL description """
+        testtuplelist = []
+
+        event = [3, 2]
+        expectedResponse = [5, 1]
+        testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
+
+        event = [5, 1]
+        expectedResponse = [6, 4]
+        testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
+
+        test = MFNTest(test_name="Parallel Fun with Math", workflow_filename="workflow_parallel_state_fun_test.json")
+        test.exec_tests(testtuplelist)

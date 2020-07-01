@@ -50,8 +50,8 @@ def check_workflow_functions(wf_type, wfobj, email, sapi):
 
             if wf_state_map[state_names]["Type"] == "Map":
                 mapStateName = state_names
-                iterator = wf_state_map[mapStateName]['Iterator'] # this is a dict 
-                
+                iterator = wf_state_map[mapStateName]['Iterator'] # this is a dict
+
                 states_dict = iterator['States'] # this is a also dict
                 print (json.dumps(states_dict))
                 for state in states_dict.keys():
@@ -257,9 +257,6 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     except IOError as e:
         raise Exception("Unable to load "+ksvc_file+". Ensure that the configmap has been setup properly", e)
 
-    #app_name = new_workflow_conf['app'] if 'app' in new_workflow_conf else 'sand'
-    #release_name = new_workflow_conf['release'] if 'release' in new_workflow_conf else 'local'
-
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
     wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').lower() + '-wf'
     wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').lower() + '-wf'
@@ -269,7 +266,7 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     if 'app.fullname.prefix' in new_workflow_conf:
         app_fullname_prefix = new_workflow_conf['app.fullname.prefix']+'-'# + wfNameSanitized + '-' + emailSanitized + '-'
 
-    # Create a Deployment with SAND_USER, SAND_WORKFLOW and SANDBOXID set correctly
+    # Create a Deployment
     with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r") as f:
         token = f.read()
     with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
@@ -277,9 +274,6 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
 
     ksvcname = app_fullname_prefix + workflow_info["workflowId"].lower()
     endpoint_key = hashlib.sha256(str(time.time()).encode()).hexdigest()
-
-    with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r") as f:
-        token = f.read()
 
     kservice['metadata']['name'] = ksvcname
     kservice['metadata']['namespace'] = namespace

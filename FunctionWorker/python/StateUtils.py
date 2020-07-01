@@ -439,8 +439,6 @@ class StateUtils:
 
         iterator = self.parsedfunctionstateinfo["Iterator"]
 
-        assert total_branch_count == len(self.parsedfunctionstateinfo["Branches"])
-
         k_list = [total_branch_count]
 
         counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
@@ -465,7 +463,7 @@ class StateUtils:
 
         CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
 
-        # prepare mapInfo metadata 
+        # prepare mapInfo metadata
         workflow_instance_outputkeys_set_key = key +"_"+ self.functionstatename + "_outputkeys_set"
         mapInfo = {}
         mapInfo["CounterTopicName"] = counter_name_topic
@@ -712,7 +710,7 @@ class StateUtils:
         counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
         counter_name_trigger_metadata = {"k-list": k_list, "total-branches": total_branch_count}
         counter_name_key = key
- 
+
         # dynamic values
         branch_out_keys = []
         for i in range(total_branch_count):
@@ -742,7 +740,7 @@ class StateUtils:
         counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
 
         CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
- 
+
         #CounterName = name_prefix + "_counter"
         counter_metadata_key_name = CounterName + "_metadata"
         workflow_instance_outputkeys_set_key = name_prefix + "_outputkeys_set"

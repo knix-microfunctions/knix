@@ -52,7 +52,7 @@ def create_state(wf_node, resource, logger):
 
     # copy the resource into the state folder
     # if multiple states use the same resource, this will ensure that they get their own copies
-    cpcmd = "cp -a " + resource["dirpath"] + " " + dirpath
+    cpcmd = 'cp -a "%s" "%s"' % (resource["dirpath"], dirpath) # modify to allow for white space in state name
 
     logger.info("Copying resource for state: %s", statename)
     error, _ = process_utils.run_command(cpcmd, logger, wait_output=True)
