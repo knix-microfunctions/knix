@@ -82,6 +82,9 @@ spec:
       resources:
         requests:
           storage: {{ .Values.riak.DataStorage }}
+      {{- if (.Values.riak.DataStorageClass) }}
+      storageClassName: {{ .Values.riak.DataStorageClass }}
+      {{- end }}
   template:
     metadata:
       labels:

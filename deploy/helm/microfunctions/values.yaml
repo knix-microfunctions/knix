@@ -94,6 +94,7 @@ riak:
       cpu: 4
       memory: 8Gi
   DataStorage: 8Gi
+  #DataStorageClass: local-volume 
   ClusterName: "riak"
   WaitForErlang: 180
   ErlangDistributionPortRangeMinimum: 6000
