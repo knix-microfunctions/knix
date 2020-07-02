@@ -31,9 +31,7 @@
 
     var token = $cookies.get('token');
     var email = $cookies.get('email');
-    var urlPath = "/storage/";
-
-
+    var urlPath = sharedProperties.getUrlPath();
 
     //$scope.storageObjects = sharedData.getStorageObjects();
     if (!$scope.storageObjects) {
@@ -59,23 +57,36 @@
     function getStorageObjectsList() {
 
       var req = {
-        method: 'GET',
-        url: urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=listKeys&start=0&count=2000",
-        headers: {
-             'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      }
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "listkeys", "start": 1, "count": 2000} } })
+       }
 
       $http(req).then(function successCallback(response) {
-
+           if (response.data.status=="success") {
           $scope.storageObjects = [ ];
-          for (var i=0;i<response.data.length;i++) {
-            if (!response.data[i].startsWith("grain_requirements_") && !response.data[i].startsWith("grain_source_") && !response.data[i].startsWith("workflow_json_") && !response.data[i].endsWith("_metadata")) {
-              $scope.storageObjects.push({"key" : response.data[i], "modified" : "Z"});
+          for (var i=0;i<response.data.data.keylist.length;i++) {
+            if (!response.data.data.keylist[i].startsWith("grain_requirements_") && !response.data.data.keylist[i].startsWith("grain_source_") && !response.data.data.keylist[i].startsWith("workflow_json_") && !response.data.data.keylist[i].endsWith("_metadata"))
+            {
+              $scope.storageObjects.push({"key" : response.data.data.keylist[i], "modified" : "Z"});
             }
           }
           //sharedData.setStorageObjects($scope.storageObjects);
 
+           } else {
+             console.log("Failure status returned by performStorageAction / listKeys");
+             console.log("Message:" + response.data.data.message);
+             $scope.errorMessage = response.data.data.message;
+             $uibModal.open({
+               animation: true,
+               scope: $scope,
+               templateUrl: 'app/pages/workflows/modals/errorModal.html',
+               size: 'md',
+             });
+           }
       }, function errorCallback(response) {
           console.log("Error occurred during listKeys action");
           console.log("Response:" + response);
@@ -111,67 +122,70 @@
         .replace(/s/gm, ('0' + (d.getSeconds() + 0)).substr(-2));
     }
 
-    
+
 
     $scope.downloadStorageObject = function(key) {
       console.log('retrieving storage object ' + key);
       toastr.success('Your object is being downloaded');
 
       var req = {
-        method: 'GET',
-        url: urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=getData&key=" + encodeURIComponent(key),
-        headers: {
-             'Content-Type': 'application/x-www-form-urlencoded'
-        }
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "getdata", "key": key} } })
+       }
 
-      }
-      $http(req).then(function successCallback(response) {
+       $http(req).then(function successCallback(response) {
 
-          var objectData = response.data;
+          if (response.data.status == "success")
+          {
+              var objectData = response.data.data.value;
 
-          if (objectData!="") {
-            console.log('Storage object sucessfully retrieved.');
-            
-            var binaryString = "";
-            var blob = "";
-            try {
-              binaryString = window.atob(objectData);
-                       
-              var binaryLen = binaryString.length;
-              var bytes = new Uint8Array(binaryLen);
-              for (var i = 0; i < binaryLen; i++) {
-                var ascii = binaryString.charCodeAt(i);
-                bytes[i] = ascii;
+              if (objectData!="") {
+                console.log('Storage object sucessfully retrieved.');
+
+                var binaryString = "";
+                var blob = "";
+                try {
+                  binaryString = window.atob(objectData);
+
+                  var binaryLen = binaryString.length;
+                  var bytes = new Uint8Array(binaryLen);
+                  for (var i = 0; i < binaryLen; i++) {
+                    var ascii = binaryString.charCodeAt(i);
+                    bytes[i] = ascii;
+                  }
+                  blob = new Blob([bytes]);
+                  var link = document.createElement('a');
+                  link.href = window.URL.createObjectURL(blob);
+                  var fileName = "";
+                  if(key.indexOf('.') == -1) {
+                    fileName = key + '.dat';
+                  } else {
+                    fileName = key;
+                  }
+                  link.download = fileName;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                } catch(e) {
+                  var element = document.createElement('a');
+                  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(objectData));
+                  var fileName = "";
+                  if(key.indexOf('.') == -1) {
+                    fileName = key + '.dat';
+                  } else {
+                    fileName = key;
+                  }
+                  element.setAttribute('download', fileName);
+                  element.style.display = 'none';
+                  document.body.appendChild(element);
+                  element.click();
+                  document.body.removeChild(element);
+                }
               }
-              blob = new Blob([bytes]);
-              var link = document.createElement('a');
-              link.href = window.URL.createObjectURL(blob);
-              var fileName = "";
-              if(key.indexOf('.') == -1) {
-                fileName = key + '.dat';
-              } else {
-                fileName = key;
-              }
-              link.download = fileName;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            } catch(e) {
-              var element = document.createElement('a');
-              element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(objectData));
-              var fileName = "";
-              if(key.indexOf('.') == -1) {
-                fileName = key + '.dat';
-              } else {
-                fileName = key;
-              }
-              element.setAttribute('download', fileName);
-              element.style.display = 'none';
-              document.body.appendChild(element);
-              element.click();
-              document.body.removeChild(element);
-            }  
-            
           } else {
             console.log("getData action returned empty string");
             $scope.errorMessage = "The object does not contain any data.";
@@ -206,22 +220,23 @@
       console.log('deleting storage object ' + $scope.storageObjects[index].key);
 
       var req = {
-        method: 'GET',
-        url: urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=deleteData&key=" + encodeURIComponent($scope.storageObjects[index].key),
-        headers: {
-             'Content-Type': 'application/x-www-form-urlencoded'
-        }
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "deletedata", "key": $scope.storageObjects[index].key} } })
+       }
 
-      }
-      $http(req).then(function successCallback(response) {
+       $http(req).then(function successCallback(response) {
 
-          if (response.data=="true") {
+          if (response.data.status=="success") {
             console.log('Storage object sucessfully deleted.');
             toastr.success('Your object has been deleted successfully!');
             $scope.storageObjects.splice(index, 1);
           } else {
             console.log("Failure status returned by deleteData action");
-            console.log("Message:" + response.data);
+            console.log(response.data);
             $scope.errorMessage = "An error occurred while attempting to delete the object.";
             $uibModal.open({
               animation: true,
@@ -300,6 +315,15 @@
       {
         console.log('creating new storage object ' + storageObject.key);
 
+      var req = {
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "putdata", "key": storageObject.key, "value": ""} } })
+       }
+       /*
         var req = {
           method: 'GET',
           url: urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=putData&key=" + encodeURIComponent(storageObject.key) + "&value=",
@@ -308,15 +332,16 @@
           }
 
         }
+        */
         $http(req).then(function successCallback(response) {
-          if (response.data=="true") {
+          if (response.data.status=="success") {
             console.log('Storage object sucessfully created.');
             toastr.success('Your object has been created successfully!');
             $scope.reloadStorageObjects();
             $scope.open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObject.key);
           } else {
             console.log("Failure status returned by putData action");
-            console.log("Message:" + response.data);
+            console.log(response.data);
             $scope.errorMessage = "An error occurred while attempting to create the object.";
             $uibModal.open({
               animation: true,

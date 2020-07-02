@@ -37,12 +37,6 @@ then
     ./datalayer/start.sh; sleep 2
 fi
 
-if [ -e ./frontend/start.sh ]
-then
-    echo "Starting frontend"
-    ./frontend/start.sh; sleep 2
-fi
-
 if [ -e ./sandbox/available_hosts.sh ]
 then
     echo "Running available_hosts.sh"

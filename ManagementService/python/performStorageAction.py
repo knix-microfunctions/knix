@@ -27,10 +27,10 @@ def handle(value, sapi):
     try:
         '''
         {
-            "action": "performStorageAction", 
+            "action": "performStorageAction",
             "data": {                          <this is what is contained in 'data' variable of this function>
                 "user": { "token" : token },   <must come as part of user request>
-                "storage": {...}               <must come as part of user request> (see handleStorageAction) 
+                "storage": {...}               <must come as part of user request> (see handleStorageAction)
                 "email": "...",                <added automatically by management service entry>
                 "storage_userid": "...",       <added automatically by management service entry>
                 "usertoken": "..."             <added automatically by management service entry>
@@ -40,11 +40,11 @@ def handle(value, sapi):
         verified, message = verifyData(data)
         if verified == False:
             raise Exception("Invalid data provided. " + message)
-        
+
         storage = data['storage']
         storage_userid = data["storage_userid"]
         dlc = sapi.get_privileged_data_layer_client(storage_userid)
-        
+
         success, message, response_data = handleStorageAction(storage, dlc)
 
     except Exception as e:
@@ -69,7 +69,7 @@ def handle(value, sapi):
         "status": "success" or "failure",    <always included in response>
         "data": {
             "message": "...",    <always included in response>
-            "status": True or False  <boolean, always included in reponse> 
+            "status": True or False  <boolean, always included in reponse>
             "value": "..."  <string, incase of getdata request>
             "keylist": []  <list, incase of listkeys request>
         }
@@ -123,29 +123,29 @@ def handleStorageAction(storage, dlc):
 
     else:
         return False, "Invalid operation specified", response_data
-    
+
     response_data['status'] = True
     return True, message, response_data
 
 
 def verifyData(data):
     verified, message = isValidString(data, 'storage_userid')
-    if verified == False: 
+    if verified == False:
         return False, "Invalid storage_userid. " + message
 
     if 'storage' not in data:
         return False, "Storage object not specified"
-    
+
     storage = data['storage']
     if type(storage) != type({}):
         return False, "Storage data not specified as a dict"
-    
+
     verified, message = isValidString(storage, 'action')
-    if verified == False: 
+    if verified == False:
         return False, "Invalid storage action specified. " + message
 
     verified, message = isValidString(storage, 'table')
-    if verified == False: 
+    if verified == False:
         return False, "Invalid table specified. " + message
 
     action = storage['action'].lower()
@@ -158,15 +158,16 @@ def verifyData(data):
         if verified == False:
             return False, "Invalid key specified. " + message
 
-    if action == 'putdata':
-        verified, message = isValidString(storage, 'value')
-        if verified == False:
-            return False, "Invalid value specified. " + message 
+    # _XXX_: 'value' can be an empty string
+    #if action == 'putdata':
+    #    verified, message = isValidString(storage, 'value')
+    #    if verified == False:
+    #        return False, "Invalid value specified. " + message
 
     if action == 'listkeys':
         verified, message = isValidInt(storage, 'start')
         if verified == False:
-            return False, "Invalid start specified. " + message 
+            return False, "Invalid start specified. " + message
 
         verified, message = isValidInt(storage, 'count')
         if verified == False:
