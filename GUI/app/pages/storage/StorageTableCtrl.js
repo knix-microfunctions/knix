@@ -323,17 +323,8 @@
          },
          data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "putdata", "key": storageObject.key, "value": ""} } })
        }
-       /*
-        var req = {
-          method: 'GET',
-          url: urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=putData&key=" + encodeURIComponent(storageObject.key) + "&value=",
-          headers: {
-               'Content-Type': 'application/x-www-form-urlencoded'
-          }
 
-        }
-        */
-        $http(req).then(function successCallback(response) {
+       $http(req).then(function successCallback(response) {
           if (response.data.status=="success") {
             console.log('Storage object sucessfully created.');
             toastr.success('Your object has been created successfully!');

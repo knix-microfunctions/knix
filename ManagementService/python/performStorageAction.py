@@ -98,21 +98,22 @@ def handleStorageAction(storage, dlc):
         print("[StorageAction] " + message)
         val = dlc.get(storage['key'], tableName=storage['table'])
         response_data['value'] = val
-        if val == None:
-            return False, "getdata returned None value. " + message, response_data
+        # we can return a None value
+        #if val == None:
+        #    return False, "getdata returned None value. " + message, response_data
 
     elif storage_action == 'deletedata':
         message = "deletedata, key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
         status = dlc.delete(storage['key'], tableName=storage['table'])
-        if status == False:
+        if not status:
             return False, "deletedata returned False. " + message, response_data
 
     elif storage_action == 'putdata':
         message = "putdata, key: " + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
         status = dlc.put(storage['key'], storage['value'], tableName=storage['table'])
-        if status == False:
+        if not status:
             return False, "putdata returned False. " + message, response_data
 
     elif storage_action == 'listkeys':
@@ -141,11 +142,11 @@ def verifyData(data):
         return False, "Storage data not specified as a dict"
 
     verified, message = isValidString(storage, 'action')
-    if verified == False:
+    if not verified:
         return False, "Invalid storage action specified. " + message
 
     verified, message = isValidString(storage, 'table')
-    if verified == False:
+    if not verified:
         return False, "Invalid table specified. " + message
 
     action = storage['action'].lower()
@@ -155,7 +156,7 @@ def verifyData(data):
 
     if action == 'getdata' or action == 'deletedata' or action == 'putdata':
         verified, message = isValidString(storage, 'key')
-        if verified == False:
+        if not verified:
             return False, "Invalid key specified. " + message
 
     # _XXX_: 'value' can be an empty string
@@ -166,11 +167,11 @@ def verifyData(data):
 
     if action == 'listkeys':
         verified, message = isValidInt(storage, 'start')
-        if verified == False:
+        if not verified:
             return False, "Invalid start specified. " + message
 
         verified, message = isValidInt(storage, 'count')
-        if verified == False:
+        if not verified:
             return False, "Invalid count specified. " + message
         if storage['count'] > 1000000:
             return False, "Invalid count specified. 'count' too high. It should be < 1000000."
@@ -180,7 +181,7 @@ def verifyData(data):
 def isValidString(data, keyname):
     if keyname not in data:
         return False, "'" + keyname + "' is missing."
-    if data[keyname] == None:
+    if data[keyname] is None:
         return False, "'" + keyname + "' is None."
     if not isinstance(data[keyname], str):
         return False, "'" + keyname + "' is not a string."
@@ -191,7 +192,7 @@ def isValidString(data, keyname):
 def isValidInt(data, keyname):
     if keyname not in data:
         return False, "'" + keyname + "' is missing."
-    if data[keyname] == None:
+    if data[keyname] is None:
         return False, "'" + keyname + "' is None."
     if not isinstance(data[keyname], int):
         return False, "'" + keyname + "' is not an int."
