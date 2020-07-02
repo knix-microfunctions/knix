@@ -39,7 +39,7 @@ metadata:
   name: {{ include "riak.fullname" . }}-config
   namespace: {{ .Release.Namespace }}
 data:
-  COORDINATOR_NODE: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+  COORDINATOR_NODE: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc"
   WAIT_FOR_ERLANG: "{{ .Values.riak.WaitForErlang }}"
   CLUSTER_NAME: "{{ .Values.riak.ClusterName }}"
   PB_PORT: "{{ .Values.riak.ClientPortProtobuf }}"

@@ -26,7 +26,7 @@
 {{- $rlsname := .Release.Name -}}
 {{- $namespace := .Release.Namespace -}}
 {{- $port := index .Values "riak" "ClientPortProtobuf" | toString -}}
-    rk-{{$rlsname}}.{{$namespace}}.svc.cluster.local:{{$port}}
+    rk-{{$rlsname}}.{{$namespace}}.svc:{{$port}}
 {{- end -}}
 
 {{- define "dlConnect" }}
@@ -56,7 +56,7 @@
 {{- $rlsname := .Release.Name -}}
 {{- $namespace := .Release.Namespace -}}
 {{- $port := index .Values "nginx" "httpPort" | toString -}}
-    nx-{{$rlsname}}.{{$namespace}}.svc.cluster.local:{{$port}}
+    nx-{{$rlsname}}.{{$namespace}}.svc:{{$port}}
 {{- end -}}
 
 
@@ -74,5 +74,5 @@
 {{- $rlsname := .Release.Name -}}
 {{- $namespace := .Release.Namespace -}}
 {{- $port := index .Values "elastic" "clientPort" | toString -}}
-    es-{{$rlsname}}.{{$namespace}}.svc.cluster.local:{{$port}}
+    es-{{$rlsname}}.{{$namespace}}.svc:{{$port}}
 {{- end -}}
