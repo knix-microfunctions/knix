@@ -1,0 +1,24 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: frontend
+  namespace: {{ .Release.Namespace }}
+spec:
+  virtualhost:
+    fqdn: 10.203.20.161.xip.io
+  routes:
+    - conditions:
+      - prefix: /management
+      services:
+        - name: wf-{{ .Release.Name }}-management
+          port: 80
+    - conditions:
+      - prefix: /storage
+      services:
+        - name: store-{{ .Release.Name }}
+          port: 80
+    - conditions:
+      - prefix: /
+      services:
+        - name: nx-{{ .Release.Name }}
+          port: 80

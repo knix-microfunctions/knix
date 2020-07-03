@@ -26,7 +26,7 @@
 {{- $rlsname := .Release.Name -}}
 {{- $namespace := .Release.Namespace -}}
 {{- $port := index .Values "riak" "ClientPortProtobuf" | toString -}}
-    rk-{{$rlsname}}.{{$namespace}}.svc.cluster.local:{{$port}}
+    rk-{{$rlsname}}.{{$namespace}}.svc:{{$port}}
 {{- end -}}
 
 {{- define "dlConnect" }}
@@ -52,7 +52,7 @@
 {{- if (.Values.ingress.domain) -}}
 {{- printf "wf-%s-management.%s" .Release.Name .Values.ingress.domain -}}
 {{- else -}}
-{{- printf "wf-%s-management.%s.svc.cluster.local" .Release.Name .Release.Namespace -}}
+{{- printf "wf-%s-management.%s.svc" .Release.Name .Release.Namespace -}}
 {{- end -}}
 {{- end -}}
 
@@ -60,7 +60,7 @@
 {{- $rlsname := .Release.Name -}}
 {{- $namespace := .Release.Namespace -}}
 {{- $port := index .Values "nginx" "httpPort" | toString -}}
-    nx-{{$rlsname}}.{{$namespace}}.svc.cluster.local:{{$port}}
+    nx-{{$rlsname}}.{{$namespace}}.svc:{{$port}}
 {{- end -}}
 
 
@@ -78,5 +78,5 @@
 {{- $rlsname := .Release.Name -}}
 {{- $namespace := .Release.Namespace -}}
 {{- $port := index .Values "elastic" "clientPort" | toString -}}
-    es-{{$rlsname}}.{{$namespace}}.svc.cluster.local:{{$port}}
+    es-{{$rlsname}}.{{$namespace}}.svc:{{$port}}
 {{- end -}}

@@ -21,7 +21,7 @@ spec:
   hosts:
   - {{ .Values.ingress.host }}
   gateways:
-  - knative-ingress-gateway.knative-serving.svc.cluster.local
+  - knative-serving/knative-ingress-gateway
   http:
   - match:
     - uri:
@@ -32,7 +32,7 @@ spec:
       authority: wf-{{ .Release.Name }}-management.{{ .Values.ingress.host }}
     route:
     - destination:
-        host: istio-ingressgateway.istio-system.svc.cluster.local
+        host: istio-ingressgateway.istio-system.svc
         port:
           number: 80
       weight: 100
@@ -41,12 +41,12 @@ spec:
         prefix: /storage
     route:
     - destination:
-        host: store-{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
+        host: store-{{ .Release.Name }}
       weight: 100
   - match:
     - uri:
         prefix: /
     route:
     - destination:
-        host: nx-{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
+        host: nx-{{ .Release.Name }}
       weight: 100

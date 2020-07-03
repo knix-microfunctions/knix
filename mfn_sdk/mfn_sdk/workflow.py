@@ -31,16 +31,18 @@ class Execution(object):
     """ Execution represents the execution of a workflow that can be referenced by its execution ID
     an execution object is returned from asynchronous workflow invocations
     """
-    def __init__(self, client, url):
+    def __init__(self, client, url, exec_id):
         self.client=client
         self.url=url
+        self.execution_id = exec_id
 
     def get(self, timeout=60):
         try:
             r = self.client._s.post(self.url,
+                params = {"executionId": self.execution_id},
                 timeout=timeout)
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
-            raise Exception("Retrieving result of workflow '"+self.name+"' from URL '"+self.url+"' failed due to "+type(e).__name__).with_traceback(sys.exc_info()[2])
+            raise Exception("Retrieving result of workflow from URL '"+self.url+"' failed due to "+type(e).__name__).with_traceback(sys.exc_info()[2])
         r.raise_for_status()
         return r.json()
 
@@ -48,7 +50,6 @@ class Execution(object):
 class Workflow(object):
     """ Workflow represents a registered workflow, every method invocation or property assignment results in one or more calls to management functions
     """
-
 
     def __init__(self,client,wf):
         self.client=client
@@ -222,7 +223,7 @@ class Workflow(object):
         """ execute a workflow asynchronously and returns an Execution object
 
         The function delivers an event to the frontend and returns an Execution object. Note that the timeout here applies to the delivery of the event, another timeout can be used when fetching the result with the Execution.get(timeout) method
-        see Execution.get()
+        see Execution execute_async execute_async.get()
 
         :param data: the event dictionary passed to the workflow
         :type data: dict()
@@ -240,6 +241,7 @@ class Workflow(object):
 
         # we are already deployed and have the endpoints stored in self._endpoints
         url = random.choice(self._endpoints)
+
         try:
             r = self.client._s.post(url,
                 params={'async':'True'},
@@ -247,9 +249,11 @@ class Workflow(object):
                 allow_redirects=False,
                 timeout=timeout)
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
-            raise Exception("Asynchronous execution of workflow '"+self.name+"' at URL '"+url+"' failed due to "+type(e).__name__)
+            raise Exception("Asynchronous execution of workflow at URL '"+url+"' failed due to "+type(e).__name__)
+
         r.raise_for_status()
-        return Execution(self.client, self.client.host+r.headers['Location'])
+        exec_id = r.text
+        return Execution(self.client, url, exec_id)
 
     def execute(self,data,timeout=60, check_duration=False):
         """ execute a workflow synchronously

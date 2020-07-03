@@ -61,9 +61,16 @@ spec:
         - name: HTTP_PORT
           value: "50000"
         - name: MFN_DATALAYER
-          value: "datalayer.{{ .Release.Namespace }}.svc.cluster.local"
+          value: "datalayer.{{ .Release.Namespace }}.svc"
         ports:
         - containerPort: 50000
           name: http
+        readinessProbe:
+          tcpSocket:
+            port: 50000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 30
+          failureThreshold: 3
         resources:
 {{ toYaml .Values.nginx.frontendResources | indent 10}}
