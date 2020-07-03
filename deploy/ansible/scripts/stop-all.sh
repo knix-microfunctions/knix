@@ -26,12 +26,6 @@ then
     ./management/stop.sh; sleep 2
 fi
 
-if [ -e ./frontend/stop.sh ]
-then
-    echo "Stopping frontend"
-    ./frontend/stop.sh; sleep 2
-fi
-
 if [ -e ./datalayer/stop.sh ]
 then
     echo "Stopping datalayer"

@@ -21,7 +21,7 @@ NAMES := $(YAML:%.yaml=%)
 .PHONY: $(NAMES)
 default: prepare_packages install
 
-install: init_once riak elasticsearch fluentbit datalayer frontend sandbox management nginx
+install: init_once riak elasticsearch fluentbit datalayer sandbox management nginx
 	echo "Installed KNIX MicroFunctions"
 
 clean:
@@ -30,7 +30,6 @@ clean:
 prepare_packages: ../../riak/knix_riak_deployment_package.tar.gz \
 	../../LoggingService/fluentbit \
 	../../DataLayerService/target/datalayerservice.jar \
-	../../HttpFrontend/target/frontend.jar \
 	../../Sandbox/sandbox_deployment_package.tar.gz \
 	../../ManagementService/management_deployment_package.tar.gz \
 	../../GUI/knix_gui_deployment_package.tar.gz
@@ -66,13 +65,6 @@ fluentbit.yaml: ../../LoggingService/fluentbit
 	cd ../../DataLayerService/; make; cd -
 
 datalayer.yaml: ../../DataLayerService/target/datalayerservice.jar
-	touch $@
-
-# frontend.yaml and dependencies
-../../HttpFrontend/target/frontend.jar:
-	cd ../../HttpFrontend/; make; cd -
-
-frontend.yaml: ../../HttpFrontend/target/frontend.jar
 	touch $@
 
 # sandbox.yaml and dependencies
