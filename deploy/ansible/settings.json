@@ -1,5 +1,6 @@
 {
     "mfn_server_installation_folder": "/opt/knix",
+    "start_at_boot": false,
     "riak_leveldb_maximum_memory": "4294967296",
     "nginx_http_listen_port": "80",
     "nginx_https_listen_port": "443",

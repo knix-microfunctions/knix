@@ -234,7 +234,7 @@
         [Service]
         OOMScoreAdjust=-1000
         LimitNOFILE=65536
-        LimitMEMLOCK=unlimited
+        LimitMEMLOCK=infinity
         Type=simple
         User=elasticsearch
         Group=elasticsearch
@@ -245,10 +245,14 @@
         [Install]
         WantedBy=multi-user.target
 
-  - name: systemd start mfn-elasticsearch
+  # regardless of start_at_boot setting, we install the script and start it
+  # because we have to perform some operations
+  # if start_at_boot is set to false, we'll disable it afterwards
+  - name: systemd install and start mfn-elasticsearch service to perform initialization operations
     systemd:
       daemon_reload: yes
       name: "{{ es_server_service_name }}"
+      enabled: true
       state: restarted
     become: yes
 
@@ -309,3 +313,12 @@
   - debug:
       var: esconfig_command.stdout
     when: ansible_default_ipv4.address == es_master_ip
+
+  - name: systemd install and disable mfn-elasticsearch service
+    systemd:
+      daemon_reload: yes
+      name: "{{ es_server_service_name }}"
+      enabled: false
+      state: stopped
+    become: yes
+    when: not start_at_boot|bool
