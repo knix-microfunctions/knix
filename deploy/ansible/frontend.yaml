@@ -146,11 +146,21 @@
         [Install]
         WantedBy=multi-user.target
 
-  - name: systemd start service mfn-frontend
+  - name: systemd install and enable service mfn-frontend
     systemd:
       daemon_reload: yes
       name: "{{ service_name }}"
+      enabled: true
       state: restarted
+    when: start_at_boot|bool
+
+  - name: systemd install and disable service mfn-frontend
+    systemd:
+      daemon_reload: yes
+      name: "{{ service_name }}"
+      enabled: false
+      state: stopped
+    when: not start_at_bool|bool
 
   - name: create frontend systemctl start script
     copy:
