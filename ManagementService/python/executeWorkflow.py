@@ -40,24 +40,7 @@ if 'KUBERNETES_SERVICE_HOST' in os.environ:
 def execute_workflow(wfid, wfurl, wfinput):
     result = None
     try:
-        if IN_KUBERNETES:
-            protocol = wfurl[0:wfurl.find("://")+3]
-            host = wfurl[len(protocol):]
-
-            port_index = host.find(":")
-            if port_index != -1:
-                host = host[0:port_index]
-
-            headers = {}
-            headers["Host"] = host
-
-            url_first_part = wfurl.split(".")[0]
-            url = "http://" + url_first_part[len(protocol):]
-
-            result = requests.post(url, headers=headers, params={}, json=wfinput)
-        else:
-            result = requests.post(wfurl, params={}, json=wfinput)
-
+        result = requests.post(wfurl, params={}, json=wfinput)
     except Exception as exc:
         raise
 
