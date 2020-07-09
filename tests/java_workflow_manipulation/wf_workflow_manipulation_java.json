@@ -1,5 +1,6 @@
 {
   "StartAt": "TestWorkflowManipulation",
+  "EnableCheckpoints": false,
   "AllowImmediateMessages": true,
   "States": {
     "TestWorkflowManipulation": {
