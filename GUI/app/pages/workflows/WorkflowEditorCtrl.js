@@ -424,7 +424,6 @@
      function getStorageObjectsList() {
 
        var urlPath = sharedProperties.getUrlPath();
-       var email = $cookies.get('email');
        var token = $cookies.get('token');
 
       var req = {
@@ -435,15 +434,7 @@
          },
          data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "listkeys", "start": 1, "count": 2000} } })
        }
-       /*
-       var req = {
-         method: 'GET',
-         url: path + "?token=" + token + "&email=" + email + "&table=defaultTable&action=listKeys&start=0&count=500",
-         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-         }
-       }
-       */
+
        $http(req).then(function successCallback(response) {
 
            $scope.sObjects = [ ];
