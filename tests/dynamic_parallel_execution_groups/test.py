@@ -56,9 +56,16 @@ class DynamicParallelExecutionGroupsTest(unittest.TestCase):
         test.exec_tests(test_tuple_list)
         total_time = time.time() * 1000.0 - ts_start
 
+        test_blocking = MFNTest(workflow_filename="wf_mapreduce_blocking.json")
+
+        ts_start = time.time() * 1000.0
+        test_blocking.exec_tests(test_tuple_list)
+        total_time_blocking = time.time() * 1000.0 - ts_start
+
         print(job["type"])
         print("Simple time total (ms): " + str(total_time_simple))
-        print("MFN time total (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=False) (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=True) (ms): " + str(total_time_blocking))
 
     #@unittest.skip("")
     def test_wordcount_nested(self):
@@ -100,9 +107,16 @@ class DynamicParallelExecutionGroupsTest(unittest.TestCase):
         test.exec_tests(test_tuple_list)
         total_time = time.time() * 1000.0 - ts_start
 
+        test_blocking = MFNTest(workflow_filename="wf_mapreduce_blocking.json")
+
+        ts_start = time.time() * 1000.0
+        test_blocking.exec_tests(test_tuple_list)
+        total_time_blocking = time.time() * 1000.0 - ts_start
+
         print(job["type"])
         print("Simple time total (ms): " + str(total_time_simple))
-        print("MFN time total (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=False) (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=True) (ms): " + str(total_time_blocking))
 
     #@unittest.skip("")
     def test_mergesort(self):
@@ -144,9 +158,16 @@ class DynamicParallelExecutionGroupsTest(unittest.TestCase):
         test.exec_tests(test_tuple_list)
         total_time = time.time() * 1000.0 - ts_start
 
+        test_blocking = MFNTest(workflow_filename="wf_mapreduce_blocking.json")
+
+        ts_start = time.time() * 1000.0
+        test_blocking.exec_tests(test_tuple_list)
+        total_time_blocking = time.time() * 1000.0 - ts_start
+
         print(job["type"])
         print("Simple time total (ms): " + str(total_time_simple))
-        print("MFN time total (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=False) (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=True) (ms): " + str(total_time_blocking))
 
     ####################
     # internal functions

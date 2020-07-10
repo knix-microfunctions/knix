@@ -253,7 +253,7 @@ class MicroFunctionsAPI:
         else:
             self._logger.warning("Cannot send a session update message in a workflow with no session functions.")
 
-    def get_session_update_messages(self, count=1):
+    def get_session_update_messages(self, count=1, block=False):
         '''
         Retrieve the list of update messages sent to a session function instance.
         The list contains messages that were sent and delivered since the last time the session function instance has retrieved it.
@@ -263,9 +263,11 @@ class MicroFunctionsAPI:
 
         Args:
             count (int): the number of messages to retrieve; default: 1
+            block (boolean): whether it should block until 'count' number of messages have been received.
 
         Returns:
             List of messages that were sent to the session function instance.
+            If in non-blocking mode, the number of returned messages will be less than or equal to 'count'.
 
         Warns:
             When the calling function is not a session function.
@@ -278,7 +280,7 @@ class MicroFunctionsAPI:
         messages = []
         if self._is_session_function:
             #self._logger.debug("[MicroFunctionsAPI] getting session update messages...")
-            messages = self._session_utils.get_session_update_messages_with_local_queue(count)
+            messages = self._session_utils.get_session_update_messages_with_local_queue(count=count, block=block)
         else:
             self._logger.warning("Cannot get session update messages in a non-session function: " + self._function_state_name)
 

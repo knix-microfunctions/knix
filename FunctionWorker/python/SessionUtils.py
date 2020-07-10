@@ -476,9 +476,9 @@ class SessionUtils:
 
         self.send_to_running_function_in_session(rgid, message, send_now)
 
-    def get_session_update_messages_with_local_queue(self, count=1):
+    def get_session_update_messages_with_local_queue(self, count=1, block=False):
         if self._session_function_id is not None:
-            messages = self._helper_thread.get_messages(count)
+            messages = self._helper_thread.get_messages(count=count, block=block)
             return messages
         return None
 
