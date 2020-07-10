@@ -14,30 +14,9 @@
 
 import json
 
-import os
 import requests
 
-IN_KUBERNETES = False
-
-if 'KUBERNETES_SERVICE_HOST' in os.environ:
-    IN_KUBERNETES = True
-    new_workflow_conf = {}
-    conf_file = '/opt/mfn/SandboxAgent/conf/new_workflow.conf'
-    try:
-        with open(conf_file, 'r') as fp:
-            new_workflow_conf = json.load(fp)
-    except IOError as e:
-        raise Exception("Unable to load "+conf_file+". Ensure that the configmap has been setup properly", e)
-    app_fullname_prefix = ''
-    if 'app.fullname.prefix' in new_workflow_conf:
-        app_fullname_prefix = new_workflow_conf['app.fullname.prefix']+'-'
-
-    with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r") as f:
-        token = f.read()
-    with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
-        namespace = f.read()
-
-def execute_workflow(wfid, wfurl, wfinput):
+def execute_workflow(wfurl, wfinput):
     result = None
     try:
         result = requests.post(wfurl, params={}, json=wfinput)
@@ -45,7 +24,6 @@ def execute_workflow(wfid, wfurl, wfinput):
         raise
 
     return result
-
 
 def handle(value, sapi):
     assert isinstance(value, dict)
@@ -75,7 +53,7 @@ def handle(value, sapi):
         wfinput = data["workflow"]["wfinput"]
 
         # execute workflow here
-        result = execute_workflow(wfid, wfurl, wfinput)
+        result = execute_workflow(wfurl, wfinput)
 
         response_data["result"] = result.json()
         response_data["message"] = "Executed workflow " + wfid + "."
