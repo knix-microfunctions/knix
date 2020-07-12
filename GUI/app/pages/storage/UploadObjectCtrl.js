@@ -86,7 +86,7 @@
                 _editor.getSession().setValue(atob(objectData));
               }
             } catch(e) {
-             _editor.getSession().setValue(objectData);
+             _editor.getSession().setValue("");
             }
           } else {
             _editor.getSession().setValue('Storage object data is too large to display inline. Please download the object instead.');
