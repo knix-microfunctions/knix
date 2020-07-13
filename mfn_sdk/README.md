@@ -80,7 +80,7 @@ NOTE: The `mfn_name` parameter is only used if the user does not exist (as it is
 ``` py
 from mfn_sdk import MfnClient
 mfn = MfnClient(
-    mfn_url="https://knix.io/mfn",
+    mfn_url="https://knix.io",
     mfn_user="test@example.com",
     mfn_password="test123",
     mfn_name="Mr. Test")

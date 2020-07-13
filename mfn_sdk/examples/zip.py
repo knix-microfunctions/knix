@@ -28,7 +28,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 c = MfnClient(
-        'https://knix.io/mfn',
+        'https://knix.io',
         'test@test.com',
         'test123',
         proxies={})

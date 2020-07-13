@@ -16,7 +16,7 @@ import base64
 from mfn_sdk import MfnClient
 
 c = MfnClient(
-        'https://knix.io/mfn',
+        'https://knix.io',
         'test@test.com',
         'test123',
         proxies={''})

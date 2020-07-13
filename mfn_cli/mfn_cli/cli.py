@@ -161,7 +161,7 @@ def login(config, url=None, user=None, name=None, password=None):
             url = 'http://'+url
 
     # overwrite values if provided
-    config.mfn_url = url or config.mfn_url or default.get('mfn_url', 'https://knix.io/mfn')
+    config.mfn_url = url or config.mfn_url or default.get('mfn_url', 'https://knix.io')
     config.mfn_user = user or config.mfn_user or default.get('mfn_user')
     config.mfn_name = name or config.mfn_name or default.get('mfn_name')
     config.mfn_password = password or config.mfn_password or default.get('mfn_password')
