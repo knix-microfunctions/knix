@@ -172,14 +172,14 @@ def login(config, url=None, user=None, name=None, password=None):
     config.proxies = default.get('proxies', None)
     if config.proxies is None:
         proxies=dict()
-        if 'http_proxy' in sys.environ:
-            config.proxies['http'] = sys.environ['http_proxy']
-        elif 'HTTP_PROXY' in sys.environ:
-            config.proxies['http'] = sys.environ['HTTP_PROXY']
-        if 'https_proxy' in sys.environ:
-            config.proxies['https'] = sys.environ['https_proxy']
-        elif 'HTTPS_PROXY' in sys.environ:
-            config.proxies['https'] = sys.environ['HTTPS_PROXY']
+        if 'http_proxy' in os.environ:
+            config.proxies['http'] = os.environ['http_proxy']
+        elif 'HTTP_PROXY' in os.environ:
+            config.proxies['http'] = os.environ['HTTP_PROXY']
+        if 'https_proxy' in os.environ:
+            config.proxies['https'] = os.environ['https_proxy']
+        elif 'HTTPS_PROXY' in os.environ:
+            config.proxies['https'] = os.environ['HTTPS_PROXY']
         if len(proxies) > 0:
             config.proxies = proxies
     try:
