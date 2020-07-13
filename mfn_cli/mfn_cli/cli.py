@@ -302,7 +302,7 @@ def create_workflow(config,name,file):
     client = config.get_client()
     wf = client.add_workflow(str(name).strip())
     log.info("Created workflow "+wf._name+" ("+wf.id+")")
-    if wfd:
+    if file and wfd:
         wf.json = wfd
     click.echo(wf.id)
 
@@ -351,7 +351,7 @@ def create_function(config,runtime,name,file):
     client = config.get_client()
     fn = client.add_function(str(name).strip(),runtime)
     log.info("Created function "+fn._name+" ("+fn.id+")")
-    if code:
+    if file and code:
         fn.code = code
     click.echo(fn.id)
 
