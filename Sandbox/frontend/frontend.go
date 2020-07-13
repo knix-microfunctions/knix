@@ -174,7 +174,9 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
         log.Println("consumer: Couldn't unmarshal message", err)
         continue
       }
+      ExecutionCond.L.Lock()
       e, ok := ExecutionResults[msg.Mfnmetadata.ExecutionId]
+      ExecutionCond.L.Unlock()
       if !ok {
         log.Println("consumer: Received unknown result", string(msg.Mfnmetadata.ExecutionId))
         continue
@@ -239,7 +241,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
         http.Redirect(w, r, r.URL.Path + "?executionId=" + id, http.StatusTemporaryRedirect)
       } else {
         log.Printf("handler: Result not yet available of execution ID %s, waiting", id)
+        ExecutionCond.L.Lock()
         e, ok := ExecutionResults[id]
+        ExecutionCond.L.Unlock()
         if !ok {
           m := sync.Mutex{}
           c := sync.NewCond(&m)
