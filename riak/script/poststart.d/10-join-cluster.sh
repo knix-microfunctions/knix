@@ -19,14 +19,19 @@ if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
   echo "Connecting to cluster coordinator $COORDINATOR_NODE"
   SERVICE_PORT=$(env|grep 'RK_.*_SERVICE_PORT_HTTP'|sed 's/.*=//')
   curl -s http://$COORDINATOR_NODE:${SERVICE_PORT:-8098} >/dev/null
-  $RIAK_ADMIN cluster join riak@$COORDINATOR_NODE
-  if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'joining')" ]]; then
-    if [[ -z "$($RIAK_ADMIN cluster plan | grep 'There are no staged changes')" ]]; then
-      while [[ -z "$($RIAK_ADMIN ringready|grep '^TRUE')" ]]; do
-        echo "Waiting for ring status to become ready"
-        sleep 1
-      done
-      $RIAK_ADMIN cluster commit
+  if [[ -z "$($RIAK_ADMIN cluster join riak@$COORDINATOR_NODE | grep 'Success')" ]]; then
+    echo "[ERROR] Riak cluster join $COORDINATOR_NODE failed."
+  else
+    if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'joining')" ]]; then
+      if [[ -z "$($RIAK_ADMIN cluster plan | grep 'There are no staged changes')" ]]; then
+        while [[ -z "$($RIAK_ADMIN ringready|grep '^TRUE')" ]]; do
+          echo "Waiting for ring status to become ready"
+          sleep 1
+        done
+	if [[ -z "$($RIAK_ADMIN cluster commit | grep 'Cluster changes committed')" ]]; then
+	  echo "[ERROR] Riak cluster commit failed."
+	fi
+      fi
     fi
   fi
 fi
