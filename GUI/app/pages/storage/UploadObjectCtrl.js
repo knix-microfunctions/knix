@@ -80,13 +80,14 @@
 
           if (objectData.length<10000) {
             try {
-              if (atob(objectData).match(/[^\u0000-\u007f]/)) {
+                var objectDataStr = atob(objectData);
+              if (objectDataStr.match(/[^\u0000-\u007f]/)) {
                 _editor.getSession().setValue('Storage object contains binary data. Please download the object instead.');
               } else {
-                _editor.getSession().setValue(atob(objectData));
+                _editor.getSession().setValue(objectDataStr);
               }
             } catch(e) {
-             _editor.getSession().setValue("");
+             _editor.getSession().setValue(objectData);
             }
           } else {
             _editor.getSession().setValue('Storage object data is too large to display inline. Please download the object instead.');
@@ -135,7 +136,14 @@
          return;
        }
 
-       dataStr = btoa(objectData);
+       if (objectData.match(/[^\u0000-\u007f]/))
+       {
+           dataStr = btoa(objectData);
+       }
+       else
+       {
+           dataStr = objectData;
+       }
 
       var req = {
          method: 'POST',
@@ -150,7 +158,7 @@
 
          if (response.data.status=="success") {
 
-             console.log('Object sucessfully uploaded.');
+             console.log('Object successfully uploaded.');
              toastr.success('Your object has been saved successfully!');
              //$scope.reloadStorageObjects();
            } else {
@@ -189,7 +197,18 @@
 
 
        var encodedFile = file;
-       var dataStr = encodedFile;
+       var dataStr = "";
+
+       try {
+                var objectDataStr = atob(encodedFile);
+              if (objectDataStr.match(/[^\u0000-\u007f]/)) {
+                dataStr = encodedFile;
+              } else {
+                dataStr = objectDataStr;
+              }
+            } catch(e) {
+                dataStr = encodedFile;
+            }
 
        var req = {
          method: 'POST',

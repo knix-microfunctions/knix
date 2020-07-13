@@ -264,17 +264,6 @@
 
     }
 
-    $scope.showEndpoint = function(storageObject) {
-      if (storageObject.key) {
-        return window.location.protocol + '//' + window.location.host + urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=getData&key=" + storageObject.key;
-      } else {
-        return "";
-      }
-
-
-    }
-
-
     $scope.removeStorageObject = function(index) {
       $scope.storageObjectToBeDeleted = $scope.storageObjects[index];
       $uibModal.open({

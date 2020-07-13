@@ -569,7 +569,7 @@ class DataLayerClient:
     def listKeys(self, start, count, tableName=None):
         listkeys_response = []
         table = self.tablename if tableName is None else tableName
-        
+
         for retry in range(MAX_RETRIES):
             try:
                 listkeys_response = self.datalayer.selectKeys(self.keyspace, table, start, count, self.locality)
