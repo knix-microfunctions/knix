@@ -18,10 +18,10 @@
 if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
   echo "Connecting to cluster coordinator $COORDINATOR_NODE"
   SERVICE_PORT=$(env|grep 'RK_.*_SERVICE_PORT_HTTP'|sed 's/.*=//')
-  curl -s http://$COORDINATOR_NODE:${SERVICE_PORT:-8098} >/dev/null
+  curl -sSf http://$COORDINATOR_NODE:${SERVICE_PORT:-8098} >/dev/null
   count1=5
   while [ $count1 -gt 0 ]; do
-    if [[ ! -z "($RIAK_ADMIN cluster join riak@$COORDINATOR_NODE | grep 'Success')" ]]; then
+    if [[ ! -z "$($RIAK_ADMIN cluster join riak@$COORDINATOR_NODE | grep 'Success')" ]]; then
       echo "Riak cluster join $COORDINATOR_NODE succeeded."
       break
     fi
@@ -32,7 +32,7 @@ if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
     echo "[ERROR] Riak cluster join $COORDINATOR_NODE failed."
     exit 1
   fi
-  if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'joining')" ]]; then
+  if [[ ! -z "$($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'joining')" ]]; then
     if [[ -z "$($RIAK_ADMIN cluster plan | grep 'There are no staged changes')" ]]; then
       while [[ -z "$($RIAK_ADMIN ringready|grep '^TRUE')" ]]; do
         echo "Waiting for ring status to become ready"
@@ -40,7 +40,7 @@ if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
       done
       count=5
       while [ $count -gt 0 ]; do
-        if [[ ! -z "($RIAK_ADMIN cluster commit | grep 'Cluster changes committed')" ]]; then
+        if [[ ! -z "$($RIAK_ADMIN cluster commit | grep 'Cluster changes committed')" ]]; then
           echo "Cluster changes committed successfully."
           break
         fi
@@ -48,7 +48,7 @@ if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
         sleep 5
       done
       if [ $count -le 0 ]; then
-        if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'valid')" ]]; then
+        if [[ ! -z "$($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'valid')" ]]; then
           echo "Cluster changes committed successfully."
         else
           echo "[ERROR] Riak cluster commit failed."
