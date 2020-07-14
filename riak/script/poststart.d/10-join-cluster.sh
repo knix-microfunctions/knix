@@ -48,12 +48,12 @@ if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
         sleep 5
       done
       if [ $count -le 0 ]; then
-	if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'valid')" ]]; then
+        if [[ ! -z "($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'valid')" ]]; then
           echo "Cluster changes committed successfully."
-	else
+        else
           echo "[ERROR] Riak cluster commit failed."
           exit 1
-	fi
+        fi
       fi
     fi
   fi
