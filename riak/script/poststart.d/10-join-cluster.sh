@@ -18,7 +18,16 @@
 if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
   echo "Connecting to cluster coordinator $COORDINATOR_NODE"
   SERVICE_PORT=$(env|grep 'RK_.*_SERVICE_PORT_HTTP'|sed 's/.*=//')
-  curl -sSf http://$COORDINATOR_NODE:${SERVICE_PORT:-8098} >/dev/null
+  count2=5
+  while [ $count2 -gt 0 ]; do
+    curl -sSf http://$COORDINATOR_NODE:${SERVICE_PORT:-8098} >/dev/null && break
+    count2=$(( $count2 - 1 ))
+    sleep 5
+  done
+  if [ $count2 -le 0 ]; then
+    echo "[ERROR] $COORDINATOR_NODE is unreachable."
+    exit 1
+  fi
   count1=5
   while [ $count1 -gt 0 ]; do
     if [[ ! -z "$($RIAK_ADMIN cluster join riak@$COORDINATOR_NODE | grep 'Success')" ]]; then
