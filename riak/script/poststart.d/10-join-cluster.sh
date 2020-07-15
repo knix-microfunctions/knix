@@ -41,6 +41,7 @@ if [[ -z "$($RIAK_ADMIN cluster status | grep $COORDINATOR_NODE)" ]]; then
     echo "[ERROR] Riak cluster join $COORDINATOR_NODE failed."
     exit 1
   fi
+  sleep 5
   if [[ ! -z "$($RIAK_ADMIN cluster status | grep ${HOSTNAME} | grep 'joining')" ]]; then
     if [[ -z "$($RIAK_ADMIN cluster plan | grep 'There are no staged changes')" ]]; then
       while [[ -z "$($RIAK_ADMIN ringready|grep '^TRUE')" ]]; do
