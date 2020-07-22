@@ -25,7 +25,7 @@
 {{- define "rkConnect.url" }}
 {{- $port := index .Values "riak" "ClientPortProtobuf" | toString -}}
 {{- range $num, $e := until (.Values.riak.replicas|int) -}}
-    {{- printf "rk-%s-%d.%s.%s.svc:%d" $.Release.Name $num $.Release.Name $.Release.Namespace ($.Values.riak.ClientPortProtobuf|int) -}}
+    {{- printf "rk-%s-%d.rk-%s.%s.svc:%d" $.Release.Name $num $.Release.Name $.Release.Namespace ($.Values.riak.ClientPortProtobuf|int) -}}
     {{- if lt $num  ( sub ($.Values.riak.replicas|int) 1 ) -}}
       {{- printf "," -}}
     {{- end -}}
