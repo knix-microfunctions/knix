@@ -193,7 +193,7 @@ kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.
 8.  For the simplicity, generate a new token on the Kubernetes master and print the join command.
 
 ```bat
-ksatzke@cpuhost:~$ sudo kubeadm token create --print-join-command
+ksatzke@node1:~$ sudo kubeadm token create --print-join-command
 
 kubeadm join 192.168.33.11:6443 --token gxzpmv.hzqw4q0xxrw8zai7     --discovery-token-ca-cert-hash sha256:696c21540f4de7bd600be843dddc1b362582f4a378547c2cb0d37f3be40d5699
 ```
@@ -201,7 +201,7 @@ kubeadm join 192.168.33.11:6443 --token gxzpmv.hzqw4q0xxrw8zai7     --discovery-
 9.  Go back to the GPU node and use the printed join command to add GPU node into the cluster.
 
 ```bat
-ksatzke@cpuhost:~$ sudo kubeadm join 192.168.33.11:6443 --token gxzpmv.hzqw4q0xxrw8zai7     --discovery-token-ca-cert-hash
+ksatzke@node1:~$ sudo kubeadm join 192.168.33.11:6443 --token gxzpmv.hzqw4q0xxrw8zai7     --discovery-token-ca-cert-hash
  sha256:696c21540f4de7bd600be843dddc1b362582f4a378547c2cb0d37f3be40d5699
 [preflight] Running pre-flight checks
         [WARNING IsDockerSystemdCheck]: detected "cgroupfs" as the Docker cgroup driver. The recommended driver is "systemd". Please follow the guide at https://kubernetes.io/docs/setup/cri/
@@ -225,7 +225,7 @@ Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 10.  Run following command to see the GPU node (virtual-kubernetes-gpu-2) status on the cluster.
 
 ```bat
- ksatzke@gpuhost:~$ kubectl get nodes
+ ksatzke@gpunode:~$ kubectl get nodes
  NAME    STATUS     ROLES     AGE       VERSION
  node1   Ready      <none>    1d        v1.18.6
  node2   Ready      <none>    13s       v1.18.6
@@ -249,11 +249,11 @@ kubectl label nodes gpunode accelerator=nvidia-gtx-1050
 13.  To check nodes for accelerator label, run ```bat kubectl get nodes -L accelerator``` on Kubernetes master.
 
 ```bat
-ksatzke@gpuhost:~/kubernetes$ kubectl get nodes -L accelerator
+ksatzke@gpunode:~/kubernetes$ kubectl get nodes -L accelerator
 
 NAME      STATUS   ROLES    AGE     VERSION   ACCELERATOR
 
-gpuhost   Ready    master   5m22s   v1.18.6   nvidia-gtx-1050
+gpunode   Ready    master   5m22s   v1.18.6   nvidia-gtx-1050
 node1     Ready    <none>   1d      v1.18.6
 node2     Ready    <none>   13s     v1.18.6
 node3     Ready    <none>   5d      v1.18.6
