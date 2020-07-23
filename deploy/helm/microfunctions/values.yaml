@@ -52,9 +52,11 @@ manager:
       limits:
         cpu: 1
         memory: 2Gi
+        nvidia.com/gpu: 1
       requests:
         cpu: 1
         memory: 1Gi
+        nvidia.com/gpu: 1
   createServiceAccounts: true
 
 #------------------------------------------------------------------------------
