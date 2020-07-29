@@ -205,7 +205,7 @@ spec:
         - name: discovery.type
           value: single-node
         #- name: discovery.zen.ping.unicast.hosts
-        #  value: es-mfn1-0.es-mfn1-headless.sand.svc.cluster.local
+        #  value: es-mfn1-0.es-mfn1-headless.sand.svc
         - name: ES_JAVA_OPTS
           value: -Xms1g -Xmx2g
         volumeMounts:

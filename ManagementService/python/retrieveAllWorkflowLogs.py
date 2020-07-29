@@ -141,10 +141,14 @@ def get_workflow_log(workflowid, es_host, es_port, filters, num_last_entries=150
                 for hit in reversed(response['hits']['hits']):
                     source = hit['_source']
                     #print("DEBUG: " + str(source))
-                    hit_str = '[%s] [%s] [%s] [%s] %s' % (source['asctime'], source['loglevel'], source['uuid'], source['function'], source['message'])
-                    if source["message"].find("[__mfn_progress]") == 0:
+                    msg = ""
+                    if "message" in source:
+                        msg = source['message']
+                    if msg.find("[__mfn_progress]") == 0:
+                        hit_str = '[%s] [%s] [%s] [%s] %s' % (source['asctime'], source['loglevel'], source['uuid'], source['function'], msg)
                         progresslog.append(hit_str)
                     else:
+                        hit_str = '[%s] [%s] [%s] [%s] [%s] %s' % (source['timestamp'], source['asctime'], source['loglevel'], source['uuid'], source['function'], msg)
                         outlog.append(hit_str)
                     timestamp = int(source["timestamp"])
             return True, outlog, progresslog, timestamp

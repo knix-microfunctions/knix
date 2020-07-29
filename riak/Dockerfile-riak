@@ -17,17 +17,13 @@ FROM ubuntu:18.04
 RUN apt-get update
 RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo
 
-# Download riak package
-RUN mkdir -p /opt/mfn/riak/
-RUN cd /opt/mfn/riak/
-RUN curl https://files.tiot.jp/riak/kv/2.9/2.9.0/ubuntu/bionic64/riak_2.9.0-1_amd64.deb --output riak_2.9.0-1_amd64.deb
-
-RUN groupadd -o -g 1000 -r riak && useradd -d /var/lib/riak -u 1000 -c 'Riak user' -M -r -g riak riak
-
-RUN dpkg -i riak_2.9.0-1_amd64.deb
-
 ENV RIAK_VERSION 2.9.0
-ENV RIAK_HOME /usr/lib/riak
+RUN groupadd -o -g 1000 -r riak && useradd -m -d /home/riak -u 1000 -c 'Riak user' -r -g riak riak
+
+# Download riak package
+RUN curl https://files.tiot.jp/riak/kv/2.9/2.9.0/ubuntu/bionic64/riak_2.9.0-1_amd64.deb -o /home/riak/riak_2.9.0-1_amd64.deb
+
+RUN dpkg -i /home/riak/riak_2.9.0-1_amd64.deb
 
 # Clean up APT cache
 RUN rm -rf /var/lib/apt/lists/* /tmp/*
@@ -44,10 +40,10 @@ RUN mkdir /usr/lib/riak/lib/workflow_triggers
 COPY src/workflow_triggers.erl /usr/lib/riak/lib/workflow_triggers
 
 # Install custom start script
-COPY script/riak-cluster.sh $RIAK_HOME/riak-cluster.sh
-COPY script/shutdown.sh $RIAK_HOME/shutdown.sh
-RUN chmod a+x $RIAK_HOME/riak-cluster.sh
-RUN chmod a+x $RIAK_HOME/shutdown.sh
+COPY script/riak-cluster.sh /usr/lib/riak/riak-cluster.sh
+COPY script/shutdown.sh /usr/lib/riak/shutdown.sh
+RUN chmod a+x /usr/lib/riak/riak-cluster.sh
+RUN chmod a+x /usr/lib/riak/shutdown.sh
 RUN echo "riak soft nofile 65536" >> /etc/security/limits.conf
 RUN echo "riak hard nofile 200000" >> /etc/security/limits.conf
 
@@ -61,8 +57,13 @@ RUN mkdir -p /etc/riak/schemas
 RUN chown riak:riak -R /etc/riak
 RUN chown riak:riak -R /usr/lib/riak/lib/mfn_counter_triggers
 RUN chown riak:riak -R /usr/lib/riak/lib/workflow_triggers
+
+# Prepare data dir
+RUN mkdir -p /var/lib/riak
+RUN chown riak:riak -R /var/lib/riak
+
 USER riak
-WORKDIR /var/lib/riak
+WORKDIR /home/riak
 
 # Expose default ports
 EXPOSE 8087

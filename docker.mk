@@ -20,7 +20,7 @@ define build_image
 	  if [[ $$CTIME -lt $$(stat -c %Y $$file) ]]; then \
 	    echo "$$file is newer than the container"; \
 	    OLDID=$$(docker images $(2) --format '{{.ID}}'); \
-	    docker -D -l debug build --no-cache \
+	    docker -D -l debug build \
 			--build-arg http_proxy=$${HTTP_PROXY:-$${http_proxy:-$(HTTP_PROXY)}} \
 			--build-arg https_proxy=$${HTTPS_PROXY:-$${https_proxy:-$(HTTP_PROXY)}} \
 			-f $(1) \
@@ -29,19 +29,18 @@ define build_image
 	    if [[ ! -z "$$OLDID" && ! -z "$$NEWID" ]]; then echo "Removing image $$OLDID"; docker rmi $$OLDID; fi; \
 	    break; \
 	  fi; \
-	done; if [ "$$NEWID" == "" ]; then echo "Container image $(2) is already up-to-date"; fi
+	done; if [ -z "$$NEWID" ]; then echo "Container image $(2) is already up-to-date"; fi
 endef
 
 define push_image
 	@#echo local image name $(1)
-	@ID=$$(docker images $(1) --format '{{.ID}}'); \
-	RID2=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' $(REGISTRY)/v2/$(1)/manifests/$(VERSION)); \
-	if [[ "$${RID2}" != "" ]]; then \
-		RID=$$(echo $${RID2}|python -c 'import json; import sys; print(json.load(sys.stdin)["config"]["digest"].split(":")[1])'); \
-	else \
-		RID=""; \
+	ID=$$(docker images $(1) --format '{{.ID}}'); \
+	MANIFEST=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' https://$(REGISTRY)/v2/$(1)/manifests/$(VERSION) || echo "")
+	if [[ -z "$${MANIFEST}" ]]; then \
+		MANIFEST=$$(curl -s -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' http://$(REGISTRY)/v2/$(1)/manifests/$(VERSION) || echo ""); \
 	fi; \
-	if [[ "$${RID}" == "$${ID}"* ]]; then \
+	RID=$$(echo $$MANIFEST|python -c 'import json; import sys; print(json.loads(sys.stdin.read())["config"]["digest"].split(":")[1])' 2>/dev/null|| echo ""); \
+	if [[ ! -z "$${ID}" && ! -z "$${RID}" && "$${RID}" == "$${ID}"* ]]; then \
 		echo "Already pushed local image $(1) ($${ID}) as $(REGISTRY)/$(1):$(VERSION) ($${RID})"; \
 	else \
 		echo "Tagging and pushing $(1) as $(REGISTRY)/$(1):$(VERSION)"; \

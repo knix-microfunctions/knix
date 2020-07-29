@@ -16,6 +16,7 @@ import threading
 
 import json
 import time
+import queue
 from collections import deque
 
 from DataLayerClient import DataLayerClient
@@ -27,7 +28,7 @@ import py3utils
 
 class SessionHelperThread(threading.Thread):
 
-    def __init__(self, helper_params, logger, pubutils, sessutils, queue, datalayer):
+    def __init__(self, helper_params, logger, pubutils, sessutils, queueservice, datalayer):
 
         self._logger = logger
 
@@ -37,7 +38,7 @@ class SessionHelperThread(threading.Thread):
 
         self._session_utils = sessutils
 
-        self._queue = queue
+        self._queue_service = queueservice
         self._datalayer = datalayer
 
         self._sandboxid = helper_params["sandboxid"]
@@ -49,7 +50,8 @@ class SessionHelperThread(threading.Thread):
         # need a separate backup data layer client from the publication utils; otherwise, we run into concurrent modification
         # problems from Thrift
         # locality = -1 means that the writes happen to the local data layer first and then asynchronously to the global data layer
-        self._backup_data_layer_client = DataLayerClient(locality=-1, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
+        # will only initialize if heartbeats are enabled
+        self._backup_data_layer_client = None
 
         # set up heartbeat parameters
         self._heartbeat_enabled = False
@@ -74,12 +76,10 @@ class SessionHelperThread(threading.Thread):
         # we can send regular heartbeats
         self._local_poll_timeout = py3utils.ensure_long(10000)
 
-        # use a deque to keep the list of messages
-        # updating the list and retrieving the list would be done by two threads
-        # this should be safe without lock because of the global interpreter lock in python
-        self._message_queue = deque()
+        # use a queue to keep the incoming update messages for blocking and/or blocking get_update_messages() requests
+        self._message_queue = queue.Queue()
 
-        self._local_queue_client = LocalQueueClient(connect=self._queue)
+        self._local_queue_client = LocalQueueClient(connect=self._queue_service)
 
         self._special_messages = {}
         self._special_messages["--stop"] = True
@@ -102,10 +102,15 @@ class SessionHelperThread(threading.Thread):
 
         if self._heartbeat_method == "function":
             if "heartbeat_function" in heartbeat_params:
+                # enable function related heartbeat
                 self._heartbeat_function = heartbeat_params["heartbeat_function"]
                 #self._logger.debug("[SessionHelperThread] New heartbeat function: " + str(self._heartbeat_function))
+                if self._backup_data_layer_client is None:
+                    self._backup_data_layer_client = DataLayerClient(locality=-1, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
                 if self._local_queue_client_heartbeat is None:
-                    self._local_queue_client_heartbeat = LocalQueueClient(connect=self._queue)
+                    self._local_queue_client_heartbeat = LocalQueueClient(connect=self._queue_service)
+
+                # disable data layer related heartbeat
                 if self._data_layer_client_heartbeat is not None:
                     self._data_layer_client_heartbeat.delete(self._heartbeat_data_layer_key)
                     self._heartbeat_data_layer_key = None
@@ -118,13 +123,22 @@ class SessionHelperThread(threading.Thread):
             # OR keep a new map for heartbeats of the session functions
             # so that the checker can retrieve the keys and their values (e.g., timestamps)
             # if a session function misses a heartbeat, the checker function reports to policy handler
+
+            # enable data layer related heartbeat
             self._heartbeat_data_layer_key = "heartbeat_" + self._session_id + "_" + self._session_function_id
             if self._data_layer_client_heartbeat is None:
                 self._data_layer_client_heartbeat = DataLayerClient(locality=1, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
+
+            # disable function related heartbeat
             if self._local_queue_client_heartbeat is not None:
                 self._local_queue_client_heartbeat.shutdown()
                 self._local_queue_client_heartbeat = None
                 self._heartbeat_function = None
+            if self._backup_data_layer_client is not None:
+                self._backup_data_layer_client.shutdown()
+                self._backup_data_layer_client = None
+
+
         else:
             raise MicroFunctionsSessionAPIException("Unsupported heartbeat method for session function.")
 
@@ -223,19 +237,19 @@ class SessionHelperThread(threading.Thread):
         # _XXX_: we are encoding/decoding the delivered message; should not actually execute this code
         # it is here for not envisioned corner case (i.e., let the user code deal with it)
         if not is_json:
-            self._queue_message(msg)
+            self._store_message(msg)
             self._publication_utils.set_metadata(metadata)
         else:
             # the message is json encoded, but it doesn't guarantee that it is a special message
             if "action" in msg and msg["action"] in self._special_messages:
                 self._handle_special_message(msg)
             else:
-                self._queue_message(msg)
+                self._store_message(msg)
                 self._publication_utils.set_metadata(metadata)
 
 
-    def _queue_message(self, msg):
-        self._message_queue.append(msg)
+    def _store_message(self, msg):
+        self._message_queue.put(msg)
 
     def _handle_special_message(self, msg):
         action = msg["action"]
@@ -247,17 +261,16 @@ class SessionHelperThread(threading.Thread):
         elif action == "--update-heartbeat":
             self._init_heartbeat_parameters(msg["heartbeat_parameters"])
 
-    def get_messages(self, count=1):
+    def get_messages(self, count=1, block=False):
         messages = []
 
-        # this check ensures that we never try to pop() from an empty deque
-        num_messages = len(self._message_queue)
-        if num_messages < count:
-            count = num_messages
-
         for i in range(count):
-            msg = self._message_queue.popleft()
-            messages.append(msg)
+            try:
+                msg = self._message_queue.get(block=block)
+                messages.append(msg)
+                self._message_queue.task_done()
+            except Exception as exc:
+                pass
 
         #self._logger.debug("returning messages: " + str(messages))
         return messages
@@ -317,11 +330,12 @@ class SessionHelperThread(threading.Thread):
             self._local_queue_client_heartbeat.shutdown()
             self._local_queue_client_heartbeat = None
 
+        if self._backup_data_layer_client is not None:
+            self._backup_data_layer_client.shutdown()
+            self._backup_data_layer_client = None
+
         self._local_queue_client.shutdown()
         self._local_queue_client = None
-
-        self._backup_data_layer_client.shutdown()
-        self._backup_data_layer_client = None
 
     def shutdown(self):
         self._is_running = False
@@ -330,6 +344,6 @@ class SessionHelperThread(threading.Thread):
         # and we never get to execute that part in this thread
         # need a new lqc, because if using the actual self._local_queue_client,
         # it will corrupt the protocol stack, if it is still waiting on new messages
-        lqc = LocalQueueClient(connect=self._queue)
+        lqc = LocalQueueClient(connect=self._queue_service)
+        lqc.removeTopic(self._local_topic_communication)
         lqc.shutdown()
-

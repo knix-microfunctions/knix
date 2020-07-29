@@ -27,10 +27,7 @@ class MicroFunctionsLogWriter:
 
     def write(self, msg):
         msg = msg.rstrip()
-        lines = msg.splitlines()
-        for line in lines:
-            line = line.rstrip()
-            self._logger.log(self._level, line)
+        self._logger.log(self._level, msg)
 
     def flush(self):
         pass

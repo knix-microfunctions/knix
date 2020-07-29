@@ -1,0 +1,10 @@
+{
+  "StartAt": "DummyExampleSource",
+  "States": {
+    "DummyExampleSource": {
+      "Type": "Task",
+      "Resource": "actual.DummyExampleSource",
+      "End": true
+    }
+  }
+}

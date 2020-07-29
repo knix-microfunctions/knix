@@ -1,0 +1,16 @@
+{
+    "Comment": "wf_python_java Workflow",
+    "StartAt": "StartWithPython",
+    "States": {
+        "StartWithPython": {
+            "Type": "Task",
+            "Resource": "start",
+            "Next": "ContinueWithJava"
+        },
+        "ContinueWithJava": {
+            "Type": "Task",
+            "Resource": "actual.DummyExampleMaven",
+            "End": true
+        }
+    }
+}

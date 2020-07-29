@@ -423,16 +423,16 @@
 
      function getStorageObjectsList() {
 
-       var path = "/storage/";
-       var email = $cookies.get('email');
+       var urlPath = sharedProperties.getUrlPath();
        var token = $cookies.get('token');
 
-       var req = {
-         method: 'GET',
-         url: path + "?token=" + token + "&email=" + email + "&table=defaultTable&action=listKeys&start=0&count=500",
+      var req = {
+         method: 'POST',
+         url: urlPath,
          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-         }
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "listkeys", "start": 0, "count": 2000} } })
        }
 
        $http(req).then(function successCallback(response) {

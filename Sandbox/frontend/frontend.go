@@ -174,7 +174,9 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
         log.Println("consumer: Couldn't unmarshal message", err)
         continue
       }
+      ExecutionCond.L.Lock()
       e, ok := ExecutionResults[msg.Mfnmetadata.ExecutionId]
+      ExecutionCond.L.Unlock()
       if !ok {
         log.Println("consumer: Received unknown result", string(msg.Mfnmetadata.ExecutionId))
         continue
@@ -208,7 +210,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
     return
   }
   var err error
-  var msgb []byte
   var (
     rt_entry  int64
     rt_sendlq int64
@@ -237,10 +238,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
       if async {
         log.Printf("handler: Result not yet available of execution ID %s, redirecting", id)
         // TODO: 300 location redirect
-        http.Redirect(w, r, r.URL.String() + "executionId=" + id, http.StatusMovedPermanently)
+        http.Redirect(w, r, r.URL.Path + "?executionId=" + id, http.StatusTemporaryRedirect)
       } else {
         log.Printf("handler: Result not yet available of execution ID %s, waiting", id)
+        ExecutionCond.L.Lock()
         e, ok := ExecutionResults[id]
+        ExecutionCond.L.Unlock()
         if !ok {
           m := sync.Mutex{}
           c := sync.NewCond(&m)
@@ -263,14 +266,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
         w.Write([]byte(e.msg.Mfnuserdata))
       }
     } else {
-      msgb,err = res.MarshalJSON()
+      /*msgb,err = res.MarshalJSON()
       if err != nil {
         http.Error(w, "Couldn't marshal result to JSON", http.StatusInternalServerError)
         log.Println("handler: Couldn't marshal result to JSON: ", err)
       } else {
         w.Header().Set("Content-Type", "application/json")
         w.Write(msgb)
-      }
+      }*/
+      w.Header().Set("Content-Type", "application/json")
+      w.Write([]byte(res.Mfnuserdata))
     }
     return
   }
@@ -414,7 +419,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       http.Error(w, "Error submitting event to system", http.StatusInternalServerError)
     } else {
-      w.Write(mid)
+      w.Write([]byte(id))
     }
   } else {
     // Create entry and lock to wait on

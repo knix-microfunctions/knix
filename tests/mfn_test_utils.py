@@ -24,6 +24,7 @@ import statistics
 import subprocess
 import sys
 import time
+import ast
 
 from mfn_sdk import MfnClient
 
@@ -111,6 +112,9 @@ class MFNTest():
 
         if len(settings) == 0:
             raise Exception("Empty settings")
+
+        # Defaults
+        settings.setdefault("timeout", 60)
 
         return settings
 
@@ -322,10 +326,13 @@ class MFNTest():
         if self._workflow.status == "deployed":
             return self._workflow.endpoints
 
-    def execute(self, message, timeout=None, check_duration=False):
+    def execute(self, message, timeout=None, check_duration=False, async=False):
         if timeout is None:
             timeout = self._settings["timeout"]
-        return self._workflow.execute(message, timeout, check_duration)
+        if async:
+            return self._workflow.execute_async(message, timeout)
+        else:
+            return self._workflow.execute(message, timeout, check_duration)
 
     def get_workflow_logs(self, num_lines=500):
         data = self._workflow.logs(ts_earliest=self._log_clear_timestamp, num_lines=num_lines)
@@ -358,7 +365,7 @@ class MFNTest():
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
 
-    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True):
+    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async=False):
         any_failed_tests = False
         durations = []
 
@@ -371,29 +378,49 @@ class MFNTest():
                 if check_duration:
                     rn, t_total = self.execute(json.loads(inp), check_duration=check_duration)
                 else:
-                    rn = self.execute(json.loads(inp))
+                    rn = self.execute(json.loads(inp), async=async)
 
                 if check_duration:
                     durations.append(t_total)
                     #print("Total time to execute: " + str(t_total) + " (ms)")
 
-                if check_just_keys:
-                    if isinstance(res, str):
-                        res = json.loads(res)
+                if isinstance(res, str):
+                    res = json.loads(res)
 
-                    if set(rn.keys()) == set(res.keys()):
-                         current_test_passed = True
+                res_to_check = []
+
+                # hold on to the Execution object, so that we can retrieve more results if needed
+                if async:
+                    rn_async = rn
+
+                    if not isinstance(res, list):
+                        res_to_check.append(res)
                     else:
-                        raise Exception("Error: unsupported workflow result type")
-
+                        res_to_check = res
                 else:
-                    if rn == json.loads(res):
-                        current_test_passed = True
+                    # some expected results can be lists
+                    res_to_check.append(res)
 
-                self.report(current_test_passed, inp, res, rn)
-                any_failed_tests = any_failed_tests or (not current_test_passed)
+                for cur_res in res_to_check:
+                    # before we can compare results, we need to ensure that we get the actual result
+                    # if we executed asynchronously, we'll have to wait until we get the result
+                    if async:
+                        rn = rn_async.get()
 
-                time.sleep(1)
+                    if check_just_keys:
+                        if set(rn.keys()) == set(cur_res.keys()):
+                             current_test_passed = True
+                        else:
+                            raise Exception("Error: unsupported workflow result type")
+
+                    else:
+                        if rn == cur_res:
+                            current_test_passed = True
+
+                    self.report(current_test_passed, inp, cur_res, rn)
+                    any_failed_tests = any_failed_tests or (not current_test_passed)
+
+                    time.sleep(1)
 
         except Exception as e:
             print(str(e))

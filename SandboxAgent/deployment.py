@@ -620,11 +620,13 @@ class Deployment:
             error = "Could not search for any Java sources: " + resource["name"] + " " + str(error)
             return error
         source_files = set(output.split("\n"))
+        source_files = ' '.join(source_files).strip()
         should_compile = False
-        if source_files:
+        if source_files != "":
             should_compile = True
-        source_files = ' '.join(source_files)
-        self._logger.info("Found following Java sources: %s", str(source_files))
+            self._logger.info("Found following Java sources: %s", str(source_files))
+        else:
+            self._logger.info("No java sources to compile.")
 
         # 2. check for pom.xml or the requirements; if it is there, then:
         if mvndeps is not None and not os.path.exists(resource["dirpath"] + "pom.xml"):

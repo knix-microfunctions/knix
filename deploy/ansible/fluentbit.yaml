@@ -171,12 +171,21 @@
         [Install]
         WantedBy=multi-user.target
 
-  - name: systemd start fluent-bit service
+  - name: systemd install and enable fluent-bit service
     systemd:
       daemon_reload: yes
       name: "{{ service_name }}"
       enabled: true
       state: restarted
+    when: start_at_boot|bool
+
+  - name: systemd install and disable fluent-bit service
+    systemd:
+      daemon_reload: yes
+      name: "{{ service_name }}"
+      enabled: false
+      state: stopped
+    when: not start_at_boot|bool
 
   - name: create start script
     copy:
