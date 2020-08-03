@@ -86,14 +86,15 @@ class MicroFunctionsAPI:
         output = num
         return 'pong ' + str(output)
 
-    def get_privileged_data_layer_client(self, suid=None, sid=None, init_tables=False, drop_keyspace=False):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, is_wf_private=False, init_tables=False, drop_keyspace=False):
         '''
-        Obtain a privileged data layer client to access a user's storage.
+        Obtain a privileged data layer client to access a user's storage or a workflow-private storage.
         Only can be usable by the management service.
 
         Args:
             suid (string): the storage user id
             sid (string): sandbox id
+
             init_tables (boolean): whether relevant data layer tables should be initialized; default: False.
             drop_keyspace (boolean): whether the relevant keyspace for the user's storage should be dropped; default: False.
 
@@ -104,8 +105,9 @@ class MicroFunctionsAPI:
         if self._is_privileged:
             if suid is not None:
                 return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
-            elif sid is not None:
-                return DataLayerClient(locality=1, for_mfn=True, sid=sid, connect=self._datalayer, drop_keyspace=drop_keyspace)
+            elif is_wf_private:
+                # we'll never try to access the metadata stored for mfn
+                return DataLayerClient(locality=1, sid=sid, wid=sid, for_mfn=False, is_wf_private=is_wf_private, connect=self._datalayer, drop_keyspace=drop_keyspace)
         return None
 
     def update_metadata(self, metadata_name, metadata_value, is_privileged_metadata=False):

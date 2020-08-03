@@ -33,6 +33,66 @@
     var email = $cookies.get('email');
     var urlPath = sharedProperties.getUrlPath();
 
+    $scope.storageLocations = { };
+    $scope.storageLocations["General Storage"] = "General Storage";
+
+    $scope.workflows = sharedData.getWorkflows();
+
+    if (!$scope.workflows) {
+      getWorkflows();
+    }
+
+    function getWorkflows() {
+
+      var req = {
+        method: 'POST',
+        url: urlPath,
+        headers: {
+             'Content-Type': 'application/json'
+        },
+        data:   JSON.stringify({ "action" : "getWorkflows", "data" : { "user" : { "token" : token } } })
+      }
+
+      $http(req).then(function successCallback(response) {
+
+          if (response.data.status=="success") {
+            $scope.workflows = response.data.data.workflows;
+            sharedData.setWorkflows(response.data.data.workflows);
+            for (var i = 0; i < $scope.workflows.length; i++)
+            {
+                $scope.storageLocations["Workflow-private storage: " + $scope.workflows[i].name] = $scope.workflows[i].id;
+            }
+          } else {
+            console.log("Failure status returned by getWorkflows");
+            console.log("Message:" + response.data.data.message);
+            $scope.errorMessage = response.data.data.message;
+            $uibModal.open({
+              animation: true,
+              scope: $scope,
+              templateUrl: 'app/pages/workflows/modals/errorModal.html',
+              size: 'md',
+            });
+          }
+      }, function errorCallback(response) {
+          console.log("Error occurred during getWorkflows");
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+
+      });
+    }
+
+    console.log($scope.storageLocations);
+
     //$scope.storageObjects = sharedData.getStorageObjects();
     if (!$scope.storageObjects) {
       $scope.storageObjects = [ ];
