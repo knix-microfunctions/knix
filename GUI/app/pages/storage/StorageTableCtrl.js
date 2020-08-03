@@ -62,7 +62,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "listkeys", "start": 0, "count": 2000} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "listkeys", "start": 0, "count": 2000} } })
        }
 
       $http(req).then(function successCallback(response) {
@@ -134,7 +134,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "getdata", "key": key} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": key} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -225,7 +225,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "deletedata", "key": $scope.storageObjects[index].key} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "deletedata", "key": $scope.storageObjects[index].key} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -310,7 +310,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "putdata", "key": storageObject.key, "value": ""} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": storageObject.key, "value": ""} } })
        }
 
        $http(req).then(function successCallback(response) {

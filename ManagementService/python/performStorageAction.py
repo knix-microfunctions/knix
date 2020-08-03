@@ -82,7 +82,6 @@ def handleStorageAction(storage, dlc):
     '''
     "storage": {
         "action": "getdata",  OR  "deletedata",  OR  "putdata",  OR  "listkeys",  <case insensitive>
-        "table": "tablename",
         "key": "keyname",              (for getdata, deletedata, and putdata)
         "value": "stringdata",         (for putdata)
         "start": 1,                    (int, for listkeys)
@@ -95,9 +94,9 @@ def handleStorageAction(storage, dlc):
     storage_action = storage['action'].lower()
 
     if storage_action == 'getdata':
-        message = "getdata, key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        message = "getdata, key:" + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        val = dlc.get(storage['key'], tableName=storage['table'])
+        val = dlc.get(storage['key'])
         if val is None:
             return False, "getdata returned None value. " + message, response_data
 
@@ -106,23 +105,23 @@ def handleStorageAction(storage, dlc):
         response_data['value'] = base64.b64encode(val).decode()
 
     elif storage_action == 'deletedata':
-        message = "deletedata, key:" + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        message = "deletedata, key:" + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        status = dlc.delete(storage['key'], tableName=storage['table'])
+        status = dlc.delete(storage['key'])
         if not status:
             return False, "deletedata returned False. " + message, response_data
 
     elif storage_action == 'putdata':
-        message = "putdata, key: " + storage['key'] + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        message = "putdata, key: " + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        status = dlc.put(storage['key'], storage['value'], tableName=storage['table'])
+        status = dlc.put(storage['key'], storage['value'])
         if not status:
             return False, "putdata returned False. " + message, response_data
 
     elif storage_action == 'listkeys':
-        message = "listkeys, start: " + str(storage['start']) + ", count: " + str(storage['count']) + ", table: " + storage['table'] + ", keyspace: " + dlc.keyspace
+        message = "listkeys, start: " + str(storage['start']) + ", count: " + str(storage['count']) + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        listkeys_response = dlc.listKeys(storage['start'], storage['count'], tableName=storage['table'])
+        listkeys_response = dlc.listKeys(storage['start'], storage['count'])
         response_data['keylist'] = listkeys_response   # should always be a list. Empty list is a valid response
 
     else:
@@ -147,10 +146,6 @@ def verifyData(data):
     verified, message = isValidString(storage, 'action')
     if not verified:
         return False, "Invalid storage action specified. " + message
-
-    verified, message = isValidString(storage, 'table')
-    if not verified:
-        return False, "Invalid table specified. " + message
 
     action = storage['action'].lower()
     validActions = set(['getdata', 'deletedata', 'putdata', 'listkeys'])
