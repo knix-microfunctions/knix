@@ -71,13 +71,29 @@ class MicroFunctionsAPI:
         self._session_utils = session_utils
 
         self._function_state_name = funcstatename
-        self._function_version = 1
+        self._function_version = 1 # Currently hardcoded to 1
 
         self._instanceid = key
 
         self._is_privileged = False
         if sid == "Management" and wid == "Management":
             self._is_privileged = True
+
+        '''
+        AWS context object properties required for API compatibility, TODO: remove hardcoding of some values
+        '''
+        self.function_name = self._function_state_name # The name of the function.
+        self.function_version = self._function_version # The version of the function. 
+        self.invoked_function_arn = self.function_name + ":" + self.function_version # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias. 
+        self.memory_limit_in_mb = None # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
+        self.aws_request_id = self._instanceid # The identifier of the invocation request. Return the KNIX message key instead
+        self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme 
+        # from datetime import date
+        # today = date.today()
+        # d1 = today.strftime("%d/%m/%Y")
+        self.log_stream_name = "2020/08/05/[$LATEST]60961f5f6c2140c1bdfa56d8c7f00769" % () # Hardcoded for now. The log stream for the function instance. 'Id' should be sid of the function, to be checked
+        self.identity = {"cognito_identity_id": None, "cognito_identity_pool_id": None} # Amazon Cognito identity that authorized the request. Object Id's set to "None" for KNIX
+        self.client_context = None # Client context that's provided to function by the client application. Currently "None" for KNIX
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
 
