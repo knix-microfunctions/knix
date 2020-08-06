@@ -84,7 +84,7 @@ class MicroFunctionsAPI:
         '''
         self.function_name = self._function_state_name # The name of the function.
         self.function_version = self._function_version # The version of the function. 
-        self.invoked_function_arn = self.function_name + ":" + self.function_version # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias. 
+        self.invoked_function_arn = self.function_name + ":" + str(self.function_version) # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias. 
         self.memory_limit_in_mb = None # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
         self.aws_request_id = self._instanceid # The identifier of the invocation request. Return the KNIX message key instead
         self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme 
