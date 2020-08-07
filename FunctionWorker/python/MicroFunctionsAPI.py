@@ -23,6 +23,7 @@ from MicroFunctionsExceptions import MicroFunctionsWorkflowException, MicroFunct
 import py3utils
 import requests
 import json
+from datetime import date
 
 class MicroFunctionsAPI:
     '''
@@ -53,6 +54,25 @@ class MicroFunctionsAPI:
         Returns:
             None
         '''
+
+        class ClientContext(object):
+            __slots__ = ['custom', 'env', 'client']
+
+    
+        def make_obj_from_dict(_class, _dict, fields=None):
+            if _dict is None:
+                return None
+            obj = _class()
+            set_obj_from_dict(obj, _dict)
+            return obj
+
+    
+        def set_obj_from_dict(obj, _dict, fields=None):
+            if fields is None:
+                fields = obj.__class__.__slots__
+            for field in fields:
+                setattr(obj, field, _dict.get(field, None))
+
 
         self._logger = logger
         self._datalayer = datalayer
@@ -87,16 +107,20 @@ class MicroFunctionsAPI:
         self.invoked_function_arn = self.function_name + ":" + str(self.function_version) # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias. 
         self.memory_limit_in_mb = None # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
         self.aws_request_id = self._instanceid # The identifier of the invocation request. Return the KNIX message key instead
-        self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme 
-        # from datetime import date
-        # today = date.today()
-        # d1 = today.strftime("%d/%m/%Y")
-        self.log_stream_name = "2020/08/05/[$LATEST]60961f5f6c2140c1bdfa56d8c7f00769" % () # Hardcoded for now. The log stream for the function instance. 'Id' should be sid of the function, to be checked
-        self.identity = {"cognito_identity_id": None, "cognito_identity_pool_id": None} # Amazon Cognito identity that authorized the request. Object Id's set to "None" for KNIX
-        self.client_context = None # Client context that's provided to function by the client application. Currently "None" for KNIX
+        self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme         
+        today = date.today()
+        d1 = today.strftime("%Y/%m/%d")
+        self.log_stream_name = str(d1) + "[$LATEST]" +str(self._logger.name) # The log stream name for this function instance.
+        #self.identity = {"cognito_identity_id": None, "cognito_identity_pool_id": None} # Amazon Cognito identity that authorized the request. Object Id's set to "None" for KNIX
+        self.identity = make_obj_from_dict(None, None) #(CognitoIdentity, context_objs)
+        #self.client_context = None # Client context that's provided to function by the client application. Currently "None" for KNIX. ToDO: needs to be base64 en/decoded string
+
+        self.client_context = make_obj_from_dict(None, None)
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
 
+    
+    
     def ping(self, num):
         self._logger.info("ping: " + str(num))
         output = num
