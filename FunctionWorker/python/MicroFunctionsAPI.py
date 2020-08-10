@@ -23,7 +23,6 @@ from MicroFunctionsExceptions import MicroFunctionsWorkflowException, MicroFunct
 import py3utils
 import requests
 import json
-from datetime import date
 
 class MicroFunctionsAPI:
     '''
@@ -55,25 +54,39 @@ class MicroFunctionsAPI:
             None
         '''
 
-        class ClientContext(object):
-            __slots__ = ['custom', 'env', 'client']
+        from typing import Dict, Any
+        from datetime import date
 
-    
-        def make_obj_from_dict(_class, _dict, fields=None):
-            if _dict is None:
-                return None
-            obj = _class()
-            set_obj_from_dict(obj, _dict)
-            return obj
+        LambdaDict = Dict[str, Any]
 
-    
-        def set_obj_from_dict(obj, _dict, fields=None):
-            if fields is None:
-                fields = obj.__class__.__slots__
-            for field in fields:
-                setattr(obj, field, _dict.get(field, None))
+        class LambdaCognitoIdentity(object):
+            cognito_identity_id: str
+            cognito_identity_pool_id: str
 
+        class LambdaClientContextMobileClient(object):
+            installation_id: str
+            app_title: str
+            app_version_name: str
+            app_version_code: str
+            app_package_name: str
 
+        class LambdaClientContext(object):
+            client: LambdaClientContextMobileClient
+            custom: LambdaDict
+            env: LambdaDict
+
+        class LambdaContext(object):
+            function_name: str
+            function_version: str
+            invoked_function_arn: str
+            memory_limit_in_mb: int
+            aws_request_id: str
+            log_group_name: str
+            log_stream_name: str
+            identity: LambdaCognitoIdentity
+            client_context: LambdaClientContext
+
+ 
         self._logger = logger
         self._datalayer = datalayer
         self._external_endpoint = external_endpoint
@@ -105,20 +118,31 @@ class MicroFunctionsAPI:
         self.function_name = self._function_state_name # The name of the function.
         self.function_version = self._function_version # The version of the function. 
         self.invoked_function_arn = self.function_name + ":" + str(self.function_version) # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias. 
-        self.memory_limit_in_mb = None # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
+        self.memory_limit_in_mb = 3008 # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
         self.aws_request_id = self._instanceid # The identifier of the invocation request. Return the KNIX message key instead
         self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme         
-        today = date.today()
+
+        today = date.today() # calculate date
         d1 = today.strftime("%Y/%m/%d")
-        self.log_stream_name = str(d1) + "[$LATEST]" +str(self._logger.name) # The log stream name for this function instance.
-        #self.identity = {"cognito_identity_id": None, "cognito_identity_pool_id": None} # Amazon Cognito identity that authorized the request. Object Id's set to "None" for KNIX
-        self.identity = make_obj_from_dict(None, None) #(CognitoIdentity, context_objs)
-        #self.client_context = None # Client context that's provided to function by the client application. Currently "None" for KNIX. ToDO: needs to be base64 en/decoded string
+        self.log_stream_name = str(d1) + "[$LATEST]" + str(self._logger.name) # The log stream name for this function instance.
 
-        self.client_context = make_obj_from_dict(None, None)
+        self.identity = LambdaCognitoIdentity() # Amazon Cognito identity that authorized the request.
+        self.identity.cognito_identity_id = 'knix_cognito_identity_id' # set to knix identity id
+        self.identity.cognito_identity_pool_id = 'knix_cognito_identity_pool_id' # set to knix identity pool id
 
+        self.client_context_mobile_client = LambdaClientContextMobileClient() # generate ContextMobileClent object
+        self.client_context_mobile_client.installation_id = 'knix_installation_id' # set to KNIX id
+        self.client_context_mobile_client.app_title = 'knix_app_title' # set to KNIX app title
+        self.client_context_mobile_client.app_version_name = 'knix_app_version_name' # set to KNIX app name
+        self.client_context_mobile_client.app_version_code = 'knix_app_version_code' # set to KNIX app code
+        self.client_context_mobile_client.app_package_name = 'knix_app_package_name' # set to KNIX app package name 
+
+        self.client_context = LambdaClientContext() # generate ClientContext object
+        self.client_context.client = self.client_context_mobile_client # set to client mobile context
+        self.client_context.custom = {'knix_custom': True} # set to KNIX context custom
+        self.client_context.env = {'knix_env': 'test'} # set to KNIX context env
+     
         #self._logger.debug("[MicroFunctionsAPI] init done.")
-
     
     
     def ping(self, num):

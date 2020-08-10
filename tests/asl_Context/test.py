@@ -27,8 +27,26 @@ class ContextTest(unittest.TestCase):
     def test_task_context(self):
         """  testing task chain """
 
-        inp0 = '{"object_test": "aabbcc"}'
-        res0 = {'log_stream_name': '2020/08/07[$LATEST]ContextTest', 'log_group_name': '/knix/mfn/ContextTest', 'aws_request_id': '8f7bdefed89511ea92ab0242ac110003', 'memory_limit_in_mb': None, 'context_identity': None, 'client_context': None, 'get_remaining_time_in_millis': 300000}
+        inp0 = '"abc"'
+        res0 = {
+    "context.function_name": "test_context",
+    "context.function_version": 1,
+    "context.log_stream_name": "2020/08/10[$LATEST]test_context",
+    "context.log_groupm_name": "/knix/mfn/test_context",
+    "context.aws_request_id": "4f7abd01dae811ea92500242ac110005",
+    "context.memory_limit_in_mb": None,
+    "context.identity.cognito_identity_id": "cognito_identity_id",
+    "context.identity.cognito_identity_pool_id": "cognito_identity_pool_id",
+    "context.client_context.client": "<MicroFunctionsAPI.MicroFunctionsAPI.__init__.<locals>.LambdaClientContextMobileClient object at 0x7fb2a0fc7400>",
+    "context.client_context.custom": "{'custom': True}",
+    "context.client_context.env": "{'env': 'test'}",
+    "context.client_context.client.installation_id": "installation_id",
+    "context.client_context.client.app_title": "app_title",
+    "context.client_context.client.app_version_name": "app_version_name",
+    "context.client_context.client.app_version_code": "app_version_code",
+    "context.client_context.client.app_package_name": "app_package_name",
+    "context.get_remaining_time_in_millis": 300000
+}
 
 
         testtuplelist =[(inp0, res0)]
