@@ -20,6 +20,7 @@ include ../build_env.mk
 
 default: build_thrift \
 	image \
+	image_gpu \
 	image_java
 
 clean:
@@ -91,6 +92,16 @@ image: \
 	build/SandboxAgent.tar.gz
 	$(call build_image,Dockerfile,microfn/sandbox)
 
+image_gpu: \
+	Dockerfile_gpu \
+	build/queueservice.jar \
+	frontend/frontend \
+	build/LoggingService.tar.gz \
+	build/FunctionWorker.tar.gz \
+	build/SandboxAgent.tar.gz
+	$(call build_image,Dockerfile_gpu,microfn/sandbox_gpu)
+
+
 image_java: \
 	Dockerfile_java \
 	build/queueservice.jar \
@@ -103,6 +114,7 @@ image_java: \
 
 push: image image_java
 	$(call push_image,microfn/sandbox)
+	$(call push_image,microfn/sandbox_gpu)
 	$(call push_image,microfn/sandbox_java)
 
 
