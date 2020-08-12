@@ -132,6 +132,8 @@ def compile_resource_info_map(resource_names, uploaded_resources, email, sapi, d
                 resource_metadata = json.loads(resource_metadata)
                 if "runtime" in resource_metadata:
                     resource_info["runtime"] = resource_metadata["runtime"]
+                if "on_gpu" in resource_metadata:
+                    resource_info["on_gpu"] = True
 
             num_chunks_str = dlc.get("grain_source_zip_num_chunks_" + resource_id)
             try:
@@ -468,7 +470,12 @@ def handle(value, sapi):
         else:
             # We're running BARE METAL mode
             # _XXX_: due to the queue service still being in java in the sandbox
-            sandbox_image_name = "microfn/sandbox"
+
+            sandbox_image_name = "microfn/sandbox" # default value
+            if "on_gpu" in resource_info_map.keys(): # sandbox_gpu image should be used for ths workflow
+                if resource_info_map["on_gpu"] == True:
+                    sandbox_image_name = "microfn/sandbox_gpu"
+                    
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 sandbox_image_name = "microfn/sandbox_java"
 
