@@ -478,6 +478,9 @@ class SessionSupportTest(unittest.TestCase):
         heartbeat_timestamps = {}
         for line in heartbeat_lines:
             line = line.split(" ")[-1]
+            line = line.strip()
+            if line == "":
+                continue
             fields = line.split("@")
             timestamp = fields[1]
             function_info = fields[0]
@@ -494,11 +497,12 @@ class SessionSupportTest(unittest.TestCase):
         time.sleep(60)
 
         telemetry_lines = self._get_log_lines("[telemetryHandler]")
-
         telemetry_content = {}
         for line in telemetry_lines:
-            #print(line)
             line = line.split(" ")[-1]
+            line = line.strip()
+            if line == "":
+                continue
             fields = line.split("@")
             function_info = fields[0]
             telemetry = fields[1].split(">")[-1]
