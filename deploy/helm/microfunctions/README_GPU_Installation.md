@@ -132,7 +132,7 @@ EOF
 apt-get update
 apt-get install -y kubelet kubeadm kubectl
 # turn off swap or comment the swap line in /etc/fstab
-sudo swapoff -a</pre>
+sudo swapoff -a
 ```
 **Specific version installation; e.g., 1.****16****.****6****-00**
 
@@ -152,7 +152,7 @@ p   1.16.6-00   kubernetes-xenial   500
 ...
 
 # install specific version of kubelet, kubeadm and kubectl
-ksatzke@gpuhost:~$: apt-get install -y kubelet=1.16.6-00 kubeadm=1.16.6-00 kubectl=1.16.6-00</pre>
+ksatzke@gpuhost:~$: apt-get install -y kubelet=1.16.6-00 kubeadm=1.16.6-00 kubectl=1.16.6-00
 ```
 
 6.  On the GPU node, edit the /etc/systemd/system/kubelet.service.d/10-kubeadm.conf  file and add the following environment argument to enable the DevicePlugins feature gate. If there is already Accelerators feature gate set, remove it.
@@ -230,7 +230,7 @@ Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
  
 NAME    STATUS     ROLES     AGE       VERSION
 gpuhost NotReady   <none>    2m12s     v1.16.6
-node1   Ready      <none>    19h       v1.16.6
+node1   Ready      master    19h       v1.16.6
 node2   Ready      <none>    19h       v1.16.6
 node3   Ready      <none>    19h       v1.16.6
 node4   Ready      <none>    19h       v1.16.6
@@ -258,8 +258,8 @@ ksatzke@gpuhost:~/kubernetes$ kubectl get nodes -L accelerator
 
 NAME      STATUS   ROLES    AGE     VERSION   ACCELERATOR
 
-gpuhost   Ready    master   18m     v1.16.6   nvidia-gtx-1050
-node1     Ready    <none>   19h     v1.16.6
+gpuhost   Ready    <none>   18m     v1.16.6   nvidia-gtx-1050
+node1     Ready    master   19h     v1.16.6
 node2     Ready    <none>   19h     v1.16.6
 node3     Ready    <none>   19h     v1.16.6
 node4     Ready    <none>   19h     v1.16.6
@@ -303,5 +303,3 @@ Copy output data from the CUDA device to the host memory
 Test PASSED
 Done
 ```
-
-
