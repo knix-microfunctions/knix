@@ -301,6 +301,19 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
         kservice['spec']['template']['spec']['volumes'] = [{ 'name': 'new-workflow-conf', 'configMap': {'name': new_workflow_conf['configmap']}}]
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
         kservice['spec']['template']['spec']['serviceAccountName'] = new_workflow_conf['mgmtserviceaccount']
+
+        # management container should not consume a CPU
+        #kservice['spec']['template']['spec']['containers'][0]['image'] = new_workflow_conf['image.Python']
+        #if ("nvidia.com/gpu" in kservice['spec']['template']['spec']['containers'][0]['resources']['limits'].keys()): 
+        # overwrite limits entry, generate new k/v pair
+        #print("RESOURCES: " + str(kservice['spec']['template']['spec']['containers'][0]['resources'])) # just testin...
+        #print("RESOURCES: " + str(kservice['spec']['template']['spec']['containers'][0]['resources']['limits'])) # just testin...
+        if (labels['workflowid'] == "Management"):
+            kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = "0"
+            kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = "0"
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits'] = {{"cpu": 1, "memory": "2Gi"}, "requests": {"cpu": 1, "memory": "1Gi"}}       
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = 0 
+
         if 'HTTP_GATEWAYPORT' in new_workflow_conf:
             env.append({'name': 'HTTP_GATEWAYPORT', 'value': new_workflow_conf['HTTP_GATEWAYPORT']})
         if 'HTTPS_GATEWAYPORT' in new_workflow_conf:

@@ -19,7 +19,8 @@
 #------------------------------------------------------------------------------
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
-imageRepo: "registry.kube-system.svc.cluster.local"
+#imageRepo: "registry.kube-system.svc.cluster.local"
+imageRepo: "localhost:5000"
 manager:
   #httpProxy: "http://<host>:<port>"
   #httpsProxy: "http://<host>:<port>"
@@ -64,7 +65,7 @@ manager:
 # MicroFunction Datalayer
 #------------------------------------------------------------------------------
 datalayer:
-  replicas: 3
+  replicas: 1
   imagePath: "/microfn/datalayer"
   imageTag: "latest"
   imagePullPolicy: "Always"
@@ -82,7 +83,7 @@ datalayer:
 # Riak global data storage
 #------------------------------------------------------------------------------
 riak:
-  replicas: 3
+  replicas: 1
   imagePath: "/microfn/riak"
   imageTag: "latest"
   imagePullPolicy: "Always"

@@ -326,10 +326,10 @@ class MFNTest():
         if self._workflow.status == "deployed":
             return self._workflow.endpoints
 
-    def execute(self, message, timeout=None, check_duration=False, async=False):
+    def execute(self, message, timeout=None, check_duration=False, async_=False):
         if timeout is None:
             timeout = self._settings["timeout"]
-        if async:
+        if async_:
             return self._workflow.execute_async(message, timeout)
         else:
             return self._workflow.execute(message, timeout, check_duration)
@@ -365,7 +365,7 @@ class MFNTest():
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
 
-    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async=False):
+    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async_=False):
         any_failed_tests = False
         durations = []
 
@@ -378,7 +378,7 @@ class MFNTest():
                 if check_duration:
                     rn, t_total = self.execute(json.loads(inp), check_duration=check_duration)
                 else:
-                    rn = self.execute(json.loads(inp), async=async)
+                    rn = self.execute(json.loads(inp), async_=async_)
 
                 if check_duration:
                     durations.append(t_total)
@@ -390,7 +390,7 @@ class MFNTest():
                 res_to_check = []
 
                 # hold on to the Execution object, so that we can retrieve more results if needed
-                if async:
+                if async_:
                     rn_async = rn
 
                     if not isinstance(res, list):
@@ -404,7 +404,7 @@ class MFNTest():
                 for cur_res in res_to_check:
                     # before we can compare results, we need to ensure that we get the actual result
                     # if we executed asynchronously, we'll have to wait until we get the result
-                    if async:
+                    if async_:
                         rn = rn_async.get()
 
                     if check_just_keys:

@@ -12,18 +12,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-#FROM ubuntu:18.04
-FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
+FROM ubuntu:18.04
 
 # Install (as root)
 # Base
 RUN apt-get update --fix-missing
 RUN apt-get -y --no-install-recommends install build-essential
 RUN apt-get -y --no-install-recommends install netbase unzip file libmagic1
-
-# CUDA 10.1 dependencies and tools to build dlib 
-RUN apt-get -y --no-install-recommends install libsm6 libxrender1 libxrender-dev libxext6 libglib2.0-0 git cmake
-RUN apt-get install -y --no-install-recommends libnvinfer6=6.0.1-1+cuda10.1 libnvinfer-dev=6.0.1-1+cuda10.1 libnvinfer-plugin6=6.0.1-1+cuda10.1
 
 # Python
 RUN apt-get -y --no-install-recommends install python3 python3-dev
@@ -42,19 +37,6 @@ RUN /usr/bin/python3 -m pip install retry
 RUN /usr/bin/python3 -m pip install fastcache
 # Needed for multi-language support (currently just Java)
 RUN /usr/bin/python3 -m pip install thriftpy2
-
-# Install dlib for CUDA
-RUN git clone https://github.com/davisking/dlib.git
-RUN mkdir -p /dlib/build
-
-RUN cmake -H/dlib -B/dlib/build -DDLIB_USE_CUDA=1 -DUSE_AVX_INSTRUCTIONS=1
-RUN cmake --build /dlib/build
-
-RUN cd /dlib; python3 /dlib/setup.py install
-
-# Install the face recognition package and tensorflow
-RUN pip3 install face_recognition
-RUN pip3 install tensorflow==2.1.0
 
 # Java (for queue service)
 RUN apt-get -y --no-install-recommends install openjdk-8-jdk-headless
