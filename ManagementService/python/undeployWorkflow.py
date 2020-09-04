@@ -15,6 +15,7 @@
 import json
 import os
 import requests
+import time
 
 #from random import randint
 
@@ -75,6 +76,15 @@ def handle(value, sapi):
             wf = json.loads(wf)
         except:
             raise Exception("Couldn't undeploy workflow; workflow metadata seems not to be valid json ("+wf+")")
+
+        print("Current workflow metadata: " + str(wf))
+        if "associatedTriggerableTables" in wf:
+            dlc = sapi.get_privileged_data_layer_client(storage_userid)
+            tablenames = wf["associatedTriggerableTables"]
+            print("Current set of tables associated: " + str(tablenames))
+            for table in tablenames:
+                removeWorkflowFromTableMetadata(email, table, wf["name"], dlc)
+            dlc.shutdown()
 
         if 'KUBERNETES_PORT' not in os.environ:
             # BARE METAL
@@ -172,3 +182,27 @@ def handle(value, sapi):
     sapi.log(json.dumps(response))
     return {}
 
+def removeWorkflowFromTableMetadata(email, tablename, workflowname, dlc):
+    metadata_key = tablename
+    triggers_metadata_table = 'triggersInfoTable'
+    print("[removeWorkflowFromTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename)
+
+    current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    if current_meta == None or current_meta == '':
+        meta_list = []
+    else:
+        meta_list = json.loads(current_meta)
+
+    if type(meta_list == type([])):
+        for i in range(len(meta_list)):
+            meta=meta_list[i]
+            if meta["wfname"] == workflowname:
+                del meta_list[i]
+                break
+
+    dlc.put(metadata_key, json.dumps(meta_list), tableName=triggers_metadata_table)
+    
+    time.sleep(0.2)
+    updated_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    updated_meta_list = json.loads(updated_meta)
+    print("[removeWorkflowFromTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Updated metadata: " + str(updated_meta_list))

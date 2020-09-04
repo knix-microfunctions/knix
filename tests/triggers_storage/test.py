@@ -21,39 +21,39 @@ import unittest
 sys.path.append("../")
 from mfn_test_utils import MFNTest
 
-class TriggerableTablesTest(unittest.TestCase):
+class TriggersStorageTest(unittest.TestCase):
 
     #@unittest.skip("")
-    def test_triggerable_tables(self):
-        test = MFNTest(test_name='triggerable_tables', workflow_filename='wf_triggerable_tables.json')
+    def test_triggers_storage(self):
+        test = MFNTest(test_name='triggers_storage', workflow_filename='wf_triggers_storage.json')
+        nonce = str(int(time.time() * 1000))
 
         input_data = []
-        input_data.append("wf_triggerable_tables")
-        input_data.append("triggerable_table_" + str(random.randint(0, 10000)))
-        input_data.append("triggerable_key_" + str(random.randint(0, 10000)))
+        input_data.append("wf_triggers_storage")
+        input_data.append("triggerable_table")
+        input_data.append("triggerable_key")
+        input_data.append(nonce)
 
         response = test.execute(input_data)
-
-        time.sleep(5)
 
         logs = test.get_workflow_logs()
         wflog = logs["log"]
         log_lines = wflog.split("\n")
-        start_with_list = False
-        start_without_list = False
-        for line in log_lines:
-            if line.find("start with list") != -1:
-                start_with_list = True
-            elif line.find("start WITHOUT list") != -1:
-                start_without_list = True
 
+        expected_response = [4,1,2,0]
+        received_reponse = []
+        try:
+            received_reponse = [response["trigger_start_main_wf"], response["explicit_start_main_wf"], response["trigger_start_other_wf"], response["explicit_start_other_wf"]]
+        except Exception as e:
+            print("Error: " + str(e))
+            pass
 
-        if start_with_list and start_without_list:
+        if expected_response == received_reponse:
             test.report(True, str(input_data), input_data, response)
         else:
             test.report(False, str(input_data), input_data, response)
             for line in log_lines:
-                print(line)
+                print(line.strip())
 
         test.undeploy_workflow()
         test.cleanup()

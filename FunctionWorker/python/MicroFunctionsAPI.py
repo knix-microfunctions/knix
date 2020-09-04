@@ -23,6 +23,7 @@ from MicroFunctionsExceptions import MicroFunctionsWorkflowException, MicroFunct
 import py3utils
 import requests
 import json
+import random
 
 class MicroFunctionsAPI:
     '''
@@ -35,7 +36,7 @@ class MicroFunctionsAPI:
     - communication with other (sesssion or regular) functions during execution
     - session customization
     '''
-    def __init__(self, uid, sid, wid, funcstatename, key, publication_utils, is_session_workflow, is_session_function, session_utils, logger, datalayer, external_endpoint, internal_endpoint, useremail, usertoken):
+    def __init__(self, uid, sid, wid, funcstatename, key, publication_utils, is_session_workflow, is_session_function, session_utils, logger, datalayer, external_endpoint, internal_endpoint, useremail, usertoken, management_endpoints):
         '''
         Initialize data structures for MicroFunctionsAPI object created for a function instance.
 
@@ -49,6 +50,8 @@ class MicroFunctionsAPI:
             datalayer (string): host:port of the local data layer server
             external_endpoint (string): external endpoint of this sandbox
             useremail (string): email address of the user
+            usertoken (string): token to invoke management service APIs
+            management_endpoints: external endpoints of the management service
 
         Returns:
             None
@@ -58,6 +61,7 @@ class MicroFunctionsAPI:
         self._datalayer = datalayer
         self._external_endpoint = external_endpoint
         self._internal_endpoint = internal_endpoint
+        self._management_endpoints = management_endpoints
         self._useremail = useremail
         self._usertoken = usertoken
 
@@ -1618,51 +1622,195 @@ class MicroFunctionsAPI:
         self._data_layer_operator._shutdown_data_layer_client()
 
     def addTriggerableTable(self, tableName):
-        _useremail = self._useremail
-        _usertoken = self._usertoken
-        _url = self._external_endpoint
-
         request = \
         {
             "action": "addTriggerableTable",
             "data": {
-                "user": {"token": _usertoken},
                 "tablename": tableName
             }
         }
-        #print(str(_url))
-        #print(str(request))
-        r = requests.post(_url, json=request, verify=False)
-        #print(r.text)
-        response = json.loads(r.text)
-        # {'status': 'success', 'data': {...}}
-        if response["status"] != 'success':
-            print("Unable to add a triggerable table. " + str(response))
+        status, message, response = self.invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            print("Error: Unable to add a triggerable table: " + tableName + ", Error message: "  + str(message) + ", response: " + str(response))
             return False
         return True
 
     def addStorageTriggerForWorkflow(self, workflowName, tableName):
-        _useremail = self._useremail
-        _usertoken = self._usertoken
-        _url = self._external_endpoint
-
         request = \
         {
             "action": "addStorageTriggerForWorkflow",
             "data": {
-                "user": {"token": _usertoken},
                 "workflowname": workflowName,
                 "tablename": tableName
             }
         }
-        #print(str(_url))
-        #print(str(request))
-        r = requests.post(_url, json=request, verify=False)
-        #print(r.text)
-        response = json.loads(r.text)
-        # {'status': 'success', 'data': {...}}
-        if response["status"] != 'success':
-            print("Unable to add a storage trigger for workflow " + workflowName + ", Triggerable table " + tableName + str(response))
+
+        status, message, response = self.invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            print("Error: Unable to add a storage trigger for workflow " + workflowName + ", Triggerable table " + tableName + "Error message: "  + str(message) + ", response: " + str(response))
             return False
         return True
 
+
+    def deleteTriggerableTable(self, tableName):
+        request = \
+        {
+            "action": "deleteTriggerableTable",
+            "data": {
+                "tablename": tableName
+            }
+        }
+
+        status, message, response = self.invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            print("Error: Unable to delete a triggerable table: " + tableName + ", Error message: "  + str(message) + ", response: " + str(response))
+            return False
+        return True
+
+    def deleteStorageTriggerForWorkflow(self, workflowName, tableName):
+        request = \
+        {
+            "action": "deleteStorageTriggerForWorkflow",
+            "data": {
+                "workflowname": workflowName,
+                "tablename": tableName
+            }
+        }
+        status, message, response = self.invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            print("Error: Unable to delete a storage trigger for workflow " + workflowName + ", Triggerable table " + tableName + "Error message: "  + str(message) + ", response: " + str(response))
+            return False
+        return True
+
+
+    def getTriggerableTables(self):
+        request = \
+        {
+            "action": "getTriggerableTables",
+            "data": {
+            }
+        }
+
+        status, message, response = self.invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            print("Error: Unable to fetch a triggerable tables, Error message: "  + str(message) + ", response: " + str(response))
+            return None
+
+        # {
+        #   'status': 'success', 
+        #   'data': {
+        #       'message': '...',
+        #       'tables': {
+        #           '<table-name-1>': [list of workflow names associated with <table-name-1>],
+        #           '<table-name-2>': [list of workflow names associated with <table-name-2>],
+        #           ...
+        #       }
+        #   }
+        # }
+        return response
+
+    def getWorkflowDetails(self, workflowName):
+        request = \
+        {
+            "action": "getWorkflowDetails",
+            "data": {
+                "workflowname": workflowName
+            }
+        }
+
+        status, message, response = self.invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            print("Error: Unable to fetch details for workflow: " + workflowName + ", Error message: "  + str(message) + ", response: " + str(response))
+            return None
+        # {
+        #   'status': 'success', 
+        #   'data': {
+        #       'email': '...',
+        #       'name': '...',
+        #       'id': '...',
+        #       'status': '...',
+        #       'endpoints': '[]',
+        #       'modified': '...',
+        #       'associatedTriggerableTables': {
+        #           '<table-name-1>': '', 
+        #           '<table-name-2>': '', 
+        #           ...
+        #       }
+        #   }
+        # }
+        return response
+
+
+    def invoke_management_api(self, request):
+        status = False
+        message = ""
+        response_data = None
+        
+        management_url = self.get_management_endpoint()
+        if management_url == "" or management_url == None:
+            message = "No management endpoint url found"
+            print("[invoke_management_api] Error: " + message)
+            return status, message, response_data
+        
+        if type(request) != type({}):
+            message = "Request must be specified as a dictionary"
+            print("[invoke_management_api] Error: " + message)
+            return status, message, response_data
+
+        if "data" not in request:
+            message = "Request must contain a dictionary named 'data'"
+            print("[invoke_management_api] Error: " + message)
+            return status, message, response_data
+
+        request["data"]["user"] = {"token": self._usertoken}
+
+        #print("[invoke_management_api] url: " + management_url + ", request: " + str(request))
+        r = requests.post(management_url, json=request, verify=False)
+        #print("[invoke_management_api] response status: " + str(r.status_code) + ", reason: " + str(r.reason) + ", body: " + str(r.text))
+        
+        response = None
+        if r.text == None or r.text == "" or r.status_code > 400:
+            message = "Received empty response or error status code: " + str(r.status_code) + ", reason: " + str(r.reason) + ", body: " + str(r.text)
+            print("[invoke_management_api] Error: " + message)
+            response_data = r.text
+            return status, message, response
+
+        try:
+            response = json.loads(r.text)
+        except Exception as e:
+            message = "Json parsing error: " + str(e) + ", response body: " + str(r.text)
+            print("[invoke_management_api] Error: " + message)
+            return status, message, response
+
+        if type(response) == type({}) and "status" in response:
+            status = True
+            message = "Received a valid response from the management service"
+        else:
+            message = "Received an incorrectly formed reponse from the management service: response body: " + str(response)
+            print("[invoke_management_api] Error: " + message)
+        
+        return status, message, response
+
+
+    def get_management_endpoint(self):
+        # get management endpoints from the datalayer for every request
+        #management_data_layer_client = DataLayerClient(locality=1, sid="Management", wid="Management", is_wf_private=True, connect=self._datalayer)
+        #management_endpoints = management_data_layer_client.get("management_endpoints")
+        #if management_endpoints is None or management_endpoints == "":
+        #    return ""
+        #else:
+        #    management_endpoints = json.loads(management_endpoints)
+
+        # use the management endpoints obtained from the datalayer while deploying the application sandbox
+        management_endpoints = self._management_endpoints
+
+        management_url = ""
+        if type(management_endpoints) == type([]) and len(management_endpoints) > 0:
+            management_url = management_endpoints[random.randint(0, len(management_endpoints)-1)]
+        return management_url

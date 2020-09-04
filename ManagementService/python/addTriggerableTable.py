@@ -27,35 +27,11 @@ def handle(value, sapi):
 
         dlc = sapi.get_privileged_data_layer_client(storage_userid)
         dlc.createTriggerableTable(tablename)
-
-        # store empty metadata
-        bucket_metadata = []
-        triggers_metadata_table = 'triggersInfoTable'
-        metadata_key = tablename
-        current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
-        print("fetched data: " + str(current_meta))
-        print("Getting existing key: " + metadata_key)
-        print("  in table: " + triggers_metadata_table)
-        keyfound = False
-        if current_meta != None:
-            try:
-                meta_list = json.loads(current_meta)
-                if type(meta_list) == type([]):
-                    keyfound = True
-                    print("  found with value: " + str(meta_list))
-            except Exception as e:
-                pass
-        
-        if keyfound == False:
-            print("Key not found: " + str(metadata_key))
-            # store metadata
-            print("Creating key: " + metadata_key)
-            print("  in table: " + triggers_metadata_table)
-            print("  with value: " + str(bucket_metadata))
-            dlc.put(metadata_key, json.dumps(bucket_metadata), tableName=triggers_metadata_table)
+        createTableMetadata(tablename, email, dlc)
+        dlc.shutdown()
 
         # add to the list of triggerable tables
-        trigger_tables = sapi.get(email + "_list_trigger_tables")
+        trigger_tables = sapi.get(email + "_list_trigger_tables", True)
         if trigger_tables is not None and trigger_tables != "":
             trigger_tables = json.loads(trigger_tables)
         else:
@@ -63,7 +39,8 @@ def handle(value, sapi):
 
         if tablename not in trigger_tables:
             trigger_tables[tablename] = ''
-            sapi.put(email + "_list_trigger_tables", json.dumps(trigger_tables))
+            sapi.put(email + "_list_trigger_tables", json.dumps(trigger_tables), True)
+            print("User: " + email + ", Added table: " + tablename + "  to the list of triggerable tables")
 
     except Exception as e:
         response = {}
@@ -83,3 +60,25 @@ def handle(value, sapi):
     print(str(response))
     sapi.log(json.dumps(response))
     return response
+
+
+def createTableMetadata(tablename, email, dlc):
+    # store empty metadata
+    bucket_metadata = []
+    triggers_metadata_table = 'triggersInfoTable'
+    metadata_key = tablename
+    current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+
+    keyfound = False
+    if current_meta != None:
+        try:
+            meta_list = json.loads(current_meta)
+            if type(meta_list) == type([]):
+                keyfound = True
+                print("[createTableMetadata] User: " + email + ", Table: " + tablename + ", Existing metadata: " + str(meta_list))
+        except Exception as e:
+            pass
+
+    if keyfound == False:
+        dlc.put(metadata_key, json.dumps(bucket_metadata), tableName=triggers_metadata_table)
+        print("[createTableMetadata] User: " + email + ", Table: " + tablename + ", Created new metadata: " + str(bucket_metadata))

@@ -22,17 +22,32 @@ def handle(value, sapi):
         if "email" not in data:
             raise Exception("User email is missing")
         email = data["email"]
+        storage_userid = data["storage_userid"]
 
         # add to the list of triggerable tables
-        trigger_tables = sapi.get(email + "_list_trigger_tables")
+        trigger_tables = sapi.get(email + "_list_trigger_tables", True)
         if trigger_tables is not None and trigger_tables != "":
             trigger_tables = json.loads(trigger_tables)
         else:
             trigger_tables = {}
 
-        list_tables = []
+        # finish successfully
+        table_info = {}
+        dlc = sapi.get_privileged_data_layer_client(storage_userid)
         for table in trigger_tables:
-            list_tables.append(table)
+            table_info[table] = listAssociatedWorkflowsForTable(table, dlc)
+        dlc.shutdown()
+
+        response_data = {}
+        response_data["tables"] = table_info
+        response_data["message"] = "Found " + str(len(table_info)) + " tables."
+
+        response = {}
+        response["status"] = "success"
+        response["data"] = response_data
+        #print(str(response))
+        sapi.log(json.dumps(response))
+        return response
 
     except Exception as e:
         response = {}
@@ -43,13 +58,16 @@ def handle(value, sapi):
         print(str(response))
         return response
 
-    # finish successfully
-    response_data["tables"] = list_tables
-    response_data["message"] = "Found " + str(len(list_tables)) + " functions."
 
-    response = {}
-    response["status"] = "success"
-    response["data"] = response_data
-    print(str(response))
-    sapi.log(json.dumps(response))
-    return response
+def listAssociatedWorkflowsForTable(tablename, dlc):
+    metadata_key = tablename
+    triggers_metadata_table = 'triggersInfoTable'
+    current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    meta_list = json.loads(current_meta)
+
+    workflow_list = []
+    if type(meta_list == type([])):
+        for i in range(len(meta_list)):
+            meta=meta_list[i]
+            workflow_list.append(meta["wfname"])
+    return workflow_list

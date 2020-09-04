@@ -20,7 +20,6 @@
 % https://riak.com/posts/technical/link-walking-by-example/index.html
 
 -define(TMETA_BUCKET, <<"triggersInfoTable">>).
--define(MFN_RESULTS_TOPIC, <<"MFN_RESULTS_1">>).
 -define(LOG_PREFIX, "[WORKFLOW_TRIGGERS_v16] ").
 
 workflow_trigger(RiakObject) ->
@@ -35,8 +34,8 @@ workflow_trigger(RiakObject) ->
         io:format(?LOG_PREFIX ++ "Value:~p~n", [Value]),
 
         % Metadata = json encoded list of dicts
-        % each metadata dict = {"urltype": "url", "url": "http://...", "wfname": "abcd"}
-        %                 or = {"urltype": "topic", "url": "workflow_topic", "wfname": "abcd"} 
+        % each metadata dict = {"urltype": "url", "urls": "http://...", "wfname": "abcd"}
+        %                 or = {"urltype": "topic", "urls": "workflow_topic", "wfname": "abcd"} 
         Metadata = case Action of
             delete -> handle_delete();
                  _ -> get_trigger_metadata(Keyspace, Table)
@@ -97,54 +96,53 @@ get_wf_meta(Metadata) ->
     %io:format(?LOG_PREFIX ++ "[get_wf_meta] Metadata ~p~n", [Metadata]),
     try
         MetadataList = jiffy:decode(Metadata),
-        Meta = [{proplists:get_value(<<"url">>, X), proplists:get_value(<<"wfname">>, X), proplists:get_value(<<"urltype">>, X)} || {X} <- MetadataList],
+        Meta = [{proplists:get_value(<<"urls">>, X), proplists:get_value(<<"wfname">>, X), proplists:get_value(<<"urltype">>, X)} || {X} <- MetadataList],
         case length(Meta) of
             0 -> none;
             _ -> Meta
         end
     catch
         _:Error -> {error, Error},
+        io:format(?LOG_PREFIX ++ "[get_wf_meta] Error: ~p~n", [Error]),
         none
     end.
 
-generate_mfn_message(Value, Executionid, Resulttopic) -> 
-    Metadata = {[{<<"__result_topic">>, Resulttopic}, {<<"__execution_id">>,Executionid}, {<<"__function_execution_id">>,Executionid}, {<<"__async_execution">>,true}]},
-    Message = {[{<<"__mfnuserdata">>,Value}, {<<"__mfnmetadata">>,Metadata}]},
-    MessageEncoded = jiffy:encode(Message),
-    {MessageEncoded, Executionid}.
-
 
 publish_message(Value, Meta) ->
-    {Url,Wfname,Urltype} = Meta,
-    io:format(?LOG_PREFIX ++ "[publish_message] Urltype:~p, Url:~p, Wfname:~p~n", [Urltype,Url,Wfname]),
-    case Urltype of
-        <<"topic">> -> 
-            {Encodedmsg,Execid} = generate_mfn_message(Value, mfn_uuid(), ?MFN_RESULTS_TOPIC),
-            publish_kafka_message(Url,Execid,Encodedmsg);
-        <<"url">> -> 
-            publish_http_message(Url,Value);
+    {Urls,Wfname,Urltype} = Meta,
+    case length(Urls) of
+        0 -> false;
         _ -> 
-            false
+            io:format(?LOG_PREFIX ++ "[publish_message] Urltype:~p, Urls:~p, Wfname:~p~n", [Urltype,Urls,Wfname]),
+            case Urltype of
+                <<"url">> -> 
+                    publish_http_message(Urls,Value);
+                _ -> 
+                    false
+            end
     end.
-    
 
-publish_kafka_message(Topic, Key, Value) ->
-    io:format(?LOG_PREFIX ++ "[NOT implemented publish_kafka_message] Topic:~p, Execid:~p~n", [Topic, Key]),
-    true.
 
-publish_http_message(Url, Message) ->
+publish_http_message(Urls, Message) ->
     %PostBody = jiffy:encode(Message),
-    PostBody = Message,
-    io:format(?LOG_PREFIX ++ "[publish_http_message] Url:~p~n", [Url]),
-    {ErlangStatus, ReqResult} = httpc:request(post, {binary_to_list(Url), [], "application/json", PostBody}, [], []),
-    case ErlangStatus of
-        error -> 
-            io:format(?LOG_PREFIX ++ "[publish_http_message] Could not publish. Error:~p~n", [ReqResult]),
-            false;
-        ok ->
-            {{HttpProtocol, HttpStatus, ReasonPhrase}, Headers, Body} = ReqResult,
-            io:format(?LOG_PREFIX ++ "[publish_http_message] Result: HttpStatus:~p  ReasonPhrase:~p  Body:~p~n", [HttpStatus, ReasonPhrase, Body]),
-            true
+    try
+        Url = lists:nth(crypto:rand_uniform(1, length(Urls)+1), Urls),
+        PostBody = Message,
+        io:format(?LOG_PREFIX ++ "[publish_http_message] Url:~p~n", [Url]),
+        {ErlangStatus, ReqResult} = httpc:request(post, {binary_to_list(Url), [], "application/json", PostBody}, [], []),
+        case ErlangStatus of
+            error -> 
+                io:format(?LOG_PREFIX ++ "[publish_http_message] Could not publish. Error:~p~n", [ReqResult]),
+                false;
+            ok ->
+                {{HttpProtocol, HttpStatus, ReasonPhrase}, Headers, Body} = ReqResult,
+                io:format(?LOG_PREFIX ++ "[publish_http_message] Result: HttpStatus:~p  ReasonPhrase:~p  Body:~p~n", [HttpStatus, ReasonPhrase, Body]),
+                true
+        end
+    catch
+        _:Error -> {error, Error},
+        io:format(?LOG_PREFIX ++ "[publish_http_message] Error: ~p~n", [Error]),
+        false
     end.
 
 get_action(Object) ->
@@ -161,6 +159,18 @@ handle_delete() ->
 handle_nometadata() ->
     io:format(?LOG_PREFIX ++ "[handle_nometadata] No Metadata found~n"),
     none.
+
+generate_mfn_message(Value, Executionid, Resulttopic) -> 
+    Metadata = {[{<<"__result_topic">>, Resulttopic}, {<<"__execution_id">>,Executionid}, {<<"__function_execution_id">>,Executionid}, {<<"__async_execution">>,true}]},
+    Message = {[{<<"__mfnuserdata">>,Value}, {<<"__mfnmetadata">>,Metadata}]},
+    MessageEncoded = jiffy:encode(Message),
+    {MessageEncoded, Executionid}.
+
+
+publish_kafka_message(Topic, Key, Value) ->
+    io:format(?LOG_PREFIX ++ "[NOT implemented publish_kafka_message] Topic:~p, Execid:~p~n", [Topic, Key]),
+    true.
+
 
 mfn_uuid() ->
     list_to_binary(uuid_to_string(uuid())).

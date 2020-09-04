@@ -40,7 +40,7 @@ def handle(value, sapi):
         wf["endpoints"] = []
 
         wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest()
-
+        wf['associatedTriggerableTables'] = {}
         sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True, True)
         #sapi.put(email + "_workflow_json_" + wf["id"], "", True, True)
         #sapi.put(email + "_workflow_requirements_" + wf["id"], "", True, True)
