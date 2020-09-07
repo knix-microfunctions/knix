@@ -31,7 +31,7 @@ service LocalQueueService {
     LocalQueueMessage getAndRemoveMessage (1: string topic, 2: i64 timeout),
     LocalQueueMessage getMessage (1: string topic, 2: i64 timeout),
 
-    list<LocalQueueMessage> getAndRemoveMultiMessages (1: string topic, 2: i32 maxCount, 3: i64 timeout),
+    //list<LocalQueueMessage> getAndRemoveMultiMessages (1: string topic, 2: i32 maxCount, 3: i64 timeout),
 
 	i64 totalMemory (),
 	i64 freeMemory ()
