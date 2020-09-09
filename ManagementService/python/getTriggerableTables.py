@@ -33,13 +33,15 @@ def handle(value, sapi):
 
         # finish successfully
         table_info = {}
+        table_details = {}
         dlc = sapi.get_privileged_data_layer_client(storage_userid)
         for table in trigger_tables:
-            table_info[table] = listAssociatedWorkflowsForTable(table, dlc)
+            table_info[table], table_details[table] = listAssociatedWorkflowsForTable(table, dlc)
         dlc.shutdown()
 
         response_data = {}
         response_data["tables"] = table_info
+        response_data["tables_details"] = table_details
         response_data["message"] = "Found " + str(len(table_info)) + " tables."
 
         response = {}
@@ -63,11 +65,15 @@ def listAssociatedWorkflowsForTable(tablename, dlc):
     metadata_key = tablename
     triggers_metadata_table = 'triggersInfoTable'
     current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    if current_meta == None or current_meta == '':
+        print("[getTriggerableTable,listAssociatedWorkflowsForTable] Metadata = None for Table: " + str(metadata_key))
+        return [], []
     meta_list = json.loads(current_meta)
-
     workflow_list = []
     if type(meta_list == type([])):
         for i in range(len(meta_list)):
             meta=meta_list[i]
             workflow_list.append(meta["wfname"])
-    return workflow_list
+        return workflow_list, meta_list
+    else:
+        return [], []

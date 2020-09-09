@@ -34,7 +34,7 @@ def handle(value, sapi):
             raise Exception("Table: " + tablename + " not found.")
 
         dlc = sapi.get_privileged_data_layer_client(storage_userid)
-        removeWorkflowFromTableMetadata(email, tablename, workflowname, storage_userid, sapi, dlc)
+        removeWorkflowFromTableMetadata(email, tablename, workflowname, dlc)
         dlc.shutdown()
 
         isWorkflowPresent, isWorkflowDeployed, details = isWorkflowPresentAndDeployed(email, workflowname, sapi)

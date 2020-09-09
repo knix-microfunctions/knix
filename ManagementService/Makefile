@@ -51,6 +51,9 @@ management_deployment_package.tar.gz: $(SOURCES) DataLayerClient.py $(THRIFT)
 	tar -czf $@ -C build/ .
 	rm -rf build/
 
+clean:
+	rm management_deployment_package.tar.gz
+
 include ../docker.mk
 
 image: \

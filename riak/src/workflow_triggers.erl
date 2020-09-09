@@ -20,12 +20,14 @@
 % https://riak.com/posts/technical/link-walking-by-example/index.html
 
 -define(TMETA_BUCKET, <<"triggersInfoTable">>).
--define(LOG_PREFIX, "[WORKFLOW_TRIGGERS_v16] ").
+-define(LOG_PREFIX, "[WORKFLOW_TRIGGERS_v17] ").
 
 workflow_trigger(RiakObject) ->
     try
         Action = get_action(RiakObject),
+        io:format(?LOG_PREFIX ++ "[workflow_trigger] Action:~p~n", [Action]),
         {BucketType, Bucket} = riak_object:bucket(RiakObject),
+        io:format(?LOG_PREFIX ++ "[workflow_trigger] Action:~p, Bucket:~p, BucketType:~p~n", [Action, Bucket, BucketType]),
         Key    = riak_object:key(RiakObject),
         Value  = riak_object:get_value(RiakObject),
         [Keyspace, Table] = string:tokens(binary_to_list(Bucket), ";"),  
@@ -146,7 +148,9 @@ publish_http_message(Urls, Message) ->
     end.
 
 get_action(Object) ->
+    io:format(?LOG_PREFIX ++ "[get_action] Extracting metadata~n", []),
     Metadata = riak_object:get_metadata(Object),
+    io:format(?LOG_PREFIX ++ "[get_action] Extracted metadata:~p~n", [Metadata]),
     case dict:find(<<"X-Riak-Deleted">>, Metadata) of
         {ok, "true"} -> delete;
         _ -> store

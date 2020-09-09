@@ -102,11 +102,10 @@ def handle(value, sapi):
 
                 sapi.clearSet(workflow["id"] + "_workflow_endpoints", is_private=True)
                 sapi.deleteMap(workflow["id"] + "_workflow_endpoint_map", is_private=True)
-
                 sapi.deleteMap(workflow["id"] + "_sandbox_status_map", is_private=True)
 
             #sapi.delete(email + "_workflow_hosts_" + workflow["id"], True, True)
-
+            wf["endpoints"] = []
         else:
             conf_file = '/opt/mfn/SandboxAgent/conf/new_workflow.conf'
             if not os.path.exists(conf_file):
@@ -146,6 +145,8 @@ def handle(value, sapi):
                 print(resp.text)
 
             sapi.clearSet(workflow["id"] + "_workflow_endpoints", is_private=True)
+            sapi.deleteMap(workflow["id"] + "_workflow_endpoint_map", is_private=True)
+            sapi.deleteMap(workflow["id"] + "_sandbox_status_map", is_private=True)
             wf["endpoints"] = []
             sapi.log(str(resp.status_code)+" "+str(resp.text))
 
