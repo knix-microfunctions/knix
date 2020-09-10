@@ -25,15 +25,13 @@
 workflow_trigger(RiakObject) ->
     try
         Action = get_action(RiakObject),
-        io:format(?LOG_PREFIX ++ "[workflow_trigger] Action:~p~n", [Action]),
         {BucketType, Bucket} = riak_object:bucket(RiakObject),
-        io:format(?LOG_PREFIX ++ "[workflow_trigger] Action:~p, Bucket:~p, BucketType:~p~n", [Action, Bucket, BucketType]),
         Key    = riak_object:key(RiakObject),
         Value  = riak_object:get_value(RiakObject),
         [Keyspace, Table] = string:tokens(binary_to_list(Bucket), ";"),  
         % Keyspace and Table are lists
         io:format(?LOG_PREFIX ++ "[workflow_trigger] Action:~p, Bucket:~p, BucketType:~p, Keyspace: ~p, Table: ~p, Key:~p~n", [Action, Bucket, BucketType, list_to_binary(Keyspace), list_to_binary(Table), Key]),
-        io:format(?LOG_PREFIX ++ "Value:~p~n", [Value]),
+        %io:format(?LOG_PREFIX ++ "Value:~p~n", [Value]),
 
         % Metadata = json encoded list of dicts
         % each metadata dict = {"urltype": "url", "urls": "http://...", "wfname": "abcd"}
@@ -147,10 +145,8 @@ publish_http_message(Urls, Message) ->
         false
     end.
 
-get_action(Object) ->
-    io:format(?LOG_PREFIX ++ "[get_action] Extracting metadata~n", []),
-    Metadata = riak_object:get_metadata(Object),
-    io:format(?LOG_PREFIX ++ "[get_action] Extracted metadata:~p~n", [Metadata]),
+get_action(RiakObject) ->
+    Metadata = riak_object:get_metadata(RiakObject),
     case dict:find(<<"X-Riak-Deleted">>, Metadata) of
         {ok, "true"} -> delete;
         _ -> store

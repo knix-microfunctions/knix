@@ -390,7 +390,7 @@
 
   - name: set triggers bucket type
     shell: |
-      /usr/sbin/riak-admin bucket-type create triggers '{"props":{"postcommit":[{"mod":"workflow_triggers","fun":"workflow_trigger"}]}}'
+      /usr/sbin/riak-admin bucket-type create triggers '{"props":{"postcommit":[{"mod":"workflow_triggers","fun":"workflow_trigger"}], "allow_mult": false}}'
     register: output
     failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
 

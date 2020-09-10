@@ -79,7 +79,7 @@ def handle(event, context):
 
             # this should trigger both the workflows
             count = 1
-            keyname_to_use = f"{keyname}_{count}"
+            keyname_to_use = f"{keyname}_1"
             value = {'workflowname': workflowname, 'tablename': tablename, 'workflow_other': workflow_other, 'nonce': nonce, 'count': str(count)}
             print(f"Writing to triggerable table: {tablename}, key: {keyname_to_use}")
             context.put(keyname_to_use, json.dumps(value), tableName=tablename)
@@ -91,7 +91,7 @@ def handle(event, context):
 
             # this should trigger just the main workflow
             count = 2
-            keyname_to_use = f"{keyname}_{count}"
+            keyname_to_use = f"{keyname}_2"
             value = {'workflowname': workflowname, 'tablename': tablename, 'workflow_other': workflow_other, 'nonce': nonce, 'count': str(count)}
             print(f"Writing to triggerable table: {tablename}, key: {keyname_to_use}")
             context.put(keyname_to_use, json.dumps(value), tableName=tablename)
@@ -104,7 +104,7 @@ def handle(event, context):
 
             # this should trigger both the workflows
             count = 3
-            keyname_to_use = f"{keyname}_{count}"
+            keyname_to_use = f"{keyname}_1"
             value = {'workflowname': workflowname, 'tablename': tablename, 'workflow_other': workflow_other, 'nonce': nonce, 'count': str(count)}
             print(f"Writing to triggerable table: {tablename}, key: {keyname_to_use}")
             context.put(keyname_to_use, json.dumps(value), tableName=tablename)
@@ -125,7 +125,7 @@ def handle(event, context):
 
             # this should trigger just the main workflow
             count = 4
-            keyname_to_use = f"{keyname}_{count}"
+            keyname_to_use = f"{keyname}_2"
             value = {'workflowname': workflowname, 'tablename': tablename, 'workflow_other': workflow_other, 'nonce': nonce, 'count': str(count)}
             print(f"Writing to triggerable table: {tablename}, key: {keyname_to_use}")
             context.put(keyname_to_use, json.dumps(value), tableName=tablename)

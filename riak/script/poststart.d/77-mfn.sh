@@ -18,7 +18,7 @@ if [[ ${COORDINATOR_NODE} == ${HOSTNAME}* || ${HOSTNAME} == ${COORDINATOR_NODE}*
 # we are the coordinator and have to set up the following bucket-types once
 $RIAK_ADMIN bucket-type create mfn_counter_trigger '{"props":{"postcommit":[{"mod":"mfn_counter_triggers","fun":"counter_trigger"}],"datatype":"counter"}}' || echo ""
 $RIAK_ADMIN bucket-type activate mfn_counter_trigger || echo ""
-$RIAK_ADMIN bucket-type create triggers '{"props":{"postcommit":[{"mod":"workflow_triggers","fun":"workflow_trigger"}]}}' || echo ""
+$RIAK_ADMIN bucket-type create triggers '{"props":{"postcommit":[{"mod":"workflow_triggers","fun":"workflow_trigger"}], "allow_mult": false}}' || echo ""
 $RIAK_ADMIN bucket-type activate triggers || echo ""
 $RIAK_ADMIN bucket-type create strong '{"props":{"consistent":true}}' || echo ""
 $RIAK_ADMIN bucket-type activate strong || echo ""

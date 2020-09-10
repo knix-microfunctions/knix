@@ -41,6 +41,18 @@ def handle(value, sapi):
             wf_id = getWorkflowId(email, workflowname, sapi)
             if wf_id != '':
                 removeTableFromWorkflowMetadata(email, tablename, workflowname, wf_id, sapi)
+        
+        trigger_tables = sapi.get(email + "_list_trigger_tables", True)
+        if trigger_tables is not None and trigger_tables != "":
+            trigger_tables = json.loads(trigger_tables)
+        else:
+            trigger_tables = {}
+
+        if tablename in trigger_tables:
+            del trigger_tables[tablename]
+            sapi.put(email + "_list_trigger_tables", json.dumps(trigger_tables), True)
+            print("User: " + email + ", Deleted table: " + tablename + "  to the list of triggerable tables")
+
 
     except Exception as e:
         response = {}
