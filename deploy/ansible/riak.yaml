@@ -264,6 +264,13 @@
       regexp: "^erlang.schedulers.compaction_of_load = "
       line: "erlang.schedulers.compaction_of_load = false"
 
+  - name: configure buckets.default.postcommit = workflow_triggers:workflow_trigger
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^buckets.default.postcommit = "
+      line: "buckets.default.postcommit = workflow_triggers:workflow_trigger"
+
+
   - name: configure /etc/security/limits.conf riak soft nofile 65536
     lineinfile:
       path: "/etc/security/limits.conf"
@@ -309,7 +316,7 @@
     systemd:
       daemon_reload: yes
       name: "{{ riak_server_service_name }}"
-      enabled: true
+      enabled: false
       state: restarted
 
   - name: create riak start script
@@ -465,10 +472,10 @@
       /usr/sbin/riak-admin cluster commit
     when: hostvars[groups['riak'][0]].ansible_default_ipv4.address == ansible_default_ipv4.address
 
-  - name: systemd install and disable mfn-riak service
-    systemd:
-      daemon_reload: yes
-      name: "{{ riak_server_service_name }}"
-      enabled: false
-      state: stopped
-    when: not start_at_boot|bool
+  #- name: systemd install and disable mfn-riak service
+  #  systemd:
+  #    daemon_reload: yes
+  #    name: "{{ riak_server_service_name }}"
+  #    enabled: false
+  #    state: stopped
+  #  when: not start_at_boot|bool

@@ -557,7 +557,7 @@ class DataLayerClient:
         status = False
         for retry in range(MAX_RETRIES):
             try:
-                status = self.datalayer.createTable(self.keyspace, tableName, Metadata(tableType="triggers"), self.locality)
+                status = self.datalayer.createTable(self.keyspace, tableName, Metadata(tableType="default"), self.locality)
                 break
             except TTransport.TTransportException as exc:
                 self.connect()

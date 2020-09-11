@@ -20,41 +20,67 @@
 % https://riak.com/posts/technical/link-walking-by-example/index.html
 
 -define(TMETA_BUCKET, <<"triggersInfoTable">>).
--define(LOG_PREFIX, "[WORKFLOW_TRIGGERS_v17] ").
+-define(LOG_PREFIX, "[WORKFLOW_TRIGGERS_v18] ").
 
 workflow_trigger(RiakObject) ->
     try
+        %io:format(?LOG_PREFIX ++ "[workflow_trigger] Received object:~p~n", [RiakObject]),
         Action = get_action(RiakObject),
-        {BucketType, Bucket} = riak_object:bucket(RiakObject),
-        Key    = riak_object:key(RiakObject),
-        Value  = riak_object:get_value(RiakObject),
-        [Keyspace, Table] = string:tokens(binary_to_list(Bucket), ";"),  
-        % Keyspace and Table are lists
-        io:format(?LOG_PREFIX ++ "[workflow_trigger] Action:~p, Bucket:~p, BucketType:~p, Keyspace: ~p, Table: ~p, Key:~p~n", [Action, Bucket, BucketType, list_to_binary(Keyspace), list_to_binary(Table), Key]),
+        %io:format(?LOG_PREFIX ++ "[workflow_trigger] Action:~p~n", [Action]),
+        BucketReturn = riak_object:bucket(RiakObject),
+        %io:format(?LOG_PREFIX ++ "[workflow_trigger] BucketReturn:~p~n", [BucketReturn]),
+        {BucketType, Bucket} = case is_tuple(BucketReturn) of
+            true -> BucketReturn;
+            false -> {<<"default">>, BucketReturn}
+        end,
+
+        %{BucketType, Bucket} = riak_object:bucket(RiakObject),
+        %io:format(?LOG_PREFIX ++ "[workflow_trigger] BucketType:~p, Bucket:~p~n", [BucketType, Bucket]),
+        Key = riak_object:key(RiakObject),
+        %io:format(?LOG_PREFIX ++ "[workflow_trigger] Key~p~n", [Key]),
+        SplitResult = string:tokens(binary_to_list(Bucket), ";"),
+        %io:format(?LOG_PREFIX ++ "[workflow_trigger] SplitResult~p~n", [SplitResult]),
+        [Keyspace, Table] = case length(SplitResult) of
+            1 -> [binary_to_list(<<"__NOT_DEFINED__">>), binary_to_list(<<"__NOT_DEFINED__">>)];
+            2 -> SplitResult
+        end,
+        %[Keyspace, Table] = string:tokens(binary_to_list(Bucket), ";"),  
+        % Keyspace, Table are lists
+
+        ActionToTake = case list_to_binary(Keyspace) of
+            <<"__NOT_DEFINED__">> -> ignore;
+            _ -> Action
+        end,
+
+        io:format(?LOG_PREFIX ++ "[workflow_trigger] ActionToTake:~p, Bucket:~p, BucketType:~p, Keyspace: ~p, Table: ~p, Key:~p~n", [ActionToTake, Bucket, BucketType, list_to_binary(Keyspace), list_to_binary(Table), Key]),
         %io:format(?LOG_PREFIX ++ "Value:~p~n", [Value]),
+        
+
 
         % Metadata = json encoded list of dicts
         % each metadata dict = {"urltype": "url", "urls": "http://...", "wfname": "abcd"}
         %                 or = {"urltype": "topic", "urls": "workflow_topic", "wfname": "abcd"} 
-        Metadata = case Action of
-            delete -> handle_delete();
+        Metadata = case ActionToTake of
+            delete -> none;
+            ignore -> none;
                  _ -> get_trigger_metadata(Keyspace, Table)
         end,
 
         % Wfmeta = [meta1, meta2, ...]  = [{url1,wfname1,urltype1}, {url2,wfname2,urltype2}, ...]
         Wfmeta = case Metadata of
-            none -> handle_nometadata();
+            none -> none;
                _ -> get_wf_meta(Metadata)
         end,
 
         % Publishresults = [true, false, ...]
         Publishresults = case Wfmeta of 
-            none -> io:format(?LOG_PREFIX ++ "[workflow_trigger] No associated workflows found for Bucket ~p~n", [Bucket]);
-               _ -> [publish_message(Value, Meta) || Meta  <- Wfmeta]
+            none -> none;
+               _ -> Value  = riak_object:get_value(RiakObject), 
+                    [publish_message(Value, Meta) || Meta  <- Wfmeta]
         end,
 
         case Publishresults of 
-            none -> io:format(?LOG_PREFIX ++ "[workflow_trigger] No message published~n");
+            none -> io:format(?LOG_PREFIX ++ "[workflow_trigger] No message published. No associated workflows found for Bucket ~p~n", [Bucket]);
                _ -> io:format(?LOG_PREFIX ++ "[workflow_trigger] Publishresults:~p~n", [Publishresults])
         end
 
@@ -68,13 +94,13 @@ get_trigger_metadata(Keyspace, Table) ->
         MetadataBucket = string:concat(string:concat(Keyspace, ";"), binary_to_list(?TMETA_BUCKET)),
         MetadataKey = Table,
 
-        io:format(?LOG_PREFIX ++ "[get_trigger_metadata] Looking up Metadata Key:~p, Bucket:~p~n", [list_to_binary(MetadataKey), list_to_binary(MetadataBucket)]),
+        %io:format(?LOG_PREFIX ++ "[get_trigger_metadata] Looking up Metadata Key:~p, Bucket:~p~n", [list_to_binary(MetadataKey), list_to_binary(MetadataBucket)]),
         
         {ok, C} = riak:local_client(),
         PerBucketMetaObj = case C:get(list_to_binary(MetadataBucket), list_to_binary(MetadataKey)) of
             {ok, PBMO} -> PBMO;
-            {_, StoreError} -> 
-                io:format(?LOG_PREFIX ++ "[get_trigger_metadata] Error: ~p~n", [StoreError]),
+            {_, StoreError} ->
+                io:format(?LOG_PREFIX ++ "[get_trigger_metadata] Metadata not found, Error: ~p, Key:~p, Bucket:~p~n", [StoreError, list_to_binary(MetadataKey), list_to_binary(MetadataBucket)]), 
                 none
         end,
 
@@ -82,7 +108,7 @@ get_trigger_metadata(Keyspace, Table) ->
             none -> none;
             _ -> 
                 ValueMeta  = riak_object:get_value(PerBucketMetaObj),
-                io:format(?LOG_PREFIX ++ "[get_trigger_metadata] Metadata Value:~p~n", [ValueMeta]),
+                %io:format(?LOG_PREFIX ++ "[get_trigger_metadata] Metadata Value:~p~n", [ValueMeta]),
                 ValueMeta
         end,
         Metadata
@@ -146,14 +172,20 @@ publish_http_message(Urls, Message) ->
     end.
 
 get_action(RiakObject) ->
+    %io:format(?LOG_PREFIX ++ "[get_action] Getting metadata~n"),
     Metadata = riak_object:get_metadata(RiakObject),
+    %io:format(?LOG_PREFIX ++ "[get_action] extracted metadata:~p~n", [Metadata]),
     case dict:find(<<"X-Riak-Deleted">>, Metadata) of
         {ok, "true"} -> delete;
         _ -> store
     end.
 
 handle_delete() -> 
-    io:format(?LOG_PREFIX ++ "[handle_delete] Ignoring delete~n"),
+    io:format(?LOG_PREFIX ++ "Ignoring delete~n"),
+    none.
+
+handle_ignore() -> 
+    io:format(?LOG_PREFIX ++ "Ignoring - Bucket name does not contain a ;~n"),
     none.
 
 handle_nometadata() ->
