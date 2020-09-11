@@ -19,7 +19,21 @@
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
     <button class="btn btn-primary" ng-click="addStorageObject()">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects()">Refresh</button>
-  </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/></td></tr>
+  </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
+  
+  </td>
+  </tr>
+  <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;">
+    <div style="width:100%">
+      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item)" class="btn-group bootstrap-select form-control">
+        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.realm}}</ui-select-match>
+        <ui-select-choices repeat="item in storageLocations | filter: $select.search">
+          <div ng-bind-html="item.name | highlight: $select.search"></div>
+          <small ng-bind-html="item.realm | highlight: $select.search"></small>
+        </ui-select-choices>
+      </ui-select>
+    </div>
+  </td></tr>
 
     <th id="sortHeader" st-sort="['modified', 'key']" st-sort-default="default" style="text-align:left;border:0;"><b>Key</b></th>
     <!-- <th style="border:0;"><b>Endpoint</b></th> -->
