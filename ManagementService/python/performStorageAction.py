@@ -47,7 +47,7 @@ def handle(value, sapi):
 
         dlc = None
 
-        if "workflowid" in storage:
+        if "workflowid" in storage and storage["workflowid"] is not None and storage["workflowid"] != "":
             dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=storage["workflowid"])
         else:
             dlc = sapi.get_privileged_data_layer_client(storage_userid)
