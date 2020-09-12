@@ -239,6 +239,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
         log.Printf("handler: Result not yet available of execution ID %s, redirecting", id)
         // TODO: 300 location redirect
         http.Redirect(w, r, r.URL.Path + "?executionId=" + id, http.StatusTemporaryRedirect)
+        // w.Header().Set("Content-Type", "application/json")
+        // w.Header().Set("Retry-After", "5")
+        // http.Redirect(w, r, r.URL.Path + "?executionId=" + id, http.StatusFound)
+        // w.Write([]byte(id))
       } else {
         log.Printf("handler: Result not yet available of execution ID %s, waiting", id)
         ExecutionCond.L.Lock()
@@ -350,7 +354,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
               log.Fatal(err)
           }
 
-          log.Printf("Parsed post parallel message Topic: [%s], Key: [%s], StateAction: [%s], AsyncExec: [%d], CounterValue: [%d], WorkflowInstanceMetadataStorageKey: [%s]", data.Topic, data.Key, data.StateAction, data.AsyncExec, data.CounterValue, data.WorkflowInstanceMetadataStorageKey)
+          log.Printf("Parsed post parallel message Topic: [%s], Key: [%s], StateAction: [%s], AsyncExec: [%t], CounterValue: [%d], WorkflowInstanceMetadataStorageKey: [%s]", data.Topic, data.Key, data.StateAction, data.AsyncExec, data.CounterValue, data.WorkflowInstanceMetadataStorageKey)
 
           topic = data.Topic
           id = data.Key
@@ -419,6 +423,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       http.Error(w, "Error submitting event to system", http.StatusInternalServerError)
     } else {
+      // w.Header().Set("Content-Type", "application/json")
+      // w.WriteHeader(http.StatusAccepted)
       w.Write([]byte(id))
     }
   } else {

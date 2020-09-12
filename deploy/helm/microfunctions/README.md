@@ -98,11 +98,10 @@ There's no default Ingress created.
 
 ## Resource requirements (load free)
 
-| Service       | Pods | Containers  | CPU<br>request / limit | RAM<br>request / limit | PersistentVolume |
-| ------------- | ---- | ----------- |:----------------------:|:----------------------:| ----------------:|
-| Riak | 3 | server | 1 / 1 | 1Gi / 2Gi |  |
-| Elasticsearch | 1 | server | 100m / 500m | 2Gi / 2Gi |  |
-| Datalayer | 3 | datalayer | 100m / 500m | 200Mi / 500Mi |  |
-| Management | 1 | init job<br>sandbox | 100m / 200m<br>1 / 1 | 1Gi / 1Gi<br>1Gi / 2Gi |  |
-| Nginx | 1 | server<br>frontend | 100m / 500m<br>100m / 500m | 1Gi / 1Gi<br>1Gi / 1Gi |  |
-| TOTAL |  |  | 4.7 / 7.2CPUs | 9.6 / 14.5GB RAM | 0.0GB persistent storage |
+| Component          | Pods | Containers        | CPU<br>request / limit | RAM<br>request / limit | PersistentVolume       |
+| ------------------ | ---- | ----------------- |:----------------------:|:----------------------:| ----------------------:|
+| Deployment nx-mfn  |    1 | nginx<br>frontend |    0.2 /   1.0         |    2.0 /   2.0         |    0.0 /   0.0         | 
+| StatefulSet dl-mfn |    3 | datalayer         |    0.3 /   1.5         |    0.6 /   1.5         |    0.0 /   0.0         | 
+| StatefulSet es-mfn |    1 | elasticsearch     |    0.1 /   0.5         |    2.0 /   2.0         |    0.0 /   0.0         | 
+| StatefulSet rk-mfn |    3 | riak              |   12.0 /  12.0         |   24.0 /  24.0         |    0.0 /   0.0         | 
+| TOTAL              |   23 |                   |   12.6 /  15.0 CPUs    |   28.6 /  29.5 GB RAM  |    0.0 /   0.0 GB disk |

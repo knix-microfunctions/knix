@@ -48,7 +48,7 @@
         - ca-certificates
         - curl
         - software-properties-common
-        - python-thrift
+#        - python-thrift
         - python3-pip
         - netcat
         - rsync
@@ -177,7 +177,6 @@
       name: docker
       enabled: true
       state: restarted
-    when: dockerupdate.failed
 
   - name: ensure java is at the latest version
     apt:
