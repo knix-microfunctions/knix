@@ -84,7 +84,7 @@ class DataLayerClient:
             self.datalayer.createSetTable(self.keyspace, self.settablename, self.locality)
             self.datalayer.createCounterTable(self.keyspace, self.countertablename, Metadata(tableType="counters"), self.locality)
             self.datalayer.createTable(self.keyspace, self.triggersinfotablename, Metadata(tableType="default"), self.locality)
-            self.datalayer.createCounterTable(self.keyspace, self.countertriggerstable, Metadata(tableType="mfn_counter_trigger"), self.locality)
+            self.datalayer.createCounterTable(self.keyspace, self.countertriggerstable, Metadata(tableType="counters"), self.locality)
             self.datalayer.createTable(self.keyspace, self.countertriggersinfotable, Metadata(tableType="default"), self.locality)
         except Thrift.TException as exc:
             print("Could not initialize tables: " + str(exc))

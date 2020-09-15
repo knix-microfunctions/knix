@@ -417,7 +417,7 @@
 
   - name: riak-admin bucket-type create counters
     shell: |
-      /usr/sbin/riak-admin bucket-type create counters '{"props":{"datatype":"counter"}}'
+      /usr/sbin/riak-admin bucket-type create counters '{"props":{"datatype":"counter", "postcommit":[{"mod":"mfn_counter_triggers","fun":"counter_trigger"}]}}'
     register: output
     failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
 

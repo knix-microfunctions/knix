@@ -22,7 +22,7 @@ $RIAK_ADMIN bucket-type create triggers '{"props":{"postcommit":[{"mod":"workflo
 $RIAK_ADMIN bucket-type activate triggers || echo ""
 $RIAK_ADMIN bucket-type create strong '{"props":{"consistent":true}}' || echo ""
 $RIAK_ADMIN bucket-type activate strong || echo ""
-$RIAK_ADMIN bucket-type create counters '{"props":{"datatype":"counter"}}' || echo ""
+$RIAK_ADMIN bucket-type create counters '{"props":{"datatype":"counter", "postcommit":[{"mod":"mfn_counter_triggers","fun":"counter_trigger"}]}}' || echo ""
 $RIAK_ADMIN bucket-type activate counters || echo ""
 $RIAK_ADMIN bucket-type create sets '{"props":{"datatype":"set"}}' || echo ""
 $RIAK_ADMIN bucket-type activate sets || echo ""

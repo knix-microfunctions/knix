@@ -32,28 +32,58 @@ while True:
     except Exception as e:
         print(e)
 
-def dl_put(bucketname, keyname, value, buckettype="default"):
-    print("Creating key: " + keyname)
-    print("  in bucket: " + bucketname)
-    print("  of type: " + buckettype)
-    bucket = DLCLIENT.bucket_type(buckettype).bucket(bucketname)
-    obj = bucket.get(keyname)
-    obj.encoded_data = value.encode()
-    obj.store()
 
-    time.sleep(1)
-    # check if stored
-    bucket2 = DLCLIENT.bucket_type(buckettype).bucket(bucketname)
-    obj2 = bucket2.get(keyname)
-    print("  with value: " + str(obj2.encoded_data.decode()))
-
-bucketname = "__test__keyspace__;__test_bucket3__"
-keyname = "__keyname3__"
+bucketname = "__test__keyspace__;__test_bucket__"
+keyname = "__keyname__"
 buckettype = "default"
-value = "__test_data3__"
+value = "__test_data__"
 
-dl_put(bucketname, keyname, value, buckettype)
+print("Creating key: " + keyname)
+print("  in bucket: " + bucketname)
+print("  of type: " + buckettype)
+bucket = DLCLIENT.bucket_type(buckettype).bucket(bucketname)
+obj = bucket.get(keyname)
+obj.encoded_data = value.encode()
+obj.store()
 
+time.sleep(1)
+# check if stored
+bucket2 = DLCLIENT.bucket_type(buckettype).bucket(bucketname)
+obj2 = bucket2.get(keyname)
+print("  with value: " + str(obj2.encoded_data.decode()))
+
+time.sleep(2)
+bucket2.delete(keyname)
+
+time.sleep(5)
+
+counter_name = "__triggered_counter__"
+buckettype = "counters"
+bucketname = "__test__keyspace__;__test_counter_bucket__"
+
+print("Creating counter: " + counter_name)
+print("  in bucket: " + bucketname)
+print("  of type: " + buckettype)
+bucket_counters = DLCLIENT.bucket_type('counters').bucket('bucket_counters')
+
+counter = bucket_counters.new(counter_name)
+counter.increment(3)
+counter.store()
+
+counter = bucket_counters.get(counter_name)
+print("Counter value: " + str(counter.value))
+
+time.sleep(2)
+counter = bucket_counters.get(counter_name)
+counter.decrement(1)
+counter.store()
+
+counter = bucket_counters.get(counter_name)
+print("Counter value: " + str(counter.value))
+
+time.sleep(2)
+bucket_counters.delete(counter_name)
+DLCLIENT.close()
 
 
 # this is deprecated code
