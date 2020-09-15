@@ -225,9 +225,11 @@ class SessionHelperThread(threading.Thread):
         is_json = True
         try:
             msg = json.loads(value)
-            #self._logger.debug("[SessionHelperThread] decoded value: " + str(msg))
+            #self._logger.debug("[SessionHelperThread] JSON value: " + str(msg))
         except Exception as exc:
             is_json = False
+            msg = value
+            self._logger.debug("[SessionHelperThread] non-JSON value: " + str(msg))
 
         # cannot be a special message; queue whatever it is
         # _XXX_: we are encoding/decoding the delivered message; should not actually execute this code

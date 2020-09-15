@@ -280,7 +280,10 @@ class MicroFunctionsAPI:
         messages = []
         if self._is_session_function:
             #self._logger.debug("[MicroFunctionsAPI] getting session update messages...")
-            messages = self._session_utils.get_session_update_messages_with_local_queue(count=count, block=block)
+            messages2 = self._session_utils.get_session_update_messages_with_local_queue(count=count, block=block)
+            for msg2 in messages2:
+                msg = self._publication_utils.convert_python_object_to_api_message(msg2)
+                messages.append(msg)
         else:
             self._logger.warning("Cannot get session update messages in a non-session function: " + self._function_state_name)
 
