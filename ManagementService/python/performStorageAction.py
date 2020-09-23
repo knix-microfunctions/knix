@@ -17,9 +17,9 @@ import base64
 VALID_STORAGE_DATA_TYPES = set(["kv", "map", "set", "counter"])
 VALID_ACTIONS = {}
 VALID_ACTIONS["kv"] = set(["getdata", "deletedata", "putdata", "listkeys"])
-VALID_ACTIONS["map"] = set(["createmap", "getmapentry", "putmapentry", "deletemapentry", "retrievemap", "containsmapkey", "getmapkeys", "clearmap", "deletemap", "getmapnames"])
-VALID_ACTIONS["set"] = set(["createset", "addsetentry", "removesetentry", "containssetitem", "retrieveset", "clearset", "deleteset", "getsetnames"])
-VALID_ACTIONS["counter"] = set(["createcounter", "getcounter", "incrementcounter", "decrementcounter", "deletecounter", "getcounternames"])
+VALID_ACTIONS["map"] = set(["createmap", "getmapentry", "putmapentry", "deletemapentry", "retrievemap", "containsmapkey", "getmapkeys", "clearmap", "deletemap", "listmaps"])
+VALID_ACTIONS["set"] = set(["createset", "addsetentry", "removesetentry", "containssetitem", "retrieveset", "clearset", "deleteset", "listsets"])
+VALID_ACTIONS["counter"] = set(["createcounter", "getcounter", "incrementcounter", "decrementcounter", "deletecounter", "listcounters"])
 
 # for checking the types of the required parameters for corresponding data type and action
 REQUIRED_PARAMETERS = {}
@@ -72,9 +72,9 @@ REQUIRED_PARAMETERS["clearmap"]["mapname"] = "str"
 REQUIRED_PARAMETERS["deletemap"] = {}
 REQUIRED_PARAMETERS["deletemap"]["mapname"] = "str"
 
-REQUIRED_PARAMETERS["getmapnames"] = {}
-REQUIRED_PARAMETERS["getmapnames"]["start"] = "int"
-REQUIRED_PARAMETERS["getmapnames"]["count"] = "int"
+REQUIRED_PARAMETERS["listmaps"] = {}
+REQUIRED_PARAMETERS["listmaps"]["start"] = "int"
+REQUIRED_PARAMETERS["listmaps"]["count"] = "int"
 
 # set operations
 REQUIRED_PARAMETERS["createset"] = {}
@@ -101,9 +101,9 @@ REQUIRED_PARAMETERS["clearset"]["setname"] = "str"
 REQUIRED_PARAMETERS["deleteset"] = {}
 REQUIRED_PARAMETERS["deleteset"]["setname"] = "str"
 
-REQUIRED_PARAMETERS["getsetnames"] = {}
-REQUIRED_PARAMETERS["getsetnames"]["start"] = "int"
-REQUIRED_PARAMETERS["getsetnames"]["count"] = "int"
+REQUIRED_PARAMETERS["listsets"] = {}
+REQUIRED_PARAMETERS["listsets"]["start"] = "int"
+REQUIRED_PARAMETERS["listsets"]["count"] = "int"
 
 # counter operations
 REQUIRED_PARAMETERS["createcounter"] = {}
@@ -115,18 +115,18 @@ REQUIRED_PARAMETERS["getcounter"]["countername"] = "str"
 
 REQUIRED_PARAMETERS["incrementcounter"] = {}
 REQUIRED_PARAMETERS["incrementcounter"]["countername"] = "str"
-REQUIRED_PARAMETERS["incrementcounter"]["countervalue"] = "int"
+REQUIRED_PARAMETERS["incrementcounter"]["increment"] = "int"
 
 REQUIRED_PARAMETERS["decrementcounter"] = {}
 REQUIRED_PARAMETERS["decrementcounter"]["countername"] = "str"
-REQUIRED_PARAMETERS["decrementcounter"]["countervalue"] = "int"
+REQUIRED_PARAMETERS["decrementcounter"]["decrement"] = "int"
 
 REQUIRED_PARAMETERS["deletecounter"] = {}
 REQUIRED_PARAMETERS["deletecounter"]["countername"] = "str"
 
-REQUIRED_PARAMETERS["getcounternames"] = {}
-REQUIRED_PARAMETERS["getcounternames"]["start"] = "int"
-REQUIRED_PARAMETERS["getcounternames"]["count"] = "int"
+REQUIRED_PARAMETERS["listcounters"] = {}
+REQUIRED_PARAMETERS["listcounters"]["start"] = "int"
+REQUIRED_PARAMETERS["listcounters"]["count"] = "int"
 
 def handle(value, sapi):
     assert isinstance(value, dict)
@@ -249,8 +249,10 @@ def handle_storage_action_kv(parameters, dlc):
         if val is not None:
             # the GUI expects this to be base64-encoded
             val = bytes(val, 'utf-8')
-            response_data['value'] = base64.b64encode(val).decode()
-            status = True
+            val = base64.b64encode(val).decode()
+
+        response_data['value'] = val
+        status = True
 
     elif storage_action == 'deletedata':
         status = dlc.delete(parameters['key'])
@@ -263,14 +265,8 @@ def handle_storage_action_kv(parameters, dlc):
         listkeys_response = dlc.listKeys(parameters['start'], parameters['count'])
         response_data['keylist'] = listkeys_response   # should always be a list. Empty list is a valid response
 
-#    else:
-#        return False, "Invalid operation specified", response_data
-
     if not status:
-        if storage_action == "getdata":
-            message = storage_action + " returned None value. " + message
-        else:
-            message = storage_action + " returned False. " + message
+        message = storage_action + " returned False. " + message
 
     response_data['status'] = status
     return status, message, response_data
@@ -279,18 +275,18 @@ def handle_storage_action_map(parameters, dlc):
     '''
     "parameters": <must come as part of user request> (see handle_storage_action_<data_type>)
     {
-        "action": "createmap", OR "putmapentry", OR "getmapentry", OR "deletemapentry", OR "retrievemap", "containsmapkey", OR "getmapkeys", OR "clearmap", OR "deletemap", OR "getmapnames"; <case insensitive>
-        "mapname": (for all operations, except for getmapnames)
+        "action": "createmap", OR "putmapentry", OR "getmapentry", OR "deletemapentry", OR "retrievemap", "containsmapkey", OR "getmapkeys", OR "clearmap", OR "deletemap", OR "listmaps"; <case insensitive>
+        "mapname": (for all operations, except for listmaps)
         "key": "keyname",               (for *mapentry)
         "value": "stringdata",          (for putmapentry)
-        "start": 1,                     (int, for getmapnames)
-        "count": 2000,                  (int, for getmapnames)
+        "start": 1,                     (int, for listmaps)
+        "count": 2000,                  (int, for listmaps)
     }
     '''
     storage_action = parameters['action'].lower()
     response_data = {}
 
-    if storage_action == "getmapnames":
+    if storage_action == "listmaps":
         message = storage_action + ", start: " + str(parameters['start']) + ", count: " + str(parameters['count']) + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
     else:
         message = storage_action + ", mapname: " + parameters['mapname'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
@@ -308,8 +304,10 @@ def handle_storage_action_map(parameters, dlc):
         val = dlc.getMapEntry(parameters["mapname"], parameters["key"])
         if val is not None:
             val = bytes(val, 'utf-8')
-            response_data['value'] = base64.b64encode(val).decode()
-            status = True
+            val = base64.b64encode(val).decode()
+
+        response_data['value'] = val
+        status = True
 
     elif storage_action == "deletemapentry":
         status = dlc.deleteMapEntry(parameters["mapname"], parameters["key"])
@@ -335,7 +333,7 @@ def handle_storage_action_map(parameters, dlc):
     elif storage_action == "deletemap":
         status = dlc.deleteMap(parameters["mapname"])
 
-    elif storage_action == "getmapnames":
+    elif storage_action == "listmaps":
         maplist = dlc.getMapNames(parameters["start"], parameters["count"])
         response_data["maplist"] = maplist
         status = True
@@ -355,17 +353,17 @@ def handle_storage_action_set(parameters, dlc):
     '''
     "parameters": <must come as part of user request> (see handle_storage_action_<data_type>)
     {
-        "action": "createset", OR "addsetentry", OR "removesetentry", OR "containssetitem", OR "retrieveset", OR "clearset", OR "deleteset", OR "getsetnames"; <case insensitive>
-        "setname": (for all operations, except for getsetnames)
+        "action": "createset", OR "addsetentry", OR "removesetentry", OR "containssetitem", OR "retrieveset", OR "clearset", OR "deleteset", OR "listsets"; <case insensitive>
+        "setname": (for all operations, except for listsets)
         "item": "item",               (for *setentry)
-        "start": 1,                     (int, for getsetnames)
-        "count": 2000,                  (int, for getsetnames)
+        "start": 1,                     (int, for listsets)
+        "count": 2000,                  (int, for listsets)
     }
     '''
     storage_action = parameters['action'].lower()
     response_data = {}
 
-    if storage_action == "getsetnames":
+    if storage_action == "listsets":
         message = storage_action + ", start: " + str(parameters['start']) + ", count: " + str(parameters['count']) + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
     else:
         message = storage_action + ", setname: " + parameters['setname'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
@@ -398,7 +396,7 @@ def handle_storage_action_set(parameters, dlc):
     elif storage_action == "deleteset":
         status = dlc.deleteSet(parameters["setname"])
 
-    elif storage_action == "getsetnames":
+    elif storage_action == "listsets":
         setlist = dlc.getSetNames(parameters["start"], parameters["count"])
         response_data["setlist"] = setlist
         status = True
@@ -414,17 +412,19 @@ def handle_storage_action_counter(parameters, dlc):
     '''
     "parameters": <must come as part of user request> (see handle_storage_action_<data_type>)
     {
-        "action": "createcounter", OR "getcounter", OR "incrementcounter", OR "decrementcounter", OR "deletecounter", OR "getcounternames"; <case insensitive>
-        "countername": (for all operations, except for getcounternames)
-        "countervalue": <value>,   (int, for createcounter, incrementcounter, decrementcounter)
-        "start": 1,                     (int, for getcounternames)
-        "count": 2000,                  (int, for getcounternames)
+        "action": "createcounter", OR "getcounter", OR "incrementcounter", OR "decrementcounter", OR "deletecounter", OR "listcounters"; <case insensitive>
+        "countername": (for all operations, except for listcounters)
+        "countervalue": <value>,   (int, for createcounter)
+        "increment": <value>,      (int, for incrementcounter)
+        "decrement": <value>       (int, for decrementcounter)
+        "start": 1,                     (int, for listcounters)
+        "count": 2000,                  (int, for listcounters)
     }
     '''
     storage_action = parameters['action'].lower()
     response_data = {}
 
-    if storage_action == "getcounternames":
+    if storage_action == "listcounters":
         message = storage_action + ", start: " + str(parameters['start']) + ", count: " + str(parameters['count']) + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
     else:
         message = storage_action + ", countername: " + parameters['countername'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
@@ -441,15 +441,15 @@ def handle_storage_action_counter(parameters, dlc):
         status = True
 
     elif storage_action == "incrementcounter":
-        status = dlc.incrementCounter(parameters["countername"], parameters["countervalue"])
+        status = dlc.incrementCounter(parameters["countername"], parameters["increment"])
 
     elif storage_action == "decrementcounter":
-        status = dlc.decrementCounter(parameters["countername"], parameters["countervalue"])
+        status = dlc.decrementCounter(parameters["countername"], parameters["decrement"])
 
     elif storage_action == "deletecounter":
         status = dlc.deleteCounter(parameters["countername"])
 
-    elif storage_action == "getcounternames":
+    elif storage_action == "listcounters":
         counters = dlc.getCounterNames(parameters["start"], parameters["count"])
         response_data["counterlist"] = counters
         status = True
@@ -517,7 +517,7 @@ def validate_data(data):
                 break
 
     if valid:
-        if action in ("listkeys", "getmapnames", "getsetnames", "getcounternames"):
+        if action in ("listkeys", "listmaps", "listsets", "listcounters"):
             if parameters["start"] < 0 or parameters["start"] > 1000000:
                 valid = False
                 message = "'start' should be between 0 and 1000000."

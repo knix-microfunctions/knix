@@ -28,10 +28,11 @@ class MfnAppTextFormat():
 mfntestpassed = MfnAppTextFormat.STYLE_BOLD + MfnAppTextFormat.COLOR_GREEN + 'PASSED' + MfnAppTextFormat.END + MfnAppTextFormat.END
 mfntestfailed = MfnAppTextFormat.STYLE_BOLD + MfnAppTextFormat.COLOR_RED + 'FAILED' + MfnAppTextFormat.END + MfnAppTextFormat.END
 
-import unittest
-import os, sys
 import json
+import random
+import os, sys
 import time
+import unittest
 
 class StorageActionsTest(unittest.TestCase):
 
@@ -39,26 +40,12 @@ class StorageActionsTest(unittest.TestCase):
         self._settings = self._get_settings()
         self._client = MfnClient()
 
-    def test_list_keys(self):
+    # kv operations
+    #@unittest.skip("")
+    def test_get_put_delete(self):
         key_list = self._client.list_keys()
-
         old_len = len(key_list)
 
-        ts = str(time.time() * 1000.0)
-        key = "my_random_key_" + ts
-
-        self._client.put(key, ts)
-
-        key_list2 = self._client.list_keys()
-
-        new_len = len(key_list2)
-
-        if (old_len+1) == new_len:
-            self._report("test_list_keys", True)
-        else:
-            self._report("test_list_keys", False, old_len + 1, new_len)
-
-    def test_get_put_delete(self):
         ts = str(time.time() * 1000.0)
         key = "my_random_key_" + ts
         val = self._client.get(key)
@@ -71,6 +58,14 @@ class StorageActionsTest(unittest.TestCase):
 
         self._client.put(key, ts)
         val2 = self._client.get(key)
+
+        key_list2 = self._client.list_keys()
+        new_len = len(key_list2)
+
+        if (old_len+1) == new_len:
+            self._report("test_list_keys", True)
+        else:
+            self._report("test_list_keys", False, old_len + 1, new_len)
 
         # should be ts
         if val2 == ts:
@@ -86,6 +81,153 @@ class StorageActionsTest(unittest.TestCase):
             self._report("test_delete_key", True)
         else:
             self._report("test_delete_key", False, None, val3)
+
+    # map operations
+
+    # set operations
+    #@unittest.skip("")
+    def test_set_operations(self):
+        set_list = self._client.list_sets()
+        old_len = len(set_list)
+
+        ts = str(time.time() * 1000.0)
+        setname = "my_random_setname_" + ts
+
+        ts2 = str(time.time() * 1000.0)
+        ritem = "my_random_item_" + ts2
+
+        self._client.create_set(setname)
+        # the creation of a set doesn't actually take place unless an item is added
+        self._client.add_set_entry(setname, ritem)
+
+        time.sleep(3)
+        set_list2 = self._client.list_sets()
+        new_len = len(set_list2)
+
+        if (old_len+1) == new_len:
+            self._report("test_create_set", True)
+            self._report("test_list_sets", True)
+        else:
+            self._report("test_create_set", False, old_len + 1, new_len)
+            self._report("test_list_sets", False, old_len + 1, new_len)
+
+        contains = self._client.contains_set_item(setname, ritem)
+
+        if contains:
+            self._report("test_add_set_entry", True)
+        else:
+            self._report("test_add_set_entry", False, None, True)
+
+        content = self._client.retrieve_set(setname)
+
+        if isinstance(content, set) and ritem in content:
+            self._report("test_retrieve_set", True)
+        else:
+            self._report("test_retrieve_set", False, ritem in content, True)
+
+        self._client.remove_set_entry(setname, ritem)
+
+        content2 = self._client.retrieve_set(setname)
+        contains2 = self._client.contains_set_item(setname, ritem)
+
+        if not contains2 and ritem not in content2:
+            self._report("test_remove_set_entry", True)
+            self._report("test_retrieve_set", True)
+        else:
+            self._report("test_remove_set_entry", False, contains2, False)
+            self._report("test_retrieve_set", False, ritem in content2, False)
+
+        self._client.add_set_entry(setname, "randomitem1")
+        self._client.add_set_entry(setname, "randomitem2")
+        self._client.add_set_entry(setname, "randomitem3")
+        self._client.add_set_entry(setname, "randomitem4")
+        self._client.add_set_entry(setname, "randomitem5")
+
+        content3 = self._client.retrieve_set(setname)
+
+        self._client.clear_set(setname)
+
+        content4 = self._client.retrieve_set(setname)
+
+        if len(content3) == 5 and len(content4) == 0:
+            self._report("test_clear_set", True)
+        else:
+            self._report("test_clear_set", False, len(content4), 0)
+
+        self._client.delete_set(setname)
+        time.sleep(3)
+
+        set_list3 = self._client.list_sets()
+        new_len2 = len(set_list3)
+
+        if old_len == new_len2 and new_len == new_len2 + 1:
+            self._report("test_delete_set", True)
+        else:
+            self._report("test_delete_set", False, new_len2, old_len)
+
+    # counter operations
+    #@unittest.skip("")
+    def test_create_get_increment_decrement_delete_counter(self):
+        counter_list = self._client.list_counters()
+        old_len = len(counter_list)
+        ts = str(time.time() * 1000.0)
+        countername = "my_random_countername_" + ts
+
+        rval = random.randint(0, 100)
+
+        self._client.create_counter(countername, rval)
+
+        counter_list2 = self._client.list_counters()
+        new_len = len(counter_list2)
+
+        if (old_len+1) == new_len:
+            self._report("test_list_counters", True)
+        else:
+            self._report("test_list_counters", False, old_len + 1, new_len)
+
+        if countername not in counter_list and countername in counter_list2:
+            self._report("test_create_counter", True)
+        else:
+            self._report("test_create_counter", False, None, countername)
+
+        val = self._client.get_counter(countername)
+
+        if val == rval:
+            self._report("test_get_counter", True)
+        else:
+            self._report("test_get_counter", False, rval, val)
+
+        r2 = random.randint(0, 100)
+        self._client.increment_counter(countername, r2)
+
+        val2 = self._client.get_counter(countername)
+
+        if val2 == val + r2:
+            self._report("test_increment_counter", True)
+        else:
+            self._report("test_increment_counter", False, val + r2, val2)
+
+        r3 = random.randint(0, 100)
+        self._client.decrement_counter(countername, r3)
+
+        val3 = self._client.get_counter(countername)
+
+        if val3 == val2 - r3:
+            self._report("test_decrement_counter", True)
+        else:
+            self._report("test_decrement_counter", False, val2 - r3, val3)
+
+        self._client.delete_counter(countername)
+
+        # sleep a little to make the change to take effect
+        time.sleep(3)
+
+        counter_list3 = self._client.list_counters()
+
+        if countername not in counter_list3:
+            self._report("test_delete_counter", True)
+        else:
+            self._report("test_delete_counter", False, None, countername)
 
     def tearDown(self):
         self._client.disconnect()

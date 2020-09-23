@@ -268,7 +268,7 @@ class DataLayerClient:
             try:
                 keyset = self.datalayer.retrieveKeysetFromMap(self.keyspace, self.maptablename, mapname, self.locality)
                 if keyset.key != "" and keyset.key == mapname:
-                    keys = keyset.items
+                    keys = list(keyset.items)
                 break
             except TTransport.TTransportException as exc:
                 print("[DataLayerClient] Reconnecting because of failed getMapKeys: " + str(exc))
@@ -398,12 +398,12 @@ class DataLayerClient:
         return ret
 
     def retrieveSet(self, setname):
-        items = set()
+        items = []
         for retry in range(MAX_RETRIES):
             try:
                 itemsset = self.datalayer.retrieveSet(self.keyspace, self.settablename, setname, self.locality)
                 if itemsset.key != "" and itemsset.key == setname:
-                    items = itemsset.items
+                    items = list(itemsset.items)
                 break
             except TTransport.TTransportException as exc:
                 print("[DataLayerClient] Reconnecting because of failed retrieveSet: " + str(exc))
