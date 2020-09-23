@@ -26,7 +26,7 @@ build_thrift:
 
 src/main/java/org/microfunctions/queue/local/LocalQueueService.java: ../build_env.mk \
 	thrift/LocalQueueService.thrift
-	docker run --rm -it --name queue-thrift \
+	docker run --rm -i --name queue-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
@@ -56,7 +56,7 @@ target/queueservice.jar: $(JAVA_SOURCES) \
 		thrift/LocalQueueService.thrift \
 		~/.m2/settings-docker.xml
 	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
-	docker run --rm -it --name queue-maven \
+	docker run --rm -i --name queue-maven \
 		--user $(UID):$(GID) \
 		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \

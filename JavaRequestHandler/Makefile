@@ -36,7 +36,7 @@ mfnapi.jar: $(CLASSFILES)
 src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: ../build_env.mk \
 	../FunctionWorker/MicroFunctionsAPI.thrift
 	cp ../FunctionWorker/MicroFunctionsAPI.thrift .
-	docker run --rm -it --name mfnapi-thrift \
+	docker run --rm -i --name mfnapi-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/mfnapi -w /usr/src/mfnapi \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
@@ -65,7 +65,7 @@ target/javaworker.jar: $(JAVA_SOURCES) \
 		src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java \
 		~/.m2/settings-docker.xml
 	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
-	docker run --rm -it --name javaworker \
+	docker run --rm -i --name javaworker \
 	--user $(UID):$(GID) \
 	-v ~/.m2:/usr/share/maven/ref \
 	-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
@@ -77,7 +77,7 @@ target/site/apidocs/index.html: $(JAVA_SOURCES) \
 		target/javaworker.jar \
 		mfnapi.jar \
 		~/.m2/settings-docker.xml
-	docker run --rm -it --name javaworker \
+	docker run --rm -i --name javaworker \
 		--user $(UID):$(GID) \
 		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \

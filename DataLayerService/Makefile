@@ -27,7 +27,7 @@ build_thrift:
 src/main/java/org/microfunctions/data_layer/DataLayerService.java: ../build_env.mk \
 	thrift/DataLayerMessage.thrift \
 	thrift/DataLayerService.thrift
-	docker run --rm -it --name datalayer-thrift \
+	docker run --rm -i --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
@@ -37,7 +37,7 @@ src/main/java/org/microfunctions/data_layer/DataLayerService.java: ../build_env.
 PythonClient/data_layer: ../build_env.mk \
 	thrift/DataLayerMessage.thrift \
 	thrift/DataLayerService.thrift
-	docker run --rm -it --name datalayer-thrift \
+	docker run --rm -i --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
@@ -65,7 +65,7 @@ target/datalayerservice.jar: $(JAVA_SOURCES) \
 	src/main/java/org/microfunctions/data_layer/DataLayerService.java \
 	~/.m2/settings-docker.xml
 	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
-	docker run --rm -it --name datalayer-maven \
+	docker run --rm -i --name datalayer-maven \
 		--user $(UID):$(GID) \
 		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \

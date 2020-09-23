@@ -62,7 +62,7 @@ push: image
 	$(call push_image,microfn/management)
 
 test: image
-	docker run -it --rm --name management \
+	docker run -i --rm --name management \
 		--env MFN_DATALAYER=192.168.137.111:4998 \
 		--env MFN_HOSTNAME=$(shell hostname) \
 		--env MFN_ELASTICSEARCH_CONNECT=$(shell hostname):9200 \
@@ -74,7 +74,7 @@ test: image
 		microfn/management
 
 print: image
-	docker run -it --rm --name management \
+	docker run -i --rm --name management \
 		--env MFN_DATALAYER=192.168.137.111:4998 \
 		--env MFN_HOSTNAME=$(shell hostname) \
 		--env MFN_ELASTICSEARCH_CONNECT=$(shell hostname):9200 \

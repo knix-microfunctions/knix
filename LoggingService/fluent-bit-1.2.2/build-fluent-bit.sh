@@ -24,5 +24,5 @@ else
     wget -N --no-check-certificate https://fluentbit.io/releases/1.2/fluent-bit-1.2.2.tar.gz
 fi
 docker build --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg http_proxy=$http_proxy --build-arg https_proxy=$https_proxy -t fluent-bit-1.2.2-build .
-docker run -it --rm --name fluent-bit-1.2.2-sandbox -v $(pwd):/fluent-bit-build fluent-bit-1.2.2-build /bin/bash -c "cp -r /fluent-bit /fluent-bit-build/. && chmod -R 777 /fluent-bit-build/fluent-bit" 
+docker run -i --rm --name fluent-bit-1.2.2-sandbox -v $(pwd):/fluent-bit-build fluent-bit-1.2.2-build /bin/bash -c "cp -r /fluent-bit /fluent-bit-build/. && chmod -R 777 /fluent-bit-build/fluent-bit" 
 ./package-fluent-bit.sh
