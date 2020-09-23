@@ -68,7 +68,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": sharedProperties.getObjectKey(), "workflowid" :  storageLoc } } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "getdata", "key": sharedProperties.getObjectKey() }, "workflowid" :  storageLoc} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -152,7 +152,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "workflowid" :  storageLoc} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr }, "workflowid" :  storageLoc} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -225,7 +225,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "workflowid" :  storageLoc} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr }, "workflowid" :  storageLoc} } })
        }
 
        $http(req).then(function successCallback(response) {

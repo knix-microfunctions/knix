@@ -367,7 +367,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "listkeys", "start": 0, "count": 2000} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "listkeys", "start": 0, "count": 2000 } } } })
        }
 
        $http(req).then(function successCallback(response) {

@@ -263,7 +263,7 @@ class DataLayerClient:
         return ret
 
     def getMapKeys(self, mapname):
-        keys = None
+        keys = []
         for retry in range(MAX_RETRIES):
             try:
                 keyset = self.datalayer.retrieveKeysetFromMap(self.keyspace, self.maptablename, mapname, self.locality)
@@ -280,7 +280,7 @@ class DataLayerClient:
         return keys
 
     def retrieveMap(self, mapname):
-        mapentries = None
+        mapentries = {}
         for retry in range(MAX_RETRIES):
             try:
                 mapentries = self.datalayer.retrieveAllEntriesFromMap(self.keyspace, self.maptablename, mapname, self.locality)
@@ -327,7 +327,7 @@ class DataLayerClient:
         return status
 
     def getMapNames(self, start_index=0, end_index=2147483647):
-        maps = None
+        maps = []
         for retry in range(MAX_RETRIES):
             try:
                 maps = self.datalayer.selectMaps(self.keyspace, self.maptablename, start_index, end_index, self.locality)
@@ -398,7 +398,7 @@ class DataLayerClient:
         return ret
 
     def retrieveSet(self, setname):
-        items = None
+        items = set()
         for retry in range(MAX_RETRIES):
             try:
                 itemsset = self.datalayer.retrieveSet(self.keyspace, self.settablename, setname, self.locality)
@@ -443,7 +443,7 @@ class DataLayerClient:
         return status
 
     def getSetNames(self, start_index=0, end_index=2147483647):
-        sets = None
+        sets = []
         for retry in range(MAX_RETRIES):
             try:
                 sets = self.datalayer.selectSets(self.keyspace, self.settablename, start_index, end_index, self.locality)
@@ -538,7 +538,7 @@ class DataLayerClient:
         return status
 
     def getCounterNames(self, start_index=0, end_index=2147483647, tableName=None):
-        counters = None
+        counters = []
         table = self.countertablename if tableName is None else tableName
         for retry in range(MAX_RETRIES):
             try:
