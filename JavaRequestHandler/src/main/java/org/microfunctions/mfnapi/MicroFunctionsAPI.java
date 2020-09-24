@@ -199,13 +199,13 @@ public class MicroFunctionsAPI
 		JSONObject custom = jobjClientContext.getJSONObject("custom");
 		for (String key: custom.keySet())
 		{
-			this.clientContext.custom.put(key, custom.getJSONObject(key));
+			this.clientContext.custom.put(key, custom.get(key));
 		}
 		
 		JSONObject env = jobjClientContext.getJSONObject("env");
 		for (String key: env.keySet())
 		{
-			this.clientContext.env.put(key, env.getJSONObject(key));
+			this.clientContext.env.put(key, env.get(key));
 		}
 		
 	}

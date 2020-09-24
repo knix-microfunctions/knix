@@ -75,9 +75,6 @@ class MicroFunctionsAPI:
             None
         '''
 
-
-
-
         self._logger = logger
         self._datalayer = datalayer
         self._external_endpoint = external_endpoint
@@ -145,8 +142,21 @@ class MicroFunctionsAPI:
         context_properties["log_group_name"] = self.log_group_name
         context_properties["log_stream_name"] = self.log_stream_name
 
-        context_properties["identity"] = self.identity
-        context_properties["client_context"] = self.client_context
+        context_properties["identity"] = {}
+        context_properties["identity"]["cognito_identity_id"] = self.identity.cognito_identity_id
+        context_properties["identity"]["cognito_identity_pool_id"] = self.identity.cognito_identity_pool_id
+
+        context_properties["client_context"] = {}
+
+        context_properties["client_context"]["client"] = {}
+        context_properties["client_context"]["client"]["installation_id"] = self.client_context_mobile_client.installation_id
+        context_properties["client_context"]["client"]["app_title"] = self.client_context_mobile_client.app_title
+        context_properties["client_context"]["client"]["app_version_name"] = self.client_context_mobile_client.app_version_name
+        context_properties["client_context"]["client"]["app_version_code"] = self.client_context_mobile_client.app_version_code
+        context_properties["client_context"]["client"]["app_package_name"] = self.client_context_mobile_client.app_package_name
+
+        context_properties["client_context"]["custom"] = self.client_context.custom
+        context_properties["client_context"]["env"] = self.client_context.env
 
         return json.dumps(context_properties)
 
