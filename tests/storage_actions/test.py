@@ -83,6 +83,96 @@ class StorageActionsTest(unittest.TestCase):
             self._report("test_delete_key", False, None, val3)
 
     # map operations
+    def test_map_operations(self):
+        map_list = self._client.list_maps()
+        old_len = len(map_list)
+
+        ts = str(time.time() * 1000.0)
+        mapname = "my_random_mapname_" + ts
+
+        rval = ts + "_" + str(random.randint(0, 1000000))
+        rkey = "my_random_key_" + str(random.randint(0, 1000000))
+        rkey2 = "my_random_key_" + str(random.randint(0, 1000000))
+        rkey3 = "my_random_key_" + str(random.randint(0, 1000000))
+
+        self._client.create_map(mapname)
+        # the creation of a map doesn't actually take place unless key-value pair is added
+        self._client.put_map_entry(mapname, rkey, rval)
+
+        time.sleep(3)
+        map_list2 = self._client.list_maps()
+        new_len = len(map_list2)
+
+        if (old_len+1) == new_len:
+            self._report("test_create_map", True)
+            self._report("test_list_maps", True)
+        else:
+            self._report("test_create_map", False, old_len + 1, new_len)
+            self._report("test_list_maps", False, old_len + 1, new_len)
+
+        val = self._client.get_map_entry(mapname, rkey)
+        val_none = self._client.get_map_entry(mapname, rkey2)
+
+        if val == rval and val_none is None:
+            self._report("test_get_map_entry", True)
+            self._report("test_put_map_entry", True)
+        else:
+            self._report("test_get_map_entry", False, val, rval)
+            self._report("test_put_map_entry", False, val, rval)
+
+        self._client.put_map_entry(mapname, rkey2, rval)
+        self._client.put_map_entry(mapname, rkey3, rval)
+
+        mapentries = self._client.retrieve_map(mapname)
+
+        if all (k in mapentries.keys() for k in (rkey, rkey2, rkey3)) and\
+            all (v == rval for v in mapentries.values()):
+            self._report("test_retrieve_map", True)
+        else:
+            self._report("test_retrieve_map", False, mapentries, {rkey: rval, rkey2: rval, rkey3: rval})
+
+        mapkeys = self._client.get_map_keys(mapname)
+
+        if all (k in mapkeys for k in mapentries.keys()):
+            self._report("test_get_map_keys", True)
+        else:
+            self._report("test_get_map_keys", False, mapkeys, mapentries.keys())
+
+        contains = self._client.contains_map_key(mapname, rkey)
+        contains2 = self._client.contains_map_key(mapname, rkey2)
+
+        self._client.delete_map_entry(mapname, rkey2)
+
+        contains3 = self._client.contains_map_key(mapname, rkey2)
+
+        if contains and contains2 and not contains3:
+            self._report("test_contains_map_key", True)
+            self._report("test_delete_map_key", True)
+        else:
+            self._report("test_contains_map_key", False, True, True)
+            self._report("test_delete_map_key", False, contains3, False)
+
+        self._client.clear_map(mapname)
+
+        mapkeys2 = self._client.get_map_keys(mapname)
+
+        if not mapkeys2:
+            self._report("test_clear_map", True)
+        else:
+            self._report("test_clear_map", False, mapkeys2, [])
+
+        self._client.delete_map(mapname)
+        time.sleep(3)
+
+        map_list3 = self._client.list_maps()
+        new_len2 = len(map_list3)
+
+        if old_len == new_len2 and new_len == new_len2 + 1:
+            self._report("test_delete_map", True)
+        else:
+            self._report("test_delete_map", False, new_len2, old_len)
+
+
 
     # set operations
     #@unittest.skip("")

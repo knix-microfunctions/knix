@@ -154,7 +154,7 @@ class Storage(object):
         data_to_send = self._init_common_parameters()
 
         parameters = {}
-        parameters["action"] = "putmapentry"
+        parameters["action"] = "getmapentry"
         parameters["mapname"] = mapname
         parameters["key"] = key
 
@@ -216,7 +216,7 @@ class Storage(object):
         if r.json()["status"] != "success":
             raise Exception("CONTAINSMAPKEY failed: " + r.json()["data"]["message"])
 
-        return r.json()["status"]["containskey"]
+        return r.json()["data"]["containskey"]
 
     def get_map_keys(self, mapname, wid=None):
         data_to_send = self._init_common_parameters()
@@ -232,7 +232,7 @@ class Storage(object):
         if r.json()["status"] != "success":
             raise Exception("GETMAPKEYS failed: " + r.json()["data"]["message"])
 
-        return r.json()["status"]["mapkeys"]
+        return r.json()["data"]["mapkeys"]
 
     def clear_map(self, mapname, wid=None):
         data_to_send = self._init_common_parameters()
