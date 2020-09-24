@@ -75,9 +75,9 @@ class MicroFunctionsAPI:
             None
         '''
 
-        
 
- 
+
+
         self._logger = logger
         self._datalayer = datalayer
         self._external_endpoint = external_endpoint
@@ -107,11 +107,11 @@ class MicroFunctionsAPI:
         AWS context object properties required for API compatibility, TODO: remove hardcoding of some values
         '''
         self.function_name = self._function_state_name # The name of the function.
-        self.function_version = self._function_version # The version of the function. 
-        self.invoked_function_arn = self.function_name + ":" + str(self.function_version) # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias. 
+        self.function_version = self._function_version # The version of the function.
+        self.invoked_function_arn = self.function_name + ":" + str(self.function_version) # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias.
         self.memory_limit_in_mb = 3008 # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
         self.aws_request_id = self._instanceid # The identifier of the invocation request. Return the KNIX message key instead
-        self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme         
+        self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme
 
         today = date.today() # calculate date
         d1 = today.strftime("%Y/%m/%d")
@@ -126,16 +126,31 @@ class MicroFunctionsAPI:
         self.client_context_mobile_client.app_title = 'knix_app_title' # set to KNIX app title
         self.client_context_mobile_client.app_version_name = 'knix_app_version_name' # set to KNIX app name
         self.client_context_mobile_client.app_version_code = 'knix_app_version_code' # set to KNIX app code
-        self.client_context_mobile_client.app_package_name = 'knix_app_package_name' # set to KNIX app package name 
+        self.client_context_mobile_client.app_package_name = 'knix_app_package_name' # set to KNIX app package name
 
         self.client_context = LambdaClientContext() # generate ClientContext object
         self.client_context.client = self.client_context_mobile_client # set to client mobile context
         self.client_context.custom = {'knix_custom': True} # set to KNIX context custom
         self.client_context.env = {'knix_env': 'test'} # set to KNIX context env
-     
+
         #self._logger.debug("[MicroFunctionsAPI] init done.")
-    
-    
+
+    def get_context_object_properties(self):
+        context_properties = {}
+        context_properties["function_name"] = self.function_name
+        context_properties["function_version"] = self.function_version
+        context_properties["invoked_function_arn"] = self.invoked_function_arn
+        context_properties["memory_limit_in_mb"] = self.memory_limit_in_mb
+        context_properties["aws_request_id"] = self.aws_request_id
+        context_properties["log_group_name"] = self.log_group_name
+        context_properties["log_stream_name"] = self.log_stream_name
+
+        context_properties["identity"] = self.identity
+        context_properties["client_context"] = self.client_context
+
+        return json.dumps(context_properties)
+
+
     def ping(self, num):
         self._logger.info("ping: " + str(num))
         output = num

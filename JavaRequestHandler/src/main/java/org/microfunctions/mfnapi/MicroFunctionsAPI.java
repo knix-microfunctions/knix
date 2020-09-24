@@ -34,6 +34,30 @@ import org.apache.thrift.transport.TTransportException;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 
+import org.json.JSONObject;
+
+class LambdaCognitoIdentity
+{
+	String cognitoIdentityId;
+	String cognitoIdentityPoolId;
+}
+
+class LambdaClientContextMobileClient
+{
+	String installationId;
+	String appTitle;
+	String appVersionName;
+	String appVersionCode;
+	String appPackageName;
+}
+
+class LambdaClientContext
+{
+	LambdaClientContextMobileClient client = new LambdaClientContextMobileClient();
+	HashMap<String, Object> custom = new HashMap<String, Object>();
+	HashMap<String, Object> env = new HashMap<String, Object>();
+}
+
 public class MicroFunctionsAPI
 {
     private static final Logger LOGGER = LogManager.getLogger(MicroFunctionsAPI.class);
@@ -42,8 +66,23 @@ public class MicroFunctionsAPI
 	private AFUNIXSocket APISocket = null;
 	private TTransport transport = null;
 	private MicroFunctionsAPIService.Client mfnapiClient = null;
+	
+	// Context object properties
+	private String functionName;
+	private int functionVersion;
+	private String invokedFunctionArn;
+	private int memoryLimitInMB;
+	private String awsRequestId;
+	private String logGroupName;
+	private String logStreamName;
+	
+	private LambdaCognitoIdentity identity;
+	private LambdaClientContext clientContext;
+	
+	private Logger logger = this.LOGGER;
 
 	private boolean hasError;
+	
 	public MicroFunctionsAPI(String APISocketFilename)
 	{
 		this.APISocketFilename = APISocketFilename;
@@ -111,6 +150,64 @@ public class MicroFunctionsAPI
                 LOGGER.error("Error in initializing API connection: " + this.APISocketFilename + " " + tte);
             }
         }
+        
+        // TODO: obtain the context object properties
+        if (!this.hasError)
+        {
+        	LOGGER.debug("Obtaining the context object properties...");
+        	try
+        	{
+        		String objectPropertiesStr = this.mfnapiClient.get_context_object_properties();
+        		JSONObject jobj = new JSONObject(objectPropertiesStr);
+        		// TODO: parse the object and initialize the parameters in Java,
+        		// and generate getters() according to 
+        		// https://docs.aws.amazon.com/en_us/lambda/latest/dg/java-context.html
+        		this.initContextObjectProperties(jobj);
+        	}
+        	catch (Exception te)
+        	{
+        		this.hasError = true;
+        		LOGGER.error("Error obtaining the context object properties: " + this.APISocketFilename + " " + te);
+        	}
+        }
+	}
+	
+	private void initContextObjectProperties(JSONObject jobj)
+	{
+		this.functionName = jobj.getString("function_name");
+		this.functionVersion = jobj.getInt("function_version");
+		this.invokedFunctionArn = jobj.getString("invoked_function_arn");
+		this.memoryLimitInMB = jobj.getInt("memory_limit_in_mb");
+		this.awsRequestId = jobj.getString("aws_request_id");
+		this.logGroupName = jobj.getString("log_group_name");
+		this.logStreamName = jobj.getString("log_stream_name");
+		
+		this.identity = new LambdaCognitoIdentity();
+		JSONObject jobjIdentity = jobj.getJSONObject("identity");
+		this.identity.cognitoIdentityId = jobjIdentity.getString("cognito_identity_id");
+		this.identity.cognitoIdentityPoolId = jobjIdentity.getString("cognito_identity_pool_id");
+		
+		this.clientContext = new LambdaClientContext();
+		JSONObject jobjClientContext = jobj.getJSONObject("client_context");
+		JSONObject jobjClient = jobjClientContext.getJSONObject("client");
+		this.clientContext.client.installationId = jobjClient.getString("installation_id");
+		this.clientContext.client.appTitle = jobjClient.getString("app_title");
+		this.clientContext.client.appVersionName = jobjClient.getString("app_version_name");
+		this.clientContext.client.appVersionCode = jobjClient.getString("app_version_code");
+		this.clientContext.client.appPackageName = jobjClient.getString("app_package_name");
+		
+		JSONObject custom = jobjClientContext.getJSONObject("custom");
+		for (String key: custom.keySet())
+		{
+			this.clientContext.custom.put(key, custom.getJSONObject(key));
+		}
+		
+		JSONObject env = jobjClientContext.getJSONObject("env");
+		for (String key: env.keySet())
+		{
+			this.clientContext.env.put(key, env.getJSONObject(key));
+		}
+		
 	}
 	
 	public boolean hasError()
@@ -1447,5 +1544,45 @@ public class MicroFunctionsAPI
         }
         return map;
     }
+
+	public String getFunctionName() {
+		return functionName;
+	}
+
+	public int getFunctionVersion() {
+		return functionVersion;
+	}
+
+	public String getInvokedFunctionArn() {
+		return invokedFunctionArn;
+	}
+
+	public int getMemoryLimitInMB() {
+		return memoryLimitInMB;
+	}
+
+	public String getAwsRequestId() {
+		return awsRequestId;
+	}
+
+	public String getLogGroupName() {
+		return logGroupName;
+	}
+
+	public String getLogStreamName() {
+		return logStreamName;
+	}
+
+	public LambdaCognitoIdentity getIdentity() {
+		return identity;
+	}
+
+	public LambdaClientContext getClientContext() {
+		return clientContext;
+	}
+
+	public Logger getLogger() {
+		return logger;
+	}
 
 }
