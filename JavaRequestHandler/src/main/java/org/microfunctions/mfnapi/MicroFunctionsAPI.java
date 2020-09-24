@@ -231,86 +231,8 @@ public class MicroFunctionsAPI
 			LOGGER.error("Error in closing API server connection: " + e);
 		}
 	}
-	
-	// TODO: Wrappers around the service client functions
-    /* TODO: utilize Java method overloading for optional parameters in the MFNAPI */
 	/*
-    def log(self, text, level="INFO"):
-
-    def put(self, key, value, is_private=False, is_queued=False):
-    def get(self, key, is_private=False):
-    def delete(self, key, is_private=False, is_queued=False)
-    def remove(self, key, is_private=False, is_queued=False):
-
-    def add_workflow_next(self, next, value):
-    def add_dynamic_next(self, next, value):
-    def send_to_function_now(self, destination, value):
-    def add_dynamic_workflow(self, dynamic_trigger):
-
-    def get_dynamic_workflow(self):
-
-    def set_session_alias(self, alias):
-    def unset_session_alias(self):
-    def get_session_alias(self):
-
-    def set_session_function_alias(self, alias, session_function_id=None):
-    def unset_session_function_alias(self, session_function_id=None):
-    def get_session_function_alias(self, session_function_id=None):
-
-    def get_session_id(self):
-    def get_session_function_id(self):
-
-    def get_all_session_function_aliases(self):
-    def get_alias_summary(self):
-    def get_all_session_function_ids(self):
-    def get_session_function_id_with_alias(self, alias=None):
-    
-    def get_session_update_messages(self, count=1):
-    def is_still_running(self):
-
-    def get_remaining_time_in_millis(self):
-    def get_event_key(self):
-    def get_instance_id(self):
-
-    def send_to_running_function_in_session(self, rgid, message, send_now=False):
-    def send_to_all_running_functions_in_session_with_function_name(self, gname, message, send_now=False):
-    def send_to_all_running_functions_in_session(self, message, send_now=False):
-    def send_to_running_function_in_session_with_alias(self, alias, message, send_now=False):
-    
-    def createMap(self, mapname, is_private=False, is_queued=False):
-    def putMapEntry(self, mapname, key, value, is_private=False, is_queued=False):
-    def getMapEntry(self, mapname, key, is_private=False):
-    def deleteMapEntry(self, mapname, key, is_private=False, is_queued=False):
-    def containsMapKey(self, mapname, key, is_private=False):
-    def getMapKeys(self, mapname, is_private=False):
-    def clearMap(self, mapname, is_private=False, is_queued=False):
-    def deleteMap(self, mapname, is_private=False, is_queued=False):
-    def retrieveMap(self, mapname, is_private=False):
-    def getMapNames(self, start_index=0, end_index=2147483647, is_private=False):    
-
-    def createSet(self, setname, is_private=False, is_queued=False):
-    def addSetEntry(self, setname, item, is_private=False, is_queued=False):
-    def removeSetEntry(self, setname, item, is_private=False, is_queued=False):
-    def containsSetItem(self, setname, item, is_private=False):
-    def retrieveSet(self, setname, is_private=False):
-    def clearSet(self, setname, is_private=False, is_queued=False):
-    def deleteSet(self, setname, is_private=False, is_queued=False):
-    def getSetNames(self, start_index=0, end_index=2147483647, is_private=False):
-
-    def createCounter(self, countername, count, is_private=False, is_queued=False):
-    def getCounterValue(self, countername, is_private=False):
-    def incrementCounter(self, countername, increment, is_private=False, is_queued=False):
-    def decrementCounter(self, countername, decrement, is_private=False, is_queued=False):
-    def deleteCounter(self, countername, is_private=False, is_queued=False):
-    def getCounterNames(self, start_index=0, end_index=2147483647, is_private=False):
-
-    def update_metadata(self, metadata_name, metadata_value, is_privileged_metadata=False):
-
-    def get_transient_data_output(self, is_private=False):
-    def get_data_to_be_deleted(self, is_private=False):
-
-    ===================
-    
+    Not needed and thus not implemented because the management service is written in Python.
     def get_privileged_data_layer_client(self, suid=None, sid=None, init_tables=False, drop_keyspace=False):
     
     */
@@ -519,7 +441,7 @@ public class MicroFunctionsAPI
 	 * The optional count argument specifies how many messages should be retrieved.
 	 * If there are fewer messages than the requested count, all messages will be retrieved and returned.
 	 * 
-	 * @param count the number of messages to retrieve; default: 1
+	 * @param count the number of messages to retrieve
 	 * 
 	 * @return list of messages that were sent to the session function instance.
 	 * 
@@ -533,10 +455,57 @@ public class MicroFunctionsAPI
 	 */
 	public List<String> getSessionUpdateMessages(int count)
 	{
+	    return this.getSessionUpdateMessages(count, false);
+	}
+
+	/**
+	 * Retrieve the list of update messages sent to a session function instance.
+	 * The list contains messages that were sent and delivered since the last time the session function instance has retrieved it.
+	 * These messages are retrieved via a local queue. There can be more than one message.
+	 * 
+	 * @param block whether it should block until a message has been received.
+	 * 
+	 * @return list of messages that were sent to the session function instance.
+	 * 
+	 * <b>Warns:</b>
+	 * When the calling function is not a session function.
+	 * 
+	 * <b>Note:</b>
+	 * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 * 
+	 */
+	public List<String> getSessionUpdateMessages(boolean block)
+	{
+	    return this.getSessionUpdateMessages(1, block);
+	}
+	
+	/**
+	 * Retrieve the list of update messages sent to a session function instance.
+	 * The list contains messages that were sent and delivered since the last time the session function instance has retrieved it.
+	 * These messages are retrieved via a local queue. There can be more than one message.
+	 * The optional count argument specifies how many messages should be retrieved.
+	 * If there are fewer messages than the requested count, all messages will be retrieved and returned.
+	 * 
+	 * @param count the number of messages to retrieve
+     * @param block whether it should block until count number of messages have been received
+	 * 
+	 * @return list of messages that were sent to the session function instance.
+	 * 
+	 * <b>Warns:</b>
+	 * When the calling function is not a session function.
+	 * 
+	 * <b>Note:</b>
+	 * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 * 
+	 */
+	public List<String> getSessionUpdateMessages(int count, boolean block)
+	{
 	    List<String> msglist = null;
 	    try
 	    {
-	        msglist = this.mfnapiClient.get_session_update_messages(count);
+	        msglist = this.mfnapiClient.get_session_update_messages(count, block);
 	    }
 	    catch (Exception e)
 	    {
@@ -544,7 +513,7 @@ public class MicroFunctionsAPI
 	    }
 	    return msglist;
 	}
-	
+
 	public void createCounter(String countername, long count)
 	{
 	    this.createCounter(countername, count, false, false);

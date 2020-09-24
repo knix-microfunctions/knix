@@ -28,7 +28,7 @@ service MicroFunctionsAPIService {
     void send_to_all_running_functions_in_session(1: string message, 2: bool send_now),  //message
     void send_to_running_function_in_session_with_alias(1: string als, 2: string message, 3: bool send_now),  // message
 
-    list<string> get_session_update_messages(1: i32 count),
+    list<string> get_session_update_messages(1: i32 count, 2: bool blck),
 
     void set_session_alias(1: string als),
     void unset_session_alias(),

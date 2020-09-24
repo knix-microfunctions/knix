@@ -20,6 +20,7 @@ import time
 import imp
 import json
 import logging
+import random
 import socket
 import subprocess
 import shlex
@@ -450,7 +451,7 @@ class FunctionWorker:
                     elif self._function_runtime == "java":
                         exec_arguments = {}
 
-                        api_uds = "/tmp/" + self._function_state_name + "_" + key + ".uds"
+                        api_uds = "/tmp/" + self._function_state_name + "_" + key + "_" + str(time.time() * 1000.0) + "_" + str(random.uniform(0, 100000)) + ".uds"
 
                         exec_arguments["api_uds"] = api_uds
                         exec_arguments["thriftAPIService"] = self._api_thrift.MicroFunctionsAPIService

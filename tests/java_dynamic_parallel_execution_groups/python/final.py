@@ -12,24 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import json
-import unittest
-import sys
+def handle(event, context):
 
-sys.path.append("../")
-from mfn_test_utils import MFNTest
+    print("Executing regular function (final.py) with input: " + str(event)[:100] + " ...")
 
-class AsyncronousExecutionTest(unittest.TestCase):
+    return event
 
-    #@unittest.skip("")
-    def test_asynchronous_execution(self):
-        test_tuple_list=[]
-        inp0 = "echo"
-        res0 = "echo after"
-
-        test_tuple_list.append((json.dumps(inp0), json.dumps(res0)))
-
-        test = MFNTest(test_name='echo_asynchronous', workflow_filename='echo_asynchronous.json')
-        test.exec_tests(test_tuple_list, async_=True)
-
-        #test.plot_latency_breakdown(20)

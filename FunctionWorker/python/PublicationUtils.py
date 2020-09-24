@@ -117,6 +117,13 @@ class PublicationUtils():
 
         return val
 
+    def convert_python_object_to_api_message(self, message):
+        val = message
+        if self._function_runtime == "java":
+            val = json.dumps(message)
+
+        return val
+
     def is_valid_value(self, value):
         if not (py3utils.is_string(value) \
             or isinstance(value, (dict, list, int, float)) \

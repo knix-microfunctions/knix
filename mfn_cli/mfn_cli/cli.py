@@ -21,6 +21,7 @@ import logging
 import os
 import stat
 import sys
+from requests import ConnectionError
 import tempfile
 import traceback
 from . import __version__
@@ -135,9 +136,12 @@ def version(config):
     print("mfn_cli "+__version__)
     from mfn_sdk import __version__ as sdkversion
     print("mfn_sdk "+sdkversion)
-    client = config.get_client()
     try:
+        client = config.get_client()
         print("management service "+client.version())
+    except ConnectionError as e:
+        print("can't connect to management service")
+        log.error(e)
     except Exception as e:
         log.error(e)
 
