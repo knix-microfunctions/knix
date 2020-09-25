@@ -24,6 +24,7 @@ class ContextTest(unittest.TestCase):
     """ Example ASL context object test
 
     """
+    #@unittest.skip("")
     def test_task_context(self):
         """  testing task chain """
 
@@ -32,8 +33,9 @@ class ContextTest(unittest.TestCase):
     "context.function_name": "test_context",
     "context.function_version": 1,
     "context.log_stream_name": "2020/08/10[$LATEST]test_context",
-    "context.log_groupm_name": "/knix/mfn/test_context",
+    "context.log_group_name": "/knix/mfn/test_context",
     "context.aws_request_id": "4f7abd01dae811ea92500242ac110005",
+    "context.invoked_function_arn": "test_context:1",
     "context.memory_limit_in_mb": None,
     "context.identity.cognito_identity_id": "cognito_identity_id",
     "context.identity.cognito_identity_pool_id": "cognito_identity_pool_id",
@@ -51,6 +53,27 @@ class ContextTest(unittest.TestCase):
 
         testtuplelist =[(inp0, res0)]
 
-        test = MFNTest(test_name = "Context Object Test")
+        test = MFNTest(test_name = "Context Object Test", workflow_filename="workflow_context_test.json")
         test.exec_tests(testtuplelist, check_just_keys=True)
 
+    #@unittest.skip("")
+    def test_task_context_java(self):
+        inp0 = '"abc"'
+        res0 = {
+            "context.function_name": "test_context",
+            "context.function_version": 1,
+            "context.log_stream_name": "2020/08/10[$LATEST]test_context",
+            "context.log_group_name": "/knix/mfn/test_context",
+            "context.aws_request_id": "4f7abd01dae811ea92500242ac110005",
+            "context.invoked_function_arn": "test_context:1",
+            "context.memory_limit_in_mb": None,
+            "context.identity": "context.identity",
+            "context.client_context.client": "<MicroFunctionsAPI.MicroFunctionsAPI.__init__.<locals>.LambdaClientContextMobileClient object at 0x7fb2a0fc7400>",
+            "context.get_remaining_time_in_millis": 300000
+        }
+
+
+        testtuplelist =[(inp0, res0)]
+
+        test = MFNTest(test_name="Java Context Test", workflow_filename="workflow_context_test_java.json")
+        test.exec_tests(testtuplelist, check_just_keys=True)

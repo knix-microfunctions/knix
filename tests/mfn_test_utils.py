@@ -411,7 +411,7 @@ class MFNTest():
                         if set(rn.keys()) == set(cur_res.keys()):
                              current_test_passed = True
                         else:
-                            raise Exception("Error: unsupported workflow result type")
+                            raise Exception("Error: mismatch in result keys: " + str(rn) + " and " + str(cur_res))
 
                     else:
                         if rn == cur_res:

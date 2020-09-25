@@ -22,16 +22,18 @@ def handle(event, context):
     c['context.function_name'] = context.function_name
     print (context.function_version)
     c['context.function_version'] = context.function_version
-    
+
     print (context.log_stream_name)
     c['context.log_stream_name'] = context.log_stream_name
     print (context.log_group_name)
-    c['context.log_groupm_name'] = context.log_group_name
+    c['context.log_group_name'] = context.log_group_name
     print (context.aws_request_id)
     c['context.aws_request_id'] = context.aws_request_id
+    print (context.invoked_function_arn)
+    c['context.invoked_function_arn'] = context.invoked_function_arn
     print (context.memory_limit_in_mb)
     c['context.memory_limit_in_mb'] = context.memory_limit_in_mb
-    
+
 
     #print (str(context.identity))
     #c['context.identity'] = str(context.identity)
