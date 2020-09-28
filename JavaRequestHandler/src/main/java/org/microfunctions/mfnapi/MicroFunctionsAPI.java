@@ -1159,6 +1159,40 @@ public class MicroFunctionsAPI
         }
     }
 
+    public List<String> getKeys()
+    {
+        return this.getKeys(0, 2147483647, false);
+    }
+    
+    public List<String> getKeys(boolean isPrivate)
+    {
+        return this.getKeys(0, 2147483647, isPrivate);
+    }
+    
+    public List<String> getKeys(int startIndex)
+    {
+        return this.getKeys(startIndex, 2147483647, false);
+    }
+    
+    public List<String> getKeys(int startIndex, int endIndex)
+    {
+        return this.getKeys(startIndex, endIndex, false);
+    }
+    
+    public List<String> getKeys(int startIndex, int endIndex, boolean isPrivate)
+    {
+        List<String> names = null;
+        try
+        {
+            names = this.mfnapiClient.getKeys(startIndex, endIndex, isPrivate);
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("Error in API call (getKeys): " + e);
+        }
+        return names;
+    }
+
     public void createMap(String mapname)
     {
         this.createMap(mapname, false, false);

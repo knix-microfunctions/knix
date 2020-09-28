@@ -567,14 +567,21 @@ class DataLayerClient:
         return status
 
     def listKeys(self, start, count, tableName=None):
-        listkeys_response = []
+        keys_response = []
         table = self.tablename if tableName is None else tableName
 
         for retry in range(MAX_RETRIES):
             try:
                 listkeys_response = self.datalayer.selectKeys(self.keyspace, table, start, count, self.locality)
-                if listkeys_response == None or type(listkeys_response) != type([]):
-                    listkeys_response = []
+                if listkeys_response is not None or isinstance(listkeys_response, list):
+                    for key in listkeys_response:
+                        if key.startswith("grain_requirements_") or\
+                            key.startswith("grain_source_") or\
+                            key.startswith("workflow_json_") or\
+                            key.endswith("_metadata"):
+                            continue
+                        else:
+                            keys_response.append(key)
                 break
             except TTransport.TTransportException as exc:
                 print("[DataLayerClient] Reconnecting because of failed selectKeys: " + str(exc))
@@ -583,7 +590,7 @@ class DataLayerClient:
                 print("[DataLayerClient] failed selectKeys: " + str(exc))
                 raise
 
-        return listkeys_response
+        return keys_response
 
     def shutdown(self):
         try:

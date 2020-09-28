@@ -955,6 +955,37 @@ class MicroFunctionsAPI:
             errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def getKeys(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Args:
+            start_index (int): the starting index of the keys to be retrieved; default: 0
+            end_index (int): the end index of the keys to be retrieved; default: 2147483647
+            is_private (boolean): whether the keys should be retrieved from the private data layer of the workflow; default: False
+
+        Returns:
+            List of keys (list)
+
+        Raises:
+            MicroFunctionsDataLayerException: when start_index < 0 and/or end_index > 2147483647.
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for CRDTs).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        if start_index >= 0 and end_index <= 2147483647 and isinstance(is_private, bool):
+            return self._data_layer_operator.getKeys(start_index, end_index, is_private)
+        else:
+            errmsg = "MicroFunctionsAPI.getKeys(start_index, end_index) accepts indices between 0 and 2147483647 (defaults)."
+            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            raise MicroFunctionsDataLayerException(errmsg)
+
+    def listKeys(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getKeys(start_index, end_index, is_private)
+        '''
+        return self.getKeys(start_index, end_index, is_private)
+
     # map operations sanity checking
     def createMap(self, mapname, is_private=False, is_queued=False):
         # _XXX_: the backend at the data layer does not create
@@ -1219,6 +1250,12 @@ class MicroFunctionsAPI:
             errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def listMaps(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getMapNames(start_index, end_index, is_private)
+        '''
+        return self.getMapNames(start_index, end_index, is_private)
+
     # set operations sanity checking
     def createSet(self, setname, is_private=False, is_queued=False):
         # _XXX_: the backend at the data layer does not create
@@ -1433,6 +1470,12 @@ class MicroFunctionsAPI:
             errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def listSets(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getSetNames(start_index, end_index, is_private)
+        '''
+        return self.getSetNames(start_index, end_index, is_private)
+
     # counter operations sanity checking
     def createCounter(self, countername, count, is_private=False, is_queued=False):
         '''
@@ -1588,6 +1631,12 @@ class MicroFunctionsAPI:
             errmsg = "MicroFunctionsAPI.getCounterNames(start_index, end_index) accepts indices between 0 and 2147483647 (defaults)."
             errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
+
+    def listCounters(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getCounterNames(start_index, end_index, is_private)
+        '''
+        return self.getCounterNames(start_index, end_index, is_private)
 
     def get_transient_data_output(self, is_private=False):
         '''
