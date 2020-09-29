@@ -132,8 +132,8 @@ def compile_resource_info_map(resource_names, uploaded_resources, email, sapi, d
                 resource_metadata = json.loads(resource_metadata)
                 if "runtime" in resource_metadata:
                     resource_info["runtime"] = resource_metadata["runtime"]
-                if "on_gpu" in resource_metadata:
-                    resource_info["on_gpu"] = True
+                #if "on_gpu" in resource_metadata:
+                #    resource_info["on_gpu"] = True
 
             num_chunks_str = dlc.get("grain_source_zip_num_chunks_" + resource_id)
             try:
@@ -302,17 +302,11 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
         kservice['spec']['template']['spec']['serviceAccountName'] = new_workflow_conf['mgmtserviceaccount']
 
-        # management container should not consume a CPU
-        #kservice['spec']['template']['spec']['containers'][0]['image'] = new_workflow_conf['image.Python']
-        #if ("nvidia.com/gpu" in kservice['spec']['template']['spec']['containers'][0]['resources']['limits'].keys()): 
-        # overwrite limits entry, generate new k/v pair
-        #print("RESOURCES: " + str(kservice['spec']['template']['spec']['containers'][0]['resources'])) # just testin...
-        #print("RESOURCES: " + str(kservice['spec']['template']['spec']['containers'][0]['resources']['limits'])) # just testin...
+        # management container should not consume a CPU and use standard sandbox image
         if (labels['workflowid'] == "Management"):
             kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = "0"
             kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = "0"
-        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits'] = {{"cpu": 1, "memory": "2Gi"}, "requests": {"cpu": 1, "memory": "1Gi"}}       
-        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = 0 
+            kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox"  
 
         if 'HTTP_GATEWAYPORT' in new_workflow_conf:
             env.append({'name': 'HTTP_GATEWAYPORT', 'value': new_workflow_conf['HTTP_GATEWAYPORT']})
@@ -485,9 +479,9 @@ def handle(value, sapi):
             # _XXX_: due to the queue service still being in java in the sandbox
 
             sandbox_image_name = "microfn/sandbox" # default value
-            if "on_gpu" in resource_info_map.keys(): # sandbox_gpu image should be used for ths workflow
-                if resource_info_map["on_gpu"] == True:
-                    sandbox_image_name = "microfn/sandbox_gpu"
+            #if "on_gpu" in resource_info_map.keys(): # sandbox_gpu image should be used for ths workflow
+            #    if resource_info_map["on_gpu"] == True:
+            #        sandbox_image_name = "microfn/sandbox_gpu"
                     
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 sandbox_image_name = "microfn/sandbox_java"

@@ -219,6 +219,10 @@ class MFNTest():
             print("ERROR: invalid workflow description.")
             assert False
 
+        #resource_info_map[resource_name]['on_gpu'] = True
+        
+        #print("resource_info_map: " + str(resource_info_map))
+
         return resource_info_map
 
     def _delete_resource_if_existing(self, existing_resources, resource_name):

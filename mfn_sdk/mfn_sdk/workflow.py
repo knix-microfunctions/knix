@@ -279,6 +279,8 @@ class Workflow(object):
 
         # we are already deployed and have the endpoints stored in self._endpoints
         url = random.choice(self._endpoints)
+        print(url)
+        url=url+":30336"
         try:
             #postdata = {}
             #postdata["value"] = json.dumps(data)

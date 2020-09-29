@@ -45,8 +45,8 @@ manager:
         cpu: 100m
         memory: 1Gi
   sandbox:
-    imagePathPython: "/microfn/sandbox"
-    imagePathPythonGPU: "/microfn/sandbox_gpu"
+    #imagePathPython: "/microfn/sandbox"
+    imagePathPython: "/microfn/sandbox_gpu"
     imagePathJava: "/microfn/sandbox_java"
     imageTag: "latest"
     imagePullPolicy: "Always"
