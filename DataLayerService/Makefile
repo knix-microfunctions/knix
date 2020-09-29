@@ -47,7 +47,7 @@ PythonClient/data_layer: ../build_env.mk \
 .m2/settings-docker.xml:
 	if [ ! -e .m2 ]; then mkdir .m2; fi
 	cp settings-docker.xml.sample $@.tmp; \
-	sed "s#<localRepository>[^<]\+</localRepository>#<localRepository>$(CURDIR)/.m2/repository</localRepository>#" -i $@.tmp; \
+	sed "s#<localRepository>[^<]\+</localRepository>#<localRepository>/usr/src/datalayer/.m2/repository</localRepository>#" -i $@.tmp; \
 	noproxyhosts=$$(echo $$no_proxy|sed 's/,/|/g'); \
 	http_proxy=$${http_proxy:-$${HTTP_PROXY}}; \
 	https_proxy=$${https_proxy:-$${HTTPS_PROXY}}; \
@@ -67,8 +67,7 @@ target/datalayerservice.jar: $(JAVA_SOURCES) \
 		.m2/settings-docker.xml
 	if [ ! -e .m2/repository ]; then mkdir -p .m2/repository; fi
 	docker run --rm -i --name datalayer-maven \
-		--user $(UID):$(GID) \
-		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
+		-e HOME=/usr/src/datalayer -v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
 		maven:3.6.1-jdk-8 \
 		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/datalayer/.m2/settings-docker.xml package
 
