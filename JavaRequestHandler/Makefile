@@ -43,10 +43,11 @@ src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: ../build_
 		bash -c 'thrift --gen java -out ./src/main/java/ ./MicroFunctionsAPI.thrift'
 	rm ./MicroFunctionsAPI.thrift
 
-# In case the user doesn't have maven configurations in the home directory, we need to create it
-~/.m2/settings-docker.xml: settings-docker.xml.sample
-	if [ ! -e ~/.m2 ]; then mkdir ~/.m2; fi
+# Create maven configuration and repo
+.m2/settings-docker.xml:
+	if [ ! -e .m2 ]; then mkdir .m2; fi
 	cp settings-docker.xml.sample $@.tmp; \
+	sed "s#<localRepository>[^<]\+</localRepository>#<localRepository>$(CURDIR)/.m2/repository</localRepository>#" -i $@.tmp; \
 	noproxyhosts=$$(echo $$no_proxy|sed 's/,/|/g'); \
 	http_proxy=$${http_proxy:-$${HTTP_PROXY}}; \
 	https_proxy=$${https_proxy:-$${HTTPS_PROXY}}; \
@@ -63,26 +64,24 @@ JAVA_SOURCES=$(shell find src/ -type f|grep -v src/main/java/org/microfunctions/
 GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 target/javaworker.jar: $(JAVA_SOURCES) \
 		src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java \
-		~/.m2/settings-docker.xml
-	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
+		.m2/settings-docker.xml
+	if [ ! -e .m2/repository ]; then mkdir -p .m2/repository; fi
 	docker run --rm -i --name javaworker \
 	--user $(UID):$(GID) \
-	-v ~/.m2:/usr/share/maven/ref \
 	-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
 	maven:3.6.1-jdk-8 \
-	mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e package; 
+	mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/javaworker/.m2/settings-docker.xml -e package; 
 
 target/site/apidocs/index.html: $(JAVA_SOURCES) \
 		src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java \
 		target/javaworker.jar \
 		mfnapi.jar \
-		~/.m2/settings-docker.xml
+		.m2/settings-docker.xml
 	docker run --rm -i --name javaworker \
 		--user $(UID):$(GID) \
-		-v ~/.m2:/usr/share/maven/ref \
 		-v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
 		maven:3.6.1-jdk-8 \
-		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml -e javadoc:javadoc;
+		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/javaworker/.m2/settings-docker.xml -e javadoc:javadoc;
 
 clean:
 	rm -rf target/
