@@ -43,7 +43,7 @@ def delete_single_workflow(email, wid, sapi):
     # 1. workflow private keyspace
     # 2. mfn metadata store keyspace
     # just drop the keyspace
-    dlc = sapi.get_privileged_data_layer_client(sid=wid, drop_keyspace=True)
+    dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=wid, drop_keyspace=True)
     dlc.shutdown()
 
     # TODO: local data layer entries for each workflow
@@ -159,7 +159,7 @@ def handle(value, sapi):
         else: raise Exception("Invalid email.")
 
         success = False
-        
+
         storage_userid = data["storage_userid"]
 
         delete_workflows(email, sapi)

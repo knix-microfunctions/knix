@@ -23,6 +23,14 @@
   /** @ngInject */
   function StorageTableCtrl($scope, $http, $cookies, $filter, editableOptions, editableThemes, $uibModal, baProgressModal, toastr, sharedProperties, sharedData) {
 
+    $scope.storageLocations = { };
+    
+    $scope.storageLocations = [
+      { name: 'General Storage',  realm: 'Global', id: '' }
+    ];
+
+    $scope.storageLocations.selected = { name: "General Storage", realm: "Global"};
+    
     $scope.itemsByPage=10;
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -32,7 +40,77 @@
     var token = $cookies.get('token');
     var email = $cookies.get('email');
     var urlPath = sharedProperties.getUrlPath();
+    var storageLoc = sharedProperties.getStorageLocation();
+    
+    $scope.workflows = sharedData.getWorkflows();
 
+    if (!$scope.workflows) {
+      getWorkflows();
+    } else {
+        for (var i = 0; i < $scope.workflows.length; i++)
+        {
+            $scope.storageLocations.push({name : $scope.workflows[i].name, realm : "Private Workflow Storage", id : $scope.workflows[i].id});
+            if ($scope.workflows[i].id == storageLoc) {
+              $scope.storageLocations.selected = { name: $scope.workflows[i].name, realm: "Private Workflow Storage"};
+            }
+        }
+    }
+
+
+    function getWorkflows() {
+
+      var req = {
+        method: 'POST',
+        url: urlPath,
+        headers: {
+             'Content-Type': 'application/json'
+        },
+        data:   JSON.stringify({ "action" : "getWorkflows", "data" : { "user" : { "token" : token } } })
+      }
+
+      $http(req).then(function successCallback(response) {
+
+          if (response.data.status=="success") {
+            
+            $scope.workflows = response.data.data.workflows;
+            sharedData.setWorkflows(response.data.data.workflows);
+            for (var i = 0; i < $scope.workflows.length; i++)
+            {
+                $scope.storageLocations.push({name : $scope.workflows[i].name, realm : "Private Workflow Storage", id : $scope.workflows[i].id});
+                if ($scope.workflows[i].id == storageLoc) {
+                  $scope.storageLocations.selected = { name: $scope.workflows[i].name, realm: "Private Workflow Storage"};
+                }
+            }
+          } else {
+            console.log("Failure status returned by getWorkflows");
+            console.log("Message:" + response.data.data.message);
+            $scope.errorMessage = response.data.data.message;
+            $uibModal.open({
+              animation: true,
+              scope: $scope,
+              templateUrl: 'app/pages/workflows/modals/errorModal.html',
+              size: 'md',
+            });
+          }
+      }, function errorCallback(response) {
+          console.log("Error occurred during getWorkflows");
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+
+      });
+    }
+
+    
     //$scope.storageObjects = sharedData.getStorageObjects();
     if (!$scope.storageObjects) {
       $scope.storageObjects = [ ];
@@ -54,15 +132,21 @@
 
     };
 
-    function getStorageObjectsList() {
+    $scope.onSelected = function (selectedItem) {
+      storageLoc = selectedItem.id;
+      sharedProperties.setStorageLocation(storageLoc);
+      getStorageObjectsList();
+    }
 
+    function getStorageObjectsList() {
+      
       var req = {
          method: 'POST',
          url: urlPath,
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "listkeys", "start": 0, "count": 2000} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "listkeys", "start": 0, "count": 2000, "workflowid" :  storageLoc} } })
        }
 
       $http(req).then(function successCallback(response) {
@@ -134,7 +218,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": key} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": key, "workflowid" :  storageLoc} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -225,7 +309,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "deletedata", "key": $scope.storageObjects[index].key} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "deletedata", "key": $scope.storageObjects[index].key, "workflowid" :  storageLoc} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -310,7 +394,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": storageObject.key, "value": ""} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": storageObject.key, "value": "", "workflowid" :  storageLoc} } })
        }
 
        $http(req).then(function successCallback(response) {

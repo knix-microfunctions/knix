@@ -39,12 +39,18 @@ def handle(value, sapi):
         }
         '''
         verified, message = verifyData(data)
-        if verified == False:
+        if not verified:
             raise Exception("Invalid data provided. " + message)
 
         storage = data['storage']
         storage_userid = data["storage_userid"]
-        dlc = sapi.get_privileged_data_layer_client(storage_userid)
+
+        dlc = None
+
+        if "workflowid" in storage and storage["workflowid"] is not None and storage["workflowid"] != "":
+            dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=storage["workflowid"])
+        else:
+            dlc = sapi.get_privileged_data_layer_client(storage_userid)
 
         success, message, response_data = handleStorageAction(storage, dlc)
 
@@ -52,7 +58,7 @@ def handle(value, sapi):
         success = False
         message = "Exception: " + str(e)
 
-    if dlc != None:
+    if dlc is not None:
         dlc.shutdown()
 
     if success:
@@ -81,11 +87,12 @@ def handle(value, sapi):
 def handleStorageAction(storage, dlc):
     '''
     "storage": {
+        "workflowid": <workflowid> OR non-existing (i.e., user-level storage)
         "action": "getdata",  OR  "deletedata",  OR  "putdata",  OR  "listkeys",  <case insensitive>
-        "key": "keyname",              (for getdata, deletedata, and putdata)
-        "value": "stringdata",         (for putdata)
-        "start": 1,                    (int, for listkeys)
-        "count": 500,                  (int, for listkeys)
+        "key": "keyname",               (for getdata, deletedata, and putdata)
+        "value": "stringdata",          (for putdata)
+        "start": 1,                     (int, for listkeys)
+        "count": 2000,                  (int, for listkeys)
     }
     '''
 

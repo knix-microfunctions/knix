@@ -30,7 +30,7 @@ $(PYTHON_DATALAYER): ../build_env.mk \
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift'
 
 doc/MicroFunctionsAPI.html: $(PYTHON_DATALAYER)
-	docker run --user $(UID):$(GID) --rm -it \
+	docker run --user $(UID):$(GID) --rm -i \
 		--name mfnapi_doc_gen \
 		-v $(CURDIR):/opt/mfnapi \
 		-w /opt/mfnapi \

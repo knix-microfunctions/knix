@@ -26,17 +26,19 @@ build_thrift:
 
 src/main/java/org/microfunctions/queue/local/LocalQueueService.java: ../build_env.mk \
 	thrift/LocalQueueService.thrift
-	docker run --rm -it --name queue-thrift \
+	docker run --rm -i --name queue-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/LocalQueueService.thrift'
 	touch src/main/java/org/microfunctions/queue/local/LocalQueueService.java
 
-# In case the user doesn't have maven configurations in the home directory, we need to create it
-~/.m2/settings-docker.xml: settings-docker.xml.sample
-	if [ ! -e ~/.m2 ]; then mkdir ~/.m2; fi
+# Always create maven configuration and repo
+.PHONY: .m2/settings-docker.xml
+.m2/settings-docker.xml:
+	if [ ! -e .m2 ]; then mkdir .m2; fi
 	cp settings-docker.xml.sample $@.tmp; \
+	sed "s#<localRepository>[^<]\+</localRepository>#<localRepository>/usr/src/queue/.m2/repository</localRepository>#" -i $@.tmp; \
 	noproxyhosts=$$(echo $$no_proxy|sed 's/,/|/g'); \
 	http_proxy=$${http_proxy:-$${HTTP_PROXY}}; \
 	https_proxy=$${https_proxy:-$${HTTPS_PROXY}}; \
@@ -54,14 +56,13 @@ GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 target/queueservice.jar: $(JAVA_SOURCES) \
 		src/main/java/org/microfunctions/queue/local/LocalQueueService.java \
 		thrift/LocalQueueService.thrift \
-		~/.m2/settings-docker.xml
-	if [ ! -e ~/.m2/repository ]; then mkdir -p ~/.m2/repository; fi
-	docker run --rm -it --name queue-maven \
+		.m2/settings-docker.xml
+	if [ ! -e .m2/repository ]; then mkdir -p .m2/repository; fi
+	docker run --rm -i --name queue-maven \
 		--user $(UID):$(GID) \
-		-v ~/.m2:/usr/share/maven/ref \
-		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \
+		-e HOME=/usr/src/queue -v $(CURDIR):/usr/src/queue -w /usr/src/queue \
 		maven:3.6.1-jdk-8 \
-		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/share/maven/ref/settings-docker.xml package
+		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/queue/.m2/settings-docker.xml package
 
 clean:
 	rm -rf ./target

@@ -21,6 +21,7 @@
     var email = $cookies.get('email');
     var uploadStorageObjectModalVisible = true;
     var urlPath = sharedProperties.getUrlPath();
+    var storageLoc = sharedProperties.getStorageLocation();
 
 
      $scope.file_changed = function(element) {
@@ -67,7 +68,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": sharedProperties.getObjectKey() } } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": sharedProperties.getObjectKey(), "workflowid" :  storageLoc } } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -151,7 +152,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "workflowid" :  storageLoc} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -224,7 +225,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "workflowid" :  storageLoc} } })
        }
 
        $http(req).then(function successCallback(response) {

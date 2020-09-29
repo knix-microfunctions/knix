@@ -109,7 +109,7 @@ push: image image_java
 ##############################
 ## Testing
 test: image
-	docker run -it --rm --name frontend \
+	docker run -i --rm --name frontend \
 		--env MFN_DATALAYER=192.168.137.111:4998 \
 		--env MFN_HOSTNAME=$(shell hostname) \
 		--env MFN_ELASTICSEARCH_CONNECT=$(shell hostname):9200 \
