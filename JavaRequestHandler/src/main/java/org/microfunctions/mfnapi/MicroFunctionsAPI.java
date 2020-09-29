@@ -87,10 +87,10 @@ public class MicroFunctionsAPI
 	{
 		this.APISocketFilename = APISocketFilename;
 		this.hasError = false;
-		
+
         LOGGER.debug("API server at: " + this.APISocketFilename);
         final File APISocketFile = new File(this.APISocketFilename);
-        
+
         try
         {
             this.APISocket = AFUNIXSocket.newInstance();
@@ -151,7 +151,7 @@ public class MicroFunctionsAPI
             }
         }
         
-        // TODO: obtain the context object properties
+        // obtain the context object properties
         if (!this.hasError)
         {
         	LOGGER.debug("Obtaining the context object properties...");
@@ -159,9 +159,7 @@ public class MicroFunctionsAPI
         	{
         		String objectPropertiesStr = this.mfnapiClient.get_context_object_properties();
         		JSONObject jobj = new JSONObject(objectPropertiesStr);
-        		// TODO: parse the object and initialize the parameters in Java,
-        		// and generate getters() according to 
-        		// https://docs.aws.amazon.com/en_us/lambda/latest/dg/java-context.html
+        		// parse the object and initialize the parameters in Java
         		this.initContextObjectProperties(jobj);
         	}
         	catch (Exception te)
