@@ -33,8 +33,8 @@ src/main/java/org/microfunctions/queue/local/LocalQueueService.java: ../build_en
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/LocalQueueService.thrift'
 	touch src/main/java/org/microfunctions/queue/local/LocalQueueService.java
 
+# Always create maven configuration and repo
 .PHONY: .m2/settings-docker.xml
-# Create maven configuration and repo
 .m2/settings-docker.xml:
 	if [ ! -e .m2 ]; then mkdir .m2; fi
 	cp settings-docker.xml.sample $@.tmp; \

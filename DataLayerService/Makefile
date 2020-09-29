@@ -43,7 +43,8 @@ PythonClient/data_layer: ../build_env.mk \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen py -out ./PythonClient ./thrift/DataLayerMessage.thrift; thrift --gen py -out ./PythonClient ./thrift/DataLayerService.thrift'
 
-# Create maven configuration and repo
+# Always create maven configuration and repo
+.PHONY: .m2/settings-docker.xml
 .m2/settings-docker.xml:
 	if [ ! -e .m2 ]; then mkdir .m2; fi
 	cp settings-docker.xml.sample $@.tmp; \

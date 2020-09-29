@@ -43,7 +43,8 @@ src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: ../build_
 		bash -c 'thrift --gen java -out ./src/main/java/ ./MicroFunctionsAPI.thrift'
 	rm ./MicroFunctionsAPI.thrift
 
-# Create maven configuration and repo
+# Always create maven configuration and repo
+.PHONY: .m2/settings-docker.xml
 .m2/settings-docker.xml:
 	if [ ! -e .m2 ]; then mkdir .m2; fi
 	cp settings-docker.xml.sample $@.tmp; \
