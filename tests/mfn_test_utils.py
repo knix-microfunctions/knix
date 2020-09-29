@@ -43,7 +43,7 @@ mfntestpassed = MfnAppTextFormat.STYLE_BOLD + MfnAppTextFormat.COLOR_GREEN + 'PA
 mfntestfailed = MfnAppTextFormat.STYLE_BOLD + MfnAppTextFormat.COLOR_RED + 'FAILED' + MfnAppTextFormat.END + MfnAppTextFormat.END
 
 class MFNTest():
-    def __init__(self, test_name=None, timeout=None, workflow_filename=None, new_user=False, delete_user=False):
+    def __init__(self, test_name=None, timeout=None, workflow_filename=None, new_user=False, delete_user=False, num_gpu=None):
 
         self._settings = self._get_settings()
 
@@ -83,6 +83,9 @@ class MFNTest():
 
         if timeout is not None:
             self._settings["timeout"] = timeout
+
+        if num_gpu is not None:
+            self._settings["num_gpu"] = num_gpu
 
         self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
 
@@ -190,6 +193,9 @@ class MFNTest():
                         resource_info["resource_req_filename"] = "requirements/" + resource_ref + "_requirements.txt"
                         resource_info["resource_env_filename"] = "environment_variables/" + resource_ref + "_environment_variables.txt"
                         resource_info_map[resource_ref] = resource_info
+                        resource_info_map[resource_ref]['num_gpu'] = self._settings['num_gpu']
+                        print("resource_info_map: " + json.dumps(resource_info_map))
+
 
         elif "States" in workflow_description:
             states = workflow_description["States"]
@@ -203,6 +209,9 @@ class MFNTest():
                         resource_info["resource_req_filename"] = "requirements/" + resource_name + "_requirements.txt"
                         resource_info["resource_env_filename"] = "environment_variables/" + resource_name + "_environment_variables.txt"
                         resource_info_map[resource_name] = resource_info
+                        resource_info_map[resource_name]['num_gpu'] = self._settings['num_gpu']
+                        print("resource_info_map: " + json.dumps(resource_info_map))
+
 
                 if "Type" in state and state["Type"] == "Parallel":
                     branches = state['Branches']
@@ -218,10 +227,6 @@ class MFNTest():
         else:
             print("ERROR: invalid workflow description.")
             assert False
-
-        #resource_info_map[resource_name]['on_gpu'] = True
-        
-        #print("resource_info_map: " + str(resource_info_map))
 
         return resource_info_map
 
@@ -299,7 +304,7 @@ class MFNTest():
         try:
             wf = self._client.add_workflow(self._workflow_name)
             wf.json = json.dumps(self._workflow_description)
-            wf.deploy(self._settings["timeout"])
+            wf.deploy(self._settings["timeout"]) #, num_gpu=self._settings['num_gpu'])
             self._workflow = wf
             if self._workflow.status != "failed":
                 print("MFN workflow " + self._workflow_name + " deployed.")

@@ -127,7 +127,7 @@ class Workflow(object):
             self.client.action('uploadWorkflowJSON',{'workflow':{'id':self.id,'json':base64.b64encode(self._json.encode()).decode()}})
 
 
-    def deploy(self, timeout=None):
+    def deploy(self, timeout=None): #, num_gpu=None):
         """ deploy a workflow and optionally wait in linearly increasing multiples of 1000ms
         :timeout: By default returns after calling deploy on the workflow without waiting for it to be actually deployed.
             If timeout is set to a numeric <= 0, it waits indefinitely in intervals of 1000ms, 2000ms, 3000ms, ...
@@ -144,6 +144,10 @@ class Workflow(object):
             log.debug("deployment error: %s", self._deployment_error)
         else:
             self.client.action('deployWorkflow',{'workflow':{'id':self.id}})
+
+        #if num_gpu is not None:
+        #    print("NUM_GPU:" + str(num_gpu))
+
 
         # if timeout is None, do not wait but return immediately even if it's not yet deployed
         if timeout is None:

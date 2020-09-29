@@ -132,8 +132,9 @@ def compile_resource_info_map(resource_names, uploaded_resources, email, sapi, d
                 resource_metadata = json.loads(resource_metadata)
                 if "runtime" in resource_metadata:
                     resource_info["runtime"] = resource_metadata["runtime"]
-                #if "on_gpu" in resource_metadata:
-                #    resource_info["on_gpu"] = True
+                print("RESOURCE_INFO_ALL: " +str(resource_info))
+                #if "num_gpu" in resource_metadata:
+                #    print("RESOURCE_INFO: " + str(resource_info["num_gpu"]))
 
             num_chunks_str = dlc.get("grain_source_zip_num_chunks_" + resource_id)
             try:
@@ -296,12 +297,23 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     env.append({'name': 'WORKFLOWID', 'value': workflow_info["workflowId"]})
     env.append({'name': 'WORKFLOWNAME', 'value': workflow_info["workflowName"]})
 
+    """
+    if "num_gpu" in workflow_info.keys():
+        print("INSIDE K8S Deploy, num_gpu: " + str(workflow_info['num_gpu']))
+        num_gpu = int(workflow_info['num_gpu'])
+        # overwrite values from values.yaml for new workflows
+        kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(num_gpu)
+        kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(num_gpu)
+        kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
+        if num_gpu > 0:
+            kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
+    """ 
     # Special handling for the management container
     if management:
         kservice['spec']['template']['spec']['volumes'] = [{ 'name': 'new-workflow-conf', 'configMap': {'name': new_workflow_conf['configmap']}}]
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
         kservice['spec']['template']['spec']['serviceAccountName'] = new_workflow_conf['mgmtserviceaccount']
-
+        
         # management container should not consume a CPU and use standard sandbox image
         if (labels['workflowid'] == "Management"):
             kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = "0"
@@ -464,6 +476,13 @@ def handle(value, sapi):
                 runtime = "Java"
             else:
                 runtime = "Python"
+
+            if "num_gpu" in resource_info_map.keys():
+                print ("RESOURCE_INFO_MAP: " + str(resource_info_map))
+                workflow_info['num_gpu'] = resource_info_map['num_gpu']
+            else:
+                workflow_info['num_gpu'] = 0
+
             url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime)
             if url is not None and len(url) > 0:
                 status = "deploying"
