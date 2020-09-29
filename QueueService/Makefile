@@ -59,6 +59,7 @@ target/queueservice.jar: $(JAVA_SOURCES) \
 		.m2/settings-docker.xml
 	if [ ! -e .m2/repository ]; then mkdir -p .m2/repository; fi
 	docker run --rm -i --name queue-maven \
+		--user $(UID):$(GID) \
 		-e HOME=/usr/src/queue -v $(CURDIR):/usr/src/queue -w /usr/src/queue \
 		maven:3.6.1-jdk-8 \
 		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/queue/.m2/settings-docker.xml package

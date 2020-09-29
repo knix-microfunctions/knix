@@ -68,6 +68,7 @@ target/datalayerservice.jar: $(JAVA_SOURCES) \
 		.m2/settings-docker.xml
 	if [ ! -e .m2/repository ]; then mkdir -p .m2/repository; fi
 	docker run --rm -i --name datalayer-maven \
+		--user $(UID):$(GID) \
 		-e HOME=/usr/src/datalayer -v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
 		maven:3.6.1-jdk-8 \
 		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/datalayer/.m2/settings-docker.xml package
