@@ -120,7 +120,8 @@ class PublicationUtils():
     def convert_python_object_to_api_message(self, message):
         val = message
         if self._function_runtime == "java":
-            val = json.dumps(message)
+            if not isinstance(val, str):
+                val = json.dumps(message)
 
         return val
 
@@ -254,9 +255,6 @@ class PublicationUtils():
         so that this function instance can trigger other functions when it finishes.
         '''
         return self._dynamic_workflow
-
-    def send_message_to_running_function(self, trigger):
-        self.send_to_function_now("-1l", trigger, lqcpub=None)
 
     def append_trigger(self, trigger):
         trigger["value"] = self.encode_output(trigger["value"])

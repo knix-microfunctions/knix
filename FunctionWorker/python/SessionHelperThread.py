@@ -145,13 +145,13 @@ class SessionHelperThread(threading.Thread):
         # must be in milliseconds
         if "heartbeat_interval_ms" in heartbeat_params:
             self._heartbeat_interval = heartbeat_params["heartbeat_interval_ms"]
-            self._local_poll_timeout = self._heartbeat_interval
+            self._local_poll_timeout = self._heartbeat_interval / 2.0
             #self._logger.debug("[SessionHelperThread] New heartbeat interval: " + str(self._heartbeat_interval))
 
     def run(self):
         self._is_running = True
 
-        # initially, it is the heartbeat_interval
+        # initially, it is the heartbeat_interval / 2
         poll_timeout = self._local_poll_timeout
 
         if self._heartbeat_enabled:
@@ -332,16 +332,11 @@ class SessionHelperThread(threading.Thread):
             self._backup_data_layer_client.shutdown()
             self._backup_data_layer_client = None
 
+        # remove/unregister the topic
+        self._local_queue_client.removeTopic(self._local_topic_communication)
+
         self._local_queue_client.shutdown()
         self._local_queue_client = None
 
     def shutdown(self):
         self._is_running = False
-        # remove/unregister the topic here
-        # if done in _cleanup(), it may be the case that the parent process exits
-        # and we never get to execute that part in this thread
-        # need a new lqc, because if using the actual self._local_queue_client,
-        # it will corrupt the protocol stack, if it is still waiting on new messages
-        lqc = LocalQueueClient(connect=self._queue_service)
-        lqc.removeTopic(self._local_topic_communication)
-        lqc.shutdown()

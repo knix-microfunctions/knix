@@ -392,7 +392,7 @@ class MicroFunctionsAPI:
             Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
 
         '''
-        if not py3utils.is_string(alias) or alias == "":
+        if not py3utils.is_string(alias):
             raise MicroFunctionsSessionAPIException("Invalid session alias; must be a non-empty string.")
         elif alias == "":
             raise MicroFunctionsSessionAPIException("Session alias cannot be empty.")
@@ -438,7 +438,7 @@ class MicroFunctionsAPI:
             return self._session_utils.get_session_alias()
         else:
             self._logger.warning("Cannot get a session alias in a workflow with no session functions.")
-        return None
+        return ""
 
     def set_session_function_alias(self, alias, session_function_id=None):
         '''

@@ -436,6 +436,27 @@ public class MicroFunctionsAPI
 	 * Retrieve the list of update messages sent to a session function instance.
 	 * The list contains messages that were sent and delivered since the last time the session function instance has retrieved it.
 	 * These messages are retrieved via a local queue. There can be more than one message.
+	 * By default, it returns only one message and does not block until that message is available.
+	 * 
+	 * @return list of messages that were sent to the session function instance.
+	 * 
+	 * <b>Warns:</b>
+	 * When the calling function is not a session function.
+	 * 
+	 * <b>Note:</b>
+	 * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 * 
+	 */
+	public List<String> getSessionUpdateMessages()
+	{
+		return this.getSessionUpdateMessages(1, false);
+	}
+	
+	/**
+	 * Retrieve the list of update messages sent to a session function instance.
+	 * The list contains messages that were sent and delivered since the last time the session function instance has retrieved it.
+	 * These messages are retrieved via a local queue. There can be more than one message.
 	 * The optional count argument specifies how many messages should be retrieved.
 	 * If there are fewer messages than the requested count, all messages will be retrieved and returned.
 	 * 
@@ -503,7 +524,14 @@ public class MicroFunctionsAPI
 	    List<String> msglist = null;
 	    try
 	    {
-	        msglist = this.mfnapiClient.get_session_update_messages(count, block);
+	        List<String> msglist2 = this.mfnapiClient.get_session_update_messages(count, block);
+	        msglist = new ArrayList<String>();
+	        int size = msglist2.size();
+	        for (int i = 0; i < size; i++)
+	        {
+	        	FunctionAPIMessage fam = new FunctionAPIMessage((String) msglist2.get(i));
+	        	msglist.add((String) fam.getValue());
+	        }
 	    }
 	    catch (Exception e)
 	    {

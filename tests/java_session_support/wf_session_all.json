@@ -1,13 +1,13 @@
 {
-  "Comment": "Session functions in KNIX",
-  "StartAt": "entryFunction",
+  "Comment": "Java Session functions in KNIX",
+  "StartAt": "EntryFunction",
   "AllowImmediateMessages": true,
   "EnableCheckpoints": false,
   "States": {
-    "entryFunction": {
+    "EntryFunction": {
       "Type": "Task",
-      "Resource": "entryFunction",
-      "PotentialNext": ["sessionFunction1", "sessionFunction2", "finalFunction", "telemetryHandler"],
+      "Resource": "EntryFunction",
+      "PotentialNext": ["SessionFunction1", "SessionFunction2", "finalFunction", "telemetryHandler"],
       "End": true
     },
     "heartbeatHandler": {
@@ -20,9 +20,9 @@
       "Resource": "telemetryHandler",
       "PotentialNext": ["finalFunction"]
     },
-    "sessionFunction1": {
+    "SessionFunction1": {
       "Type": "Task",
-      "Resource": "sessionFunction1",
+      "Resource": "SessionFunction1",
       "SessionFunction": true,
       "SessionFunctionParameters": {
           "heartbeat_method": "function",
@@ -32,9 +32,9 @@
       "Next": "finalFunction",
       "PotentialNext": ["telemetryHandler"]
     },
-    "sessionFunction2": {
+    "SessionFunction2": {
       "Type": "Task",
-      "Resource": "sessionFunction2",
+      "Resource": "SessionFunction2",
       "SessionFunction": true,
       "SessionFunctionParameters": {
           "heartbeat_method": "function",

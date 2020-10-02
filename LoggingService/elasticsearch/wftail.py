@@ -115,9 +115,10 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
 
 def printlog(outlog):
     for log in outlog:
-        log_str = '[%d] [%d] [%s] [%s] [%s] [%s] [%s] [%s] [%s] %s' % (log['indexed'], log['timestamp'], log['asctime'], log['loglevel'], log['userid'], log['workflowid'], log['uuid'], log['workflowname'], log['function'], log['message'])
-        logging.info(log_str)
-
+        # ensure that we get a message; otherwise, an empty message or a \n throws an exception
+        if "message" in log:
+            log_str = '[%d] [%d] [%s] [%s] [%s] [%s] [%s] [%s] [%s] %s' % (log['indexed'], log['timestamp'], log['asctime'], log['loglevel'], log['userid'], log['workflowid'], log['uuid'], log['workflowname'], log['function'], log['message'])
+            logging.info(log_str)
 
 def main():
     parser = argparse.ArgumentParser(description='Tail logs of microfunctions workflow(s) (queried from elasticsearch)', prog='wftail.py')

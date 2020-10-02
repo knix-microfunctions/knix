@@ -24,7 +24,7 @@ import random
 import socket
 import subprocess
 import shlex
-#import hashlib
+import hashlib
 from threading import Timer
 
 import thriftpy2
@@ -451,7 +451,10 @@ class FunctionWorker:
                     elif self._function_runtime == "java":
                         exec_arguments = {}
 
-                        api_uds = "/tmp/" + self._function_state_name + "_" + key + "_" + str(time.time() * 1000.0) + "_" + str(random.uniform(0, 100000)) + ".uds"
+                        random.seed()
+                        name = self._function_state_name + "_" + key + "_" + str(time.time() * 1000.0) + "_" + str(random.uniform(0, 100000))
+                        sha = hashlib.sha256(name.encode()).hexdigest()
+                        api_uds = "/tmp/" + sha + ".uds"
 
                         exec_arguments["api_uds"] = api_uds
                         exec_arguments["thriftAPIService"] = self._api_thrift.MicroFunctionsAPIService
