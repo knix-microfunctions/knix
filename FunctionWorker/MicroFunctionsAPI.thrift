@@ -16,6 +16,9 @@
 namespace java org.microfunctions.mfnapi
 
 service MicroFunctionsAPIService {
+
+    string get_context_object_properties(),
+
     string ping(1:i32 n),
 
     void update_metadata(1: string metadata_name, 2: string metadata_value, 3: bool is_privileged_metadata),

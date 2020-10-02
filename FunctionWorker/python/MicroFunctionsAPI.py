@@ -24,6 +24,27 @@ import py3utils
 import requests
 import json
 
+from typing import Dict, Any
+from datetime import date
+
+LambdaDict = Dict[str, Any]
+
+class LambdaCognitoIdentity(object):
+    cognito_identity_id: str
+    cognito_identity_pool_id: str
+
+class LambdaClientContextMobileClient(object):
+    installation_id: str
+    app_title: str
+    app_version_name: str
+    app_version_code: str
+    app_package_name: str
+
+class LambdaClientContext(object):
+    client: LambdaClientContextMobileClient
+    custom: LambdaDict
+    env: LambdaDict
+
 class MicroFunctionsAPI:
     '''
     This class defines the API that is exposed to the user functions.
@@ -71,7 +92,7 @@ class MicroFunctionsAPI:
         self._session_utils = session_utils
 
         self._function_state_name = funcstatename
-        self._function_version = 1
+        self._function_version = 1 # Currently hardcoded to 1
 
         self._instanceid = key
 
@@ -79,7 +100,66 @@ class MicroFunctionsAPI:
         if sid == "Management" and wid == "Management":
             self._is_privileged = True
 
+        '''
+        AWS context object properties required for API compatibility, TODO: remove hardcoding of some values
+        '''
+        self.function_name = self._function_state_name # The name of the function.
+        self.function_version = self._function_version # The version of the function.
+        self.invoked_function_arn = self.function_name + ":" + str(self.function_version) # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias.
+        self.memory_limit_in_mb = 3008 # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
+        self.aws_request_id = self._instanceid # The identifier of the invocation request. Return the KNIX message key instead
+        self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme
+
+        today = date.today() # calculate date
+        d1 = today.strftime("%Y/%m/%d")
+        self.log_stream_name = str(d1) + "[$LATEST]" + str(self._logger.name) # The log stream name for this function instance.
+
+        self.identity = LambdaCognitoIdentity() # Amazon Cognito identity that authorized the request.
+        self.identity.cognito_identity_id = 'knix_cognito_identity_id' # set to knix identity id
+        self.identity.cognito_identity_pool_id = 'knix_cognito_identity_pool_id' # set to knix identity pool id
+
+        self.client_context_mobile_client = LambdaClientContextMobileClient() # generate ContextMobileClent object
+        self.client_context_mobile_client.installation_id = 'knix_installation_id' # set to KNIX id
+        self.client_context_mobile_client.app_title = 'knix_app_title' # set to KNIX app title
+        self.client_context_mobile_client.app_version_name = 'knix_app_version_name' # set to KNIX app name
+        self.client_context_mobile_client.app_version_code = 'knix_app_version_code' # set to KNIX app code
+        self.client_context_mobile_client.app_package_name = 'knix_app_package_name' # set to KNIX app package name
+
+        self.client_context = LambdaClientContext() # generate ClientContext object
+        self.client_context.client = self.client_context_mobile_client # set to client mobile context
+        self.client_context.custom = {'knix_custom': True} # set to KNIX context custom
+        self.client_context.env = {'knix_env': 'test'} # set to KNIX context env
+
         #self._logger.debug("[MicroFunctionsAPI] init done.")
+
+    def get_context_object_properties(self):
+        context_properties = {}
+        context_properties["function_name"] = self.function_name
+        context_properties["function_version"] = self.function_version
+        context_properties["invoked_function_arn"] = self.invoked_function_arn
+        context_properties["memory_limit_in_mb"] = self.memory_limit_in_mb
+        context_properties["aws_request_id"] = self.aws_request_id
+        context_properties["log_group_name"] = self.log_group_name
+        context_properties["log_stream_name"] = self.log_stream_name
+
+        context_properties["identity"] = {}
+        context_properties["identity"]["cognito_identity_id"] = self.identity.cognito_identity_id
+        context_properties["identity"]["cognito_identity_pool_id"] = self.identity.cognito_identity_pool_id
+
+        context_properties["client_context"] = {}
+
+        context_properties["client_context"]["client"] = {}
+        context_properties["client_context"]["client"]["installation_id"] = self.client_context_mobile_client.installation_id
+        context_properties["client_context"]["client"]["app_title"] = self.client_context_mobile_client.app_title
+        context_properties["client_context"]["client"]["app_version_name"] = self.client_context_mobile_client.app_version_name
+        context_properties["client_context"]["client"]["app_version_code"] = self.client_context_mobile_client.app_version_code
+        context_properties["client_context"]["client"]["app_package_name"] = self.client_context_mobile_client.app_package_name
+
+        context_properties["client_context"]["custom"] = self.client_context.custom
+        context_properties["client_context"]["env"] = self.client_context.env
+
+        return json.dumps(context_properties)
+
 
     def ping(self, num):
         self._logger.info("ping: " + str(num))
