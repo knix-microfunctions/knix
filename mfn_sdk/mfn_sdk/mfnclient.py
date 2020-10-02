@@ -266,6 +266,7 @@ class MfnClient(object):
         r.raise_for_status()
         log.debug("%s: %s <- %s", self.user, action, r.text[:256]+(r.text[256:] and '...'))
         resp = r.json()
+        print(str(resp))
         if resp.get('status','') != 'success':
             if resp.get('has_error',False):
                 raise Exception(f"MicroFunctions Error for action {action}: {resp['error_type']}")
@@ -449,7 +450,7 @@ class MfnClient(object):
         return state_list
 
 
-    def add_workflow(self,name,filename=None):
+    def add_workflow(self,name,filename=None, gpu_usage=None):
         """ add a workflow
 
         returns an existing workflow if the name exists, registers a new workflow name if it doesn't exist
@@ -458,7 +459,7 @@ class MfnClient(object):
         for wf in self._workflows:
             if wf._name == name:
                 return wf
-        data = self.action('addWorkflow',{'workflow':{'name':name}})
+        data = self.action('addWorkflow',{'workflow':{'name':name, "gpu_usage":gpu_usage}})
         wfd = data['workflow']
         wf = Workflow(self,wfd)
         self._workflows.append(wf)
@@ -475,6 +476,7 @@ class MfnClient(object):
             # parse the WF json to find required functions
             fnames = []
             wfjson = json.loads(wfdesc)
+            #print("wfjson: "+ str(wfjson))
             if 'States' in wfjson:
                 state_list = self._get_state_names_and_resource('Task', wfjson)
                 for state_info in state_list:
@@ -505,7 +507,6 @@ class MfnClient(object):
                     with open(fpyname, 'r') as f:
                         fcode = f.read()
                     f.code = fcode
-
         return wf
 
 

@@ -24,8 +24,8 @@ imageRepo: "localhost:5000"
 manager:
   #httpProxy: "http://<host>:<port>"
   #httpsProxy: "http://<host>:<port>"
-  #httpGatewayPort: 80
-  #httpsGatewayPort: 443
+  httpGatewayPort: 30336
+  #httpsGatewayPort: 32533
   nameOverride: "microfunctions"
   newWorkflow:
     hpa:

@@ -26,6 +26,23 @@ import requests
 WF_TYPE_SAND = 0
 WF_TYPE_ASL = 1
 
+def get_kv_pairs(testdict, keys, dicts=None):
+    # find and return kv pairs with particular keys in testdict
+    if not dicts:
+        dicts = [testdict]
+        testdict = [testdict]  
+    data = testdict.pop(0)
+    if isinstance(data, dict):
+        data = data.values()
+    for d in data:        
+        if isinstance(d, dict) or isinstance(d, list): # check d for type        
+            testdict.append(d)
+            if isinstance(d, dict):
+                dicts.append(d)
+    if testdict: # no more data to search
+        return get_kv_pairs(testdict, keys, dicts)
+    return [(k, v) for d in dicts for k, v in d.items() if k in keys]
+
 def is_asl_workflow(wfobj):
     return 'StartAt' in wfobj and 'States' in wfobj and isinstance(wfobj['States'], dict)
 
@@ -132,7 +149,6 @@ def compile_resource_info_map(resource_names, uploaded_resources, email, sapi, d
                 resource_metadata = json.loads(resource_metadata)
                 if "runtime" in resource_metadata:
                     resource_info["runtime"] = resource_metadata["runtime"]
-                print("RESOURCE_INFO_ALL: " +str(resource_info))
                 #if "num_gpu" in resource_metadata:
                 #    print("RESOURCE_INFO: " + str(resource_info["num_gpu"]))
 
@@ -245,7 +261,7 @@ def get_workflow_host_port(host_to_deploy, sid):
 
     return success, host_port
 
-def create_k8s_deployment(email, workflow_info, runtime, management=False):
+def create_k8s_deployment(email, workflow_info, runtime, management=False, use_gpus=0):
     # KUBERNETES MODE
     new_workflow_conf = {}
     conf_file = '/opt/mfn/SandboxAgent/conf/new_workflow.conf'
@@ -297,17 +313,15 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     env.append({'name': 'WORKFLOWID', 'value': workflow_info["workflowId"]})
     env.append({'name': 'WORKFLOWNAME', 'value': workflow_info["workflowName"]})
 
-    """
-    if "num_gpu" in workflow_info.keys():
-        print("INSIDE K8S Deploy, num_gpu: " + str(workflow_info['num_gpu']))
-        num_gpu = int(workflow_info['num_gpu'])
+    if use_gpus >= 0:
+        #print("INSIDE K8S Deploy, num_gpu: " + str(workflow_info['num_gpu']))
+        #num_gpu = int(workflow_info['num_gpu'])
         # overwrite values from values.yaml for new workflows
-        kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(num_gpu)
-        kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(num_gpu)
-        kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
-        if num_gpu > 0:
-            kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
-    """ 
+        kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
+        kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
+        #kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
+        kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox_gpu" 
+     
     # Special handling for the management container
     if management:
         kservice['spec']['template']['spec']['volumes'] = [{ 'name': 'new-workflow-conf', 'configMap': {'name': new_workflow_conf['configmap']}}]
@@ -407,6 +421,11 @@ def handle(value, sapi):
         workflow = data["workflow"]
         if "id" not in workflow:
             raise Exception("malformed input")
+        """
+        if "gpu_usage" not in workflow:
+            raise Exception("malformed input: no gpu_usage")
+            use_gpus = int(data['gpu_usage'])
+        """ 
         sapi.log(json.dumps(workflow))
         wfmeta = sapi.get(email + "_workflow_" + workflow["id"], True)
         if wfmeta is None or wfmeta == "":
@@ -436,6 +455,8 @@ def handle(value, sapi):
         wf_type = WF_TYPE_SAND
         if is_asl_workflow(wfobj):
             wf_type = WF_TYPE_ASL
+
+        #use_gpus = int(wfmeta._gpu_usage)
 
         success, errmsg, resource_names, uploaded_resources = check_workflow_functions(wf_type, wfobj, email, sapi)
         if not success:
@@ -477,13 +498,16 @@ def handle(value, sapi):
             else:
                 runtime = "Python"
 
+            """
             if "num_gpu" in resource_info_map.keys():
                 print ("RESOURCE_INFO_MAP: " + str(resource_info_map))
                 workflow_info['num_gpu'] = resource_info_map['num_gpu']
             else:
                 workflow_info['num_gpu'] = 0
+            """
+            use_gpus = 0
 
-            url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime)
+            url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime, use_gpus)
             if url is not None and len(url) > 0:
                 status = "deploying"
                 sapi.addSetEntry(workflow_info["workflowId"] + "_workflow_endpoints", str(url), is_private=True)

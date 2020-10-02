@@ -84,8 +84,17 @@ class MFNTest():
         if timeout is not None:
             self._settings["timeout"] = timeout
 
+        """
+        else:
+            #self._gpu_usage = None
+            #self._workflow_description['num_gpu'] = self._settings["num_gpu"]
+            #print("Workflow_description:" + str(self._workflow_description))
+        
+        self.gpu_usage = 0 # hardcoded for now 
         if num_gpu is not None:
             self._settings["num_gpu"] = num_gpu
+            self._gpu_usage = self._settings["num_gpu"]
+        """
 
         self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
 
@@ -118,6 +127,7 @@ class MFNTest():
 
         # Defaults
         settings.setdefault("timeout", 60)
+        settings.setdefault("num_gpu", 0)
 
         return settings
 
@@ -174,6 +184,7 @@ class MFNTest():
         return retval
 
     def _get_resource_info_map(self, workflow_description=None, resource_info_map=None):
+        #print(str("wf description: " + str(workflow_description)))
         if workflow_description is None:
             workflow_description = self._workflow_description
         if resource_info_map is None:
@@ -194,8 +205,8 @@ class MFNTest():
                         resource_info["resource_env_filename"] = "environment_variables/" + resource_ref + "_environment_variables.txt"
                         resource_info_map[resource_ref] = resource_info
                         resource_info_map[resource_ref]['num_gpu'] = self._settings['num_gpu']
-                        print("resource_info_map: " + json.dumps(resource_info_map))
-
+                        #resource_info_map['num_gpu'] = self._settings['num_gpu']
+                        #print("resource_info_map: " + json.dumps(resource_info_map))
 
         elif "States" in workflow_description:
             states = workflow_description["States"]
@@ -210,8 +221,8 @@ class MFNTest():
                         resource_info["resource_env_filename"] = "environment_variables/" + resource_name + "_environment_variables.txt"
                         resource_info_map[resource_name] = resource_info
                         resource_info_map[resource_name]['num_gpu'] = self._settings['num_gpu']
-                        print("resource_info_map: " + json.dumps(resource_info_map))
-
+                        #resource_info_map['num_gpu'] = self._settings['num_gpu']
+                        #print("resource_info_map: " + json.dumps(resource_info_map))
 
                 if "Type" in state and state["Type"] == "Parallel":
                     branches = state['Branches']
@@ -228,6 +239,7 @@ class MFNTest():
             print("ERROR: invalid workflow description.")
             assert False
 
+        #resource_info_map['num_gpu'] = self._settings['num_gpu']
         return resource_info_map
 
     def _delete_resource_if_existing(self, existing_resources, resource_name):
@@ -239,6 +251,7 @@ class MFNTest():
 
     def _create_and_upload_resource(self, resource_name, resource_info):
         print("Deploying resource: " + resource_name)
+        #print(str (resource_info))
 
         resource_filename = resource_info["resource_filename"]
         is_zip = resource_info["is_zip"]
@@ -287,10 +300,13 @@ class MFNTest():
         self.undeploy_workflow()
 
         resource_info_map = self._get_resource_info_map()
+        #resource_info_map['num_gpu'] = 1
+        #print(str(resource_info_map))
 
         existing_resources = self._client.functions
 
         for resource_name in resource_info_map.keys():
+          #if not resource_name == 'num_gpu':
             self._delete_resource_if_existing(existing_resources, resource_name)
 
             resource_info = resource_info_map[resource_name]
@@ -304,8 +320,14 @@ class MFNTest():
         try:
             wf = self._client.add_workflow(self._workflow_name)
             wf.json = json.dumps(self._workflow_description)
+            #print (wf.json)
+            #wf._use_gpu=self._settings["num_gpu"]
+            wf._gpu_usage = "teststringgpu" # _use_gpu=self._settings["num_gpu"]
             wf.deploy(self._settings["timeout"]) #, num_gpu=self._settings['num_gpu'])
             self._workflow = wf
+            #print ("WF: " + str(wf._use_gpu))
+            #print ("WF1: " + str(wf.gpu_usage))
+            #wf.gpu_usage = "teststring"
             if self._workflow.status != "failed":
                 print("MFN workflow " + self._workflow_name + " deployed.")
             else:

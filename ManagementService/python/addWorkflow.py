@@ -27,6 +27,7 @@ def handle(value, sapi):
     success = False
 
     email = data["email"]
+    
 
     if "workflow" in data:
         workflow = data["workflow"]
@@ -38,6 +39,9 @@ def handle(value, sapi):
         wf["status"] = "undeployed"
         wf["modified"] = time.time()
         wf["endpoints"] = []
+        wf["gpu_usage"] = None
+        if "gpu_usage" in workflow:
+            wf["gpu_usage"] = workflow["gpu_usage"]
 
         wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest()
 
