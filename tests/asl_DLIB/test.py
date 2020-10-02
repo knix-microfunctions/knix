@@ -34,6 +34,6 @@ class DlibTest(unittest.TestCase):
 
         testtuplelist =[(inp1, res1)]
 
-        test = MFNTest(test_name = "Dlib_Test", num_gpu = 1)
+        test = MFNTest(test_name = "Dlib_Test", gpu_usage = "1")
         test.exec_tests(testtuplelist)
 

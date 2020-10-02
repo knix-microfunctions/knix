@@ -104,6 +104,7 @@ class Workflow(object):
     def status(self):
         data = self.client.action('getWorkflows',{'workflow':{'id':self.id}})
         self._status = data['workflow']['status']
+        #self._status == "undeployed"
         if self._status == "deployed":
             self._endpoints = data['workflow']['endpoints']
         else:
@@ -141,7 +142,7 @@ class Workflow(object):
     def json(self,json):
         if json != self.json:
             self._json = json
-            print ("uploaded workflow JOSN"+ str( json))
+            #print ("uploaded workflow JSON"+ str( json))
             self.client.action('uploadWorkflowJSON',{'workflow':{'id':self.id,'json':base64.b64encode(self._json.encode()).decode()}})
 
 

@@ -41,7 +41,7 @@ def handle(value, sapi):
         wf["endpoints"] = []
         wf["gpu_usage"] = None
         if "gpu_usage" in workflow:
-            wf["gpu_usage"] = workflow["gpu_usage"]
+            wf["gpu_usage"] = str(workflow["gpu_usage"])
 
         wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest()
 

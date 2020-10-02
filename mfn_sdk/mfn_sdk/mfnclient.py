@@ -266,7 +266,7 @@ class MfnClient(object):
         r.raise_for_status()
         log.debug("%s: %s <- %s", self.user, action, r.text[:256]+(r.text[256:] and '...'))
         resp = r.json()
-        print(str(resp))
+        #print(str(resp))
         if resp.get('status','') != 'success':
             if resp.get('has_error',False):
                 raise Exception(f"MicroFunctions Error for action {action}: {resp['error_type']}")
@@ -450,7 +450,7 @@ class MfnClient(object):
         return state_list
 
 
-    def add_workflow(self,name,filename=None, gpu_usage=None):
+    def add_workflow(self,name,filename=None, gpu_usage="None"):
         """ add a workflow
 
         returns an existing workflow if the name exists, registers a new workflow name if it doesn't exist
