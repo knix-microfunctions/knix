@@ -113,7 +113,6 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
                 continue
             if line.find("[__mfn_backup]") != -1:
                 continue
-            print(line)
             lines.append(line)
 
         tsmap = {}
