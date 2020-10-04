@@ -120,7 +120,7 @@ def get_workflow_log(workflowid, es_host, es_port, filters, num_last_entries=150
             ],
         "query":{
             "bool":{
-                "must_not": [{"match": {"message": "[__mfn_tracing]"}}],
+                "must_not": [{"match": {"message": "[__mfn_tracing]"}}, {"match": {"message": "[__mfn_backup]"}}],
                 "filter": filters
             }
         },

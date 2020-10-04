@@ -117,6 +117,10 @@ class FunctionWorker:
 
         signal(SIGCHLD, SIG_IGN)
 
+        # do this once rather than at every forked process
+        if self._state_utils.isTaskState():
+            os.chdir(self._function_folder)
+
         self._is_running = False
         #self._print_self()
 
@@ -302,10 +306,7 @@ class FunctionWorker:
                         error_type = "User Input Decapsulation Error"
                         has_error = True
 
-                timestamp_map["t_start_chdir"] = time.time() * 1000.0
                 signal(SIGCHLD, SIG_DFL)
-                if self._state_utils.isTaskState():
-                    os.chdir(self._function_folder)
 
                 # 2. Decode input. Input (value) must be a valid JSON Text.
                 # Note: JSON Text is not the same as JSON string. JSON string a one variable type that can be contained inside a JSON Text.

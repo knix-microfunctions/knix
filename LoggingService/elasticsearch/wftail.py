@@ -70,6 +70,7 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
     if alllogs == False:
         must_not.append({"match": {"message": "[__mfn_progress]"}})
         must_not.append({"match": {"message": "[__mfn_tracing]"}})
+        must_not.append({"match": {"message": "[__mfn_backup]"}})
         #must_not.append({"match": {"message": "[FunctionWorker]"}})
         #must_not.append({"match": {"message": "[StateUtils]"}})
 

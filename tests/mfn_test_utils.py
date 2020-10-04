@@ -504,7 +504,7 @@ class MFNTest():
                 f.write(line + "\n")
 
     def extract_execution_ids(self, num_last_executions, num_log_lines=2000):
-        cmd = "python3 ../wftail.py -n " + str(num_log_lines) + " -wname " + self._workflow_name
+        cmd = "python3 ../wftail.py -n " + str(num_log_lines) + " -wid " + self._workflow.id
         output, error = run_command_return_output(cmd)
         log_lines = combine_output(output, error)
         eidlist = []

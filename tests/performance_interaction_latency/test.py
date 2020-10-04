@@ -22,7 +22,7 @@ from mfn_test_utils import MFNTest
 
 class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_function_interaction_latency_checkpoints_off(self):
         count_executions = 20
 
@@ -105,10 +105,15 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         log_lines = log.split("\n")
         lines = []
         for line in log_lines:
+            if line == "":
+                continue
             if line.find("[FunctionWorker]") != -1:
                 continue
             if line.find("[__mfn_progress]") != -1:
                 continue
+            if line.find("[__mfn_backup]") != -1:
+                continue
+            print(line)
             lines.append(line)
 
         tsmap = {}
@@ -148,9 +153,9 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         test.print_percentiles(diffs, percentiles)
         print("------")
 
-        #test.plot_latency_breakdown(20)
+        test.plot_latency_breakdown(20)
 
-    #@unittest.skip("")
+    @unittest.skip("")
     def test_chain_response_latency_checkpoints(self):
         count_executions = 20
 
