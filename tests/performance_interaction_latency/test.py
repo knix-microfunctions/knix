@@ -22,7 +22,7 @@ from mfn_test_utils import MFNTest
 
 class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
 
-    @unittest.skip("")
+    #@unittest.skip("")
     def test_function_interaction_latency_checkpoints_off(self):
         count_executions = 20
 
@@ -153,9 +153,9 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         test.print_percentiles(diffs, percentiles)
         print("------")
 
-        test.plot_latency_breakdown(20)
+        #test.plot_latency_breakdown(20)
 
-    @unittest.skip("")
+    #@unittest.skip("")
     def test_chain_response_latency_checkpoints(self):
         count_executions = 20
 
