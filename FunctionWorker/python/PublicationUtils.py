@@ -417,13 +417,9 @@ class PublicationUtils():
                     timestamp_map['t_pub_localqueue'] = time.time() * 1000.0
                 self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
             else:
-                # check if 'next' is exit topic and modify output["topicNext"] accordingly
-                isExitTopic = False
+                # check if 'next' is exit topic
                 if next == self._wf_exit:
-                    isExitTopic = True
-
-                    if self._metadata["__execution_id"] != key:
-                        key = self._metadata["__execution_id"]
+                    key = self._metadata["__execution_id"]
 
                     dlc = self.get_backup_data_layer_client()
 
@@ -437,9 +433,13 @@ class PublicationUtils():
                     #if "__async_execution" in self._metadata and self._metadata["__async_execution"]:
                     #    output["value"] = ""
 
-                if isExitTopic and timestamp_map is not None:
-                    timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
-                    timestamp_map['exitsize'] = len(output["value"])
+                    if timestamp_map is not None:
+                        timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
+                        timestamp_map['exitsize'] = len(output["value"])
+
+                # TODO: need to also ensure that a message to a non-local topic gets properly handled
+                # for multi-host deployments for load redirection
+                # currently, we don't have such cases
                 self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
 
             return (next_function_execution_id, output)

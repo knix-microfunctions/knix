@@ -94,6 +94,7 @@ class MFNTest():
 
         self.upload_workflow()
         self.deploy_workflow()
+        time.sleep(5)
 
     def _get_json_file(self, filename):
         json_data = {}
@@ -365,14 +366,16 @@ class MFNTest():
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
 
-    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async_=False):
+    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async_=False, print_report=True):
         any_failed_tests = False
         durations = []
 
-        time.sleep(2)
-
         try:
+            i = 0
+            num_total = len(testtuplelist)
             for tup in testtuplelist:
+                i += 1
+                print("Test " + str(i) + "/" + str(num_total), end="\r")
                 current_test_passed = False
                 inp, res = tup
                 if check_duration:
@@ -417,15 +420,16 @@ class MFNTest():
                         if rn == cur_res:
                             current_test_passed = True
 
-                    self.report(current_test_passed, inp, cur_res, rn)
+                    if print_report:
+                        self.report(current_test_passed, inp, cur_res, rn)
                     any_failed_tests = any_failed_tests or (not current_test_passed)
 
                     time.sleep(1)
-
         except Exception as e:
             print(str(e))
             raise e
         finally:
+            print()
             time.sleep(2)
             if check_duration:
                 print("------")
