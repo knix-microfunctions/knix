@@ -149,8 +149,6 @@ def compile_resource_info_map(resource_names, uploaded_resources, email, sapi, d
                 resource_metadata = json.loads(resource_metadata)
                 if "runtime" in resource_metadata:
                     resource_info["runtime"] = resource_metadata["runtime"]
-                #if "num_gpu" in resource_metadata:
-                #    print("RESOURCE_INFO: " + str(resource_info["num_gpu"]))
 
             num_chunks_str = dlc.get("grain_source_zip_num_chunks_" + resource_id)
             try:
@@ -261,7 +259,7 @@ def get_workflow_host_port(host_to_deploy, sid):
 
     return success, host_port
 
-def create_k8s_deployment(email, workflow_info, runtime, management=False, use_gpus=0):
+def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=False):
     # KUBERNETES MODE
     new_workflow_conf = {}
     conf_file = '/opt/mfn/SandboxAgent/conf/new_workflow.conf'
@@ -313,16 +311,17 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False, use_g
     env.append({'name': 'WORKFLOWID', 'value': workflow_info["workflowId"]})
     env.append({'name': 'WORKFLOWNAME', 'value': workflow_info["workflowName"]})
 
-    if use_gpus >= 0:
-        #print("INSIDE K8S Deploy, num_gpu: " + str(workflow_info['num_gpu']))
-        #num_gpu = int(workflow_info['num_gpu'])
+    # apply gpu_usage fraction to k8s deployment configuration
+    use_gpus = gpu_usage
+
+    if not management and use_gpus >= 0:
         # overwrite values from values.yaml for new workflows
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
         #kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
         kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox_gpu" 
      
-    # Special handling for the management container
+    # Special handling for the management container: never run on gpu
     if management:
         kservice['spec']['template']['spec']['volumes'] = [{ 'name': 'new-workflow-conf', 'configMap': {'name': new_workflow_conf['configmap']}}]
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
@@ -421,13 +420,10 @@ def handle(value, sapi):
         workflow = data["workflow"]
         if "id" not in workflow:
             raise Exception("malformed input")
-        """
-        if "gpu_usage" not in workflow:
-            raise Exception("malformed input: no gpu_usage")
-            use_gpus = int(data['gpu_usage'])
-        """ 
         sapi.log(json.dumps(workflow))
         wfmeta = sapi.get(email + "_workflow_" + workflow["id"], True)
+        print("WFMETA in deployWorkflow: "+ str(wfmeta))
+        
         if wfmeta is None or wfmeta == "":
             raise Exception("workflow metadata is not valid.")
         try:
@@ -498,16 +494,14 @@ def handle(value, sapi):
             else:
                 runtime = "Python"
 
-            """
-            if "num_gpu" in resource_info_map.keys():
-                print ("RESOURCE_INFO_MAP: " + str(resource_info_map))
-                workflow_info['num_gpu'] = resource_info_map['num_gpu']
+            if "gpu_usage" in wfmeta and wfmeta["gpu_usage"] != "None":
+                gpu_usage = float(wfmeta["gpu_usage"])
             else:
-                workflow_info['num_gpu'] = 0
-            """
-            use_gpus = 0
+                gpu_usage = 0.
 
-            url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime, use_gpus)
+            #print("deduced gpu_usage: " + str(gpu_usage))
+
+            url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime, gpu_usage)
             if url is not None and len(url) > 0:
                 status = "deploying"
                 sapi.addSetEntry(workflow_info["workflowId"] + "_workflow_endpoints", str(url), is_private=True)
@@ -522,9 +516,6 @@ def handle(value, sapi):
             # _XXX_: due to the queue service still being in java in the sandbox
 
             sandbox_image_name = "microfn/sandbox" # default value
-            #if "on_gpu" in resource_info_map.keys(): # sandbox_gpu image should be used for ths workflow
-            #    if resource_info_map["on_gpu"] == True:
-            #        sandbox_image_name = "microfn/sandbox_gpu"
                     
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 sandbox_image_name = "microfn/sandbox_java"

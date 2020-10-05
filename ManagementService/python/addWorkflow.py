@@ -39,7 +39,7 @@ def handle(value, sapi):
         wf["status"] = "undeployed"
         wf["modified"] = time.time()
         wf["endpoints"] = []
-        wf["gpu_usage"] = None
+        #wf["gpu_usage"] = None
         if "gpu_usage" in workflow:
             wf["gpu_usage"] = str(workflow["gpu_usage"])
 
