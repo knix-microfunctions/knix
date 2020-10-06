@@ -314,7 +314,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
     # apply gpu_usage fraction to k8s deployment configuration
     use_gpus = gpu_usage
 
-    if not management and use_gpus >= 0:
+    if not management and use_gpus >= 0 and runtime=="Python":
         # overwrite values from values.yaml for new workflows
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)

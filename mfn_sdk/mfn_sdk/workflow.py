@@ -102,9 +102,9 @@ class Workflow(object):
 
     @property
     def status(self):
-        data = self.client.action('getWorkflows',{'workflow':{'id':self.id}})
-        self._status = data['workflow']['status']
-        #self._status == "undeployed"
+        #data = self.client.action('getWorkflows',{'workflow':{'id':self.id}})
+        #self._status = data['workflow']['status']
+        self._status == "undeployed"
         if self._status == "deployed":
             self._endpoints = data['workflow']['endpoints']
         else:
