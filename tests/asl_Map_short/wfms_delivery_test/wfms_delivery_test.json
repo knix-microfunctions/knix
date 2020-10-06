@@ -1,0 +1,40 @@
+{
+  "StartAt": "ProcessAllItems",
+  "States": {
+    "ProcessAllItems": {
+      "Type": "Map",
+      "InputPath": "$.detail",
+      "ItemsPath": "$.items",
+      "MaxConcurrency": 3,
+      "Iterator": {
+        "StartAt": "CheckAvailability",
+        "States": {
+          "CheckAvailability": {
+            "Type": "Task",
+            "Resource": "checkAvailability",
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "TimeOut"
+                ],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2,
+                "MaxAttempts": 3
+              }
+            ],
+            "Next": "PrepareForDelivery"
+          },
+          "PrepareForDelivery": {
+            "Type": "Pass",
+            "Next": "StartDelivery"
+          },
+          "StartDelivery": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

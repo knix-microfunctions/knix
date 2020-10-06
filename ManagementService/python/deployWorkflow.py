@@ -277,7 +277,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
 
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
     wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').lower() + '-wf'
-    wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').lower() + '-wf'
+    wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').replace('/','-').lower() + '-wf'
     emailSanitized = 'u-' + email.replace('@', '-').replace('_', '-').lower() + '-u'
     # Pod, Deployment and Hpa names for the new workflow will have a prefix containing the workflow name and user name
     app_fullname_prefix = ''
