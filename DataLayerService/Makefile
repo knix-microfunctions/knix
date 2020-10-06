@@ -24,9 +24,12 @@ all: build_thrift \
 build_thrift:
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
-src/main/java/org/microfunctions/data_layer/DataLayerService.java: ../build_env.mk \
-	thrift/DataLayerMessage.thrift \
-	thrift/DataLayerService.thrift
+src/main/java/org/microfunctions/data_layer/DataLayerService.java: \
+		../build_env.mk \
+		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh \
+		thrift/DataLayerMessage.thrift \
+		thrift/DataLayerService.thrift
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --rm -i --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
@@ -34,9 +37,12 @@ src/main/java/org/microfunctions/data_layer/DataLayerService.java: ../build_env.
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/DataLayerMessage.thrift; thrift --gen java -out ./src/main/java/ ./thrift/DataLayerService.thrift'
 	touch src/main/java/org/microfunctions/data_layer/DataLayerService.java
 
-PythonClient/data_layer: ../build_env.mk \
-	thrift/DataLayerMessage.thrift \
-	thrift/DataLayerService.thrift
+PythonClient/data_layer: \
+		../build_env.mk \
+		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh \
+		thrift/DataLayerMessage.thrift \
+		thrift/DataLayerService.thrift
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --rm -i --name datalayer-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \

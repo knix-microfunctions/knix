@@ -33,8 +33,11 @@ mfnapi.jar: $(CLASSFILES)
 	openjdk:8-jdk-stretch \
 	bash -c 'cd target/classes; jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class; mv mfnapi.jar ../../'
 
-src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: ../build_env.mk \
-	../FunctionWorker/MicroFunctionsAPI.thrift
+src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: \
+		../build_env.mk \
+		../FunctionWorker/MicroFunctionsAPI.thrift \
+		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	cp ../FunctionWorker/MicroFunctionsAPI.thrift .
 	docker run --rm -i --name mfnapi-thrift \
 		--user $(UID):$(GID) \

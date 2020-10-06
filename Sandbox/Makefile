@@ -41,7 +41,8 @@ build/SandboxAgent.tar.gz: $(SBASOURCE)
 	tar -czf $@ ../SandboxAgent
 
 FWSOURCE = $(shell find ../FunctionWorker)
-build/FunctionWorker.tar.gz: $(FWSOURCE) ../build_env.mk
+build/FunctionWorker.tar.gz: $(FWSOURCE) ../build_env.mk ../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh \
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	mkdir -p build
 	docker run --user $$(id -u):$$(id -g) --rm -v $$(pwd)/../:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \

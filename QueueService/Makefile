@@ -24,8 +24,11 @@ all: build_thrift \
 build_thrift:
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
-src/main/java/org/microfunctions/queue/local/LocalQueueService.java: ../build_env.mk \
-	thrift/LocalQueueService.thrift
+src/main/java/org/microfunctions/queue/local/LocalQueueService.java: \
+		../build_env.mk \
+		thrift/LocalQueueService.thrift \
+		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --rm -i --name queue-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/usr/src/queue -w /usr/src/queue \

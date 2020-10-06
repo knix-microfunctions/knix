@@ -26,7 +26,8 @@ default: build_thrift \
 build_thrift:
 	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
-datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift ../../build_env.mk
+datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift ../../build_env.mk ../../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --rm -i --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
@@ -34,7 +35,8 @@ datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift ../../bu
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerMessage.thrift'
 
-datalayerservice: ../../DataLayerService/thrift/DataLayerService.thrift ../../build_env.mk
+datalayerservice: ../../DataLayerService/thrift/DataLayerService.thrift ../../build_env.mk ../../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --rm -i --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
@@ -42,7 +44,8 @@ datalayerservice: ../../DataLayerService/thrift/DataLayerService.thrift ../../bu
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
-localqueueservice: ../../QueueService/thrift/LocalQueueService.thrift ../../build_env.mk
+localqueueservice: ../../QueueService/thrift/LocalQueueService.thrift ../../build_env.mk ../../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --rm -i --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../QueueService:/usr/src/queue \

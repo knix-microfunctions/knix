@@ -23,8 +23,10 @@ default: doc/MicroFunctionsAPI.html
 
 PYTHON_DATALAYER=$(shell find python/data_layer -type f -size +1c) python/data_layer
 $(PYTHON_DATALAYER): ../build_env.mk \
-	../DataLayerService/thrift/DataLayerMessage.thrift \
-	../DataLayerService/thrift/DataLayerService.thrift
+		../DataLayerService/thrift/DataLayerMessage.thrift \
+		../DataLayerService/thrift/DataLayerService.thrift \
+		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --user $(UID):$(GID) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift'
