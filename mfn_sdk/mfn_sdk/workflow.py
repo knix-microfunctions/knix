@@ -52,7 +52,6 @@ class Workflow(object):
     """
 
     def __init__(self,client,wf):
-        print(str(wf))
         self.client=client
         self.id=wf["id"]
         self._name=wf["name"]
@@ -104,7 +103,6 @@ class Workflow(object):
     def status(self):
         data = self.client.action('getWorkflows',{'workflow':{'id':self.id}})
         self._status = data['workflow']['status']
-        #self._status == "undeployed"
         if self._status == "deployed":
             self._endpoints = data['workflow']['endpoints']
         else:

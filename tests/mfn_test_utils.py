@@ -67,7 +67,6 @@ class MFNTest():
             self._workflow_folder = self._workflow_filename[:ind+1]
         else:
             self._workflow_folder = "./"
-        #print("Workflow folder: " + self._workflow_folder)
 
         self._workflow_description = self._get_json_file(self._workflow_filename)
 
@@ -176,7 +175,6 @@ class MFNTest():
         return retval
 
     def _get_resource_info_map(self, workflow_description=None, resource_info_map=None):
-        #print(str("wf description: " + str(workflow_description)))
         if workflow_description is None:
             workflow_description = self._workflow_description
         if resource_info_map is None:
@@ -223,15 +221,12 @@ class MFNTest():
 
                 if "Type" in state and state["Type"] == "Map":
                     branch = state['Iterator']
-                    #print(str(branch))
                     resource_info_map = self._get_resource_info_map(branch, resource_info_map)
-                    #print(str(resource_info_map))
 
         else:
             print("ERROR: invalid workflow description.")
             assert False
 
-        #resource_info_map['num_gpu'] = self._settings['num_gpu']
         return resource_info_map
 
     def _delete_resource_if_existing(self, existing_resources, resource_name):
@@ -243,7 +238,6 @@ class MFNTest():
 
     def _create_and_upload_resource(self, resource_name, resource_info):
         print("Deploying resource: " + resource_name)
-        #print(str (resource_info))
 
         resource_filename = resource_info["resource_filename"]
         is_zip = resource_info["is_zip"]
@@ -292,8 +286,6 @@ class MFNTest():
         self.undeploy_workflow()
 
         resource_info_map = self._get_resource_info_map()
-        #resource_info_map['num_gpu'] = 1
-        #print(str(resource_info_map))
 
         existing_resources = self._client.functions
 
@@ -312,11 +304,9 @@ class MFNTest():
         try:
             gpu_usage=self._settings["gpu_usage"]
             wf = self._client.add_workflow(self._workflow_name, None, gpu_usage)
-            #print ("retuned from add_workflow: " + str(wf))
             wf.json = json.dumps(self._workflow_description)
             wf.deploy(self._settings["timeout"]) 
             self._workflow = wf
-            print ("transformed wf with gpu usage" + str(wf.gpu_usage))
             if self._workflow.status != "failed":
                 print("MFN workflow " + self._workflow_name + " deployed.")
             else:

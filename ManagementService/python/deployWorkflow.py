@@ -486,6 +486,14 @@ def handle(value, sapi):
         #dlc.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info))
         # _XXX_: important!
         # put must not be queued as the function currently waits for the container to become ready
+
+        if "gpu_usage" in wfmeta and wfmeta["gpu_usage"] != "None":
+            gpu_usage = float(wfmeta["gpu_usage"])
+        else:
+            gpu_usage = 0.
+
+        #print("deduced gpu_usage: " + str(gpu_usage))
+
         sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
 
         if 'KUBERNETES_SERVICE_HOST' in os.environ:
@@ -493,13 +501,6 @@ def handle(value, sapi):
                 runtime = "Java"
             else:
                 runtime = "Python"
-
-            if "gpu_usage" in wfmeta and wfmeta["gpu_usage"] != "None":
-                gpu_usage = float(wfmeta["gpu_usage"])
-            else:
-                gpu_usage = 0.
-
-            #print("deduced gpu_usage: " + str(gpu_usage))
 
             url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime, gpu_usage)
             if url is not None and len(url) > 0:
@@ -515,8 +516,11 @@ def handle(value, sapi):
             # We're running BARE METAL mode
             # _XXX_: due to the queue service still being in java in the sandbox
 
-            sandbox_image_name = "microfn/sandbox" # default value
-                    
+            if gpu_usage == 0:
+                sandbox_image_name = "microfn/sandbox" # default value
+            elif gpu_usage != 0 and runtime == "Python":
+                sandbox_image_name = "microfn/sandbox_gpu" # sandbox uses GPU
+                     
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 sandbox_image_name = "microfn/sandbox_java"
 
@@ -526,8 +530,24 @@ def handle(value, sapi):
             if hosts is not None and hosts != "":
                 hosts = json.loads(hosts)
                 deployed_hosts = {}
-                # instruct hosts to start the sandbox and deploy workflow
+                gpu_hosts = {}
+                picked_hosts = {}
+
                 for hostname in hosts:
+                    if hostname.endswith("_gpu"):
+                        hostip = hosts[hostname]
+                        gpu_hosts[hostname] = hostip
+
+                # instruct hosts to start the sandbox and deploy workflow
+                if runtime=="Java" or sandbox_image_name == "microfn/sandbox": # can use any host 
+                    picked_hosts = hosts
+                elif len(gpu_hosts) > 0:
+                    picked_hosts = gpu_hosts 
+                else:
+                    picked_hosts = hosts # fallback as there are no gpu hosts available
+                    print("available GPU hosts is empty. Deploying on general purpose host")
+
+                for hostname in picked_hosts: # loop over all hosts, need to pich gpu hosts for python/gpu workflows
                     hostip = hosts[hostname]
                     host_to_deploy = (hostname, hostip)
                     success, endpoint_key = start_docker_sandbox(host_to_deploy, email, workflow_info["sandboxId"], workflow_info["workflowId"], workflow_info["workflowName"], sandbox_image_name)

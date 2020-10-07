@@ -266,7 +266,6 @@ class MfnClient(object):
         r.raise_for_status()
         log.debug("%s: %s <- %s", self.user, action, r.text[:256]+(r.text[256:] and '...'))
         resp = r.json()
-        #print(str(resp))
         if resp.get('status','') != 'success':
             if resp.get('has_error',False):
                 raise Exception(f"MicroFunctions Error for action {action}: {resp['error_type']}")
@@ -476,7 +475,6 @@ class MfnClient(object):
             # parse the WF json to find required functions
             fnames = []
             wfjson = json.loads(wfdesc)
-            #print("wfjson: "+ str(wfjson))
             if 'States' in wfjson:
                 state_list = self._get_state_names_and_resource('Task', wfjson)
                 for state_info in state_list:
