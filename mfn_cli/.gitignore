@@ -1,0 +1,4 @@
+/build
+/dist
+/mfn_cli.egg-info
+/mfn_cli/__pycache__
