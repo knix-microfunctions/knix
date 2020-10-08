@@ -376,11 +376,7 @@ class MFNTest():
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
 
-<<<<<<< HEAD
-    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async_=False):
-=======
     def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async_=False, print_report=True):
->>>>>>> develop
         any_failed_tests = False
         durations = []
 
