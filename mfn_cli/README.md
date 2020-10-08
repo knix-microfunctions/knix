@@ -34,9 +34,39 @@ The token will be updated/stored in ~/.mfn/config.yaml
 mfn login [--url <url>] [--user <username>] [--password <password>]
 ```
 
-``` sh
-$ mfn login --url https://knix.io/mfn --user test@example.com
-Logging into https://knix.io/mfn as user test@example.com
+``` none
+$ mfn login --url https://knix.io --user test@example.com
+Logging into https://knix.io as user test@example.com
 Please enter the password: ************
 $
+```
+
+## Commands
+
+``` none
+$ mfn -h
+
+Usage: mfn [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  -q          Quiet, (Log level -q: ERROR, -qq: no output).
+  -v          Verbose, reduces log levels (-v: INFO, -vv: DEBUG).
+  --version   Show the version and exit.
+  -h, --help  Show this message and exit.
+
+Commands:
+  version    Show software versions used
+  login      Log in to your MicroFunctions platform
+  invoke     Invoke a workflow.
+  deploy     Deploy a workflow
+  undeploy   Undeploy a workflow.
+  logs       Fetch logs of a workflow.
+  create     Create a resource [workflow|function].
+  get        Get a resource [workflow|function].
+  edit       Edit a resource [workflow|function].
+  delete     Delete a resource [workflow|function].
+  workflow   Show workflow specification.
+  workflows  List workflows.
+  function   Show code of a function.
+  functions  List functions.
 ```

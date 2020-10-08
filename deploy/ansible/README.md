@@ -114,6 +114,7 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 
 3. Update `settings.json`
     * `mfn_server_installation_folder`: folder where KNIX will be installed
+    * `start_at_boot`: whether KNIX services should be started at system start up
     * `riak_leveldb_maximum_memory`: total memory (in bytes) assigned to each Riak storage node's LevelDB backend
     * `nginx_http_listen_port`: http port the ngix server, serving the KNIX GUI, will listen on
     * `nginx_https_listen_port`: https port the ngix server, serving the KNIX GUI, will listen on

@@ -3,3 +3,4 @@
 /doc/
 __init__.py
 __pycache__
+/.m2

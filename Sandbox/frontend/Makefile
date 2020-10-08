@@ -26,24 +26,27 @@ default: build_thrift \
 build_thrift:
 	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 
-datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift ../../build_env.mk
-	docker run --rm -it --name sandbox-thrift \
+datalayermessage: ../../DataLayerService/thrift/DataLayerMessage.thrift ../../build_env.mk ../../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
+	docker run --rm -i --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerMessage.thrift'
 
-datalayerservice: ../../DataLayerService/thrift/DataLayerService.thrift ../../build_env.mk
-	docker run --rm -it --name sandbox-thrift \
+datalayerservice: ../../DataLayerService/thrift/DataLayerService.thrift ../../build_env.mk ../../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
+	docker run --rm -i --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../DataLayerService:/usr/src/datalayer \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
-localqueueservice: ../../QueueService/thrift/LocalQueueService.thrift ../../build_env.mk
-	docker run --rm -it --name sandbox-thrift \
+localqueueservice: ../../QueueService/thrift/LocalQueueService.thrift ../../build_env.mk ../../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
+	docker run --rm -i --name sandbox-thrift \
 		--user $(UID):$(GID) \
 		-v $(CURDIR)/../../QueueService:/usr/src/queue \
 		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
@@ -51,7 +54,7 @@ localqueueservice: ../../QueueService/thrift/LocalQueueService.thrift ../../buil
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/queue/thrift/LocalQueueService.thrift'
 
 mfnmessage.go: ../schema/mfnmessage-schema.json
-	docker run --rm -it --name mfn-event-schema \
+	docker run --rm -i --name mfn-event-schema \
 		--user $(UID):$(GID) \
 		--env http_proxy=$(HTTP_PROXY) \
 		--env https_proxy=$(HTTPS_PROXY) \
@@ -62,7 +65,7 @@ mfnmessage.go: ../schema/mfnmessage-schema.json
 		bash -c 'go get github.com/a-h/generate/...; schema-generate $^ > $@'
 
 #mfnworkflow.go: ../schema/mfnworkflow-schema.json
-#	docker run --rm -it --name sandbox-jsonschema \
+#	docker run --rm -i --name sandbox-jsonschema \
 #		--user $(UID):$(GID) \
 #		--env http_proxy=$(HTTP_PROXY) \
 #		--env https_proxy=$(HTTPS_PROXY) \
@@ -73,7 +76,7 @@ mfnmessage.go: ../schema/mfnmessage-schema.json
 
 frontend: mfnmessage.go localqueueservice datalayermessage datalayerservice $(SOURCES)
 	-rm -f frontend
-	docker run --rm -it --name build-$@ \
+	docker run --rm -i --name build-$@ \
 		--user $(UID):$(GID) \
 		--env http_proxy=$(HTTP_PROXY) \
 		--env https_proxy=$(HTTPS_PROXY) \

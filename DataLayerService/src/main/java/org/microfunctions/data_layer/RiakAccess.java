@@ -578,6 +578,12 @@ public class RiakAccess {
 			}
 			
 			ByteBuffer value = ByteBuffer.wrap(object.getValue().unsafeGetValue());
+			
+			if (value.hasArray() && value.array().length == 1 && value.array()[0] == 0)
+			{
+				value = ByteBuffer.wrap(new byte[] {});
+			}
+			
 			return new AbstractMap.SimpleEntry<String, ByteBuffer>(key, value);
 		} catch (Exception e) {
 			LOGGER.error("selectRow() failed.  Keyspace: " + keyspace + "  Table: " + table, e);

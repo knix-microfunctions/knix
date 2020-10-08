@@ -516,66 +516,120 @@ class MfnClient(object):
         self.action('deleteWorkflow',{'workflow':{'id':wf.id}})
 
 
-    def keys(self,table="defaultTable"):
+    def keys(self, all_at_once=False):
+        return self.list_keys(all_at_once=all_at_once)
+
+    def keys(self):
         start=0
         step=100
         while start >= 0:
             data_to_send = {}
-            data_to_send["email"] = self.user
-            data_to_send["token"] = self.token
-            data_to_send["action"] = "listKeys"
-            data_to_send["table"] = table
-            data_to_send["start"] = start
-            data_to_send["count"] = step
-            r = self._s.get(self.store,#verify=False,
-                    params=data_to_send)
+            data_to_send["action"] = "performStorageAction"
+            data = {}
+            user = {}
+            user["token"] = self.token
+            data["user"] = user
+            storage = {}
+            storage["action"] = "listKeys"
+            storage["start"] = start
+            storage["count"] = step
+            data["storage"] = storage
+            data_to_send["data"] = data
+            r = self._s.post(self.mgmturl,
+                    params={},
+                    json=data_to_send)
             r.raise_for_status()
-            data = r.json()
-            for key in data:
-                yield key
-            if len(data) < step:
-                break
-            start += step
+            if r.json()["status"] == "success":
+                keylist = r.json()["data"]["keylist"]
+                for key in keylist:
+                    yield key
+                if len(keylist) < step:
+                    break
+                start += step
+            else:
+                raise Exception("LISTKEYS failed: " + r.json()["data"]["message"])
 
-
-    def get(self,key,table="defaultTable"):
+    def list_keys(self, start=0, count=2000):
         data_to_send = {}
-        data_to_send["email"] = self.user
-        data_to_send["token"] = self.token
-        data_to_send["action"] = "getData"
-        data_to_send["table"] = table
-        data_to_send["key"] = key
-        r = self._s.get(self.store,#verify=False,
-                params=data_to_send)
+        data_to_send["action"] = "performStorageAction"
+        data = {}
+        user = {}
+        user["token"] = self.token
+        data["user"] = user
+        storage = {}
+        storage["action"] = "listKeys"
+        storage["start"] = start
+        storage["count"] = count
+        data["storage"] = storage
+        data_to_send["data"] = data
+        r = self._s.post(self.mgmturl,
+                params={},
+                json=data_to_send)
         r.raise_for_status()
-        return r.json()
+        if r.json()["status"] != "success":
+            raise Exception("LISTKEYS failed: " + r.json()["data"]["message"])
+
+        return r.json()["data"]["keylist"]
 
 
-    def put(self,key,value,table="defaultTable"):
+    def get(self, key):
         data_to_send = {}
-        data_to_send["email"] = self.user
-        data_to_send["token"] = self.token
-        data_to_send["action"] = "putData"
-        data_to_send["table"] = table
-        data_to_send["key"] = key
-        #data_to_send["value"] = urllib.parse.quote(value)
-        r = self._s.post(self.store,#verify=False,
-                    params=data_to_send,
-                    json=value)
+        data_to_send["action"] = "performStorageAction"
+        data = {}
+        user = {}
+        user["token"] = self.token
+        data["user"] = user
+        storage = {}
+        storage["action"] = "getdata"
+        storage["key"] = key
+        data["storage"] = storage
+        data_to_send["data"] = data
+        r = self._s.post(self.mgmturl,
+                params={},
+                json=data_to_send)
         r.raise_for_status()
-        if r.text != "true":
-            raise Exception("PUT failed: " + r.text)
+        if r.json()["status"] == "success":
+            return r.json()["data"]["value"]
+        else:
+            raise Exception("GET failed: " + r.json()["data"]["message"])
 
 
-    def delete(self,key,table="defaultTable"):
+    def put(self, key, value):
         data_to_send = {}
-        data_to_send["email"] = self.user
-        data_to_send["token"] = self.token
-        data_to_send["action"] = "deleteData"
-        data_to_send["table"] = table
-        data_to_send["key"] = key
-        r = self._s.get(self.store,#verify=False,
-                    params=data_to_send)
+        data_to_send["action"] = "performStorageAction"
+        data = {}
+        user = {}
+        user["token"] = self.token
+        data["user"] = user
+        storage = {}
+        storage["action"] = "putdata"
+        storage["key"] = key
+        storage["value"] = value
+        data["storage"] = storage
+        data_to_send["data"] = data
+        r = self._s.post(self.mgmturl,
+                params={},
+                json=data_to_send)
         r.raise_for_status()
-        if r.text != "true":
-            raise Exception("DELETE failed: " + r.text)
+        if r.json()["status"] != "success":
+            raise Exception("PUT failed: " + r.json()["data"]["message"])
+
+
+    def delete(self, key):
+        data_to_send = {}
+        data_to_send["action"] = "performStorageAction"
+        data = {}
+        user = {}
+        user["token"] = self.token
+        data["user"] = user
+        storage = {}
+        storage["action"] = "deletedata"
+        storage["key"] = key
+        data["storage"] = storage
+        data_to_send["data"] = data
+        r = self._s.post(self.mgmturl,
+                params={},
+                json=data_to_send)
+        r.raise_for_status()
+        if r.json()["status"] != "success":
+            raise Exception("DELETE failed: " + r.json()["data"]["message"])

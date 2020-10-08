@@ -42,7 +42,11 @@ build/SandboxAgent.tar.gz: $(SBASOURCE)
 	tar -czf $@ ../SandboxAgent
 
 FWSOURCE = $(shell find ../FunctionWorker)
-build/FunctionWorker.tar.gz: $(FWSOURCE) ../build_env.mk
+build/FunctionWorker.tar.gz: \
+		$(FWSOURCE) \
+		../build_env.mk \
+		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	mkdir -p build
 	docker run --user $$(id -u):$$(id -g) --rm -v $$(pwd)/../:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \
@@ -121,7 +125,7 @@ push: image image_java
 ##############################
 ## Testing
 test: image
-	docker run -it --rm --name frontend \
+	docker run -i --rm --name frontend \
 		--env MFN_DATALAYER=192.168.137.111:4998 \
 		--env MFN_HOSTNAME=$(shell hostname) \
 		--env MFN_ELASTICSEARCH_CONNECT=$(shell hostname):9200 \

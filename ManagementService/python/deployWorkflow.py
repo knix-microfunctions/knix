@@ -116,7 +116,7 @@ def check_workflow_functions(wf_type, wfobj, email, sapi):
             resource_names_to_be_checked[resource_name] = True
 
     if success:
-        if len(resource_names_to_be_checked.keys()) == 0:
+        if not resource_names_to_be_checked.keys():
             uploaded_resources = {}
         else:
             uploaded_resources = sapi.get(email + "_list_grains", True)
@@ -496,6 +496,8 @@ def handle(value, sapi):
 
         sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
 
+        status = "deploying"
+
         if 'KUBERNETES_SERVICE_HOST' in os.environ:
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 runtime = "Java"
@@ -572,9 +574,14 @@ def handle(value, sapi):
                         #endpoints = sapi.retrieveMap(workflow_info["workflowId"] + "_workflow_endpoints", True)
                         #sapi.log(str(endpoints))
 
-                sapi.put(email + "_workflow_hosts_" + workflow["id"], json.dumps(deployed_hosts), True, True)
+                if not bool(deployed_hosts):
+                    status = "failed"
+                else:
+                    #sapi.log("deployed on hosts: " + json.dumps(deployed_hosts))
+                    sapi.put(email + "_workflow_hosts_" + workflow["id"], json.dumps(deployed_hosts), True, True)
             else:
                 print("available_hosts is empty. Not deploying")
+                status = "failed"
 
         # Update workflow status
         wfmeta["status"] = status
@@ -605,6 +612,7 @@ def handle(value, sapi):
     response = {}
     response_data = {}
     response_data["message"] = "Successfully deployed workflow " + workflow["id"] + "."
+    response_data["workflow"] = workflow
     response["status"] = "success"
     response["data"] = response_data
     sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})

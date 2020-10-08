@@ -20,10 +20,11 @@ import time
 import imp
 import json
 import logging
+import random
 import socket
 import subprocess
 import shlex
-#import hashlib
+import hashlib
 from threading import Timer
 
 import thriftpy2
@@ -115,6 +116,10 @@ class FunctionWorker:
         #self.local_data_layer_client = DataLayerClient(locality=0, sid=self._sandboxid, for_mfn=True, connect=self._datalayer)
 
         signal(SIGCHLD, SIG_IGN)
+
+        # do this once rather than at every forked process
+        if self._state_utils.isTaskState():
+            os.chdir(self._function_folder)
 
         self._is_running = False
         #self._print_self()
@@ -301,10 +306,7 @@ class FunctionWorker:
                         error_type = "User Input Decapsulation Error"
                         has_error = True
 
-                timestamp_map["t_start_chdir"] = time.time() * 1000.0
                 signal(SIGCHLD, SIG_DFL)
-                if self._state_utils.isTaskState():
-                    os.chdir(self._function_folder)
 
                 # 2. Decode input. Input (value) must be a valid JSON Text.
                 # Note: JSON Text is not the same as JSON string. JSON string a one variable type that can be contained inside a JSON Text.
@@ -450,7 +452,10 @@ class FunctionWorker:
                     elif self._function_runtime == "java":
                         exec_arguments = {}
 
-                        api_uds = "/tmp/" + self._function_state_name + "_" + key + ".uds"
+                        random.seed()
+                        name = self._function_state_name + "_" + key + "_" + str(time.time() * 1000.0) + "_" + str(random.uniform(0, 100000))
+                        sha = hashlib.sha256(name.encode()).hexdigest()
+                        api_uds = "/tmp/" + sha + ".uds"
 
                         exec_arguments["api_uds"] = api_uds
                         exec_arguments["thriftAPIService"] = self._api_thrift.MicroFunctionsAPIService

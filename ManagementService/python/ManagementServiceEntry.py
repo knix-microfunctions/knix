@@ -326,6 +326,7 @@ def actionOther(action, data, sapi):
     possibleActions["addStorageTriggerForWorkflow"] = True
     possibleActions["getTriggerableTables"] = True
     possibleActions["deleteAccount"] = True
+    possibleActions["performStorageAction"] = True
 
     deprecatedActions = {}
     deprecatedActions["clearWorkflowLog"] = True

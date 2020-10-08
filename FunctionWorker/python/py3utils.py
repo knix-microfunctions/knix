@@ -15,15 +15,17 @@
 import sys
 
 PYTHON_VERSION = sys.version_info
+if PYTHON_VERSION >= (3, ):
+    PY3 = True
 
 def is_string(string):
-    if PYTHON_VERSION >= (3, ):
+    if PY3:
         return isinstance(string, str)
 
     return isinstance(string, basestring)
 
 def ensure_long(value):
-    if PYTHON_VERSION >= (3, ):
+    if PY3:
         return int(value)
 
     return long(value)

@@ -18,12 +18,25 @@
 
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-    <button class="btn btn-primary" ng-click="addStorageObject()">Add Object</button>
-  </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/></td></tr>
-
+    <button class="btn btn-primary" ng-click="addStorageObject()">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects()">Refresh</button>
+  </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
+  
+  </td>
+  </tr>
+  <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;">
+    <div style="width:100%">
+      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item)" class="btn-group bootstrap-select form-control">
+        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.realm}}</ui-select-match>
+        <ui-select-choices repeat="item in storageLocations | filter: $select.search">
+          <div ng-bind-html="item.name | highlight: $select.search"></div>
+          <small ng-bind-html="item.realm | highlight: $select.search"></small>
+        </ui-select-choices>
+      </ui-select>
+    </div>
+  </td></tr>
 
     <th id="sortHeader" st-sort="['modified', 'key']" st-sort-default="default" style="text-align:left;border:0;"><b>Key</b></th>
-    <th style="border:0;"><b>Endpoint</b></th>
+    <!-- <th style="border:0;"><b>Endpoint</b></th> -->
     <th style="border:0;"><b>Actions</b></th>
   </tr>
   </thead>
@@ -38,6 +51,7 @@
           {{ storageObject.key || 'empty' }}
         </span>
     </td>
+    <!--
     <td>
         <span e-name="endpoint" e-form="rowform">
           <input ng-show="storageObject.key!=''" type="text" name="storageEndpoint" size="50" style="border:0;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" value="{{ showEndpoint(storageObject) }}">
@@ -46,7 +60,7 @@
 
         </span>
     </td>
-
+    -->
 
     <td>
       <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveStorageObject(storageObject);" class="form-buttons form-inline"
@@ -78,14 +92,14 @@
   </tr>
   </tbody>
   <tfoot>
-			<tr style="border: 0;">
-				<td colspan="5" class="text-center" style="border: 0;">
+            <tr style="border: 0;">
+                <td colspan="5" class="text-center" style="border: 0;">
           <br>
-					<div id="storageObjectPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
+                    <div id="storageObjectPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
           <br>
-				</td>
+                </td>
 
-			</tr>
+            </tr>
 
-	</tfoot>
+    </tfoot>
 </table>

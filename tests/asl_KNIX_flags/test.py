@@ -61,7 +61,7 @@ class ASL_ParallelTest(unittest.TestCase):
         testtuplelist.append((json.dumps(event), json.dumps(expectedResponses)))
 
         test = MFNTest(test_name="Parallel", workflow_filename="wf_asl_parallel_waitfornumbranches.json")
-        test.exec_tests(testtuplelist, async=True)
+        test.exec_tests(testtuplelist, async_=True)
 
 
 class ASL_SessionSupportTest(unittest.TestCase):

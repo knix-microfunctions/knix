@@ -80,7 +80,7 @@ def run_command_return_output(cmd, logger):
         logger.error('[SandboxAgent] Could not execute command and return output: %s', str(exc))
         error = exc
 
-    return output, error
+    return output.strip(), error
 
 def terminate_and_wait_child(process, name, timeout, logger):
     logger.info("Terminating %s: pid: %s...", name, str(process.pid))

@@ -30,6 +30,6 @@ class AsyncronousExecutionTest(unittest.TestCase):
         test_tuple_list.append((json.dumps(inp0), json.dumps(res0)))
 
         test = MFNTest(test_name='echo_asynchronous', workflow_filename='echo_asynchronous.json')
-        test.exec_tests(test_tuple_list, async=True)
+        test.exec_tests(test_tuple_list, async_=True)
 
         #test.plot_latency_breakdown(20)

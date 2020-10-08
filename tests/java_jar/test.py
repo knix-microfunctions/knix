@@ -25,8 +25,8 @@ from mfn_test_utils import MFNTest
 class JavaJarTest(unittest.TestCase):
 
     #@unittest.skip("")
-    def test_jar_java(self):
-        test = MFNTest(workflow_filename="wf_jar.json")
+    def test_jar_class_java(self):
+        test = MFNTest(workflow_filename="wf_jar_class.json")
         test_tuples = []
         test_tuples.append(('"test"', '"Finished: test"'))
         time.sleep(5)
@@ -34,8 +34,8 @@ class JavaJarTest(unittest.TestCase):
         test.exec_tests(test_tuples)
 
     #@unittest.skip("")
-    def test_jar_java_src(self):
-        test = MFNTest(workflow_filename="wf_jar_src.json")
+    def test_jar_java_source(self):
+        test = MFNTest(workflow_filename="wf_jar_source.json")
         test_tuples = []
         test_tuples.append(('"test"', '"Finished: test"'))
         time.sleep(5)
@@ -46,7 +46,10 @@ class JavaJarTest(unittest.TestCase):
     def test_jar_maven_java(self):
         test = MFNTest(workflow_filename="wf_jar_maven.json")
         test_tuples = []
-        test_tuples.append(('"test"', '"Finished: test"'))
+        output = {}
+        output["input"] = "test"
+        output["output"] = "Finished: test"
+        test_tuples.append(('"test"', output))
         time.sleep(5)
 
         test.exec_tests(test_tuples)

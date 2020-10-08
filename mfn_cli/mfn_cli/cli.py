@@ -21,6 +21,7 @@ import logging
 import os
 import stat
 import sys
+from requests import ConnectionError
 import tempfile
 import traceback
 from . import __version__
@@ -135,9 +136,12 @@ def version(config):
     print("mfn_cli "+__version__)
     from mfn_sdk import __version__ as sdkversion
     print("mfn_sdk "+sdkversion)
-    client = config.get_client()
     try:
+        client = config.get_client()
         print("management service "+client.version())
+    except ConnectionError as e:
+        print("can't connect to management service")
+        log.error(e)
     except Exception as e:
         log.error(e)
 
@@ -161,7 +165,7 @@ def login(config, url=None, user=None, name=None, password=None):
             url = 'http://'+url
 
     # overwrite values if provided
-    config.mfn_url = url or config.mfn_url or default.get('mfn_url', 'https://knix.io/mfn')
+    config.mfn_url = url or config.mfn_url or default.get('mfn_url', 'https://knix.io')
     config.mfn_user = user or config.mfn_user or default.get('mfn_user')
     config.mfn_name = name or config.mfn_name or default.get('mfn_name')
     config.mfn_password = password or config.mfn_password or default.get('mfn_password')
@@ -172,14 +176,14 @@ def login(config, url=None, user=None, name=None, password=None):
     config.proxies = default.get('proxies', None)
     if config.proxies is None:
         proxies=dict()
-        if 'http_proxy' in sys.environ:
-            config.proxies['http'] = sys.environ['http_proxy']
-        elif 'HTTP_PROXY' in sys.environ:
-            config.proxies['http'] = sys.environ['HTTP_PROXY']
-        if 'https_proxy' in sys.environ:
-            config.proxies['https'] = sys.environ['https_proxy']
-        elif 'HTTPS_PROXY' in sys.environ:
-            config.proxies['https'] = sys.environ['HTTPS_PROXY']
+        if 'http_proxy' in os.environ:
+            config.proxies['http'] = os.environ['http_proxy']
+        elif 'HTTP_PROXY' in os.environ:
+            config.proxies['http'] = os.environ['HTTP_PROXY']
+        if 'https_proxy' in os.environ:
+            config.proxies['https'] = os.environ['https_proxy']
+        elif 'HTTPS_PROXY' in os.environ:
+            config.proxies['https'] = os.environ['HTTPS_PROXY']
         if len(proxies) > 0:
             config.proxies = proxies
     try:
@@ -302,7 +306,7 @@ def create_workflow(config,name,file):
     client = config.get_client()
     wf = client.add_workflow(str(name).strip())
     log.info("Created workflow "+wf._name+" ("+wf.id+")")
-    if wfd:
+    if file and wfd:
         wf.json = wfd
     click.echo(wf.id)
 
@@ -351,7 +355,7 @@ def create_function(config,runtime,name,file):
     client = config.get_client()
     fn = client.add_function(str(name).strip(),runtime)
     log.info("Created function "+fn._name+" ("+fn.id+")")
-    if code:
+    if file and code:
         fn.code = code
     click.echo(fn.id)
 

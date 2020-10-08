@@ -20,8 +20,10 @@
     var token = $cookies.get('token');
     var email = $cookies.get('email');
     var uploadStorageObjectModalVisible = true;
-    var urlPath = "/storage/";
-    
+    var urlPath = sharedProperties.getUrlPath();
+    var storageLoc = sharedProperties.getStorageLocation();
+
+
      $scope.file_changed = function(element) {
        var file = element.files[0];
 
@@ -61,35 +63,39 @@
        console.log('Loading object:' + sharedProperties.getObjectKey());
 
        var req = {
-         method: 'GET',
-         url: urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=getData&key=" + encodeURIComponent(sharedProperties.getObjectKey()),
+         method: 'POST',
+         url: urlPath,
          headers: {
-           'Content-Type': 'application/x-www-form-urlencoded'
-         }
-
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": sharedProperties.getObjectKey(), "workflowid" :  storageLoc } } })
        }
+
        $http(req).then(function successCallback(response) {
 
+          if (response.data.status == "success")
+          {
 
           console.log('Storage object successfully downloaded.');
-          var objectData = response.data;
-          
+          var objectData = response.data.data.value;
+
           if (objectData.length<10000) {
-            try { 
-              if (atob(objectData).match(/[^\u0000-\u007f]/)) {
+            try {
+                var objectDataStr = atob(objectData);
+              if (objectDataStr.match(/[^\u0000-\u007f]/)) {
                 _editor.getSession().setValue('Storage object contains binary data. Please download the object instead.');
               } else {
-                _editor.getSession().setValue(atob(objectData));
+                _editor.getSession().setValue(objectDataStr);
               }
             } catch(e) {
              _editor.getSession().setValue(objectData);
-            } 
+            }
           } else {
             _editor.getSession().setValue('Storage object data is too large to display inline. Please download the object instead.');
           }
 
           _editor.focus();
-
+          }
        }, function errorCallback(response) {
            console.log("Error occurred during getData");
            console.log("Response:" + response);
@@ -126,28 +132,34 @@
 
        var objectData = $scope.aceSession.getDocument().getValue();
        var dataStr = "";
-       if (objectData=="Storage object data is too large to display inline. Please download the object instead." 
+       if (objectData=="Storage object data is too large to display inline. Please download the object instead."
        || objectData=="Storage object contains binary data. Please download the object instead.") {
          return;
        }
-     
-       dataStr = btoa(objectData);
-       
-       var req = {
-         method: 'POST',
-         url: urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=putData&key=" + encodeURIComponent(sharedProperties.getObjectKey()),
-         headers: {
-           'Content-Type': 'application/x-www-form-urlencoded'
-         },
-         data: dataStr
 
-
+       if (objectData.match(/[^\u0000-\u007f]/))
+       {
+           dataStr = btoa(objectData);
        }
+       else
+       {
+           dataStr = objectData;
+       }
+
+      var req = {
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "workflowid" :  storageLoc} } })
+       }
+
        $http(req).then(function successCallback(response) {
 
-         if (response.data=="true") {
+         if (response.data.status=="success") {
 
-             console.log('Object sucessfully uploaded.');
+             console.log('Object successfully uploaded.');
              toastr.success('Your object has been saved successfully!');
              //$scope.reloadStorageObjects();
            } else {
@@ -164,7 +176,7 @@
            }
        }, function errorCallback(response) {
            console.log("Error occurred during putData");
-           console.log("Response:" + response);
+           console.log(response);
            if (response.statusText) {
              $scope.errorMessage = response.statusText;
            } else {
@@ -182,17 +194,26 @@
        });
      };
 
-
-
-
      $scope.uploadFile = function(file, fileName, fileSize) {
 
-       
+
        var encodedFile = file;
-       var dataStr = encodedFile;
+       var dataStr = "";
+
+       try {
+                var objectDataStr = atob(encodedFile);
+              if (objectDataStr.match(/[^\u0000-\u007f]/)) {
+                dataStr = encodedFile;
+              } else {
+                dataStr = objectDataStr;
+              }
+            } catch(e) {
+                dataStr = encodedFile;
+            }
 
        var req = {
          method: 'POST',
+         url: urlPath,
          uploadEventHandlers: {
            progress: function (e) {
                if (e.lengthComputable) {
@@ -201,17 +222,15 @@
                }
              }
          },
-         url: urlPath + "?token=" + token + "&email=" + email + "&table=defaultTable&action=putData&key=" + encodeURIComponent(sharedProperties.getObjectKey()),
          headers: {
-           'Content-Type': 'application/x-www-form-urlencoded'
+           'Content-Type': 'application/json'
          },
-         data: dataStr
-
-
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "workflowid" :  storageLoc} } })
        }
+
        $http(req).then(function successCallback(response) {
 
-         if (response.data=="true") {
+         if (response.data.status=="success") {
 
              console.log('Object sucessfully uploaded.');
              toastr.success('Your object has been uploaded successfully!');
@@ -221,9 +240,9 @@
              document.getElementById("progBar").style.display = 'none';
              $scope.progressBar = 0;
              $scope.progressCounter = $scope.progressBar;
-             
+
              if (encodedFile.length<10000) {
-              try { 
+              try {
                 if (atob(encodedFile).match(/[^\u0000-\u007f]/)) {
                   $scope.aceSession.setValue('Storage object contains binary data. Please download the object instead.');
                 } else {
@@ -231,11 +250,11 @@
                 }
               } catch(e) {
                 $scope.aceSession.setValue(encodedFile);
-              } 
+              }
             } else {
               $scope.aceSession.setValue('Storage object data is too large to display inline. Please download the object instead.');
             }
-             
+
            } else {
              console.log("Failure status returned by putData");
              $scope.errorMessage = "An error occured while uploading your object.";

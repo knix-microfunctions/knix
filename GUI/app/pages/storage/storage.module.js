@@ -17,9 +17,7 @@
 (function () {
   'use strict';
 
-  angular.module('MfnWebConsole.pages.storage', [
-
-  ])
+  angular.module('MfnWebConsole.pages.storage', [ 'ui.select', 'ngSanitize' ])
       .config(routeConfig);
 
   /** @ngInject */

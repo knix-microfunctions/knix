@@ -37,7 +37,6 @@ push:
 	make -C ../../ManagementService push
 	make -C ../../DataLayerService push
 	make -C ../../riak push
-	make -C ../../HttpFrontend push
 	make -C ../../GUI push
 
 deploy: push

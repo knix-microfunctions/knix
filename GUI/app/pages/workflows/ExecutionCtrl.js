@@ -120,7 +120,7 @@
 
                var logStr = atob(response.data.data.workflow.log);
 
-               logStr = logStr.replace(/\[2/g, "#@![2");
+               logStr = logStr.replace(/\[1/g, "#@![1");
 
                var logArr = logStr.split('#@!');
                logArr.sort();
@@ -141,11 +141,9 @@
 
               var logArray = logFile.split(/\r?\n/);
 
-
               prevProgressEntry = response.data.data.workflow.progress;
 
               var progress = atob(response.data.data.workflow.progress);
-              //console.log(progress);
 
               var prevExecutedFunction = "";
               var lastFunctionExecutionDate = 0;
@@ -239,7 +237,7 @@
                         if (logArray[t].includes(stateName)) {
                           //console.log("ggg:" + stateName);
                           //console.log("ggg:" + logArray[t]);
-                          var rawDate = logArray[t].substring(logArray[t].indexOf("[")+1,logArray[t].indexOf("]"));
+                          var rawDate = logArray[t].substring(nthIndex(logArray[t],'[', 2)+1, nthIndex(logArray[t],']', 2));
                           rawDate = rawDate.replace(' ', 'T');
                           rawDate = rawDate.replace(',', '.');
                           //console.log(rawDate);
@@ -251,8 +249,11 @@
                             if (logArray[t].includes("ERROR")) {
                               execErr = 'Error';
                             }
-                            var cutB = nthIndex(logArray[t],'[', 3);
-                            var cutE = nthIndex(logArray[t],']', 3);
+                            var cutB = nthIndex(logArray[t],'[', 1);
+                            var cutE = nthIndex(logArray[t],']', 1);
+                            logArray[t] = logArray[t].replace(logArray[t].substring(cutB, cutE+1), "");
+                            cutB = nthIndex(logArray[t],'[', 3);
+                            cutE = nthIndex(logArray[t],']', 3);
                             logArray[t] = logArray[t].replace(logArray[t].substring(cutB, cutE+1), "");
                             cutB = nthIndex(logArray[t],'[', 3);
                             cutE = nthIndex(logArray[t],']', 3);
