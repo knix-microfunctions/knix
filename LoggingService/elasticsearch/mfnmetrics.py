@@ -369,6 +369,7 @@ def form_query(uuids=None):
                 ],
                 "must_not": [
                     { "match": { "message": "RecoveryManager"}},
+                    { "match": { "message": "__mfn_backup"}},
                     { "match": { "message": "MFN_FRONTEND_INSTRUCTS"}}
                 ]
             }

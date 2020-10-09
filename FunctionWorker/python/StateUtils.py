@@ -221,17 +221,20 @@ class StateUtils:
 
                 self._logger.debug("received output_data: " + output_data)
 
-                output_data = json.loads(output_data)
-
-                if not output_data["hasError"]:
-                    java_output["functionResult"] = output_data["functionResult"]
-                    java_output["hasError"] = False
-                    java_output["errorType"] = ""
-                    java_output["errorTrace"] = ""
-                else:
-                    java_output["hasError"] = output_data["hasError"]
-                    java_output["errorType"] = output_data["errorType"]
-                    java_output["errorTrace"] = output_data["errorTrace"]
+                try:
+                    output_data = json.loads(output_data)
+                    if not output_data["hasError"]:
+                        java_output["functionResult"] = output_data["functionResult"]
+                        java_output["hasError"] = False
+                        java_output["errorType"] = ""
+                        java_output["errorTrace"] = ""
+                    else:
+                        java_output["hasError"] = output_data["hasError"]
+                        java_output["errorType"] = output_data["errorType"]
+                        java_output["errorTrace"] = output_data["errorTrace"]
+                except Exception as exc:
+                    self._logger.debug("Problem in received output_data: " + output_data)
+                    pass
 
                 # close the api server in the main thread, so that we can continue with publishing the output
                 api_server.close()
@@ -253,7 +256,7 @@ class StateUtils:
             java_input = exec_arguments["function_input"]
 
             processor = TProcessor(thriftAPIService, sapi)
-            server_socket = TServerSocket(unix_socket=api_uds)
+            server_socket = TServerSocket(unix_socket=api_uds, client_timeout=None)
             # no need for any other type of server; there will only be a single client: the java function instance
             api_server = TSimpleServer(processor, server_socket,
                                        iprot_factory=TCompactProtocolFactory(),
@@ -290,6 +293,7 @@ class StateUtils:
             if not has_error:
                 function_output = java_output["functionResult"]
             else:
+                # _XXX_: need to raise the exception, so that the catcher and retryer can have a chance
                 raise Exception(error_type)
 
         return function_output

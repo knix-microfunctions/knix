@@ -145,14 +145,13 @@ class SessionHelperThread(threading.Thread):
         # must be in milliseconds
         if "heartbeat_interval_ms" in heartbeat_params:
             self._heartbeat_interval = heartbeat_params["heartbeat_interval_ms"]
-            self._local_poll_timeout = self._heartbeat_interval
+            self._local_poll_timeout = self._heartbeat_interval / 2.0
             #self._logger.debug("[SessionHelperThread] New heartbeat interval: " + str(self._heartbeat_interval))
 
     def run(self):
         self._is_running = True
 
-        max_num_messages = 1000
-        # initially, it is the heartbeat_interval
+        # initially, it is the heartbeat_interval / 2
         poll_timeout = self._local_poll_timeout
 
         if self._heartbeat_enabled:
@@ -171,29 +170,26 @@ class SessionHelperThread(threading.Thread):
             # wait until the polling interval finishes
             # the polling interval depends on the heartbeat interval and when we actually receive a message
             # if we get a message before, then update the polling interval as (heartbeat_interval - passed_time)
-            lqm_list = self._local_queue_client.getMultipleMessages(self._local_topic_communication, max_num_messages, poll_timeout)
+            lqm = self._local_queue_client.getMessage(self._local_topic_communication, poll_timeout)
 
             # double check we are still running
             # if the long-running function finished while we were polling, no need to send another heartbeat
             if not self._is_running:
                 break
 
-            num = len(lqm_list)
-            for i in range(num):
-                lqm = lqm_list[i]
-                if lqm is not None:
-                    self._process_message(lqm)
+            if lqm is not None:
+                self._process_message(lqm)
 
-                if self._heartbeat_enabled:
-                    # send heartbeat
-                    # this is part of the message loop, such that we can have a more precise heartbeat
-                    # if it was only after the message loop, then there is a corner case, where the
-                    # processing of the messages would take more than the heartbeat interval,
-                    # meaning we would miss our deadline
-                    t_cur = time.time() * 1000.0
-                    if (t_cur - last_heartbeat_time) >= self._heartbeat_interval:
-                        self._send_heartbeat()
-                        last_heartbeat_time = t_cur
+            if self._heartbeat_enabled:
+                # send heartbeat
+                # this is part of the message loop, such that we can have a more precise heartbeat
+                # if it was only after the message loop, then there is a corner case, where the
+                # processing of the messages would take more than the heartbeat interval,
+                # meaning we would miss our deadline
+                t_cur = time.time() * 1000.0
+                if (t_cur - last_heartbeat_time) >= self._heartbeat_interval:
+                    self._send_heartbeat()
+                    last_heartbeat_time = t_cur
 
             if self._heartbeat_enabled:
                 # send heartbeat
@@ -229,9 +225,11 @@ class SessionHelperThread(threading.Thread):
         is_json = True
         try:
             msg = json.loads(value)
-            #self._logger.debug("[SessionHelperThread] decoded value: " + str(msg))
+            #self._logger.debug("[SessionHelperThread] JSON value: " + str(msg))
         except Exception as exc:
             is_json = False
+            msg = value
+            self._logger.debug("[SessionHelperThread] non-JSON value: " + str(msg))
 
         # cannot be a special message; queue whatever it is
         # _XXX_: we are encoding/decoding the delivered message; should not actually execute this code
@@ -334,16 +332,11 @@ class SessionHelperThread(threading.Thread):
             self._backup_data_layer_client.shutdown()
             self._backup_data_layer_client = None
 
+        # remove/unregister the topic
+        self._local_queue_client.removeTopic(self._local_topic_communication)
+
         self._local_queue_client.shutdown()
         self._local_queue_client = None
 
     def shutdown(self):
         self._is_running = False
-        # remove/unregister the topic here
-        # if done in _cleanup(), it may be the case that the parent process exits
-        # and we never get to execute that part in this thread
-        # need a new lqc, because if using the actual self._local_queue_client,
-        # it will corrupt the protocol stack, if it is still waiting on new messages
-        lqc = LocalQueueClient(connect=self._queue_service)
-        lqc.removeTopic(self._local_topic_communication)
-        lqc.shutdown()

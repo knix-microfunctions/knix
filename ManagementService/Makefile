@@ -32,7 +32,11 @@ THRIFT=$(-shell find data_layer/ -type f -size +1c) data_layer
 
 thrift: $(THRIFT)
 
-$(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift ../DataLayerService/thrift/DataLayerService.thrift ../build_env.mk
+$(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift \
+		../DataLayerService/thrift/DataLayerService.thrift \
+		../build_env.mk \
+		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	mkdir -p data_layer
 	docker run --user $(UID):$(GID) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerMessage.thrift; \
@@ -65,7 +69,7 @@ push: image
 	$(call push_image,microfn/management)
 
 test: image
-	docker run -it --rm --name management \
+	docker run -i --rm --name management \
 		--env MFN_DATALAYER=192.168.137.111:4998 \
 		--env MFN_HOSTNAME=$(shell hostname) \
 		--env MFN_ELASTICSEARCH_CONNECT=$(shell hostname):9200 \
@@ -77,7 +81,7 @@ test: image
 		microfn/management
 
 print: image
-	docker run -it --rm --name management \
+	docker run -i --rm --name management \
 		--env MFN_DATALAYER=192.168.137.111:4998 \
 		--env MFN_HOSTNAME=$(shell hostname) \
 		--env MFN_ELASTICSEARCH_CONNECT=$(shell hostname):9200 \

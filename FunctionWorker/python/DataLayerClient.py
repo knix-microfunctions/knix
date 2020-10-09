@@ -263,7 +263,7 @@ class DataLayerClient:
         return ret
 
     def getMapKeys(self, mapname):
-        keys = None
+        keys = []
         for retry in range(MAX_RETRIES):
             try:
                 keyset = self.datalayer.retrieveKeysetFromMap(self.keyspace, self.maptablename, mapname, self.locality)
@@ -280,7 +280,7 @@ class DataLayerClient:
         return keys
 
     def retrieveMap(self, mapname):
-        mapentries = None
+        mapentries = {}
         for retry in range(MAX_RETRIES):
             try:
                 mapentries = self.datalayer.retrieveAllEntriesFromMap(self.keyspace, self.maptablename, mapname, self.locality)
@@ -398,7 +398,7 @@ class DataLayerClient:
         return ret
 
     def retrieveSet(self, setname):
-        items = None
+        items = []
         for retry in range(MAX_RETRIES):
             try:
                 itemsset = self.datalayer.retrieveSet(self.keyspace, self.settablename, setname, self.locality)

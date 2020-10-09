@@ -1,0 +1,11 @@
+{
+    "Comment": "Context Object Test",
+    "StartAt": "ContextTest",
+    "States": {
+            "ContextTest":{
+              "Resource":"ContextTest",
+              "End":true,
+              "Type":"Task"
+            }
+   }
+}
