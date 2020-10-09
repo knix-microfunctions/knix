@@ -1,7 +1,7 @@
 {
 "test_name": "Map State IRO Paths Processing Test", 
 
-"workflow_name": "workflow_map_state_iro_paths_processing_test/workflow_map_state_iro_paths_processing_test.json",
+"workflow_name": "wfms_iro_paths_test/wfms_iro_paths_processing_test.json",
 
 "event": {
   "orderId": "12345678",

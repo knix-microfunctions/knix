@@ -1,7 +1,6 @@
-
 {
 "test_name": "Map State Hardcoded Input Test", 
-"workflow_name": "workflow_map_state_hardcoded_test/workflow_map_state_hardcoded_test.json",
+"workflow_name": "wfms_hardcoded_test/wfms_hardcoded_test.json",
 "event" : "trigger map state input",
 "expectedResponse" : [{"Value": "Iterate", "Index": 0}, {"Value": "Over", "Index": 1}, {"Value": "This", "Index": 2}, {"Value": "Array", "Index": 3}]
 }

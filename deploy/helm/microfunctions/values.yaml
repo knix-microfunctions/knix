@@ -20,12 +20,11 @@
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
 #imageRepo: "registry.kube-system.svc.cluster.local"
-imageRepo: "localhost:5000"
+imageRepo: "localhost:5000" # kubespray deployment: imageRepo: "localhost:5000"
 manager:
   #httpProxy: "http://<host>:<port>"
   #httpsProxy: "http://<host>:<port>"
-  httpGatewayPort: 30336
-  #httpsGatewayPort: 32533
+  httpGatewayPort: 30336 # kubespray deployment
   nameOverride: "microfunctions"
   newWorkflow:
     hpa:
@@ -65,7 +64,8 @@ manager:
 # MicroFunction Datalayer
 #------------------------------------------------------------------------------
 datalayer:
-  replicas: 1
+  replicas: 1 # kubespray deployment 
+  #replicas: 3
   imagePath: "/microfn/datalayer"
   imageTag: "latest"
   imagePullPolicy: "Always"
@@ -83,7 +83,8 @@ datalayer:
 # Riak global data storage
 #------------------------------------------------------------------------------
 riak:
-  replicas: 1
+  replicas: 1 # kubespray deployment
+  #replicas: 3
   imagePath: "/microfn/riak"
   imageTag: "latest"
   imagePullPolicy: "Always"

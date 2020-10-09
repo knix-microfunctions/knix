@@ -21,6 +21,7 @@ import json
 import sys
 import riak
 import socket
+import subprocess
 
 ### global variables set at runtime
 DLCLIENT=None
@@ -60,7 +61,14 @@ def dl_get(key):
 def add_host(hostname,hostip=None):
     if hostip is None:
         hostip = socket.gethostbyname(hostname)
-    print("Adding host: " + str(hostname))
+    has_gpu = False
+    try:
+        has_gpu = ("NVIDIA" in subprocess.check_output('nvcc --version.split(' ')).decode()'))
+    except Exception:
+        pass
+
+    print("Adding host: " + str(hostname) + ", has gpu: "+ str(has_gpu))
+
     v = dl_get("available_hosts")
     if v.encoded_data is not None and len(v.encoded_data) > 0:
         hosts = json.loads((v.encoded_data).decode())
@@ -71,6 +79,7 @@ def add_host(hostname,hostip=None):
         hosts = {}
     if hostname != None and hostname not in hosts:
         hosts[hostname] = hostip
+        # hosts[hostname]["has_gpu"] = True
         v.encoded_data = json.dumps(hosts).encode()
         v.store()
     return hosts
