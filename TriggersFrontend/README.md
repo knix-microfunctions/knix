@@ -13,14 +13,19 @@ Install rust <https://www.rust-lang.org/tools/install> on your linux environment
 Send a `POST` request to: `http://[trigger_frontend_host]:[port]/create_trigger` with the following json body:
 ```json
   "type": "amqp" or "timer",
-  "id": "<knix management provided unique string to identify the trigger>",
+  // id is a knix management provided unique string to identify the trigger
+  "id": "<string>",
+  // trigger_info is an object containing type specific information on how to subscribe to the queue
   "trigger_info": {
-    <type specific information on how to subscribe to the queue>
+    ...
   }
+  // workflows is a list of workflows associated with this trigger
   "workflows": [
     {
-      "workflow_url": "<url of the workflow>",
-      "tag": "<workflow developer provided unique string to be included in each workflow invocation>"
+      // url of the workflow
+      "workflow_url": "<string>",
+      // workflow developer provided unique string to be included in each workflow invocation
+      "tag": "<string>"
     }
     ...
   ]
@@ -100,9 +105,11 @@ The structure of the messages received at the workflow is:
 ```json
 {
     "type": "amqp" or "timer",
-    "tag": "<user specified optional tag while creating the trigger>",
-    "source": "<the topic name if available>",
-    "data": "<string data>"
+    //tag is a user specified optional string while creating the trigger
+    "tag": "<string>",
+    // source is the topic name if available
+    "source": "<string>",
+    "data": "<string>"
 }
 ```
 
@@ -114,8 +121,10 @@ The structure of the messages received at the workflow is:
     "data":{
       "action":"start" or "status" or "stop" ,
       "self_ip":"10.0.2.15",
-      "trigger_status_map":{},
-      "trigger_error_map":{}
+      // Status information about the active triggers
+      "trigger_status_map":{"<trigger_id>" : "trigger_id_status", "<trigger_id>" : "trigger_id_status", ...},
+      // Status information about trigger that stopped abonormally on their own
+      "trigger_error_map":{"<trigger_id>" : "trigger_id_error_message", "<trigger_id>" : "trigger_id_error_message"}
     }
 }
 ```
