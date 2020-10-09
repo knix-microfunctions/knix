@@ -12,6 +12,7 @@ Install rust <https://www.rust-lang.org/tools/install> on your linux environment
 
 Send a `POST` request to: `http://[trigger_frontend_host]:[port]/create_trigger` with the following json body:
 ```
+{
   "type": "amqp" or "timer",
   // id is a knix management provided unique string to identify the trigger
   "id": "<string>",
