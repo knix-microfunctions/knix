@@ -57,7 +57,7 @@ curl -H "Content-Type: application/json" -d \
     "durable": true,
     "exclusive": true,
     "auto_ack": true
-  }
+  },
   "workflows": [
     {
       "workflow_url": "http://httpbin.org/post",
@@ -82,7 +82,7 @@ curl -H "Content-Type: application/json" -d \
   "id": "2",
   "trigger_info": {
     "timer_interval_ms": 1000
-  }
+  },
   "workflows": [
     {
       "workflow_url": "http://httpbin.org/post",

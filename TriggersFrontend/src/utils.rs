@@ -89,7 +89,7 @@ pub async fn send_multiple_post_json_messages(urls: std::vec::Vec<String>, json_
     }
 }
 
-pub async fn send_post_json_message(url: String, json_body: String) {
+pub async fn send_post_json_message(url: String, json_body: String) -> bool {
     let client = reqwest::Client::new();
     let res = client
         .post(&url)
@@ -101,14 +101,17 @@ pub async fn send_post_json_message(url: String, json_body: String) {
         let ret_body = res.unwrap().text().await;
         if ret_body.is_ok() {
             debug!("Response: {}", ret_body.unwrap());
+            return true;
         } else {
             warn!(
                 "Unable to get reponse body for workflow invocation, {}",
                 url
             );
+            return false;
         }
     } else {
         warn!("Error response from workflow invocation, {}", url);
+        return false;
     }
 }
 

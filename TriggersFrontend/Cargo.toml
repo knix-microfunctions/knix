@@ -1,5 +1,5 @@
 [package]
-name = "tokio_actix_web_test"
+name = "TriggersFrontend"
 version = "0.1.0"
 authors = ["Paarijaat Aditya <paarijaat@gmail.com>"]
 edition = "2018"

@@ -16,7 +16,10 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
 
 mod trigger_manager;
-use trigger_manager::{TriggerManager, TriggerManagerCommand, TriggerManagerInfo};
+use trigger_manager::{
+    TriggerManager, TriggerManagerCommand, TriggerManagerInfo, TriggerManagerStatusUpdateMessage,
+    TriggerManagerStatusUpdateMessageData,
+};
 
 mod amqp_trigger;
 use amqp_trigger::{AMQPSubscriberInfo, AMQPTrigger};
@@ -25,7 +28,7 @@ mod timer_trigger;
 use timer_trigger::handle_create_timer_trigger;
 
 mod utils;
-use utils::{create_delay, get_unique_id, WorkflowInfo};
+use utils::{create_delay, get_unique_id, send_post_json_message, WorkflowInfo};
 
 /*
 struct TriggerInfo {
@@ -580,7 +583,39 @@ async fn stopactor(req: HttpRequest, data: web::Data<Mutex<AppState>>) -> impl R
 }
 */
 
-#[get("/")]
+async fn register_with_management(manager_info: TriggerManagerInfo) {
+    let update_message = TriggerManagerStatusUpdateMessage {
+        action: manager_info.management_action.clone(),
+        data: TriggerManagerStatusUpdateMessageData {
+            action: "start".into(),
+            self_ip: manager_info.self_ip.clone(),
+            trigger_status_map: HashMap::new(),
+            trigger_error_map: HashMap::new(),
+        },
+    };
+    let serialized_update_message = serde_json::to_string(&update_message).unwrap();
+    loop {
+        let ret = send_post_json_message(
+            manager_info.management_url.clone(),
+            serialized_update_message.clone(),
+        )
+        .await;
+        if ret == false {
+            warn!(
+                "Unable to register with Management at: {}, with data: {}. Retrying in 1 sec.",
+                &manager_info.management_url, &serialized_update_message
+            );
+            create_delay(1000, "management registration".into()).await;
+        } else {
+            info!(
+                "Registered with Management at: {}, with data: {}.",
+                &manager_info.management_url, &serialized_update_message
+            );
+            break;
+        }
+    }
+}
+
 async fn health() -> impl Responder {
     HttpResponse::Ok().body("ok")
 }
@@ -633,6 +668,8 @@ async fn main() -> std::io::Result<()> {
         self_ip,
     };
 
+    tokio::spawn(register_with_management(manager_info.clone())).await;
+
     let trigger_manager: TriggerManager = TriggerManager::spawn(manager_info.clone());
 
     let mut host_port: String = String::from("0.0.0.0:");
@@ -650,11 +687,12 @@ async fn main() -> std::io::Result<()> {
             .route("/delete_trigger", web::post().to(delete_trigger))
             .route("/add_workflows", web::post().to(add_workflows))
             .route("/remove_workflows", web::post().to(remove_workflows))
+            .route("/", web::get().to(health))
         //.route("/startactor/{id}", web::get().to(startactor))
         //.route("/stopactor/{id}", web::get().to(stopactor))
     })
     .bind(host_port.as_str())?
-    .workers(1)
+    .workers(3)
     .run()
     .await
 }

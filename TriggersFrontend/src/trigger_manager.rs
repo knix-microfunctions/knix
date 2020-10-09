@@ -11,6 +11,7 @@ use tokio::sync::oneshot;
 use crate::amqp_trigger::handle_create_amqp_trigger;
 use crate::timer_trigger::handle_create_timer_trigger;
 use crate::utils::create_delay;
+use crate::utils::send_post_json_message;
 use crate::utils::string_to_trigger_status;
 use crate::utils::trigger_status_to_string;
 use crate::utils::WorkflowInfo;
@@ -29,16 +30,16 @@ pub struct TriggerManagerInfo {
 
 #[derive(Serialize)]
 pub struct TriggerManagerStatusUpdateMessageData {
-    action: String,
-    self_ip: String,
-    trigger_status_map: HashMap<String, TriggerStatus>,
-    trigger_error_map: HashMap<String, String>,
+    pub action: String,
+    pub self_ip: String,
+    pub trigger_status_map: HashMap<String, TriggerStatus>,
+    pub trigger_error_map: HashMap<String, String>,
 }
 
 #[derive(Serialize)]
 pub struct TriggerManagerStatusUpdateMessage {
-    action: String,
-    data: TriggerManagerStatusUpdateMessageData,
+    pub action: String,
+    pub data: TriggerManagerStatusUpdateMessageData,
 }
 
 #[derive(Debug, Clone)]
@@ -502,8 +503,7 @@ async fn report_status_to_management(management_url: String, data: String) {
         "[report_status_to_management] POST to {}, with data {}",
         management_url, &data
     );
-    create_delay(100, "[report_status_to_management]".to_string()).await;
-    debug!("[report_status_to_management] sent message");
+    tokio::spawn(send_post_json_message(management_url, data));
 }
 
 fn send_shutdown_messages(
