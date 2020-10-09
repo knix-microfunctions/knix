@@ -33,6 +33,14 @@ Send a `POST` request to: `http://[trigger_frontend_host]:[port]/create_trigger`
 }
 ```
 
+All response from the TriggersFrontend have the form:
+```
+{
+  "status": "Success" or "Failure",
+  "message": "<string>"
+}
+```
+
 ### Creating an AMQP trigger
 
 Example curl command to create an AMQP trigger
@@ -99,9 +107,49 @@ curl -H "Content-Type: application/json" -d \
 }' http://localhost:8080/delete_trigger
 ```
 
-### Messages received at the workflow
+### Adding more workflows to a Trigger 
 
-The structure of the messages received at the workflow is:
+Send a `POST` request to: `http://[trigger_frontend_host]:[port]/add_workflows` with the following json body:
+```
+{
+  // id is a knix management provided unique string to identify the trigger
+  "id": "<string>",
+  // workflows is a list of workflows associated with this trigger
+  "workflows": [
+    {
+      // url of the workflow
+      "workflow_url": "<string>",
+      // workflow developer provided unique string to be included in each workflow invocation
+      "tag": "<string>"
+    }
+    ...
+  ]
+}
+```
+
+### Removing workflows to a Trigger 
+
+Send a `POST` request to: `http://[trigger_frontend_host]:[port]/remove_workflows` with the following json body:
+```
+{
+  // id is a knix management provided unique string to identify the trigger
+  "id": "<string>",
+  // workflows is a list of workflows associated with this trigger
+  "workflows": [
+    {
+      // url of the workflow
+      "workflow_url": "<string>",
+      // workflow developer provided unique string to be included in each workflow invocation
+      "tag": "<string>"
+    }
+    ...
+  ]
+}
+```
+
+### Trigger Messages received at the workflow
+
+The structure of the trigger messages received at the workflow is:
 
 ```
 {
@@ -114,6 +162,7 @@ The structure of the messages received at the workflow is:
 }
 ```
 
+
 ### Messages sent to the Management workflow
 
 ```
@@ -123,6 +172,7 @@ The structure of the messages received at the workflow is:
       "action":"start" or "status" or "stop" ,
       "self_ip":"10.0.2.15",
       // Status information about the active triggers
+      // Status should ideally be always "Ready", but it can also be "Starting", "Stopping", "StoppedNormal"
       "trigger_status_map":{"<trigger_id>" : "trigger_id_status", "<trigger_id>" : "trigger_id_status", ...},
       // Status information about trigger that stopped abonormally on their own
       "trigger_error_map":{"<trigger_id>" : "trigger_id_error_message", "<trigger_id>" : "trigger_id_error_message"}

@@ -111,3 +111,25 @@ pub async fn send_post_json_message(url: String, json_body: String) {
         warn!("Error response from workflow invocation, {}", url);
     }
 }
+
+pub fn find_element_index(
+    workflow_to_search: &WorkflowInfo,
+    workflows: &Vec<WorkflowInfo>,
+) -> isize {
+    let mut i = -1;
+    let mut found = false;
+    for workflow in workflows {
+        i += 1;
+        if workflow_to_search.workflow_url.eq(&workflow.workflow_url)
+            && workflow_to_search.tag.eq(&workflow.tag)
+        {
+            found = true;
+            break;
+        }
+    }
+    if found {
+        return i;
+    } else {
+        return -1;
+    }
+}

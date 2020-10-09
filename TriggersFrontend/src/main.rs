@@ -46,6 +46,8 @@ struct TriggersFrontendResponse {
 pub enum TriggerCommand {
     Status,
     Stop,
+    AddWorkflows(Vec<WorkflowInfo>),
+    RemoveWorkflows(Vec<WorkflowInfo>),
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -165,8 +167,6 @@ async fn jsontest(req: HttpRequest, body: web::Bytes) -> impl Responder {
     //     .body(injson.dump()))
 }
 
-/// AMQP example:
-/// curl -H "Content-Type: application/json" -d '{"type": "amqp", "id": "1", "workflow_url" : "http://localhost:8080/", "trigger_info": {"amqp_addr": "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost", "routing_key": "rabbit.routing.key", "exchange": "rabbitexchange", "durable": true, "exclusive": true, "auto_ack": true}}' http://localhost:8080/create | jq -r '.message' | jq
 async fn create_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
     // body is loaded, now we can deserialize json-rust
     let mut decoded_body = std::str::from_utf8(&body);
@@ -277,6 +277,196 @@ async fn create_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
             message: "Unknow type".to_string(),
         });
     }
+}
+
+async fn add_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder {
+    // body is loaded, now we can deserialize json-rust
+    let mut decoded_body = std::str::from_utf8(&body);
+    if let Err(e) = decoded_body {
+        return HttpResponse::Ok().json(TriggersFrontendResponse {
+            status: "Failure".into(),
+            message: format!(
+                "Unable to decode body into an utf8 string. Error: {}.",
+                e.to_string()
+            ),
+        });
+    }
+
+    let decoded_body = decoded_body.unwrap();
+    let json_body = json::parse(&decoded_body);
+    if let Err(e) = json_body {
+        return HttpResponse::Ok().json(TriggersFrontendResponse {
+            status: "Failure".into(),
+            message: format!(
+                "Unable to decode body into an a valid json object. Error: {}.",
+                e.to_string()
+            ),
+        });
+    }
+
+    let json_body = json_body.unwrap();
+    if !(json_body.is_object()
+        && json_body.has_key("id")
+        && json_body.has_key("workflows")
+        && json_body["workflows"].is_array()
+        && json_body["workflows"].len() > 0)
+    {
+        return HttpResponse::Ok().json(TriggersFrontendResponse {
+            status: "Failure".into(),
+            message: "One of the required fields, 'id' or 'workflows'".into(),
+        });
+    }
+    let trigger_id: String = json_body["id"].to_string();
+    let mut workflows_vec: Vec<WorkflowInfo> = Vec::new();
+    let workflows = &json_body["workflows"];
+    for i in 0..workflows.len() {
+        let workflow_info = &workflows[i];
+        if !workflow_info.has_key("workflow_url") {
+            return HttpResponse::Ok().json(TriggersFrontendResponse {
+                status: "Failure".into(),
+                message: "workflow_url missing in workflows list".into(),
+            });
+        }
+        let tag: String = if workflow_info.has_key("tag") {
+            workflow_info["tag"].to_string()
+        } else {
+            "".into()
+        };
+        workflows_vec.push(WorkflowInfo {
+            workflow_url: workflow_info["workflow_url"].to_string(),
+            tag,
+        });
+    }
+    info!(
+        "[ADD_WORKFLOW] request, id: {}, workflows: {:?}",
+        &trigger_id, &workflows_vec
+    );
+
+    let mut trigger_manager: TriggerManager = req.app_data::<TriggerManager>().unwrap().clone();
+    let response: Result<String, String> = trigger_manager
+        .handle_add_workflows(&trigger_id, workflows_vec.clone())
+        .await;
+    let http_response: TriggersFrontendResponse = match response {
+        Ok(msg) => {
+            let tid = thread::current().id();
+            let message: String = format!(
+                "Add workflow, id: {}, workflows: {:?}, {}",
+                &trigger_id, &workflows_vec, msg
+            );
+            info!("[ADD_WORKFLOW] {}", &message);
+            TriggersFrontendResponse {
+                status: "Success".into(),
+                message,
+            }
+        }
+        Err(msg) => {
+            let message: String = format!(
+                "ERROR adding workflow trigger, id: {}, workflows: {:?}, {}",
+                &trigger_id, &workflows_vec, msg
+            );
+            warn!("[ADD_WORKFLOW] {}", &message);
+            TriggersFrontendResponse {
+                status: "Failure".into(),
+                message,
+            }
+        }
+    };
+    return HttpResponse::Ok().json(http_response);
+}
+
+async fn remove_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder {
+    // body is loaded, now we can deserialize json-rust
+    let mut decoded_body = std::str::from_utf8(&body);
+    if let Err(e) = decoded_body {
+        return HttpResponse::Ok().json(TriggersFrontendResponse {
+            status: "Failure".into(),
+            message: format!(
+                "Unable to decode body into an utf8 string. Error: {}.",
+                e.to_string()
+            ),
+        });
+    }
+
+    let decoded_body = decoded_body.unwrap();
+    let json_body = json::parse(&decoded_body);
+    if let Err(e) = json_body {
+        return HttpResponse::Ok().json(TriggersFrontendResponse {
+            status: "Failure".into(),
+            message: format!(
+                "Unable to decode body into an a valid json object. Error: {}.",
+                e.to_string()
+            ),
+        });
+    }
+
+    let json_body = json_body.unwrap();
+    if !(json_body.is_object()
+        && json_body.has_key("id")
+        && json_body.has_key("workflows")
+        && json_body["workflows"].is_array()
+        && json_body["workflows"].len() > 0)
+    {
+        return HttpResponse::Ok().json(TriggersFrontendResponse {
+            status: "Failure".into(),
+            message: "One of the required fields, 'id' or 'workflows'".into(),
+        });
+    }
+    let trigger_id: String = json_body["id"].to_string();
+    let mut workflows_vec: Vec<WorkflowInfo> = Vec::new();
+    let workflows = &json_body["workflows"];
+    for i in 0..workflows.len() {
+        let workflow_info = &workflows[i];
+        if !workflow_info.has_key("workflow_url") {
+            return HttpResponse::Ok().json(TriggersFrontendResponse {
+                status: "Failure".into(),
+                message: "workflow_url missing in workflows list".into(),
+            });
+        }
+        let tag: String = if workflow_info.has_key("tag") {
+            workflow_info["tag"].to_string()
+        } else {
+            "".into()
+        };
+        workflows_vec.push(WorkflowInfo {
+            workflow_url: workflow_info["workflow_url"].to_string(),
+            tag,
+        });
+    }
+    info!(
+        "[REMOVE_WORKFLOWS] request, id: {}, workflows: {:?}",
+        &trigger_id, &workflows_vec
+    );
+
+    let mut trigger_manager: TriggerManager = req.app_data::<TriggerManager>().unwrap().clone();
+    let response: Result<String, String> = trigger_manager
+        .handle_remove_workflows(&trigger_id, workflows_vec.clone())
+        .await;
+    let http_response: TriggersFrontendResponse = match response {
+        Ok(msg) => {
+            let tid = thread::current().id();
+            let message: String = format!(
+                "Remove workflows, id: {}, workflows: {:?}, {}",
+                &trigger_id, &workflows_vec, msg
+            );
+            info!("[REMOVE_WORKFLOWS] {}", &message);
+            TriggersFrontendResponse {
+                status: "Success".into(),
+                message,
+            }
+        }
+        Err(msg) => {
+            let message: String = format!(
+                "ERROR removing workflows, trigger, id: {}, workflows: {:?}, {}",
+                &trigger_id, &workflows_vec, msg
+            );
+            warn!("[REMOVE_WORKFLOWS] {}", &message);
+            TriggersFrontendResponse {
+                status: "Failure".into(),
+                message,
+            }
+        }
+    };
+    return HttpResponse::Ok().json(http_response);
 }
 
 async fn delete_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
@@ -458,7 +648,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(trigger_manager.clone())
             .route("/create_trigger", web::post().to(create_trigger))
             .route("/delete_trigger", web::post().to(delete_trigger))
-            .route("/jsontest", web::post().to(jsontest))
+            .route("/add_workflows", web::post().to(add_workflows))
+            .route("/remove_workflows", web::post().to(remove_workflows))
         //.route("/startactor/{id}", web::get().to(startactor))
         //.route("/stopactor/{id}", web::get().to(stopactor))
     })

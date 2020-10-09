@@ -20,6 +20,7 @@ use tokio::sync::oneshot;
 
 use crate::trigger_manager::send_status_update_from_trigger_to_manager;
 use crate::trigger_manager::TriggerManagerCommandChannelSender;
+use crate::utils::find_element_index;
 use crate::utils::TriggerError;
 use crate::utils::TriggerWorkflowMessage;
 use crate::TriggerStatus;
@@ -334,6 +335,21 @@ pub async fn amqp_actor_loop(
                         match c {
                             TriggerCommand::Status => {
                                 info!("[amqp_actor_loop] {} Status cmd recv", trigger_id);
+                                resp.send((true, "ok".to_string()));
+                            }
+                            TriggerCommand::AddWorkflows(workflows_to_add) => {
+                                for workflow in workflows_to_add {
+                                    workflows.push(workflow.clone());
+                                }
+                                resp.send((true, "ok".to_string()));
+                            }
+                            TriggerCommand::RemoveWorkflows(workflows_to_remove) => {
+                                for workflow in workflows_to_remove {
+                                    let idx = find_element_index(&workflow, &workflows);
+                                    if idx >= 0 {
+                                        workflows.remove(idx as usize);
+                                    }
+                                }
                                 resp.send((true, "ok".to_string()));
                             }
                             TriggerCommand::Stop => {

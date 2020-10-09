@@ -49,6 +49,8 @@ pub enum TriggerManagerCommand {
     GetTriggerStatus(String),                           // id, status_msg (incase of error)
     StopTrigger(String),                                // id
     DeleteTrigger(String),                              // id
+    AddWorkflows(String, Vec<WorkflowInfo>),            // id, Workflows to be added
+    RemoveWorkflows(String, Vec<WorkflowInfo>),         // id, Workflows to be removed
     StopManager,
 }
 pub type TriggerManagerCommandChannelSender =
@@ -202,6 +204,30 @@ impl TriggerManager {
             TriggerManagerCommand::DeleteTrigger(trigger_id.clone()),
         )
         .await;
+    }
+
+    pub async fn send_add_workflows_msg(
+        &mut self,
+        trigger_id: &String,
+        workflows: Vec<WorkflowInfo>,
+    ) -> Result<String, String> {
+        self.send_cmd(
+            &trigger_id,
+            TriggerManagerCommand::AddWorkflows(trigger_id.clone(), workflows.clone()),
+        )
+        .await
+    }
+
+    pub async fn send_remove_workflows_msg(
+        &mut self,
+        trigger_id: &String,
+        workflows: Vec<WorkflowInfo>,
+    ) -> Result<String, String> {
+        self.send_cmd(
+            &trigger_id,
+            TriggerManagerCommand::RemoveWorkflows(trigger_id.clone(), workflows.clone()),
+        )
+        .await
     }
 
     pub async fn send_stop_manager_msg(&mut self, trigger_id: &String) -> Result<String, String> {
@@ -368,6 +394,22 @@ impl TriggerManager {
                 &trigger_id
             ))
         }
+    }
+
+    pub async fn handle_add_workflows(
+        &mut self,
+        trigger_id: &String,
+        workflows: Vec<WorkflowInfo>,
+    ) -> Result<String, String> {
+        self.send_add_workflows_msg(&trigger_id, workflows).await
+    }
+
+    pub async fn handle_remove_workflows(
+        &mut self,
+        trigger_id: &String,
+        workflows: Vec<WorkflowInfo>,
+    ) -> Result<String, String> {
+        self.send_remove_workflows_msg(&trigger_id, workflows).await
     }
 
     pub async fn handle_delete_trigger(&mut self, trigger_id: &String) -> Result<String, String> {
@@ -719,6 +761,109 @@ async fn trigger_manager_actor_loop(
                                 id_to_trigger_error_map.remove(&trigger_id);
                                 resp.send((true, "ok".to_string()));
                             }
+                            TriggerManagerCommand::AddWorkflows(trigger_id, workflows) => {
+                                info!("[AddWorkflows] cmd recv for id {}", trigger_id);
+                                match id_to_trigger_status_map.get(&trigger_id) {
+                                    Some(status) => {
+                                        let trigger_chan = id_to_trigger_chan_map.get(&trigger_id);
+                                        match trigger_chan {
+                                            Some(chan) => {
+                                                // send a message only if the status is Starting or Ready
+                                                match status {
+                                                    TriggerStatus::Starting | TriggerStatus::Ready => {
+                                                        let mut trigger_channel = chan.clone();
+                                                        // do not wait here, as it might create a deadlock, since the trigger actor will
+                                                        // try to send back a status update after the stop command has been received.
+                                                        tokio::spawn(async move {
+                                                            let (resp_tx, resp_rx) = oneshot::channel::<(bool, String)>();
+                                                            trigger_channel.send((TriggerCommand::AddWorkflows(workflows), resp_tx)).await;
+                                                        });
+                                                        resp.send((true, "ok".to_string()));
+                                                    }
+                                                    _ => {
+                                                        warn!("[AddWorkflows] Ignoring attempt to add workflows for Trigger id {}, as Trigger already in {} state", trigger_id, trigger_status_to_string(&status));
+                                                        resp.send((true, "ok".to_string()));
+                                                    }
+                                                }
+                                            }
+                                            None => {
+                                                //id_to_trigger_error_map.remove(&trigger_id);
+                                                let ret_msg = format!("[AddWorkflows] Ignoring attempt to add workflows for Trigger id {} in status {}, with a non-existent channel", &trigger_id, trigger_status_to_string(&status));
+                                                warn!("{}", ret_msg);
+                                                resp.send((false, ret_msg));
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        id_to_trigger_chan_map.remove(&trigger_id);
+                                        let trigger_status_error = id_to_trigger_error_map.get(&trigger_id);
+                                        match trigger_status_error {
+                                            Some(status_msg) => {
+                                                let ret_msg = format!("[AddWorkflows] Ignoring attempt to add workflows for Trigger id {}, which stopped previously with Error: {}", &trigger_id, status_msg);
+                                                warn!("{}", ret_msg);
+                                                resp.send((true, ret_msg));
+                                            }
+                                            None => {
+                                                let ret_msg = format!("[AddWorkflows] Ignoring attempt to add workflows for a non existent Trigger id {}", &trigger_id);
+                                                warn!("{}", ret_msg);
+                                                resp.send((false, ret_msg));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            TriggerManagerCommand::RemoveWorkflows(trigger_id, workflows) => {
+                                info!("[RemoveWorkflows] cmd recv for id {}", trigger_id);
+                                match id_to_trigger_status_map.get(&trigger_id) {
+                                    Some(status) => {
+                                        let trigger_chan = id_to_trigger_chan_map.get(&trigger_id);
+                                        match trigger_chan {
+                                            Some(chan) => {
+                                                // send a message only if the status is Starting or Ready
+                                                match status {
+                                                    TriggerStatus::Starting | TriggerStatus::Ready => {
+                                                        let mut trigger_channel = chan.clone();
+                                                        // do not wait here, as it might create a deadlock, since the trigger actor will
+                                                        // try to send back a status update after the stop command has been received.
+                                                        tokio::spawn(async move {
+                                                            let (resp_tx, resp_rx) = oneshot::channel::<(bool, String)>();
+                                                            trigger_channel.send((TriggerCommand::RemoveWorkflows(workflows), resp_tx)).await;
+                                                        });
+                                                        resp.send((true, "ok".to_string()));
+                                                    }
+                                                    _ => {
+                                                        warn!("[RemoveWorkflows] Ignoring attempt to add workflows for Trigger id {}, as Trigger already in {} state", trigger_id, trigger_status_to_string(&status));
+                                                        resp.send((true, "ok".to_string()));
+                                                    }
+                                                }
+                                            }
+                                            None => {
+                                                //id_to_trigger_error_map.remove(&trigger_id);
+                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to add workflows for Trigger id {} in status {}, with a non-existent channel", &trigger_id, trigger_status_to_string(&status));
+                                                warn!("{}", ret_msg);
+                                                resp.send((false, ret_msg));
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        id_to_trigger_chan_map.remove(&trigger_id);
+                                        let trigger_status_error = id_to_trigger_error_map.get(&trigger_id);
+                                        match trigger_status_error {
+                                            Some(status_msg) => {
+                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to add workflows for Trigger id {}, which stopped previously with Error: {}", &trigger_id, status_msg);
+                                                warn!("{}", ret_msg);
+                                                resp.send((true, ret_msg));
+                                            }
+                                            None => {
+                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to add workflows for a non existent Trigger id {}", &trigger_id);
+                                                warn!("{}", ret_msg);
+                                                resp.send((false, ret_msg));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             TriggerManagerCommand::StopManager => {
                                 info!("[StopManager] cmd recv");
                                 send_shutdown_messages(&mut id_to_trigger_status_map, &mut id_to_trigger_error_map, &mut id_to_trigger_chan_map, manager_info.clone());
