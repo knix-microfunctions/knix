@@ -8,6 +8,25 @@ Install rust <https://www.rust-lang.org/tools/install> on your linux environment
 ./run.sh
 ```
 
+### Creating a Trigger 
+
+Send a `POST` request to: `http://[trigger_frontend_host]:[port]/create_trigger` with the following json body:
+```json
+  "type": "amqp" or "timer",
+  "id": "<knix management provided unique string to identify the trigger>",
+  "trigger_info": {
+    <type specific information on how to subscribe to the queue>
+  }
+  "workflows": [
+    {
+      "workflow_url": "<url of the workflow>",
+      "tag": "<workflow developer provided unique string to be included in each workflow invocation>"
+    }
+    ...
+  ]
+}
+```
+
 ### Creating an AMQP trigger
 
 Example curl command to create an AMQP trigger
@@ -17,6 +36,14 @@ curl -H "Content-Type: application/json" -d \
 '{
   "type": "amqp",
   "id": "1",
+  "trigger_info": {
+    "amqp_addr": "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost",
+    "routing_key": "rabbit.routing.key",
+    "exchange": "rabbitexchange",
+    "durable": true,
+    "exclusive": true,
+    "auto_ack": true
+  }
   "workflows": [
     {
       "workflow_url": "http://httpbin.org/post",
@@ -26,15 +53,7 @@ curl -H "Content-Type: application/json" -d \
       "workflow_url": "http://httpbin.org/post",
       "tag": "tag2"
     }
-  ],
-  "trigger_info": {
-    "amqp_addr": "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost",
-    "routing_key": "rabbit.routing.key",
-    "exchange": "rabbitexchange",
-    "durable": true,
-    "exclusive": true,
-    "auto_ack": true
-  }
+  ]
 }' http://localhost:8080/create_trigger
 ```
 
@@ -47,6 +66,9 @@ curl -H "Content-Type: application/json" -d \
 '{
   "type": "timer",
   "id": "2",
+  "trigger_info": {
+    "timer_interval_ms": 1000
+  }
   "workflows": [
     {
       "workflow_url": "http://httpbin.org/post",
@@ -56,10 +78,7 @@ curl -H "Content-Type: application/json" -d \
       "workflow_url": "http://httpbin.org/post",
       "tag": "tag2"
     }
-  ],
-  "trigger_info": {
-    "timer_interval_ms": 1000
-  }
+  ]
 }' http://localhost:8080/create_trigger
 ```
 
@@ -68,7 +87,10 @@ curl -H "Content-Type: application/json" -d \
 Example curl command to delete a trigger
 
 ```bash
-curl -H "Content-Type: application/json" -d '{"id": "1"}' http://localhost:8080/delete_trigger
+curl -H "Content-Type: application/json" -d \
+'{
+  "id": "1"
+}' http://localhost:8080/delete_trigger
 ```
 
 ### Messages received at the workflow
@@ -78,7 +100,7 @@ The structure of the messages received at the workflow is:
 ```json
 {
     "type": "amqp" or "timer",
-    "tag": "<user specified optional tag>",
+    "tag": "<user specified optional tag while creating the trigger>",
     "source": "<the topic name if available>",
     "data": "<string data>"
 }
@@ -89,10 +111,12 @@ The structure of the messages received at the workflow is:
 ```json
 {
     "action":"triggersFrontendStatus",
-    "data":{"action":"start" or "status" or "stop" ,
-    "self_ip":"10.0.2.15",
-    "trigger_status_map":{},
-    "trigger_error_map":{}
+    "data":{
+      "action":"start" or "status" or "stop" ,
+      "self_ip":"10.0.2.15",
+      "trigger_status_map":{},
+      "trigger_error_map":{}
+    }
 }
 ```
 
