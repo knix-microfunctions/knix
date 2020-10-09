@@ -11,7 +11,7 @@ Install rust <https://www.rust-lang.org/tools/install> on your linux environment
 ### Creating a Trigger 
 
 Send a `POST` request to: `http://[trigger_frontend_host]:[port]/create_trigger` with the following json body:
-```json
+```
   "type": "amqp" or "timer",
   // id is a knix management provided unique string to identify the trigger
   "id": "<string>",
@@ -102,7 +102,7 @@ curl -H "Content-Type: application/json" -d \
 
 The structure of the messages received at the workflow is:
 
-```json
+```
 {
     "type": "amqp" or "timer",
     //tag is a user specified optional string while creating the trigger
@@ -115,7 +115,7 @@ The structure of the messages received at the workflow is:
 
 ### Messages sent to the Management workflow
 
-```json
+```
 {
     "action":"triggersFrontendStatus",
     "data":{
