@@ -23,8 +23,6 @@
   /** @ngInject */
   function StorageTableCtrl($scope, $http, $cookies, $filter, editableOptions, editableThemes, $uibModal, baProgressModal, toastr, sharedProperties, sharedData) {
 
-    $scope.storageLocations = { };
-
     $scope.storageLocations = [
       { name: 'General Storage',  realm: 'Global', id: '' }
     ];
@@ -41,6 +39,8 @@
     var email = $cookies.get('email');
     var urlPath = sharedProperties.getUrlPath();
     var storageLoc = sharedProperties.getStorageLocation();
+    var storage_data_types = ["kv", "map", "set", "counter"];
+
 
     $scope.workflows = sharedData.getWorkflows();
 
@@ -110,13 +110,50 @@
       });
     }
 
-
-    //$scope.storageObjects = sharedData.getStorageObjects();
-    if (!$scope.storageObjects) {
-      $scope.storageObjects = [ ];
+    for (var i = 0; i < storage_data_types.length; i++)
+    {
+        resetScopeStorageObjects(storage_data_types[i]);
+        getStorageObjectsList(storage_data_types[i]);
     }
-    getStorageObjectsList();
-    //}
+
+    function resetScopeStorageObjects(data_type)
+    {
+        if (data_type == "kv")
+        {
+            $scope.storageObjects = [];
+        }
+        else if (data_type == "map")
+        {
+            $scope.storageObjectsMaps = [];
+        }
+        else if (data_type == "set")
+        {
+            $scope.storageObjectsSets = [];
+        }
+        else if (data_type == "counter")
+        {
+            $scope.storageObjectsCounters = [];
+        }
+    }
+
+    function getScopeStorageObjects(data_type) {
+        if (data_type == "kv")
+        {
+            return $scope.storageObjects;
+        }
+        else if (data_type == "map")
+        {
+            return $scope.storageObjectsMaps;
+        }
+        else if (data_type == "set")
+        {
+            return $scope.storageObjectsSets;
+        }
+        else if (data_type == "counter")
+        {
+            return $scope.storageObjectsCounters;
+        }
+    }
 
     $scope.open = function (page, size, key, message) {
       sharedProperties.setObjectKey(key);
@@ -133,12 +170,30 @@
     };
 
     $scope.onSelected = function (selectedItem) {
-      storageLoc = selectedItem.id;
-      sharedProperties.setStorageLocation(storageLoc);
-      getStorageObjectsList();
+        storageLoc = selectedItem.id;
+        sharedProperties.setStorageLocation(storageLoc);
+        for (var i = 0; i < storage_data_types.length; i++)
+        {
+            getStorageObjectsList(storage_data_types[i]);
+        }
     }
 
-    function getStorageObjectsList() {
+    function getStorageObjectsList(data_type) {
+
+      var param_storage = {};
+      param_storage["data_type"] = data_type;
+      param_storage["parameters"] = {};
+      if (data_type == "kv")
+      {
+          param_storage["parameters"]["action"] = "listkeys";
+      }
+      else
+      {
+          param_storage["parameters"]["action"] = "list" + data_type + "s";
+      }
+      param_storage["parameters"]["start"] = 0;
+      param_storage["parameters"]["count"] = 2000;
+      param_storage["workflowid"] = storageLoc;
 
       var req = {
          method: 'POST',
@@ -146,22 +201,43 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "listkeys", "start": 0, "count": 2000 }, "workflowid" :  storageLoc} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
        }
 
       $http(req).then(function successCallback(response) {
-           if (response.data.status=="success") {
-          $scope.storageObjects = [ ];
-          for (var i=0;i<response.data.data.keylist.length;i++) {
-            if (!response.data.data.keylist[i].startsWith("grain_requirements_") && !response.data.data.keylist[i].startsWith("grain_source_") && !response.data.data.keylist[i].startsWith("workflow_json_") && !response.data.data.keylist[i].endsWith("_metadata"))
-            {
-              $scope.storageObjects.push({"key" : response.data.data.keylist[i], "modified" : "Z"});
-            }
-          }
-          //sharedData.setStorageObjects($scope.storageObjects);
+          if (response.data.status=="success") {
+              resetScopeStorageObjects(data_type);
+              var storageObjects = getScopeStorageObjects(data_type);
+
+              if (data_type == "kv")
+              {
+                  for (var i=0;i<response.data.data.keylist.length;i++) {
+                      storageObjects.push({"key" : response.data.data.keylist[i], "modified" : "Z"});
+                  }
+              }
+              else
+              {
+                  var data_type_list = data_type + "list"
+                  for (var i=0;i<response.data.data[data_type_list].length;i++) {
+                      if (data_type == "map")
+                      {
+                          var so = {"map_name" : response.data.data[data_type_list][i], "modified" : "Z"};
+                      }
+                      else if (data_type == "set")
+                      {
+                          var so = {"set_name" : response.data.data[data_type_list][i], "modified" : "Z"};
+                      }
+                      else if (data_type == "counter")
+                      {
+                          var so = {"counter_name" : response.data.data[data_type_list][i], "modified" : "Z"};
+                      }
+                      storageObjects.push(so);
+                  }
+              }
+              //sharedData.setStorageObjects($scope.storageObjects);
 
            } else {
-             console.log("Failure status returned by performStorageAction / listKeys");
+             console.log("Failure status returned by performStorageAction / " + param_storage["parameters"]["action"]);
              console.log("Message:" + response.data.data.message);
              $scope.errorMessage = response.data.data.message;
              $uibModal.open({
@@ -172,7 +248,7 @@
              });
            }
       }, function errorCallback(response) {
-          console.log("Error occurred during listKeys action");
+          console.log("Error occurred during action: " + param_storage["parameters"]["action"]);
           console.log("Response:" + response);
           if (response.statusText) {
             $scope.errorMessage = response.statusText;
@@ -188,8 +264,9 @@
       });
     }
 
-    $scope.getIndex = function(storageObject) {
-      return $scope.storageObjects.indexOf(storageObject);
+    $scope.getIndex = function(storageObject, data_type) {
+        var storageObjects = getScopeStorageObjects(data_type);
+        return storageObjects.indexOf(storageObject);
     }
 
 
@@ -348,8 +425,9 @@
 
     }
 
-    $scope.removeStorageObject = function(index) {
-      $scope.storageObjectToBeDeleted = $scope.storageObjects[index];
+    $scope.removeStorageObject = function(index, data_type) {
+
+      $scope.storageObjectToBeDeleted = $scope.storageObjects[data_type][index];
       $uibModal.open({
         animation: true,
         scope: $scope,
@@ -369,8 +447,8 @@
 
     }
 
-    $scope.reloadStorageObjects = function() {
-      getStorageObjectsList();
+    $scope.reloadStorageObjects = function(data_type) {
+        getStorageObjectsList(data_type);
     }
 
     $scope.navigate = function(event,rowform,storageObject) {
@@ -432,12 +510,12 @@
       }
     };
 
-    $scope.addStorageObject = function() {
+    $scope.addStorageObject = function(data_type) {
       $scope.inserted = {
         key: '',
         modified: 'A'
       };
-      $scope.storageObjects.push($scope.inserted);
+      $scope.storageObjects[data_type].push($scope.inserted);
       $scope.gotoPage(1);
     };
 

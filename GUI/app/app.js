@@ -131,7 +131,10 @@ var app = angular.module('MfnWebConsole', [
 app.factory('sharedData', function(){
   var functions = [ ];
   var workflows = [ ];
-  var storageObjects = [ ];
+  var storageObjects = [];
+  var storageObjectsMaps = [];
+  var storageObjectsSets = [];
+  var storageObjectsCounters = [];
   var workflowExecutionInputEditor = new Map();
   var workflowExecutionInput = new Map();
   return {
@@ -152,6 +155,24 @@ app.factory('sharedData', function(){
     },
     setStorageObjects: function(storageObjects) {
       this.storageObjects = storageObjects;
+    },
+    getStorageObjectsMaps: function () {
+        return this.storageObjectsMaps;
+    },
+    setStorageObjectsMaps: function(storageObjects) {
+      this.storageObjectsMaps = storageObjects;
+    },
+    getStorageObjectsSets: function () {
+        return this.storageObjectsSets;
+    },
+    setStorageObjectsSets: function(storageObjects) {
+      this.storageObjectsSets = storageObjects;
+    },
+    getStorageObjectsCounters: function () {
+        return this.storageObjectsCounters;
+    },
+    setStorageObjectsCounters: function(storageObjects) {
+      this.storageObjectsCounters = storageObjects;
     },
     getWorkflowExecutionInput: function (id) {
         if (workflowExecutionInput && workflowExecutionInput.has(id)) {
@@ -187,7 +208,7 @@ app.run(function ($rootScope, $window, $cookies) {
       $window.location.href="auth.html";
 
     }
-   
+
   });
 
 });

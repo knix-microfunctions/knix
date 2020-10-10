@@ -24,17 +24,54 @@
   function routeConfig($stateProvider) {
 
     $stateProvider
-        .state('storage', {
-          url: '/storage',
-          templateUrl: 'app/pages/storage/smart/tables.html',
-          title: 'Object Store',
-	        controller: 'StorageTableCtrl',
+      .state('storage', {
+         url: '/storage',
+         template : '<ui-view autoscroll="true" autoscroll-body-top></ui-view>',
+         abstract: true,
+         title: 'Object Store',
+         sidebarMeta: {
+           icon: 'ion-compose',
+           order: 250,
+         },
+      })
+      .state('storage.kv', {
+         url: '/kv',
+         templateUrl: 'app/pages/storage/smart/tables.html',
+         title: 'Keys-Values',
+         controller: 'StorageTableCtrl',
+         sidebarMeta: {
+           order: 0,
+         },
+       })
+      .state('storage.maps', {
+         url: '/maps',
+         templateUrl: 'app/pages/storage/smart/tablesMaps.html',
+         title: 'CRDT Maps',
+         controller: 'StorageTableCtrl',
+         sidebarMeta: {
+           order: 100,
+         },
+       })
+      .state('storage.sets', {
+         url: '/sets',
+         templateUrl: 'app/pages/storage/smart/tablesSets.html',
+         title: 'CRDT Sets',
+         controller: 'StorageTableCtrl',
+         sidebarMeta: {
+           order: 200,
+         },
+       })
+      .state('storage.counters', {
+         url: '/counters',
+         templateUrl: 'app/pages/storage/smart/tablesCounters.html',
+         title: 'CRDT Counters',
+         controller: 'StorageTableCtrl',
+         sidebarMeta: {
+           order: 300,
+         },
+       })
 
-          sidebarMeta: {
-            icon: '',
-            order: 10,
-          },
-        })
+
   }
 
 })();

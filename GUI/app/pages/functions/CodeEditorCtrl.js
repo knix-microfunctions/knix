@@ -375,9 +375,7 @@
            $scope.sObjects.length = 0;
 
            for (var i=0;i<response.data.length;i++) {
-             if (!response.data[i].startsWith("grain_requirements_") && !response.data[i].startsWith("grain_source_") && !response.data[i].startsWith("workflow_json_")) {
                $scope.sObjects.push({"word" : response.data[i], "score": 1000});
-             }
            }
 
 
