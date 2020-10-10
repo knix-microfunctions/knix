@@ -27,6 +27,9 @@ use amqp_trigger::{AMQPSubscriberInfo, AMQPTrigger};
 mod timer_trigger;
 use timer_trigger::handle_create_timer_trigger;
 
+mod mqtt_triggers;
+use mqtt_triggers::handle_create_mqtt_trigger;
+
 mod utils;
 use utils::{create_delay, get_unique_id, send_post_json_message, WorkflowInfo};
 

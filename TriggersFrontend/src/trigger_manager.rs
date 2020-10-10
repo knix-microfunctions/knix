@@ -9,6 +9,7 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
 
 use crate::amqp_trigger::handle_create_amqp_trigger;
+use crate::mqtt_triggers::handle_create_mqtt_trigger;
 use crate::timer_trigger::handle_create_timer_trigger;
 use crate::utils::create_delay;
 use crate::utils::send_post_json_message;
@@ -321,8 +322,6 @@ impl TriggerManager {
         workflows: Vec<WorkflowInfo>,
         request_body: String,
     ) -> Result<String, String> {
-        //let msg_string = r#"{"key1": 4.0, "key2": "abcd", "key3": [10,20], "key5": {"subkey1": true, "subkey2": "efgh"}}"#;
-
         // this will return false if the trigger_id is already registered with either Ready or Starting state
         let id_registered = self
             .register_trigger_if_not_present_or_stopped(&trigger_id)
@@ -332,6 +331,15 @@ impl TriggerManager {
             let trigger_spawned = match trigger_type.as_str() {
                 "amqp" => {
                     handle_create_amqp_trigger(
+                        &trigger_id,
+                        workflows,
+                        &request_body,
+                        self.cmd_channel_tx.clone(),
+                    )
+                    .await
+                }
+                "mqtt" => {
+                    handle_create_mqtt_trigger(
                         &trigger_id,
                         workflows,
                         &request_body,
