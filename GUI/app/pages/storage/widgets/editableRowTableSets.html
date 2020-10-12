@@ -18,7 +18,7 @@
 
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-    <button class="btn btn-primary" ng-click="addStorageObject()">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('set')">Refresh</button>
+    <button class="btn btn-primary" ng-click="addStorageObject('set')">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('set')">Refresh</button>
   </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
 
   </td>
@@ -35,7 +35,7 @@
     </div>
   </td></tr>
 
-    <th id="sortHeader" st-sort="['modified', 'set_name']" st-sort-default="default" style="text-align:left;border:0;"><b>Set name</b></th>
+    <th id="sortHeader" st-sort="['modified', 'key']" st-sort-default="default" style="text-align:left;border:0;"><b>Set name</b></th>
     <!-- <th style="border:0;"><b>Endpoint</b></th> -->
     <th style="border:0;"><b>Actions</b></th>
   </tr>
@@ -47,12 +47,12 @@
   <tr ng-repeat="storageObject in displayStorageObjectsSets" class="editable-row">
 
     <td style="text-align:left;">
-        <span editable-text="storageObject.set_name" e-name="name" e-form="rowform" e-required e-ng-keydown="navigate($event,rowform,storageObject)">
-          {{ storageObject.set_name || 'empty' }}
+        <span editable-text="storageObject.key" e-name="name" e-form="rowform" e-required e-ng-keydown="navigate($event,rowform,storageObject)">
+          {{ storageObject.key || 'empty' }}
         </span>
     </td>
     <td>
-      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveStorageObject(storageObject);" class="form-buttons form-inline"
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveStorageObject(storageObject, 'set');" class="form-buttons form-inline"
             shown="inserted == storageObject">
         <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
           Save
@@ -63,9 +63,9 @@
         </button>
       </form>
       <div class="buttons" ng-show="!rowform.$visible">
-        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObjectsSets[getIndex(storageObject, 'set')].key)">Edit</button>
-        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px; background-color: #757a74; border-color: #757a74;" data-toggle="modal" ng-click="downloadStorageObject(storageObjectsSets[getIndex(storageObject, 'set')].key)">Download</button>
-        <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject, 'set'))">Delete</button>
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="">View/Edit</button>
+        <button class="btn btn-danger editable-table-button btn-xs" ng-click="clearStorageObjectPrep(getIndex(storageObject, 'set'), 'set')">Clear</button>
+        <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject, 'set'), 'set')">Delete</button>
       </div>
     </td>
   </tr>

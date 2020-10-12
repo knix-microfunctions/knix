@@ -18,7 +18,7 @@
 
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-    <button class="btn btn-primary" ng-click="addStorageObject()">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('kv')">Refresh</button>
+    <button class="btn btn-primary" ng-click="addStorageObject('kv')">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('kv')">Refresh</button>
   </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
 
   </td>
@@ -52,7 +52,7 @@
         </span>
     </td>
     <td>
-      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveStorageObject(storageObject);" class="form-buttons form-inline"
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveStorageObject(storageObject, 'kv');" class="form-buttons form-inline"
             shown="inserted == storageObject">
         <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
           Save
@@ -65,7 +65,7 @@
       <div class="buttons" ng-show="!rowform.$visible">
         <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObjects[getIndex(storageObject, 'kv')].key)">Edit</button>
         <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px; background-color: #757a74; border-color: #757a74;" data-toggle="modal" ng-click="downloadStorageObject(storageObjects[getIndex(storageObject, 'kv')].key)">Download</button>
-        <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject, 'kv'))">Delete</button>
+        <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject, 'kv'), 'kv')">Delete</button>
       </div>
     </td>
   </tr>
