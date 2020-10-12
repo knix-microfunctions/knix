@@ -46,13 +46,19 @@ def handle(value, sapi):
         storage_userid = data["storage_userid"]
 
         dlc = None
+        tableName = ''
 
         if "workflowid" in storage and storage["workflowid"] is not None and storage["workflowid"] != "":
             dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=storage["workflowid"])
+            tableName = dlc.tablename
         else:
             dlc = sapi.get_privileged_data_layer_client(storage_userid)
+            if storage["tableName"] is not None:
+                tableName = storage["tableName"]
+            else: 
+                tableName = dlc.tablename
 
-        success, message, response_data = handleStorageAction(storage, dlc)
+        success, message, response_data = handleStorageAction(storage, dlc, tableName)
 
     except Exception as e:
         success = False
@@ -84,7 +90,7 @@ def handle(value, sapi):
     '''
     return response
 
-def handleStorageAction(storage, dlc):
+def handleStorageAction(storage, dlc, tableName):
     '''
     "storage": {
         "workflowid": <workflowid> OR non-existing (i.e., user-level storage)
@@ -97,38 +103,37 @@ def handleStorageAction(storage, dlc):
     '''
 
     message = ''
+    
     response_data = {"status": False}
     storage_action = storage['action'].lower()
 
     if storage_action == 'getdata':
-        message = "getdata, key:" + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
+        message = "getdata, key:" + storage['key'] + ", table: " + tableName + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        val = dlc.get(storage['key'])
+        val = dlc.get(storage['key'], tableName=tableName)
         if val is None:
             return False, "getdata returned None value. " + message, response_data
 
-        # the GUI expects this to be base64-encoded
-        val = bytes(val, 'utf-8')
-        response_data['value'] = base64.b64encode(val).decode()
+        response_data['value'] = val
 
     elif storage_action == 'deletedata':
-        message = "deletedata, key:" + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
+        message = "deletedata, key:" + storage['key'] + ", table: " + tableName + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        status = dlc.delete(storage['key'])
+        status = dlc.delete(storage['key'], tableName=tableName)
         if not status:
             return False, "deletedata returned False. " + message, response_data
 
     elif storage_action == 'putdata':
-        message = "putdata, key: " + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
+        message = "putdata, key: " + storage['key'] + ", table: " + tableName + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        status = dlc.put(storage['key'], storage['value'])
+        status = dlc.put(storage['key'], storage['value'], tableName=tableName)
         if not status:
             return False, "putdata returned False. " + message, response_data
 
     elif storage_action == 'listkeys':
-        message = "listkeys, start: " + str(storage['start']) + ", count: " + str(storage['count']) + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
+        message = "listkeys, start: " + str(storage['start']) + ", count: " + str(storage['count']) + ", table: " + tableName + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        listkeys_response = dlc.listKeys(storage['start'], storage['count'])
+        listkeys_response = dlc.listKeys(storage['start'], storage['count'], tableName=tableName)
         response_data['keylist'] = listkeys_response   # should always be a list. Empty list is a valid response
 
     else:
