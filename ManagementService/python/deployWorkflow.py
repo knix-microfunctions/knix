@@ -316,13 +316,25 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
     env.append({'name': 'WORKFLOWNAME', 'value': workflow_info["workflowName"]})
 
     # apply gpu_usage fraction to k8s deployment configuration
+    print("GPU sage in create_k8s_service: "+ str(gpu_usage))
     use_gpus = gpu_usage
 
-    if not management and use_gpus >= 0 and runtime=="Python":
+    if runtime=="Java": # non gpu python function
+        # overwrite values from values.yaml for new workflows
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
+        kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox_java" 
+
+    if not management and use_gpus == 0. and runtime=="Python": # non gpu python function
+        # overwrite values from values.yaml for new workflows
+        kservice['spec']['template']['spec']['containers'][0]['resources']['limits'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
+        kservice['spec']['template']['spec']['containers'][0]['resources']['requests'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
+        kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
+
+    if not management and use_gpus > 0. and runtime=="Python": # gpu using python function
         # overwrite values from values.yaml for new workflows
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
-        #kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
         kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox_gpu" 
      
     # Special handling for the management container: never run on gpu
@@ -366,6 +378,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
             print("ERROR deleting existing kservice")
             print(resp.text)
 
+    # no change for Java function
     print('Creating new kservice')
     resp = requests.post(
         "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
@@ -496,7 +509,7 @@ def handle(value, sapi):
         else:
             gpu_usage = 0.
 
-        #print("deduced gpu_usage: " + str(gpu_usage))
+        print("deduced gpu_usage: " + str(gpu_usage))
 
         sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
 

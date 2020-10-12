@@ -34,8 +34,8 @@ class MapStateTest(unittest.TestCase):
                      "wfms_example_test.data",
                      "wfms_parameters_test.data",
                      "wfms_thingspiratessay_test.data",
-                     #"wfms_iro_paths_processing_test.data",
-                     #"wfms_hardcoded_test.data"
+                     "wfms_iro_paths_processing_test.data",
+                     "wfms_hardcoded_test.data"
                      ]
 
         for file in file_list:
@@ -43,7 +43,6 @@ class MapStateTest(unittest.TestCase):
             testtuplelist = []
             data = json.load(json_input)
             testtuplelist.append((json.dumps(data["event"]), json.dumps(data["expectedResponse"])))
-            print("CHECK: " +str(data["test_name"])+ "  " + str(data["workflow_name"]))
             test = MFNTest(test_name=data["test_name"], workflow_filename=data["workflow_name"])
             st = time.time()
             test.exec_tests(testtuplelist)

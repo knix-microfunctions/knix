@@ -85,7 +85,6 @@ class MFNTest():
 
         if gpu_usage is not None:
             self._settings["gpu_usage"] = gpu_usage
-            #self._gpu_usage = self._settings["num_gpu"]
 
         self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
 
@@ -97,7 +96,7 @@ class MFNTest():
 
         self.upload_workflow()
         self.deploy_workflow()
-        time.sleep(5)
+        time.sleep(15)
 
     def _get_json_file(self, filename):
         json_data = {}

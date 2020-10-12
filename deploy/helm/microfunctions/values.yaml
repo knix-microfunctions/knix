@@ -44,8 +44,8 @@ manager:
         cpu: 100m
         memory: 1Gi
   sandbox:
-    #imagePathPython: "/microfn/sandbox"
-    imagePathPython: "/microfn/sandbox_gpu"
+    imagePathPython: "/microfn/sandbox"
+    #imagePathPython: "/microfn/sandbox_gpu"
     imagePathJava: "/microfn/sandbox_java"
     imageTag: "latest"
     imagePullPolicy: "Always"
@@ -53,11 +53,9 @@ manager:
       limits:
         cpu: 1
         memory: 2Gi
-        nvidia.com/gpu: 1
       requests:
         cpu: 1
         memory: 1Gi
-        nvidia.com/gpu: 1
   createServiceAccounts: true
 
 #------------------------------------------------------------------------------
