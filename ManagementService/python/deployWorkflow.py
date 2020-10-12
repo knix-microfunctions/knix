@@ -276,11 +276,10 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
         raise Exception("Unable to load "+ksvc_file+". Ensure that the configmap has been setup properly", e)
 
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
-    wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').lower() + '-wf'
-    wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').replace('/','-').lower() + '-wf'
-    if len(wfActualNameSanitized) > 63:
+    wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').replace('/','-').lower() + '-wf'
+    #wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').replace('/','-').lower() + '-wf'
+    if len(wfNameSanitized) > 63:
        print("Error creating kubernetes deployment for "+email+" "+workflow_info["workflowId"] + ", workflow name too long")
-
  
     emailSanitized = 'u-' + email.replace('@', '-').replace('_', '-').lower() + '-u'
     # Pod, Deployment and Hpa names for the new workflow will have a prefix containing the workflow name and user name
@@ -305,7 +304,6 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
     labels['workflowid'] = workflow_info["workflowId"]
     labels = kservice['spec']['template']['metadata']['labels']
     labels['user'] = emailSanitized
-    labels['workflow'] = wfActualNameSanitized
     labels['workflowid'] = workflow_info["workflowId"]
     kservice['spec']['template']['spec']['containers'][0]['image'] = new_workflow_conf['image.'+runtime]
     env = kservice['spec']['template']['spec']['containers'][0]['env']
@@ -553,7 +551,8 @@ def handle(value, sapi):
                 picked_hosts = {}
 
                 for hostname in hosts:
-                    if hostname.endswith("_gpu"):
+                    #if hostname.endswith("_gpu"):
+                    if "has_gpu" in hosts[hostname]:
                         hostip = hosts[hostname]
                         gpu_hosts[hostname] = hostip
 

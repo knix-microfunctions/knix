@@ -65,6 +65,7 @@ def add_host(hostname,hostip=None):
     try:
         has_gpu = ("NVIDIA" in subprocess.check_output('nvcc --version.split(' ')).decode()'))
     except Exception:
+        print("No suitable GPU available on this host!")
         pass
 
     print("Adding host: " + str(hostname) + ", has gpu: "+ str(has_gpu))
@@ -79,7 +80,7 @@ def add_host(hostname,hostip=None):
         hosts = {}
     if hostname != None and hostname not in hosts:
         hosts[hostname] = hostip
-        # hosts[hostname]["has_gpu"] = True
+        hosts[hostname]["has_gpu"] = True
         v.encoded_data = json.dumps(hosts).encode()
         v.store()
     return hosts
