@@ -18,7 +18,7 @@
 
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-    <button class="btn btn-primary" ng-click="addStorageObject()">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects()">Refresh</button>
+    <button class="btn btn-primary" ng-click="addStorageObject()">Add Object</button>&nbsp;&nbsp;<a href="#/bucketList"><button class="btn btn-primary" ng-click="" style="background-color: #969696; border-color: #969696;">Manage Buckets</button></a>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects()">Refresh</button>
   </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
   
   </td>
@@ -26,10 +26,10 @@
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;">
     <div style="width:100%">
       <ui-select ng-model="storageLocations.selected" on-select="onSelected($item)" class="btn-group bootstrap-select form-control">
-        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.realm}}</ui-select-match>
+        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.type}}</ui-select-match>
         <ui-select-choices repeat="item in storageLocations | filter: $select.search">
           <div ng-bind-html="item.name | highlight: $select.search"></div>
-          <small ng-bind-html="item.realm | highlight: $select.search"></small>
+          <small ng-bind-html="item.type | highlight: $select.search"></small>
         </ui-select-choices>
       </ui-select>
     </div>
@@ -51,28 +51,15 @@
           {{ storageObject.key || 'empty' }}
         </span>
     </td>
-    <!--
-    <td>
-        <span e-name="endpoint" e-form="rowform">
-          <input ng-show="storageObject.key!=''" type="text" name="storageEndpoint" size="50" style="border:0;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" value="{{ showEndpoint(storageObject) }}">
-          <div ng-show="storageObject.key==''" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Not set</div>
-          <span ng-show="storageObject.key!=''">&nbsp;</span><button type="button" ngclipboard data-clipboard-text="{{ showEndpoint(storageObject) }}" ng-show="storageObject.key!=''" class="btn btn-info editable-table-button btn-xs">Copy URL</button>
-
-        </span>
-    </td>
-    -->
 
     <td>
-      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveStorageObject(storageObject);" class="form-buttons form-inline"
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="createNewStorageObject(storageObject);" class="form-buttons form-inline"
             shown="inserted == storageObject">
         <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
           Save
         </button>
 
-<!--
-        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-danger editable-table-button btn-xs" data-toggle="modal" ng-click="open('app/pages/functions/modals/codeEditorModal.html', 'lg', functions[$index].id)">Edit Code</button>
-        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-info editable-table-button btn-xs" ng-click="open('app/pages/functions/modals/dependenciesModal.html', 'lg', functions[$index].id)">Libraries</button>
--->
+
         <button type="button" ng-disabled="rowform.$waiting" ng-click="rowform.$cancel();reloadStorageObjects();" class="btn btn-default editable-table-button btn-xs">
           Cancel
         </button>
@@ -83,7 +70,6 @@
 
         <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObjects[getIndex(storageObject)].key)">Edit</button>
         <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px; background-color: #757a74; border-color: #757a74;" data-toggle="modal" ng-click="downloadStorageObject(storageObjects[getIndex(storageObject)].key)">Download</button>
-        <!--<button type="button" ng-disabled="rowform.$waiting" class="btn btn-info editable-table-button btn-xs" style="width:115px;" ng-click="open('app/pages/functions/modals/dependenciesModal.html', 'lg', functions[$index].id, functions[$index].name, functions[$index].status)">Dependency Editor</button>-->
         <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject))">Delete</button>
 
 
@@ -103,3 +89,4 @@
 
     </tfoot>
 </table>
+

@@ -24,12 +24,14 @@
   function StorageTableCtrl($scope, $http, $cookies, $filter, editableOptions, editableThemes, $uibModal, baProgressModal, toastr, sharedProperties, sharedData) {
 
     $scope.storageLocations = { };
+    $scope.bucketTables = { };
+    var defaultTable = "defaultTable";
     
     $scope.storageLocations = [
-      { name: 'General Storage',  realm: 'Global', id: '' }
+      { name: 'General Storage',  type: 'Default Bucket', id: '' }
     ];
 
-    $scope.storageLocations.selected = { name: "General Storage", realm: "Global"};
+    $scope.storageLocations.selected = { name: "General Storage", type: "Default Bucket", id: '' };
     
     $scope.itemsByPage=10;
 
@@ -44,18 +46,7 @@
     
     $scope.workflows = sharedData.getWorkflows();
 
-    if (!$scope.workflows) {
-      getWorkflows();
-    } else {
-        for (var i = 0; i < $scope.workflows.length; i++)
-        {
-            $scope.storageLocations.push({name : $scope.workflows[i].name, realm : "Private Workflow Storage", id : $scope.workflows[i].id});
-            if ($scope.workflows[i].id == storageLoc) {
-              $scope.storageLocations.selected = { name: $scope.workflows[i].name, realm: "Private Workflow Storage"};
-            }
-        }
-    }
-
+    getBucketList();
 
     function getWorkflows() {
 
@@ -76,9 +67,9 @@
             sharedData.setWorkflows(response.data.data.workflows);
             for (var i = 0; i < $scope.workflows.length; i++)
             {
-                $scope.storageLocations.push({name : $scope.workflows[i].name, realm : "Private Workflow Storage", id : $scope.workflows[i].id});
-                if ($scope.workflows[i].id == storageLoc) {
-                  $scope.storageLocations.selected = { name: $scope.workflows[i].name, realm: "Private Workflow Storage"};
+                $scope.storageLocations.push({name : $scope.workflows[i].name, type : "Private Workflow Storage", id : $scope.workflows[i].id});
+                if ($scope.workflows[i].id == storageLoc.id) {
+                  $scope.storageLocations.selected = { name: $scope.workflows[i].name, type: "Private Workflow Storage"};
                 }
             }
           } else {
@@ -133,20 +124,94 @@
     };
 
     $scope.onSelected = function (selectedItem) {
-      storageLoc = selectedItem.id;
+      storageLoc = selectedItem;
       sharedProperties.setStorageLocation(storageLoc);
       getStorageObjectsList();
     }
 
+    function getBucketList() {
+
+      var req = {
+          method: 'POST',
+          url: urlPath,
+          headers: {
+               'Content-Type': 'application/json'
+          },
+      
+         data:   JSON.stringify({ "action" : "getTriggerableTables", "data" : { "user" : { "token" : token }}})
+      }
+      
+      $http(req).then(function successCallback(response) {
+
+            if (response.data.status=="success") {
+                $scope.bucketTables = Object.keys(response.data.data.tables);
+                for (var i = 0; i < $scope.bucketTables.length; i++)
+                {
+                  $scope.storageLocations.push({name : $scope.bucketTables[i], type : "Bucket", id : ""});
+                  if ($scope.bucketTables[i] == storageLoc.name) {
+                    $scope.storageLocations.selected = { name: $scope.bucketTables[i], type: "Bucket", id: ""};
+                  }
+                }
+                if (!$scope.workflows) {
+                  getWorkflows();
+                } else {
+                    for (var i = 0; i < $scope.workflows.length; i++)
+                    {
+                        $scope.storageLocations.push({name : $scope.workflows[i].name, type : "Private Workflow Storage", id : $scope.workflows[i].id});
+                        if ($scope.workflows[i].id == storageLoc.id) {
+                          $scope.storageLocations.selected = { name: $scope.workflows[i].name, type: "Private Workflow Storage", id: $scope.workflows[i].id};
+                        }
+                    }
+                }
+            
+            } else {
+                console.log("Failure status returned by getTriggerableTables action");
+                console.log("Message:" + response.data);
+                $scope.errorMessage = "An error occurred while attempting to retrieve the list of storage trigger tables.";
+                $uibModal.open({
+                  animation: true,
+                  scope: $scope,
+                  templateUrl: 'app/pages/workflows/modals/errorModal.html',
+                  size: 'md',
+                });
+              }  
+                
+
+      }, function errorCallback(response) {
+          console.log("Error occurred during getTriggerableTables action");
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+      });
+    }
+
+
     function getStorageObjectsList() {
       
+      var table = "";
+      if (storageLoc.type=="Bucket") {
+        table = storageLoc.name;
+      } else {
+        table = defaultTable;
+      }
+      
+
       var req = {
          method: 'POST',
          url: urlPath,
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "listkeys", "start": 0, "count": 2000, "workflowid" :  storageLoc} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "listkeys", "start": 0, "count": 2000, "tableName": table, "workflowid" :  storageLoc.id} } })
        }
 
       $http(req).then(function successCallback(response) {
@@ -212,13 +277,19 @@
       console.log('retrieving storage object ' + key);
       toastr.success('Your object is being downloaded');
 
+      var table = "";
+      if (storageLoc.type=="Bucket") {
+        table = storageLoc.name;
+      } else {
+        table = defaultTable;
+      }
       var req = {
          method: 'POST',
          url: urlPath,
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": key, "workflowid" :  storageLoc} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": key, "tableName" : table, "workflowid" :  storageLoc.id} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -303,13 +374,19 @@
     $scope.deleteStorageObject = function(index) {
       console.log('deleting storage object ' + $scope.storageObjects[index].key);
 
+      var table = "";
+      if (storageLoc.type=="Bucket") {
+        table = storageLoc.name;
+      } else {
+        table = defaultTable;
+      }
       var req = {
          method: 'POST',
          url: urlPath,
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "deletedata", "key": $scope.storageObjects[index].key, "workflowid" :  storageLoc} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "deletedata", "key": $scope.storageObjects[index].key, "tableName" : table, "workflowid" :  storageLoc.id } } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -381,55 +458,11 @@
 
     }
 
-    // save storage object
-    $scope.saveStorageObject = function(storageObject) {
+    // create new storage object
+    $scope.createNewStorageObject = function(storageObject) {
 
-      if (storageObject.key!='')
-      {
-        console.log('creating new storage object ' + storageObject.key);
-
-      var req = {
-         method: 'POST',
-         url: urlPath,
-         headers: {
-           'Content-Type': 'application/json'
-         },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": storageObject.key, "value": "", "workflowid" :  storageLoc} } })
-       }
-
-       $http(req).then(function successCallback(response) {
-          if (response.data.status=="success") {
-            console.log('Storage object sucessfully created.');
-            toastr.success('Your object has been created successfully!');
-            $scope.reloadStorageObjects();
-            $scope.open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObject.key);
-          } else {
-            console.log("Failure status returned by putData action");
-            console.log(response.data);
-            $scope.errorMessage = "An error occurred while attempting to create the object.";
-            $uibModal.open({
-              animation: true,
-              scope: $scope,
-              templateUrl: 'app/pages/workflows/modals/errorModal.html',
-              size: 'md',
-            });
-          }
-        }, function errorCallback(response) {
-          console.log("Error occurred during putData action");
-          console.log("Response:" + response);
-          if (response.statusText) {
-            $scope.errorMessage = response.statusText;
-          } else {
-            $scope.errorMessage = response;
-          }
-          $uibModal.open({
-            animation: true,
-            scope: $scope,
-            templateUrl: 'app/pages/workflows/modals/errorModal.html',
-            size: 'md',
-          });
-        });
-      }
+      $scope.open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObject.key);
+            
     };
 
     $scope.addStorageObject = function() {
