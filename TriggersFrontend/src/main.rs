@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::sync::Mutex;
 use std::thread;
+use std::process;
 use std::time::SystemTime;
 use tokio::prelude::*;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
@@ -619,6 +620,13 @@ async fn register_with_management(manager_info: TriggerManagerInfo) {
     }
 }
 
+async fn stopserver(req: HttpRequest) -> impl Responder {
+    let mut trigger_manager: TriggerManager = req.app_data::<TriggerManager>().unwrap().clone();
+    let response: Result<String, String> = trigger_manager.handle_stop().await;
+    tokio::spawn(async { create_delay(1000, "".into()).await; process::exit(0); });
+    HttpResponse::Ok().body("ok")
+}
+
 async fn health() -> impl Responder {
     HttpResponse::Ok().body("ok")
 }
@@ -664,19 +672,20 @@ async fn main() -> std::io::Result<()> {
     //     .to_string();
     let self_ip = std::env::var("HOST_IP").expect("HOST_IP env variable not specified");
 
+    let mut host_port: String = String::from("0.0.0.0:");
+    host_port.push_str(&port);
+
     let manager_info = TriggerManagerInfo {
         management_url,
         management_action,
         update_interval,
         self_ip,
+        server_url: host_port.clone(),
     };
 
     tokio::spawn(register_with_management(manager_info.clone())).await;
 
     let trigger_manager: TriggerManager = TriggerManager::spawn(manager_info.clone());
-
-    let mut host_port: String = String::from("0.0.0.0:");
-    host_port.push_str(&port);
 
     info!(
         "Starting server on {}, Starting config: {:?}",
@@ -690,12 +699,14 @@ async fn main() -> std::io::Result<()> {
             .route("/delete_trigger", web::post().to(delete_trigger))
             .route("/add_workflows", web::post().to(add_workflows))
             .route("/remove_workflows", web::post().to(remove_workflows))
+            .route("/stop", web::get().to(stopserver))
             .route("/", web::get().to(health))
         //.route("/startactor/{id}", web::get().to(startactor))
         //.route("/stopactor/{id}", web::get().to(stopactor))
     })
     .bind(host_port.as_str())?
     .workers(3)
+    .disable_signals()
     .run()
     .await
 }

@@ -12,6 +12,7 @@ use crate::amqp_trigger::handle_create_amqp_trigger;
 use crate::mqtt_triggers::handle_create_mqtt_trigger;
 use crate::timer_trigger::handle_create_timer_trigger;
 use crate::utils::create_delay;
+use crate::utils::send_get_message;
 use crate::utils::send_post_json_message;
 use crate::utils::string_to_trigger_status;
 use crate::utils::trigger_status_to_string;
@@ -27,6 +28,7 @@ pub struct TriggerManagerInfo {
     pub management_action: String,
     pub update_interval: u32,
     pub self_ip: String,
+    pub server_url: String,
 }
 
 #[derive(Serialize)]
@@ -232,8 +234,8 @@ impl TriggerManager {
         .await
     }
 
-    pub async fn send_stop_manager_msg(&mut self, trigger_id: &String) -> Result<String, String> {
-        self.send_cmd(&trigger_id, TriggerManagerCommand::StopManager)
+    pub async fn send_stop_manager_msg(&mut self) -> Result<String, String> {
+        self.send_cmd(&"".to_string(), TriggerManagerCommand::StopManager)
             .await
     }
 
@@ -478,6 +480,10 @@ impl TriggerManager {
             }
         }
     }
+
+    pub async fn handle_stop(&mut self) -> Result<String, String> {
+        self.send_stop_manager_msg().await
+    }
 }
 
 pub async fn send_status_update_from_trigger_to_manager(
@@ -514,7 +520,11 @@ async fn report_status_to_management(management_url: String, data: String) {
     tokio::spawn(send_post_json_message(management_url, data));
 }
 
-fn send_shutdown_messages(
+async fn send_server_stop_msg(url: String) {
+    tokio::spawn(send_get_message(format!("http://{}/stop", &url)));
+}
+
+async fn send_shutdown_messages(
     id_to_trigger_status_map: &mut HashMap<String, TriggerStatus>,
     id_to_trigger_error_map: &mut HashMap<String, String>,
     id_to_trigger_chan_map: &mut HashMap<String, TriggerCommandChannel>,
@@ -536,10 +546,16 @@ fn send_shutdown_messages(
         },
     };
     let serialized_update_message = serde_json::to_string(&update_message);
-    tokio::spawn(report_status_to_management(
+    let posted = send_post_json_message(
         manager_info.management_url.clone(),
         serialized_update_message.unwrap(),
-    ));
+    )
+    .await;
+    if posted == false {
+        error!("Unable to send shutdown message to management");
+    } else {
+        warn!("Sent shutdown message to management");
+    }
 
     let mut new_id_to_trigger_status_map = HashMap::new();
     for (trigger_id, _) in id_to_trigger_status_map.iter() {
@@ -874,18 +890,16 @@ async fn trigger_manager_actor_loop(
 
                             TriggerManagerCommand::StopManager => {
                                 info!("[StopManager] cmd recv");
-                                send_shutdown_messages(&mut id_to_trigger_status_map, &mut id_to_trigger_error_map, &mut id_to_trigger_chan_map, manager_info.clone());
-                                create_delay(2000, "shutdown wait".into()).await;
+                                send_shutdown_messages(&mut id_to_trigger_status_map, &mut id_to_trigger_error_map, &mut id_to_trigger_chan_map, manager_info.clone()).await;
+                                create_delay(4000, "shutdown wait".into()).await;
                                 resp.send((true, "ok".to_string()));
                                 break;
                             }
                         }
                     }
                     None => {
-                        warn!("[trigger_manager_actor_loop] None recv on command channel");
-                        send_shutdown_messages(&mut id_to_trigger_status_map, &mut id_to_trigger_error_map, &mut id_to_trigger_chan_map, manager_info.clone());
-                        create_delay(2000, "shutdown wait".into()).await;
-                        break;
+                        warn!("[trigger_manager_actor_loop] None recv on command channel. Stopping manager");
+                        send_server_stop_msg(manager_info.server_url.clone()).await;
                     },
                 }
             }
@@ -908,21 +922,15 @@ async fn trigger_manager_actor_loop(
             }
             s1 = signal_sigint.recv() => {
                 warn!("SIGINT Received, TriggerManager shutdown started");
-                send_shutdown_messages(&mut id_to_trigger_status_map, &mut id_to_trigger_error_map, &mut id_to_trigger_chan_map, manager_info.clone());
-                create_delay(2000, "shutdown wait".into()).await;
-                break;
+                send_server_stop_msg(manager_info.server_url.clone()).await;
             }
             s2 = signal_sigterm.recv() => {
                 warn!("SIGTERM Received, TriggerManager shutdown started");
-                send_shutdown_messages(&mut id_to_trigger_status_map, &mut id_to_trigger_error_map, &mut id_to_trigger_chan_map, manager_info.clone());
-                create_delay(2000, "shutdown wait".into()).await;
-                break;
+                send_server_stop_msg(manager_info.server_url.clone()).await;
             }
             s3 = signal_sigquit.recv() => {
-                warn!("SIGTERM Received, TriggerManager shutdown started");
-                send_shutdown_messages(&mut id_to_trigger_status_map, &mut id_to_trigger_error_map, &mut id_to_trigger_chan_map, manager_info.clone());
-                create_delay(2000, "shutdown wait".into()).await;
-                break;
+                warn!("SIGQUIT Received, TriggerManager shutdown started");
+                send_server_stop_msg(manager_info.server_url.clone()).await;
             }
         }
     }

@@ -115,6 +115,24 @@ pub async fn send_post_json_message(url: String, json_body: String) -> bool {
     }
 }
 
+pub async fn send_get_message(url: String) -> bool {
+    let client = reqwest::Client::new();
+    let res = client.get(&url).send().await;
+    if res.is_ok() {
+        let ret_body = res.unwrap().text().await;
+        if ret_body.is_ok() {
+            debug!("Response: {}", ret_body.unwrap());
+            return true;
+        } else {
+            warn!("Unable to get reponse body for get invocation, {}", url);
+            return false;
+        }
+    } else {
+        warn!("Error response from get invocation, {}", url);
+        return false;
+    }
+}
+
 pub fn find_element_index(
     workflow_to_search: &WorkflowInfo,
     workflows: &Vec<WorkflowInfo>,
