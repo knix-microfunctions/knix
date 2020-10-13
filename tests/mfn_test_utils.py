@@ -196,7 +196,7 @@ class MFNTest():
                         resource_info_map[resource_ref] = resource_info
                         #resource_info_map[resource_ref]['num_gpu'] = self._settings['num_gpu']
                         #resource_info_map['num_gpu'] = self._settings['num_gpu']
-                        #print("resource_info_map: " + json.dumps(resource_info_map))
+                        #print("resource_info: " + json.dumps(resource_info))
 
         elif "States" in workflow_description:
             states = workflow_description["States"]
@@ -212,7 +212,7 @@ class MFNTest():
                         resource_info_map[resource_name] = resource_info
                         #resource_info_map[resource_name]['num_gpu'] = self._settings['num_gpu']
                         #resource_info_map['num_gpu'] = self._settings['num_gpu']
-                        #print("resource_info_map: " + json.dumps(resource_info_map))
+                        #print("resource_info: " + json.dumps(resource_info))
 
                 if "Type" in state and state["Type"] == "Parallel":
                     branches = state['Branches']

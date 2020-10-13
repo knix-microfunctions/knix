@@ -449,7 +449,7 @@ class MfnClient(object):
         return state_list
 
 
-    def add_workflow(self,name,filename=None, gpu_usage="None"):
+    def add_workflow(self,name,filename=None, gpu_usage=None):
         """ add a workflow
 
         returns an existing workflow if the name exists, registers a new workflow name if it doesn't exist

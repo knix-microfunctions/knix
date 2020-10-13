@@ -53,8 +53,8 @@ RUN cmake --build /dlib/build
 RUN cd /dlib; python3 /dlib/setup.py install
 
 # Install the face recognition package and tensorflow
-RUN pip3 install face_recognition
-RUN pip3 install tensorflow==2.1.0
+#RUN pip3 install face_recognition
+#RUN pip3 install tensorflow==2.1.0
 
 # Java (for queue service)
 RUN apt-get -y --no-install-recommends install openjdk-8-jdk-headless

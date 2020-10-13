@@ -116,7 +116,7 @@ image_java: \
 	build/SandboxAgent.tar.gz
 	$(call build_image,Dockerfile_java,microfn/sandbox_java)
 
-push: image image_java
+push: image image_gpu image_java 
 	$(call push_image,microfn/sandbox)
 	$(call push_image,microfn/sandbox_gpu)
 	$(call push_image,microfn/sandbox_java)
