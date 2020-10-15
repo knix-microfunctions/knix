@@ -20,7 +20,8 @@ use crate::utils::find_element_index;
 use crate::utils::TriggerError;
 use crate::utils::TriggerWorkflowMessage;
 use crate::TriggerStatus;
-use paho_mqtt as mqtt;
+// use paho_mqtt as mqtt;
+use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, Packet, Publish, QoS};
 use std::time::{Duration, SystemTime};
 
 #[derive(Clone)]
@@ -260,6 +261,12 @@ pub async fn mqtt_actor_loop(
 
     let addr = &mqtt_sub_info.mqtt_addr;
 
+    let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
+    mqttoptions.set_keep_alive(5);
+
+    let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
+    client.subscribe("hello/rumqtt", QoS::AtMostOnce).await?;
+
     // Create the client. Use an ID for a persistent session.
     // A real system should try harder to use a unique ID.
     // let create_opts = mqtt::CreateOptionsBuilder::new()
@@ -369,6 +376,30 @@ pub async fn mqtt_actor_loop(
                         warn!("{}", ret_msg);
                         return Err(Box::new(TriggerError{ err_msg: ret_msg.clone()}));
                     },
+                }
+            }
+            event_result = eventloop.poll() => {
+                match event_result {
+                    Ok(event) => {
+                        match event {
+                            Event::Incoming(packet) => {
+                                match packet {
+                                    Packet::Publish(pub_msg) => {
+                                        let payload = String::from_utf8(pub_msg.payload.as_ref().to_vec());
+                                        info!("Received = topic: {}, payload {}", &pub_msg.topic, &payload.unwrap());
+                                    }
+                                    _ => {
+                                    }
+                                }
+                            }
+                            _ => {
+
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        break;
+                    }
                 }
             }
             // msg = strm.next() => {
