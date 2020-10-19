@@ -46,19 +46,16 @@ def handle(value, sapi):
         storage_userid = data["storage_userid"]
 
         dlc = None
-        tableName = ''
 
         if "workflowid" in storage and storage["workflowid"] is not None and storage["workflowid"] != "":
             dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=storage["workflowid"])
-            tableName = dlc.tablename
+        elif storage["tableName"] is not None:
+            dlc = sapi.get_privileged_data_layer_client(storage_userid, tableName=storage["tableName"])
         else:
             dlc = sapi.get_privileged_data_layer_client(storage_userid)
-            if storage["tableName"] is not None:
-                tableName = storage["tableName"]
-            else: 
-                tableName = dlc.tablename
+            
 
-        success, message, response_data = handleStorageAction(storage, dlc, tableName)
+        success, message, response_data = handleStorageAction(storage, dlc)
 
     except Exception as e:
         success = False
@@ -90,10 +87,11 @@ def handle(value, sapi):
     '''
     return response
 
-def handleStorageAction(storage, dlc, tableName):
+def handleStorageAction(storage, dlc):
     '''
     "storage": {
         "workflowid": <workflowid> OR non-existing (i.e., user-level storage)
+        "tableName": name of table to perform storage operations on
         "action": "getdata",  OR  "deletedata",  OR  "putdata",  OR  "listkeys",  <case insensitive>
         "key": "keyname",               (for getdata, deletedata, and putdata)
         "value": "stringdata",          (for putdata)
@@ -108,32 +106,34 @@ def handleStorageAction(storage, dlc, tableName):
     storage_action = storage['action'].lower()
 
     if storage_action == 'getdata':
-        message = "getdata, key:" + storage['key'] + ", table: " + tableName + ", keyspace: " + dlc.keyspace
+        message = "getdata, key:" + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        val = dlc.get(storage['key'], tableName=tableName)
+        val = dlc.get(storage['key'])
         if val is None:
             return False, "getdata returned None value. " + message, response_data
 
-        response_data['value'] = val
+        # the GUI expects this to be base64-encoded
+        val = bytes(val, 'utf-8')
+        response_data['value'] = base64.b64encode(val).decode()
 
     elif storage_action == 'deletedata':
-        message = "deletedata, key:" + storage['key'] + ", table: " + tableName + ", keyspace: " + dlc.keyspace
+        message = "deletedata, key:" + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        status = dlc.delete(storage['key'], tableName=tableName)
+        status = dlc.delete(storage['key'])
         if not status:
             return False, "deletedata returned False. " + message, response_data
 
     elif storage_action == 'putdata':
-        message = "putdata, key: " + storage['key'] + ", table: " + tableName + ", keyspace: " + dlc.keyspace
+        message = "putdata, key: " + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        status = dlc.put(storage['key'], storage['value'], tableName=tableName)
+        status = dlc.put(storage['key'], storage['value'])
         if not status:
             return False, "putdata returned False. " + message, response_data
 
     elif storage_action == 'listkeys':
-        message = "listkeys, start: " + str(storage['start']) + ", count: " + str(storage['count']) + ", table: " + tableName + ", keyspace: " + dlc.keyspace
+        message = "listkeys, start: " + str(storage['start']) + ", count: " + str(storage['count']) + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
-        listkeys_response = dlc.listKeys(storage['start'], storage['count'], tableName=tableName)
+        listkeys_response = dlc.listKeys(storage['start'], storage['count'])
         response_data['keylist'] = listkeys_response   # should always be a list. Empty list is a valid response
 
     else:

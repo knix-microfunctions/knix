@@ -27,7 +27,7 @@ MAX_RETRIES=3
 
 class DataLayerClient:
 
-    def __init__(self, locality=1, sid=None, wid=None, suid=None, is_wf_private=False, for_mfn=False, connect="127.0.0.1:4998", init_tables=False, drop_keyspace=False):
+    def __init__(self, locality=1, sid=None, wid=None, suid=None, is_wf_private=False, for_mfn=False, connect="127.0.0.1:4998", init_tables=False, drop_keyspace=False, tableName=None):
         self.dladdress = connect
 
         if for_mfn:
@@ -52,7 +52,10 @@ class DataLayerClient:
 
             else:
                 self.keyspace = "storage_" + suid
-                self.tablename = "defaultTable"
+                if tableName is not None:
+                    self.tablename = tableName
+                else:
+                    self.tablename = "defaultTable"
                 self.maptablename = "defaultMapTable"
                 self.settablename = "defaultSetTable"
                 self.countertablename = "defaultCounterTable"

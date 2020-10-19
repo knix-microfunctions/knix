@@ -90,7 +90,7 @@ class MicroFunctionsAPI:
         output = num
         return 'pong ' + str(output)
 
-    def get_privileged_data_layer_client(self, suid=None, sid=None, is_wf_private=False, init_tables=False, drop_keyspace=False):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, is_wf_private=False, init_tables=False, drop_keyspace=False, tableName=None):
         '''
         Obtain a privileged data layer client to access a user's storage or a workflow-private storage.
         Only can be usable by the management service.
@@ -101,6 +101,8 @@ class MicroFunctionsAPI:
 
             init_tables (boolean): whether relevant data layer tables should be initialized; default: False.
             drop_keyspace (boolean): whether the relevant keyspace for the user's storage should be dropped; default: False.
+            tableName (string): name of the table to be used for subsequent storage operations. By default, the default table will be used.
+                 If this method is called with is_wf_private = True, then the tableName parameter will be ignored.
 
         Returns:
             A data layer client with access to a user's storage.
@@ -108,7 +110,10 @@ class MicroFunctionsAPI:
         '''
         if self._is_privileged:
             if suid is not None:
-                return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
+                if tableName is not None:
+                    return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace, tableName=tableName)
+                else:
+                    return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
             elif is_wf_private:
                 # we'll never try to access the metadata stored for mfn
                 return DataLayerClient(locality=1, sid=sid, wid=sid, for_mfn=False, is_wf_private=is_wf_private, connect=self._datalayer, drop_keyspace=drop_keyspace)
@@ -872,7 +877,8 @@ class MicroFunctionsAPI:
             is_private (boolean): whether the item should be written to the private data layer of the workflow; default: False
             is_queued (boolean): whether the put operation should be reflected on the data layer after the execution finish; default: False
                 (i.e., the put operation will be reflected on the data layer immediately)
-            tableName (string): name of the table where to put the key. By default, it will be put in the default table.
+            tableName (string): name of the table where to put the key. By default, it will be put in the default table. If this method is 
+                called with is_private = True, then the tableName parameter will be ignored.
 
         Returns:
             None
@@ -905,7 +911,8 @@ class MicroFunctionsAPI:
         Args:
             key (string): the key of the data item
             is_private (boolean): whether the item should be read from the private data layer of the workflow; default: False
-            tableName (string): name of the table where to get the key from. By default, it will be fetched from the default table.
+            tableName (string): name of the table where to get the key from. By default, it will be fetched from the default table. If this method is 
+                called with is_private = True, then the tableName parameter will be ignored.
 
         Returns:
             value (string): the value of the data item; empty string if the data item is not present.
