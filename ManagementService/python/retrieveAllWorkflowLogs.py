@@ -17,7 +17,14 @@ import base64
 import requests
 import os
 
-elasticsearch = os.getenv("MFN_ELASTICSEARCH", os.getenv("MFN_HOSTNAME")).split(':')[0]
+MFN_ELASTICSEARCH = os.getenv("MFN_ELASTICSEARCH", os.getenv("MFN_HOSTNAME"))
+ELASTICSEARCH_HOST = MFN_ELASTICSEARCH.split(':')[0]
+try:
+    ELASTICSEARCH_PORT = MFN_ELASTICSEARCH.split(':')[1]
+except:
+    ELASTICSEARCH_PORT = 9200
+
+ELASTICSEARCH_URL = "http://" + ELASTICSEARCH_HOST + ":" + str(ELASTICSEARCH_PORT)
 
 def handle(value, sapi):
     assert isinstance(value, dict)
@@ -41,14 +48,14 @@ def handle(value, sapi):
             total_progress = ''
             total_exceptions = 'total_exception'
 
-            print("Connecting to elasticsearch host: " + elasticsearch)
+            print("Connecting to elasticsearch host: " + ELASTICSEARCH_URL)
 
             num_lines = 500
             if "num_lines" in workflow:
                 num_lines = int(workflow["num_lines"])
 
             filters = get_log_filters(workflow)
-            status, result, progress_result, timestamp = get_workflow_log(workflow["id"], elasticsearch, 9200, filters, num_lines)
+            status, result, progress_result, timestamp = get_workflow_log(workflow["id"], filters, num_lines)
             if status:
                 total_log = '\n'.join(result) + '\n'
                 #print('last log line: ' + result[-1])
@@ -107,9 +114,8 @@ def get_log_filters(workflow):
 
     return filters
 
-def get_workflow_log(workflowid, es_host, es_port, filters, num_last_entries=150):
-    index="mfnwf"
-    url="http://"+es_host+":" + str(es_port)
+def get_workflow_log(workflowid, filters, num_last_entries=150):
+    index = "mfnwf-" + workflowid
     #print(filters)
     #print("------ search all documents where workflow = <workflowid>")
     data = \
@@ -130,7 +136,7 @@ def get_workflow_log(workflowid, es_host, es_port, filters, num_last_entries=150
     print(data)
 
     try:
-        r=requests.get(url+"/"+index+'/_search', json=data, proxies={"http":None})
+        r = requests.get(ELASTICSEARCH_URL + "/" + index + '/_search', json=data, proxies={"http":None})
         response = r.json()
         #print(str(response))
         if 'hits' in response:
@@ -159,7 +165,6 @@ def get_workflow_log(workflowid, es_host, es_port, filters, num_last_entries=150
             return False, 'Unknown error', None, None
     except Exception as e:
         if type(e).__name__ == 'ConnectionError':
-            return False, 'Could not connect to: ' + url, None, None
+            return False, 'Could not connect to: ' + ELASTICSEARCH_URL, None, None
         else:
             raise e
-

@@ -24,8 +24,6 @@ import time
 import sys
 import signal
 
-WORKFLOW_INDEX = 'mfnwf'
-
 def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, userid=None, uuid=None, timestamp=None, indexedTimestamp=None, num_last_entries=150, alllogs=None, proxies=None):
     url="http://"+eshost+":" + str(esport)
     logging.debug("Url: " + url)
@@ -78,9 +76,10 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
 
     logging.debug("Query data:\n" + json.dumps(data, indent=2))
 
+    workflow_index = "mfnwf-" + workflowid.lower()
 
     try:
-        r=requests.get(url+"/"+WORKFLOW_INDEX+'/_search', json=data, proxies=proxies)
+        r = requests.get(url + "/" + workflow_index + '/_search', json=data, proxies=proxies)
 
         logging.debug('Http response code: ' + str(r.status_code))
         logging.debug('Http status reason: ' + r.reason)
@@ -123,8 +122,8 @@ def printlog(outlog):
 
 def main():
     parser = argparse.ArgumentParser(description='Tail logs of microfunctions workflow(s) (queried from elasticsearch)', prog='wftail.py')
+    parser.add_argument('-wid', '--workflowid', type=str, metavar='WORKFLOW_ID', help='Tail logs for specific workflow id.', required=True)
     parser.add_argument('-wname', '--workflowname', type=str, metavar='WORKFLOW_NAME', help='Tail logs for specific workflow name.')
-    parser.add_argument('-wid', '--workflowid', type=str, metavar='WORKFLOW_ID', help='Tail logs for specific workflow id.')
     parser.add_argument('-uid', '--userid', type=str, metavar='USER_ID', help='Limit logs to workflows of a specific user.')
     parser.add_argument('-eid', '--eid', type=str, metavar='EXECUTION_UUID', help='Limit logs to a specific execution id.')
     parser.add_argument('-eshost', '--eshost', type=str, metavar='ES_HOST', default=socket.gethostname(), help='Elasticsearch host. Defaults to ' + socket.gethostname() + ':9200.')

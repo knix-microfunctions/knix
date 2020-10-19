@@ -299,7 +299,7 @@ class MFNTest():
             wf.deploy(self._settings["timeout"])
             self._workflow = wf
             if self._workflow.status != "failed":
-                print("MFN workflow " + self._workflow_name + " deployed.")
+                print("MFN workflow " + self._workflow_name + " deployed; workflow id: " + self._workflow.id)
             else:
                 print("MFN workflow " + self._workflow_name + " could not be deployed.")
                 self._deployment_error = self._workflow.get_deployment_error()
@@ -315,6 +315,7 @@ class MFNTest():
                 if wf.status == "deployed":
                     wf.undeploy(self._settings["timeout"])
                     print("Workflow undeployed.")
+                time.sleep(2)
                 self._client.delete_workflow(wf)
                 break
 

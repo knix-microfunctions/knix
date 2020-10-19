@@ -38,7 +38,6 @@ from LocalQueueClientMessage import LocalQueueClientMessage
 
 LOG_FILENAME = '/opt/mfn/logs/sandboxagent.log'
 FLUENTBIT_FOLDER = '/opt/mfn/LoggingService/fluent-bit' # this a symbolic link to the actual fluent-bit folder location inside the sandbox container
-ELASTICSEARCH_INDEX_WF = 'mfnwf'
 ELASTICSEARCH_INDEX_FE = 'mfnfe'
 
 POLL_TIMEOUT = py3utils.ensure_long(60000)
@@ -64,7 +63,8 @@ class SandboxAgent:
         self._deployment_info_key = "deployment_info_workflow_" + self._workflowid
 
         self._logger = logging_helpers.setup_logger(self._sandboxid, LOG_FILENAME)
-        self._fluentbit_process, self._command_args_map_fluentbit = logging_helpers.setup_fluentbit_and_elasticsearch_index(self._logger, FLUENTBIT_FOLDER, self._elasticsearch, ELASTICSEARCH_INDEX_WF, ELASTICSEARCH_INDEX_FE)
+        self._index_wf = "mfnwf-" + self._workflowid.lower()
+        self._fluentbit_process, self._command_args_map_fluentbit = logging_helpers.setup_fluentbit_and_elasticsearch_index(self._logger, FLUENTBIT_FOLDER, self._elasticsearch, self._index_wf, ELASTICSEARCH_INDEX_FE)
 
         self._logger.info("hostname (and container name): %s", self._hostname)
         self._logger.info("elasticsearch nodes: %s", self._elasticsearch)
