@@ -112,10 +112,8 @@ def handleStorageAction(storage, dlc):
         if val is None:
             return False, "getdata returned None value. " + message, response_data
 
-        # the GUI expects this to be base64-encoded
-        val = bytes(val, 'utf-8')
-        response_data['value'] = base64.b64encode(val).decode()
-
+        response_data['value'] = val
+        
     elif storage_action == 'deletedata':
         message = "deletedata, key:" + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)
