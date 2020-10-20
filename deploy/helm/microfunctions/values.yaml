@@ -19,8 +19,8 @@
 #------------------------------------------------------------------------------
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
-#imageRepo: "registry.kube-system.svc.cluster.local"
-imageRepo: "localhost:5000" # kubespray deployment: imageRepo: "localhost:5000"
+imageRepo: "registry.kube-system.svc.cluster.local"
+#imageRepo: "localhost:5000" # kubespray deployment
 manager:
   #httpProxy: "http://<host>:<port>"
   #httpsProxy: "http://<host>:<port>"
@@ -45,7 +45,6 @@ manager:
         memory: 1Gi
   sandbox:
     imagePathPython: "/microfn/sandbox"
-    #imagePathPython: "/microfn/sandbox_gpu"
     imagePathJava: "/microfn/sandbox_java"
     imageTag: "latest"
     imagePullPolicy: "Always"
@@ -62,8 +61,8 @@ manager:
 # MicroFunction Datalayer
 #------------------------------------------------------------------------------
 datalayer:
-  replicas: 1 # kubespray deployment 
-  #replicas: 3
+  #replicas: 1 # kubespray deployment 
+  replicas: 3
   imagePath: "/microfn/datalayer"
   imageTag: "latest"
   imagePullPolicy: "Always"
@@ -81,8 +80,8 @@ datalayer:
 # Riak global data storage
 #------------------------------------------------------------------------------
 riak:
-  replicas: 1 # kubespray deployment
-  #replicas: 3
+  #replicas: 1 # kubespray deployment
+  replicas: 3
   imagePath: "/microfn/riak"
   imageTag: "latest"
   imagePullPolicy: "Always"

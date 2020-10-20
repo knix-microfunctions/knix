@@ -19,7 +19,7 @@ import time
 
 def handle(value, sapi):
     assert isinstance(value, dict)
-    data = value
+    data = value # data may contain "null" value
 
     response = {}
     response_data = {}
