@@ -84,8 +84,6 @@ class MFNTest():
         if timeout is not None:
             self._settings["timeout"] = timeout
 
-        self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
-
         # will be the deployed workflow object in self._client
         self._workflow = None
         self._deployment_error = ""
@@ -337,11 +335,11 @@ class MFNTest():
             return self._workflow.execute(message, timeout, check_duration)
 
     def get_workflow_logs(self, num_lines=500):
-        data = self._workflow.logs(ts_earliest=self._log_clear_timestamp, num_lines=num_lines)
+        data = self._workflow.logs(num_lines=num_lines)
         return data
 
     def clear_workflow_logs(self):
-        self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
+        self._workflow.clear_logs()
 
     def report(self, success, inp, expected, actual):
         short_inp = self._get_printable(inp)

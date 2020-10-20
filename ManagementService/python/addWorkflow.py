@@ -85,7 +85,7 @@ def handle(value, sapi):
 
         wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest().lower()
 
-        # TODO: make a request to elasticsearch to create the workflow index
+        # make a request to elasticsearch to create the workflow index
         create_workflow_index("mfnwf-" + wf["id"])
 
         sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True, True)

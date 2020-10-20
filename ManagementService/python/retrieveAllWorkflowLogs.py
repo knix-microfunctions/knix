@@ -39,46 +39,51 @@ def handle(value, sapi):
 
     if "workflow" in data:
         workflow = data["workflow"]
-
-        sapi.log(json.dumps(workflow))
-
         if "id" in workflow:
-            #  concatenate all logs according to their types
-            total_log = ''
-            total_progress = ''
-            total_exceptions = 'total_exception'
+            workflows = sapi.get(email + "_list_workflows", True)
+            if workflows is not None and workflows != "":
+                workflows = json.loads(workflows)
+                if workflow["id"] in workflows.values():
+                    #  concatenate all logs according to their types
+                    total_log = ''
+                    total_progress = ''
+                    total_exceptions = 'total_exception'
 
-            print("Connecting to elasticsearch host: " + ELASTICSEARCH_URL)
+                    print("Connecting to elasticsearch host: " + ELASTICSEARCH_URL)
 
-            num_lines = 500
-            if "num_lines" in workflow:
-                num_lines = int(workflow["num_lines"])
+                    num_lines = 500
+                    if "num_lines" in workflow:
+                        num_lines = int(workflow["num_lines"])
 
-            filters = get_log_filters(workflow)
-            status, result, progress_result, timestamp = get_workflow_log(workflow["id"], filters, num_lines)
-            if status:
-                total_log = '\n'.join(result) + '\n'
-                #print('last log line: ' + result[-1])
-                total_progress = '\n'.join(progress_result) + '\n'
+                    filters = get_log_filters(workflow)
+                    status, result, progress_result, timestamp = get_workflow_log(workflow["id"], filters, num_lines)
+                    if status:
+                        total_log = '\n'.join(result) + '\n'
+                        #print('last log line: ' + result[-1])
+                        total_progress = '\n'.join(progress_result) + '\n'
 
-                total_log = base64.b64encode(total_log.encode()).decode()
-                total_progress = base64.b64encode(total_progress.encode()).decode()
-                total_exceptions = base64.b64encode(total_exceptions.encode()).decode()
+                        total_log = base64.b64encode(total_log.encode()).decode()
+                        total_progress = base64.b64encode(total_progress.encode()).decode()
+                        total_exceptions = base64.b64encode(total_exceptions.encode()).decode()
 
-                wf = {}
-                wf["log"] = total_log
-                wf["progress"] = total_progress
-                wf["exceptions"] = total_exceptions
-                if timestamp is None and "ts_earliest" in workflow:
-                    timestamp = workflow["ts_earliest"]
-                wf["timestamp"] = timestamp
-                response_data["workflow"] = wf
-                success = True
+                        wf = {}
+                        wf["log"] = total_log
+                        wf["progress"] = total_progress
+                        wf["exceptions"] = total_exceptions
+                        if timestamp is None and "ts_earliest" in workflow:
+                            timestamp = workflow["ts_earliest"]
+                        wf["timestamp"] = timestamp
+                        response_data["workflow"] = wf
+                        success = True
+                    else:
+                        err_str = "Couldn't retrieve log; " + result
+                        print(err_str)
+                        response_data["message"] = err_str
+
+                else:
+                    response_data["message"] = "Couldn't retrieve log; no such workflow."
             else:
-                err_str = "Couldn't retrieve log; " + result
-                print(err_str)
-                response_data["message"] = err_str
-
+                response_data["message"] = "Couldn't retrieve log; no such workflow."
         else:
             response_data["message"] = "Couldn't retrieve log; malformed input."
     else:
@@ -91,11 +96,9 @@ def handle(value, sapi):
 
     response["data"] = response_data
 
-    sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
-
     sapi.log(response["status"])
 
-    return {}
+    return response
 
 def get_log_filters(workflow):
     filters = []

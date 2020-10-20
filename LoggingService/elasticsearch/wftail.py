@@ -65,7 +65,7 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
     data["query"]["bool"]["filter"] = filters
 
     must_not = []
-    if alllogs == False:
+    if not alllogs:
         must_not.append({"match": {"message": "[__mfn_progress]"}})
         must_not.append({"match": {"message": "[__mfn_tracing]"}})
         must_not.append({"match": {"message": "[__mfn_backup]"}})
@@ -87,7 +87,7 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
 
         if r.status_code >= 500:
             return False, r.reason
-        if r.ok == False and r.text == None:
+        if not r.ok and r.text == None:
             return False, r.reason
 
         response = json.loads(r.text)
@@ -153,19 +153,19 @@ def main():
     proxy = args.proxy
 
     formatstr = '%(message)s'
-    if debug == True:
+    if debug:
         logging.basicConfig(stream=sys.stdout, format=formatstr, level=logging.DEBUG)
     else:
         logging.basicConfig(stream=sys.stdout, format=formatstr, level=logging.INFO)
 
     follow = False
-    if followindexed == True or followtimestamp == True:
+    if followindexed or followtimestamp:
         follow = True
 
     follow_mode = 'not following'
-    if follow == True:
+    if follow:
         follow_mode = 'indexed timestamps'
-        if followtimestamp == True and followindexed == False:
+        if followtimestamp and not followindexed:
             follow_mode = 'function timestamps'
 
     http_proxy = os.getenv("http_proxy", None)
@@ -187,7 +187,7 @@ def main():
     logging.debug("Proxies: " + str(proxies))
     logging.debug("Explicitly pass proxy to python 'requests' package: " + str(proxy))
 
-    if proxy == False:
+    if not proxy:
         proxies = None
 
     lastTimestamp = timestamp
@@ -202,10 +202,11 @@ def main():
                                                 num_last_entries=num,
                                                 alllogs=alllogs,
                                                 proxies=proxies)
-        if status == True:
+        if status:
             printlog(result)
         else:
             logging.error(result)
+            break
 
         if not follow:
             break;

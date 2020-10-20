@@ -49,9 +49,6 @@ def handle(value, sapi):
 
     if "workflow" in data:
         workflow = data["workflow"]
-
-        sapi.log(json.dumps(workflow))
-
         if "id" in workflow:
             workflows = sapi.get(email + "_list_workflows", True)
             if workflows is not None and workflows != "":
