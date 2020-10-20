@@ -45,7 +45,7 @@
        })
       .state('storage.maps', {
          url: '/maps',
-         templateUrl: 'app/pages/storage/smart/tablesMaps.html',
+         templateUrl: 'app/pages/storage/smart/maps.html',
          title: 'CRDT Maps',
          controller: 'StorageTableCtrl',
          sidebarMeta: {
@@ -54,7 +54,7 @@
        })
       .state('storage.sets', {
          url: '/sets',
-         templateUrl: 'app/pages/storage/smart/tablesSets.html',
+         templateUrl: 'app/pages/storage/smart/sets.html',
          title: 'CRDT Sets',
          controller: 'StorageTableCtrl',
          sidebarMeta: {
@@ -63,7 +63,7 @@
        })
       .state('storage.counters', {
          url: '/counters',
-         templateUrl: 'app/pages/storage/smart/tablesCounters.html',
+         templateUrl: 'app/pages/storage/smart/counters.html',
          title: 'CRDT Counters',
          controller: 'StorageTableCtrl',
          sidebarMeta: {
