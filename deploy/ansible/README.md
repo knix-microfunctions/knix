@@ -110,6 +110,7 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 
         # For a cluster of hosts (preferably 3 or more), all host names must be added to [riak] group.
         #  Only one host name (referred to as the <frontend-hostname>) should be added for other groups [elasticsearch], [management], [frontend], and [nginx].
+        #  Hosts with a NVIDIA GPU should be added to group [gpu_workstations] so that they can be used by KNIX workflow deployments.
         ```
 
 3. Update `settings.json`

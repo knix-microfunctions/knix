@@ -10,3 +10,5 @@ knix-test
 [nginx]
 knix-test
 
+[gpu_workstations]
+gpuhost
