@@ -43,6 +43,9 @@ var app = angular.module('MfnWebConsole', [
     var workflowName = '';
     var workflowUrl = '';
     var objectKey = '';
+    var counterName = '';
+    var mapName = '';
+    var setName = '';
     var codeError = '';
     var storageLocation = '';
 
@@ -112,6 +115,25 @@ var app = angular.module('MfnWebConsole', [
         setObjectKey: function(key) {
           objectKey = key;
         },
+        getMapName: function() {
+          return mapName;
+        },
+        setMapName: function(name) {
+          mapName = name;
+        },
+        getSetName: function() {
+          return setName;
+        },
+        setSetName: function(name) {
+          setName = name;
+        },
+        getCounterName: function() {
+          return counterName;
+        },
+        setCounterName: function(name) {
+          counterName = name;
+        },
+
         getCodeError: function() {
           return codeError;
         },

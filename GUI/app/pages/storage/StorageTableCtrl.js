@@ -155,8 +155,23 @@
         }
     }
 
-    $scope.open = function (page, size, key, message) {
-      sharedProperties.setObjectKey(key);
+    $scope.open = function (page, size, key, message, data_type) {
+        if (data_type == "map")
+        {
+            sharedProperties.setMapName(key);
+        }
+        else if (data_type == "set")
+        {
+            sharedProperties.setSetName(key);
+        }
+        else if (data_type == "counter")
+        {
+            sharedProperties.setCounterName(key);
+        }
+        else
+        {
+            sharedProperties.setObjectKey(key);
+        }
       $scope.errorMessage = message;
       $uibModal.open({
         animation: true,
@@ -251,6 +266,14 @@
             size: 'md',
           });
       });
+    }
+
+    $scope.getStorageObjectKey = function(storageObject, data_type)
+    {
+        var idx = $scope.getIndex(storageObject, data_type);
+
+        var storageObjects = getScopeStorageObjects(data_type);
+        return storageObjects[idx].key;
     }
 
     $scope.getIndex = function(storageObject, data_type) {
