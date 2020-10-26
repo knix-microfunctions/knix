@@ -25,6 +25,7 @@ import base64
 import hashlib
 import json
 import os
+import requests
 import socket
 import stat
 import subprocess
@@ -95,7 +96,7 @@ def parse_states(state_map):
             functions.extend(sub_functions)
             states.extend(sub_states)
 
-        elif stype in {'Choice', 'Pass', 'Wait', 'Fail', 'Succeed'}: 
+        elif stype in {'Choice', 'Pass', 'Wait', 'Fail', 'Succeed'}:
             states.append({'name':sresource,'type':stype})
         else:
             raise Exception("Unknown state type: " + stype)
@@ -147,6 +148,62 @@ def printFunctionKeys():
 def printDeploymentKey(workflowid):
     getAndPrintKey("deployment_info_workflow_" + workflowid)
 
+def create_workflow_index(index_name):
+    '''
+    curl --header "Content-Type: application/json" \
+    --request PUT \
+    --data '
+    {
+        "mappings": {
+            "properties": {
+                "indexed": {"type": "long"},
+                "timestamp": {"type": "long"},
+                "loglevel": {"type": "keyword"},
+                "hostname": {"type": "keyword"},
+                "containername": {"type": "keyword"},
+                "uuid": {"type": "keyword"},
+                "userid": {"type": "keyword"},
+                "workflowname": {"type": "keyword"},
+                "workflowid": {"type": "keyword"},
+                "function": {"type": "keyword"},
+                "asctime": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS"},
+                "message": {"type": "text"}
+            }
+        }
+    }' \
+    http://$(hostname):9200/mfnwf
+    '''
+    index_data = \
+    {
+        "mappings": {
+            "properties": {
+                "indexed": {"type": "long"},
+                "timestamp": {"type": "long"},
+                "loglevel": {"type": "keyword"},
+                "hostname": {"type": "keyword"},
+                "containername": {"type": "keyword"},
+                "uuid": {"type": "keyword"},
+                "userid": {"type": "keyword"},
+                "workflowname": {"type": "keyword"},
+                "workflowid": {"type": "keyword"},
+                "function": {"type": "keyword"},
+                "asctime": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS"},
+                "message": {"type": "text"}
+            }
+        }
+    }
+    hostname = os.getenv("MFN_HOSTNAME", socket.gethostname().split('.',1)[0])
+    ELASTICSEARCH_URL = "http://" + os.getenv("ELASTICSEARCH_CONNECT", hostname+":9200")
+    try:
+        r=requests.put(ELASTICSEARCH_URL + "/" + index_name, json=index_data, proxies={"http":None})
+        response = r.json()
+        print(str(response))
+    except Exception as e:
+        if type(e).__name__ == 'ConnectionError':
+            return False, 'Could not connect to: ' + ELASTICSEARCH_URL, None, None
+        else:
+            raise e
+
 def upload_workflow(email, workflowid, workflowfile, workflowdir, sandboxid = None):
     """ Upload functions and workflow description to the storage of the ManagementService (SBOX: Management, WFID: Management) """
 
@@ -158,6 +215,10 @@ def upload_workflow(email, workflowid, workflowfile, workflowdir, sandboxid = No
     wf["status"] = "undeployed"
     wf["modified"] = time.time()
     wf["id"] = workflowid
+    wf["log_index_name"] = "mfnwf-" + wf["id"].lower()
+
+    create_workflow_index(wf["log_index_name"])
+
     DLCLIENT.put("workflow_"+workflowid, json.dumps(wf))
 
     # set workflow_json

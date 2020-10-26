@@ -533,9 +533,8 @@ def handle(value, sapi):
         response["status"] = "failure"
         response_data["message"] = "Couldn't deploy workflow; " + str(e)
         response["data"] = response_data
-        sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
         sapi.log(traceback.format_exc())
-        return {}
+        return response
 
     # Finish successfully
     response = {}
@@ -544,7 +543,6 @@ def handle(value, sapi):
     response_data["workflow"] = workflow
     response["status"] = "success"
     response["data"] = response_data
-    sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
     sapi.log(json.dumps(response))
-    return {}
+    return response
 
