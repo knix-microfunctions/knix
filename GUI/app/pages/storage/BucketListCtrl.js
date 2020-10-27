@@ -17,12 +17,12 @@
   'use strict';
 
   angular.module('MfnWebConsole.pages.storage')
-      .controller('BucketListCtrl', BucketListCtrl);
+    .controller('BucketListCtrl', BucketListCtrl);
 
   /** @ngInject */
   function BucketListCtrl($scope, $http, $cookies, $window, $filter, editableOptions, editableThemes, $uibModal, baProgressModal, toastr, sharedProperties, sharedData) {
 
-    $scope.itemsByPage=10;
+    $scope.itemsByPage = 10;
     $scope.entity = "Object Store";
 
     var token = $cookies.get('token');
@@ -30,111 +30,111 @@
     var urlPath = sharedProperties.getUrlPath();
 
     if (!$scope.bucketTables) {
-      $scope.bucketTables = [ ];
+      $scope.bucketTables = [];
     }
     getBucketList();
-    
+
     function getBucketList() {
 
       var req = {
-          method: 'POST',
-          url: urlPath,
-          headers: {
-               'Content-Type': 'application/json'
-          },
-      
-         data:   JSON.stringify({ "action" : "getTriggerableTables", "data" : { "user" : { "token" : token }}})
+        method: 'POST',
+        url: urlPath,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        data: JSON.stringify({ "action": "getTriggerableBuckets", "data": { "user": { "token": token } } })
       }
-      
+
       $http(req).then(function successCallback(response) {
 
-            if (response.data.status=="success") {
-                $scope.bucketTables = Object.keys(response.data.data.tables);
-            } else {
-                console.log("Failure status returned by getTriggerableTables action");
-                console.log("Message:" + response.data);
-                $scope.errorMessage = "An error occurred while attempting to retrieve the list of storage trigger tables.";
-                $uibModal.open({
-                  animation: true,
-                  scope: $scope,
-                  templateUrl: 'app/pages/workflows/modals/errorModal.html',
-                  size: 'md',
-                });
-              }  
-                
-
-      }, function errorCallback(response) {
-          console.log("Error occurred during getTriggerableTables action");
-          console.log("Response:" + response);
-          if (response.statusText) {
-            $scope.errorMessage = response.statusText;
-          } else {
-            $scope.errorMessage = response;
-          }
+        if (response.data.status == "success") {
+          $scope.bucketTables = Object.keys(response.data.data.buckets);
+        } else {
+          console.log("Failure status returned by getTriggerableBuckets action");
+          console.log("Message:" + response.data);
+          $scope.errorMessage = "An error occurred while attempting to retrieve the list of storage trigger buckets.";
           $uibModal.open({
             animation: true,
             scope: $scope,
             templateUrl: 'app/pages/workflows/modals/errorModal.html',
             size: 'md',
           });
+        }
+
+
+      }, function errorCallback(response) {
+        console.log("Error occurred during getTriggerableBuckets action");
+        console.log("Response:" + response);
+        if (response.statusText) {
+          $scope.errorMessage = response.statusText;
+        } else {
+          $scope.errorMessage = response;
+        }
+        $uibModal.open({
+          animation: true,
+          scope: $scope,
+          templateUrl: 'app/pages/workflows/modals/errorModal.html',
+          size: 'md',
+        });
       });
     }
 
-    $scope.getIndex = function(bucket) {
-      
+    $scope.getIndex = function (bucket) {
+
       return $scope.bucketTables.indexOf(bucket);
     }
 
-    $scope.deleteBucket = function(bucket) {
+    $scope.deleteBucket = function (bucket) {
       console.log('deleting bucket table ' + $scope.bucketTables[bucket]);
 
       var req = {
         method: 'POST',
         url: urlPath,
         headers: {
-             'Content-Type': 'application/json'
+          'Content-Type': 'application/json'
         },
-    
-       data:   JSON.stringify({ "action" : "deleteTriggerableTable", "data" : { "user" : { "token" : token }, "tablename" : $scope.bucketTables[bucket] }})
+
+        data: JSON.stringify({ "action": "deleteTriggerableBucket", "data": { "user": { "token": token }, "bucketname": $scope.bucketTables[bucket] } })
       }
-      
+
       $http(req).then(function successCallback(response) {
 
-        if (response.data.status=="success") {
-            console.log('Table sucessfully deleted.');
-            toastr.success('Your bucket has been deleted successfully!');
-            $scope.bucketTables.splice(bucket, 1);
-          } else {
-            console.log("Failure status returned by deleteTriggerableTable action");
-            console.log("Message:" + response.data);
-            $scope.errorMessage = "An error occurred while attempting to delete the table.";
-            $uibModal.open({
-              animation: true,
-              scope: $scope,
-              templateUrl: 'app/pages/workflows/modals/errorModal.html',
-              size: 'md',
-            });
-          }
-      }, function errorCallback(response) {
-          console.log("Error occurred during deleteTriggerableTable action");
-          console.log("Response:" + response);
-          if (response.statusText) {
-            $scope.errorMessage = response.statusText;
-          } else {
-            $scope.errorMessage = response;
-          }
+        if (response.data.status == "success") {
+          console.log('Bucket sucessfully deleted.');
+          toastr.success('Your bucket has been deleted successfully!');
+          $scope.bucketTables.splice(bucket, 1);
+        } else {
+          console.log("Failure status returned by deleteTriggerableBucket action");
+          console.log("Message:" + response.data);
+          $scope.errorMessage = "An error occurred while attempting to delete the bucket.";
           $uibModal.open({
             animation: true,
             scope: $scope,
             templateUrl: 'app/pages/workflows/modals/errorModal.html',
             size: 'md',
           });
+        }
+      }, function errorCallback(response) {
+        console.log("Error occurred during deleteTriggerableBucket action");
+        console.log("Response:" + response);
+        if (response.statusText) {
+          $scope.errorMessage = response.statusText;
+        } else {
+          $scope.errorMessage = response;
+        }
+        $uibModal.open({
+          animation: true,
+          scope: $scope,
+          templateUrl: 'app/pages/workflows/modals/errorModal.html',
+          size: 'md',
+        });
 
       });
 
     }
 
-    $scope.removeBucket = function(bucket) {
+    $scope.removeBucket = function (bucket) {
       $scope.bucketToBeDeleted = bucket;
       $uibModal.open({
         animation: true,
@@ -144,58 +144,57 @@
       });
     };
 
-    $scope.gotoPage = function(page) {
+    $scope.gotoPage = function (page) {
 
       angular
-       .element( $('#bucketPagination') )
-       .isolateScope()
-       .selectPage(page);
+        .element($('#bucketPagination'))
+        .isolateScope()
+        .selectPage(page);
 
     }
 
-    $scope.reloadBucketTables = function() {
+    $scope.reloadBucketTables = function () {
       getBucketList();
     }
 
-    $scope.navigate = function(event,rowform,bucket) {
+    $scope.navigate = function (event, rowform, bucket) {
 
-      if (event.keyCode==13) {
+      if (event.keyCode == 13) {
         rowform.$submit();
       }
 
     }
 
-    $scope.setStorageLocation = function(bucket) {
-        sharedProperties.setStorageLocation({ "name" : bucket, "type" : "Bucket", "id" : ""});
-        $window.location.href='#/storage';
+    $scope.setStorageLocation = function (bucket) {
+      sharedProperties.setStorageLocation({ "name": bucket, "type": "Bucket", "id": "" });
+      $window.location.href = '#/storage';
     };
 
     // create bucket table
-    $scope.createBucket = function(bucket) {
+    $scope.createBucket = function (bucket) {
 
-      if (bucket!='')
-      {
+      if (bucket != '') {
         console.log('creating new bucket ' + bucket);
         var req = {
-            method: 'POST',
-            url: urlPath,
-            headers: {
-                 'Content-Type': 'application/json'
-            },
-        
-           data:  JSON.stringify({ "action" : "addTriggerableTable", "data" : { "user" : { "token" : token }, "tablename" : bucket}})
+          method: 'POST',
+          url: urlPath,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          data: JSON.stringify({ "action": "addTriggerableBucket", "data": { "user": { "token": token }, "bucketname": bucket } })
         }
 
-        
+
         $http(req).then(function successCallback(response) {
-          if (response.data.status=="success") {
-            console.log('Table sucessfully created.');
+          if (response.data.status == "success") {
+            console.log('Bucket sucessfully created.');
             toastr.success('Your bucket has been created successfully!');
             $scope.reloadBucketTables();
           } else {
-            console.log("Failure status returned by addTriggerableTable action");
+            console.log("Failure status returned by addTriggerableBucket action");
             console.log("Message:" + response.data);
-            $scope.errorMessage = "An error occurred while attempting to create the table.";
+            $scope.errorMessage = "An error occurred while attempting to create the bucket.";
             $uibModal.open({
               animation: true,
               scope: $scope,
@@ -204,7 +203,7 @@
             });
           }
         }, function errorCallback(response) {
-          console.log("Error occurred during addTriggerableTable action");
+          console.log("Error occurred during addTriggerableBucket action");
           console.log("Response:" + response);
           if (response.statusText) {
             $scope.errorMessage = response.statusText;
@@ -221,7 +220,7 @@
       }
     };
 
-    $scope.addBucket = function() {
+    $scope.addBucket = function () {
       $scope.inserted = "";
       $scope.bucketTables.push($scope.inserted);
       $scope.gotoPage(1);

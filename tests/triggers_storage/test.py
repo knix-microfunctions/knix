@@ -23,14 +23,15 @@ from mfn_test_utils import MFNTest
 
 class TriggersStorageTest(unittest.TestCase):
 
-    #@unittest.skip("")
+    # @unittest.skip("")
     def test_triggers_storage(self):
-        test = MFNTest(test_name='triggers_storage', workflow_filename='wf_triggers_storage.json')
+        test = MFNTest(test_name='triggers_storage',
+                       workflow_filename='wf_triggers_storage.json')
         nonce = str(int(time.time() * 1000))
 
         input_data = []
         input_data.append("wf_triggers_storage")
-        input_data.append("triggerable_table")
+        input_data.append("triggerable_bucket")
         input_data.append("triggerable_key")
         input_data.append(nonce)
 
@@ -42,7 +43,8 @@ class TriggersStorageTest(unittest.TestCase):
 
         received_reponse = []
         try:
-            received_reponse = [response["trigger_start_main_wf"], response["explicit_start_main_wf"], response["trigger_start_other_wf"], response["explicit_start_other_wf"]]
+            received_reponse = [response["trigger_start_main_wf"], response["explicit_start_main_wf"],
+                                response["trigger_start_other_wf"], response["explicit_start_other_wf"]]
             main_trigger_logs = response["main_trigger_logs"]
             other_trigger_logs = response["other_trigger_logs"]
         except Exception as e:
@@ -58,32 +60,35 @@ class TriggersStorageTest(unittest.TestCase):
 
         test.undeploy_workflow()
         test.cleanup()
-    
+
     def matches_expected_response(self, received_reponse):
-        expected_response = [4,1,2,0]
+        expected_response = [4, 1, 2, 0]
         if received_reponse == expected_response:
             return True
         else:
-            print("ERROR: matches_expected_response = False: received response: " + str(received_reponse))
+            print("ERROR: matches_expected_response = False: received response: " +
+                  str(received_reponse))
             return False
-    
+
     def log_lines_match(self, main_trigger_logs, other_trigger_logs, nonce):
-        main_log_lines_suffix = [1,2,3,4]
+        main_log_lines_suffix = [1, 2, 3, 4]
         if len(main_trigger_logs) != len(main_log_lines_suffix):
             print("ERROR: log_lines_match = False, len(main_trigger_logs) does not match")
             return False
-        
+
         for i in range(4):
             suffix = main_log_lines_suffix[i]
             to_match = f"_!_TRIGGER_START_{nonce};{suffix}"
             logline = main_trigger_logs[i].strip()
             if to_match not in logline:
-                print("ERROR: log_lines_match = False, main_trigger_logs mismatch: " + to_match + " not found in " + logline)
+                print("ERROR: log_lines_match = False, main_trigger_logs mismatch: " +
+                      to_match + " not found in " + logline)
                 return False
-        
-        other_log_lines_suffix = [1,3]
+
+        other_log_lines_suffix = [1, 3]
         if len(other_trigger_logs) != len(other_log_lines_suffix):
-            print("ERROR: log_lines_match = False, len(other_trigger_logs) does not match")
+            print(
+                "ERROR: log_lines_match = False, len(other_trigger_logs) does not match")
             return False
 
         for i in range(2):
@@ -91,7 +96,8 @@ class TriggersStorageTest(unittest.TestCase):
             to_match = f"_!_TRIGGER_START_{nonce};{suffix}"
             logline = other_trigger_logs[i].strip()
             if to_match not in logline:
-                print("ERROR: log_lines_match = False, other_trigger_logs mismatch: " + to_match + " not found in " + logline)
+                print("ERROR: log_lines_match = False, other_trigger_logs mismatch: " +
+                      to_match + " not found in " + logline)
                 return False
 
         return True

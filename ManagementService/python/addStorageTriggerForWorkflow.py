@@ -17,39 +17,46 @@ import os
 import random
 import time
 
+
 def handle(value, sapi):
     assert isinstance(value, dict)
     data = value
 
     try:
-        if "email" not in data or "workflowname" not in data or "tablename" not in data:
-            raise Exception("Couldn't add storage trigger; either user email or workflow name or table name is missing")
+        if "email" not in data or "workflowname" not in data or "bucketname" not in data:
+            raise Exception(
+                "Couldn't add storage trigger; either user email or workflow name or bucket name is missing")
         email = data["email"]
         workflowname = data["workflowname"]
-        tablename = data["tablename"]
+        tablename = data["bucketname"]
         storage_userid = data["storage_userid"]
-        print("[addStorageTrigger] User: " + email + ", Table: " + tablename + ", Workflow: " + workflowname + ", storage_userid: " + storage_userid)
+        print("[addStorageTrigger] User: " + email + ", Bucket: " + tablename +
+              ", Workflow: " + workflowname + ", storage_userid: " + storage_userid)
 
         isTablePresent = isTriggerTablePresent(email, tablename, sapi)
         if isTablePresent == False:
-            print("[addStorageTrigger] User: " + email + ", Table: " + tablename + " not found.")
-            raise Exception("Table: " + tablename + " not found.")
-        
-        isWorkflowPresent, isWorkflowDeployed, details = isWorkflowPresentAndDeployed(email, workflowname, sapi)
+            print("[addStorageTrigger] User: " + email +
+                  ", Bucket: " + tablename + " not found.")
+            raise Exception("Bucket: " + tablename + " not found.")
+
+        isWorkflowPresent, isWorkflowDeployed, details = isWorkflowPresentAndDeployed(
+            email, workflowname, sapi)
         if isWorkflowPresent == False:
-            print("[addStorageTrigger] User: " + email + "Workflow: " + workflowname + " not found.")
+            print("[addStorageTrigger] User: " + email +
+                  "Workflow: " + workflowname + " not found.")
             raise Exception("Workflow: " + workflowname + " not found.")
 
         if isWorkflowPresent == True:
             # add the name of the triggerable table in workflow's metadata
-            addTableToWorkflowMetadata(email, tablename, workflowname, details["id"], sapi)
-        
+            addTableToWorkflowMetadata(
+                email, tablename, workflowname, details["id"], sapi)
+
         if isWorkflowDeployed == True:
             # associate a deployed workflow with a triggerable table
             dlc = sapi.get_privileged_data_layer_client(storage_userid)
-            addWorkflowToTableMetadata(email, tablename, workflowname, details["endpoints"], dlc)
+            addWorkflowToTableMetadata(
+                email, tablename, workflowname, details["endpoints"], dlc)
             dlc.shutdown()
-
 
     except Exception as e:
         response = {}
@@ -65,13 +72,17 @@ def handle(value, sapi):
     response = {}
     response["status"] = "success"
     if isWorkflowPresent == True and isWorkflowDeployed == False:
-        response_data["message"] = "Trigger queued up for workflow: " + workflowname + ", to be associated in future with table: " + tablename
+        response_data["message"] = "Trigger queued up for workflow: " + \
+            workflowname + ", to be associated in future with table: " + tablename
     else:
-        response_data["message"] = "Trigger added for workflow: " + workflowname + ", urls: " + str(details['endpoints']) + ", associated with table: " + tablename
+        response_data["message"] = "Trigger added for workflow: " + workflowname + \
+            ", urls: " + str(details['endpoints']) + \
+            ", associated with table: " + tablename
     response["data"] = response_data
     print(str(response))
     sapi.log(json.dumps(response))
     return response
+
 
 def getWorkflowDetails(email, workflowname, sapi):
     workflows = sapi.get(email + "_list_workflows", True)
@@ -103,6 +114,7 @@ def getWorkflowDetails(email, workflowname, sapi):
         details["associatedTriggerableTables"] = wf["associatedTriggerableTables"]
 
     return details
+
 
 def isWorkflowPresentAndDeployed(email, workflowname, sapi):
     workflows = sapi.get(email + "_list_workflows", True)
@@ -136,6 +148,7 @@ def isWorkflowPresentAndDeployed(email, workflowname, sapi):
 
     return isWorkflowPresent, isWorkflowDeployed, details
 
+
 def isTriggerTablePresent(email, tablename, sapi):
     # add to the list of triggerable tables
     trigger_tables = sapi.get(email + "_list_trigger_tables", True)
@@ -153,11 +166,14 @@ def isTriggerTablePresent(email, tablename, sapi):
 def addTableToWorkflowMetadata(email, tablename, workflowname, workflow_id, sapi):
     wf = sapi.get(email + "_workflow_" + workflow_id, True)
     if wf is None or wf == "":
-        print("[addTableToWorkflowMetadata] User: " + email + ", Workflow: " + workflowname + ": couldn't retrieve workflow metadata.")
-        raise Exception("[addTableToWorkflowMetadata] User: " + email + ", Workflow: " + workflowname + ": couldn't retrieve workflow metadata.")
-    
+        print("[addTableToWorkflowMetadata] User: " + email + ", Workflow: " +
+              workflowname + ": couldn't retrieve workflow metadata.")
+        raise Exception("[addTableToWorkflowMetadata] User: " + email +
+                        ", Workflow: " + workflowname + ": couldn't retrieve workflow metadata.")
+
     wf = json.loads(wf)
-    print("[addTableToWorkflowMetadata] User: " + email + ", Workflow: " + workflowname + ": Current workflow metadata: " +str(wf))
+    print("[addTableToWorkflowMetadata] User: " + email + ", Workflow: " +
+          workflowname + ": Current workflow metadata: " + str(wf))
 
     if 'associatedTriggerableTables' not in wf:
         wf['associatedTriggerableTables'] = {}
@@ -166,17 +182,21 @@ def addTableToWorkflowMetadata(email, tablename, workflowname, workflow_id, sapi
         associatedTables[tablename] = ''
         wf['associatedTriggerableTables'] = associatedTables
         wf = sapi.put(email + "_workflow_" + workflow_id, json.dumps(wf), True)
-        print("[addTableToWorkflowMetadata] User: " + email + ", Table: " + tablename + " added to Workflow: " + workflowname)
+        print("[addTableToWorkflowMetadata] User: " + email +
+              ", Bucket: " + tablename + " added to Workflow: " + workflowname)
     else:
-        print("[addTableToWorkflowMetadata] User: " + email + ", Table: " + tablename + " already present in Workflow: " + workflowname)
+        print("[addTableToWorkflowMetadata] User: " + email + ", Bucket: " +
+              tablename + " already present in Workflow: " + workflowname)
 
 
 def addWorkflowToTableMetadata(email, tablename, workflowname, workflow_endpoints, dlc):
     metadata_key = tablename
     metadata_urls = workflow_endpoints
     triggers_metadata_table = 'triggersInfoTable'
-    bucket_metadata = {"urltype": "url", "urls": metadata_urls, "wfname": workflowname}
-    print("[addWorkflowToTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Adding metadata: " + str(bucket_metadata))
+    bucket_metadata = {"urltype": "url",
+                       "urls": metadata_urls, "wfname": workflowname}
+    print("[addWorkflowToTableMetadata] User: " + email + ", Workflow: " + workflowname +
+          ", Bucket: " + tablename + ", Adding metadata: " + str(bucket_metadata))
 
     current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
     if current_meta == None or current_meta == '':
@@ -186,15 +206,17 @@ def addWorkflowToTableMetadata(email, tablename, workflowname, workflow_endpoint
 
     if type(meta_list == type([])):
         for i in range(len(meta_list)):
-            meta=meta_list[i]
+            meta = meta_list[i]
             if meta["wfname"] == bucket_metadata["wfname"]:
                 del meta_list[i]
                 break
         meta_list.append(bucket_metadata)
 
-    dlc.put(metadata_key, json.dumps(meta_list), tableName=triggers_metadata_table)
+    dlc.put(metadata_key, json.dumps(meta_list),
+            tableName=triggers_metadata_table)
 
     time.sleep(0.2)
     updated_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
     updated_meta_list = json.loads(updated_meta)
-    print("[addWorkflowToTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Updated metadata: " + str(updated_meta_list))
+    print("[addWorkflowToTableMetadata] User: " + email + ", Workflow: " + workflowname +
+          ", Bucket: " + tablename + ", Updated metadata: " + str(updated_meta_list))

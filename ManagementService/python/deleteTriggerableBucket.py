@@ -17,31 +17,34 @@ import json
 import os
 import time
 
+
 def handle(value, sapi):
     assert isinstance(value, dict)
     data = value
 
     try:
-        if "email" not in data or "tablename" not in data:
-            raise Exception("Couldn't delete triggerable table; either user email or table name is missing")
+        if "email" not in data or "bucketname" not in data:
+            raise Exception(
+                "Couldn't delete triggerable bucket; either user email or bucket name is missing")
         email = data["email"]
-        tablename = data["tablename"]
+        tablename = data["bucketname"]
         storage_userid = data["storage_userid"]
 
-        # get a list of workflows. 
+        # get a list of workflows.
         dlc = sapi.get_privileged_data_layer_client(storage_userid)
         associatedWorkflows = listAssociatedWorkflowsForTable(tablename, dlc)
         triggers_metadata_table = 'triggersInfoTable'
         dlc.delete(tablename, tableName=triggers_metadata_table)
-        print("User: " + email + ", Deleting metadata for table: " + tablename)
+        print("User: " + email + ", Deleting metadata for bucket: " + tablename)
         dlc.shutdown()
 
         # for each workflow, remove table from workflow metadata
         for workflowname in associatedWorkflows:
             wf_id = getWorkflowId(email, workflowname, sapi)
             if wf_id != '':
-                removeTableFromWorkflowMetadata(email, tablename, workflowname, wf_id, sapi)
-        
+                removeTableFromWorkflowMetadata(
+                    email, tablename, workflowname, wf_id, sapi)
+
         trigger_tables = sapi.get(email + "_list_trigger_tables", True)
         if trigger_tables is not None and trigger_tables != "":
             trigger_tables = json.loads(trigger_tables)
@@ -50,15 +53,17 @@ def handle(value, sapi):
 
         if tablename in trigger_tables:
             del trigger_tables[tablename]
-            sapi.put(email + "_list_trigger_tables", json.dumps(trigger_tables), True)
-            print("User: " + email + ", Deleted table: " + tablename + "  to the list of triggerable tables")
-
+            sapi.put(email + "_list_trigger_tables",
+                     json.dumps(trigger_tables), True)
+            print("User: " + email + ", Deleted bucket: " +
+                  tablename + "  to the list of triggerable buckets")
 
     except Exception as e:
         response = {}
         response_data = {}
         response["status"] = "failure"
-        response_data["message"] = "Couldn't delete a triggerable table; "+str(e)
+        response_data["message"] = "Couldn't delete a triggerable bucket; " + \
+            str(e)
         response["data"] = response_data
         print(str(response))
         return response
@@ -67,11 +72,12 @@ def handle(value, sapi):
     response_data = {}
     response = {}
     response["status"] = "success"
-    response_data["message"] = "Table deleted: " + tablename
+    response_data["message"] = "Bucket deleted: " + tablename
     response["data"] = response_data
-    #print(str(response))
+    # print(str(response))
     sapi.log(json.dumps(response))
     return response
+
 
 def listAssociatedWorkflowsForTable(tablename, dlc):
     metadata_key = tablename
@@ -82,7 +88,7 @@ def listAssociatedWorkflowsForTable(tablename, dlc):
     workflow_list = []
     if type(meta_list == type([])):
         for i in range(len(meta_list)):
-            meta=meta_list[i]
+            meta = meta_list[i]
             workflow_list.append(meta["wfname"])
     return workflow_list
 
@@ -103,7 +109,8 @@ def getWorkflowId(email, workflowname, sapi):
 def removeTableFromWorkflowMetadata(email, tablename, workflowname, workflow_id, sapi):
     wf = sapi.get(email + "_workflow_" + workflow_id, True)
     if wf is None or wf == "":
-        raise Exception("removeTableToWorkflowMetadata: couldn't retrieve workflow metadata.")
+        raise Exception(
+            "removeTableToWorkflowMetadata: couldn't retrieve workflow metadata.")
     wf = json.loads(wf)
     print("Current workflow metadata: " + str(wf))
     if 'associatedTriggerableTables' in wf:
@@ -111,5 +118,7 @@ def removeTableFromWorkflowMetadata(email, tablename, workflowname, workflow_id,
         if tablename in associatedTables:
             del associatedTables[tablename]
             wf['associatedTriggerableTables'] = associatedTables
-            wf = sapi.put(email + "_workflow_" + workflow_id, json.dumps(wf), True)
-            print("User: " + email + ", Removed table: " + tablename + ", from the metadata of workflow: " + workflowname)
+            wf = sapi.put(email + "_workflow_" +
+                          workflow_id, json.dumps(wf), True)
+            print("User: " + email + ", Removed bucket: " + tablename +
+                  ", from the metadata of workflow: " + workflowname)
