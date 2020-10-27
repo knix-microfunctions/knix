@@ -14,6 +14,8 @@
 
 import json
 import os
+import traceback
+
 import requests
 import time
 
@@ -115,21 +117,17 @@ def handle(value, sapi):
             with open(conf_file, 'r') as fp:
                 new_workflow_conf = json.load(fp)
 
-            # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
-            wfNameSanitized = 'wf-' + wf["name"].replace('@', '-').replace('_', '-') + '-wf'
-            emailSanitized = 'u-' + email.replace('@', '-').replace('_', '-') + '-u'
-
             # Pod, Deployment and Hpa names for the new workflow will have a prefix containing the workflow name and user name
             app_fullname_prefix = ''
             if 'app.fullname.prefix' in new_workflow_conf:
-                app_fullname_prefix = new_workflow_conf['app.fullname.prefix']+'-'# + wfNameSanitized + '-' + emailSanitized + '-'
+                app_fullname_prefix = new_workflow_conf['app.fullname.prefix']
 
             with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r") as f:
                 token = f.read()
             with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
                 namespace = f.read()
 
-            ksvcname = app_fullname_prefix + wf["id"].lower()
+            ksvcname = app_fullname_prefix + '-' + wf["id"].lower()
             # DELETE KNative Service
             resp = requests.delete(
                 "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1alpha1/namespaces/"+namespace+"/services/"+ksvcname,
@@ -171,17 +169,16 @@ def handle(value, sapi):
         response["status"] = "failure"
         response_data["message"] = "Couldn't undeploy workflow; "+ str(exc)
         response["data"] = response_data
-        sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
-        return {}
+        sapi.log(traceback.format_exc())
+        return response
 
 
     # Finish successfully
     response_data["message"] = "Successfully undeployed workflow " + workflow["id"] + "."
     response["status"] = "success"
     response["data"] = response_data
-    sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
     sapi.log(json.dumps(response))
-    return {}
+    return response
 
 def removeWorkflowFromTableMetadata(email, tablename, workflowname, dlc):
     metadata_key = tablename

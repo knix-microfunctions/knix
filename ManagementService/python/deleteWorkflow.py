@@ -13,7 +13,28 @@
 #   limitations under the License.
 
 import json
-import time 
+import time
+import os
+
+import requests
+
+MFN_ELASTICSEARCH = os.getenv("MFN_ELASTICSEARCH", os.getenv("MFN_HOSTNAME"))
+ELASTICSEARCH_HOST = MFN_ELASTICSEARCH.split(':')[0]
+try:
+    ELASTICSEARCH_PORT = MFN_ELASTICSEARCH.split(':')[1]
+except:
+    ELASTICSEARCH_PORT = 9200
+
+ELASTICSEARCH_URL = "http://" + ELASTICSEARCH_HOST + ":" + str(ELASTICSEARCH_PORT)
+
+def delete_workflow_index(index_name):
+    try:
+        r = requests.delete(ELASTICSEARCH_URL + "/" + index_name, proxies={"http":None})
+    except Exception as e:
+        if type(e).__name__ == 'ConnectionError':
+            print('Could not connect to: ' + ELASTICSEARCH_URL)
+        else:
+            raise e
 
 def handle(value, sapi):
     assert isinstance(value, dict)
@@ -29,9 +50,6 @@ def handle(value, sapi):
 
     if "workflow" in data:
         workflow = data["workflow"]
-
-        sapi.log(json.dumps(workflow))
-
         if "id" in workflow:
             workflows = sapi.get(email + "_list_workflows", True)
             if workflows is not None and workflows != "":
@@ -45,6 +63,9 @@ def handle(value, sapi):
                                 if workflows[wn] == workflow["id"]:
                                     del workflows[wn]
                                     break
+
+                            # delete workflow logs
+                            delete_workflow_index("mfnwf-" + workflow["id"])
 
                             sapi.delete(email + "_workflow_" + workflow["id"], True, True)
                             #sapi.delete(email + "_workflow_json_" + workflow["id"], True, True)

@@ -14,6 +14,27 @@
 
 import json
 import hashlib
+import os
+
+import requests
+
+MFN_ELASTICSEARCH = os.getenv("MFN_ELASTICSEARCH", os.getenv("MFN_HOSTNAME"))
+ELASTICSEARCH_HOST = MFN_ELASTICSEARCH.split(':')[0]
+try:
+    ELASTICSEARCH_PORT = MFN_ELASTICSEARCH.split(':')[1]
+except:
+    ELASTICSEARCH_PORT = 9200
+
+ELASTICSEARCH_URL = "http://" + ELASTICSEARCH_HOST + ":" + str(ELASTICSEARCH_PORT)
+
+def delete_workflow_index(index_name):
+    try:
+        r = requests.delete(ELASTICSEARCH_URL + "/" + index_name, proxies={"http":None})
+    except Exception as e:
+        if type(e).__name__ == 'ConnectionError':
+            print('Could not connect to: ' + ELASTICSEARCH_URL)
+        else:
+            raise e
 
 def delete_single_workflow(email, wid, sapi):
     # delete
@@ -37,6 +58,9 @@ def delete_single_workflow(email, wid, sapi):
 
     # 6. workflow metadata
     sapi.delete(email + "_workflow_" + wid, True, True)
+
+    # delete workflow logs as well
+    delete_workflow_index("mfnwf-" + wid)
 
     # global data layer entries for each workflow
     # the following use the same keyspace: "sbox_" + sandboxid (or workflowid)

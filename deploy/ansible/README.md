@@ -28,7 +28,14 @@ To setup KNIX on localhost, or a single remote host, or a cluster of hosts
 2. Install dependencies required by ansible
 
     ```bash
+    # for python2
     sudo pip install netaddr
+    ```
+or:
+
+    ```bash
+    # for python3
+    sudo pip3 install netaddr
     ```
 
 ## Prerequisites: on target machines

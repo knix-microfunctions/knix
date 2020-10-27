@@ -25,9 +25,6 @@ $HOSTNAME
 [management]
 $HOSTNAME
 
-[frontend]
-$HOSTNAME
-
 [nginx]
 $HOSTNAME
 END
