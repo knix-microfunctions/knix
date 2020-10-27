@@ -308,15 +308,21 @@
         [Install]
         WantedBy=multi-user.target
 
-  # regardless of start_at_boot setting, we install the script and start it
-  # because we have to perform some operations
-  # if start_at_boot is set to false, we'll disable it afterwards
-  - name: systemd install and enable mfn-riak service to perform initialization operations
+  - name: systemd install, start riak, and enable mfn-riak service to start at boot
     systemd:
       daemon_reload: yes
       name: "{{ riak_server_service_name }}"
       enabled: true
       state: restarted
+    when: start_at_boot|bool
+
+  - name: systemd install, start riak, and diable mfn-riak service to start at boot
+    systemd:
+      daemon_reload: yes
+      name: "{{ riak_server_service_name }}"
+      enabled: false
+      state: restarted
+    when: not start_at_boot|bool
 
   - name: create riak start script
     copy:
@@ -471,10 +477,10 @@
       /usr/sbin/riak-admin cluster commit
     when: hostvars[groups['riak'][0]].ansible_default_ipv4.address == ansible_default_ipv4.address
 
-  - name: systemd install and disable mfn-riak service
-    systemd:
-      daemon_reload: yes
-      name: "{{ riak_server_service_name }}"
-      enabled: false
-      state: stopped
-    when: not start_at_boot|bool
+#  - name: systemd install and disable mfn-riak service
+#    systemd:
+#      daemon_reload: yes
+#      name: "{{ riak_server_service_name }}"
+#      enabled: false
+#      state: stopped
+#    when: not start_at_boot|bool

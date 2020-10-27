@@ -184,7 +184,7 @@
       daemon_reload: yes
       name: "{{ service_name }}"
       enabled: false
-      state: stopped
+      state: restarted
     when: not start_at_boot|bool
 
   - name: create start script
