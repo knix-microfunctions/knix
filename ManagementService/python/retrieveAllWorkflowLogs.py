@@ -17,7 +17,14 @@ import base64
 import requests
 import os
 
-elasticsearch = os.getenv("MFN_ELASTICSEARCH", os.getenv("MFN_HOSTNAME")).split(':')[0]
+MFN_ELASTICSEARCH = os.getenv("MFN_ELASTICSEARCH", os.getenv("MFN_HOSTNAME"))
+ELASTICSEARCH_HOST = MFN_ELASTICSEARCH.split(':')[0]
+try:
+    ELASTICSEARCH_PORT = MFN_ELASTICSEARCH.split(':')[1]
+except:
+    ELASTICSEARCH_PORT = 9200
+
+ELASTICSEARCH_URL = "http://" + ELASTICSEARCH_HOST + ":" + str(ELASTICSEARCH_PORT)
 
 def handle(value, sapi):
     assert isinstance(value, dict)
@@ -32,46 +39,51 @@ def handle(value, sapi):
 
     if "workflow" in data:
         workflow = data["workflow"]
-
-        sapi.log(json.dumps(workflow))
-
         if "id" in workflow:
-            #  concatenate all logs according to their types
-            total_log = ''
-            total_progress = ''
-            total_exceptions = 'total_exception'
+            workflows = sapi.get(email + "_list_workflows", True)
+            if workflows is not None and workflows != "":
+                workflows = json.loads(workflows)
+                if workflow["id"] in workflows.values():
+                    #  concatenate all logs according to their types
+                    total_log = ''
+                    total_progress = ''
+                    total_exceptions = 'total_exception'
 
-            print("Connecting to elasticsearch host: " + elasticsearch)
+                    print("Connecting to elasticsearch host: " + ELASTICSEARCH_URL)
 
-            num_lines = 500
-            if "num_lines" in workflow:
-                num_lines = int(workflow["num_lines"])
+                    num_lines = 500
+                    if "num_lines" in workflow:
+                        num_lines = int(workflow["num_lines"])
 
-            filters = get_log_filters(workflow)
-            status, result, progress_result, timestamp = get_workflow_log(workflow["id"], elasticsearch, 9200, filters, num_lines)
-            if status:
-                total_log = '\n'.join(result) + '\n'
-                #print('last log line: ' + result[-1])
-                total_progress = '\n'.join(progress_result) + '\n'
+                    filters = get_log_filters(workflow)
+                    status, result, progress_result, timestamp = get_workflow_log(workflow["id"], filters, num_lines)
+                    if status:
+                        total_log = '\n'.join(result) + '\n'
+                        #print('last log line: ' + result[-1])
+                        total_progress = '\n'.join(progress_result) + '\n'
 
-                total_log = base64.b64encode(total_log.encode()).decode()
-                total_progress = base64.b64encode(total_progress.encode()).decode()
-                total_exceptions = base64.b64encode(total_exceptions.encode()).decode()
+                        total_log = base64.b64encode(total_log.encode()).decode()
+                        total_progress = base64.b64encode(total_progress.encode()).decode()
+                        total_exceptions = base64.b64encode(total_exceptions.encode()).decode()
 
-                wf = {}
-                wf["log"] = total_log
-                wf["progress"] = total_progress
-                wf["exceptions"] = total_exceptions
-                if timestamp is None and "ts_earliest" in workflow:
-                    timestamp = workflow["ts_earliest"]
-                wf["timestamp"] = timestamp
-                response_data["workflow"] = wf
-                success = True
+                        wf = {}
+                        wf["log"] = total_log
+                        wf["progress"] = total_progress
+                        wf["exceptions"] = total_exceptions
+                        if timestamp is None and "ts_earliest" in workflow:
+                            timestamp = workflow["ts_earliest"]
+                        wf["timestamp"] = timestamp
+                        response_data["workflow"] = wf
+                        success = True
+                    else:
+                        err_str = "Couldn't retrieve log; " + result
+                        print(err_str)
+                        response_data["message"] = err_str
+
+                else:
+                    response_data["message"] = "Couldn't retrieve log; no such workflow."
             else:
-                err_str = "Couldn't retrieve log; " + result
-                print(err_str)
-                response_data["message"] = err_str
-
+                response_data["message"] = "Couldn't retrieve log; no such workflow."
         else:
             response_data["message"] = "Couldn't retrieve log; malformed input."
     else:
@@ -84,11 +96,9 @@ def handle(value, sapi):
 
     response["data"] = response_data
 
-    sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
-
     sapi.log(response["status"])
 
-    return {}
+    return response
 
 def get_log_filters(workflow):
     filters = []
@@ -107,9 +117,8 @@ def get_log_filters(workflow):
 
     return filters
 
-def get_workflow_log(workflowid, es_host, es_port, filters, num_last_entries=150):
-    index="mfnwf"
-    url="http://"+es_host+":" + str(es_port)
+def get_workflow_log(workflowid, filters, num_last_entries=150):
+    index = "mfnwf-" + workflowid
     #print(filters)
     #print("------ search all documents where workflow = <workflowid>")
     data = \
@@ -130,7 +139,7 @@ def get_workflow_log(workflowid, es_host, es_port, filters, num_last_entries=150
     print(data)
 
     try:
-        r=requests.get(url+"/"+index+'/_search', json=data, proxies={"http":None})
+        r = requests.get(ELASTICSEARCH_URL + "/" + index + '/_search', json=data, proxies={"http":None})
         response = r.json()
         #print(str(response))
         if 'hits' in response:
@@ -159,7 +168,6 @@ def get_workflow_log(workflowid, es_host, es_port, filters, num_last_entries=150
             return False, 'Unknown error', None, None
     except Exception as e:
         if type(e).__name__ == 'ConnectionError':
-            return False, 'Could not connect to: ' + url, None, None
+            return False, 'Could not connect to: ' + ELASTICSEARCH_URL, None, None
         else:
             raise e
-

@@ -14,6 +14,7 @@
 
 import json
 
+
 def handle(value, sapi):
     assert isinstance(value, dict)
     data = value
@@ -36,18 +37,20 @@ def handle(value, sapi):
         table_details = {}
         dlc = sapi.get_privileged_data_layer_client(storage_userid)
         for table in trigger_tables:
-            table_info[table], table_details[table] = listAssociatedWorkflowsForTable(table, dlc)
+            table_info[table], table_details[table] = listAssociatedWorkflowsForTable(
+                table, dlc)
         dlc.shutdown()
 
         response_data = {}
-        response_data["tables"] = table_info
-        response_data["tables_details"] = table_details
-        response_data["message"] = "Found " + str(len(table_info)) + " tables."
+        response_data["buckets"] = table_info
+        response_data["buckets_details"] = table_details
+        response_data["message"] = "Found " + \
+            str(len(table_info)) + " buckets."
 
         response = {}
         response["status"] = "success"
         response["data"] = response_data
-        #print(str(response))
+        # print(str(response))
         sapi.log(json.dumps(response))
         return response
 
@@ -55,7 +58,7 @@ def handle(value, sapi):
         response = {}
         response_data = {}
         response["status"] = "failure"
-        response_data["message"] = "Couldn't list triggerable tables; "+str(e)
+        response_data["message"] = "Couldn't list triggerable buckets; "+str(e)
         response["data"] = response_data
         print(str(response))
         return response
@@ -72,7 +75,7 @@ def listAssociatedWorkflowsForTable(tablename, dlc):
     workflow_list = []
     if type(meta_list == type([])):
         for i in range(len(meta_list)):
-            meta=meta_list[i]
+            meta = meta_list[i]
             workflow_list.append(meta["wfname"])
         return workflow_list, meta_list
     else:

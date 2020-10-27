@@ -26,11 +26,6 @@
     service_name: mfn-fluentbit
     service_script: "/lib/systemd/system/{{ service_name }}.service"
     default_logdir: "{{ mfn_server_installation_folder }}/logs"
-    frontend_logfile: "{{ default_logdir }}/frontend.log"
-    frontend_tagname: "fe_{{ inventory_hostname }}"
-    frontend_indexname: "mfnfe"
-    frontend_parsername: "mfnjavalog"
-    frontend_host: "{{ groups['frontend'][0] }}"
     datalayer_logfile: "{{ default_logdir }}/datalayer.log"
     datalayer_tagname: "dl_{{ inventory_hostname }}"
     datalayer_indexname: "mfndl"
@@ -74,11 +69,6 @@
       - service_name = {{ service_name }}
       - service_script = {{ service_script }}
       - default_logdir = {{ default_logdir }}
-      - frontend_logfile = {{ frontend_logfile }}
-      - frontend_tagname = {{ frontend_tagname }}
-      - frontend_indexname = {{ frontend_indexname }}
-      - frontend_parsername = {{ frontend_parsername }}
-      - frontend_host = {{ frontend_host }}
       - datalayer_logfile = {{ datalayer_logfile }}
       - datalayer_tagname = {{ datalayer_tagname }}
       - datalayer_indexname = {{ datalayer_indexname }}
@@ -121,17 +111,6 @@
       tagname: "{{ datalayer_tagname }}"
       parsername: "{{ datalayer_parsername }}"
       indexname: "{{ datalayer_indexname }}"
-
-  - name: frontend configure fluent-bit      "{{ conf_dir }}/component.conf.j2 --> {{ conf_dir }}/component_frontend.conf"
-    template:
-      dest: "{{ conf_dir }}/component_frontend.conf"
-      src: "{{ fluentbit_dir }}/conf/component.conf.j2"
-    vars:
-      logfile: "{{ frontend_logfile }}"
-      tagname: "{{ frontend_tagname }}"
-      parsername: "{{ frontend_parsername }}"
-      indexname: "{{ frontend_indexname }}"
-    when: inventory_hostname == frontend_host
 
   - name: nginx configure fluent-bit      "{{ conf_dir }}/component.conf.j2 --> {{ conf_dir }}/component_nginx.conf"
     template:
@@ -184,7 +163,7 @@
       daemon_reload: yes
       name: "{{ service_name }}"
       enabled: false
-      state: stopped
+      state: restarted
     when: not start_at_boot|bool
 
   - name: create start script

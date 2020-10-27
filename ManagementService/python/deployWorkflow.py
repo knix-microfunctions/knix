@@ -260,7 +260,6 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
 
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
     wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').lower() + '-wf'
-    wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').lower() + '-wf'
     emailSanitized = 'u-' + email.replace('@', '-').replace('_', '-').lower() + '-u'
     # Pod, Deployment and Hpa names for the new workflow will have a prefix containing the workflow name and user name
     app_fullname_prefix = ''
@@ -284,7 +283,6 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     labels['workflowid'] = workflow_info["workflowId"]
     labels = kservice['spec']['template']['metadata']['labels']
     labels['user'] = emailSanitized
-    labels['workflow'] = wfActualNameSanitized
     labels['workflowid'] = workflow_info["workflowId"]
     kservice['spec']['template']['spec']['containers'][0]['image'] = new_workflow_conf['image.'+runtime]
     env = kservice['spec']['template']['spec']['containers'][0]['env']
@@ -541,9 +539,8 @@ def handle(value, sapi):
         response["status"] = "failure"
         response_data["message"] = "Couldn't deploy workflow; " + str(e)
         response["data"] = response_data
-        sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
         sapi.log(traceback.format_exc())
-        return {}
+        return response
 
     # Finish successfully
     response = {}
@@ -552,9 +549,8 @@ def handle(value, sapi):
     response_data["workflow"] = workflow
     response["status"] = "success"
     response["data"] = response_data
-    sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
     sapi.log(json.dumps(response))
-    return {}
+    return response
 
 def addWorkflowToTableMetadata(email, tablename, workflowname, workflow_endpoints, dlc):
     metadata_key = tablename

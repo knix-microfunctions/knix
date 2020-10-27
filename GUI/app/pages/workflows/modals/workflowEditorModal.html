@@ -65,6 +65,20 @@
           <input type="file" onchange="angular.element(this).scope().file_changed(this)"/>
 
         </uib-tab>
+        <uib-tab ng-show="true" index="99" heading="Storage Triggers">
+          <div ng-show="tableListNotEmpty();">
+            <br>
+            Enable/disable storage trigger buckets for this workflow:
+            <p>
+            <table style="padding:5px;">
+            <tr ng-repeat="bucketTable in bucketTables">
+                <td><div style="margin-top:-6px;margin-right:8px;">{{ bucketTable }}</div></td><td><ba-switcher ng-model="switches[bucketTable]" switcher-style="primary" switcher-value="switches[bucketTable]" ng-click="switchChange(bucketTable, switches[bucketTable]);"></ba-switcher></td>
+            </tr>
+          </table>
+          </div>
+          <br><br>
+          <a href="#/bucketList"><button class="btn btn-primary" style="background-color: #969696; border-color: #969696;">Manage Buckets</button></a>
+        </uib-tab>
         <uib-tab ng-show="true" index="3" heading="{{ getFunctionName(0); }}">
           <div style="width:100%;height:505px;" ui-ace="{
             require: ['ace/ext/language_tools'],

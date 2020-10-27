@@ -30,9 +30,11 @@ from datetime import date
 
 LambdaDict = Dict[str, Any]
 
+
 class LambdaCognitoIdentity(object):
     cognito_identity_id: str
     cognito_identity_pool_id: str
+
 
 class LambdaClientContextMobileClient(object):
     installation_id: str
@@ -41,10 +43,12 @@ class LambdaClientContextMobileClient(object):
     app_version_code: str
     app_package_name: str
 
+
 class LambdaClientContext(object):
     client: LambdaClientContextMobileClient
     custom: LambdaDict
     env: LambdaDict
+
 
 class MicroFunctionsAPI:
     '''
@@ -57,6 +61,7 @@ class MicroFunctionsAPI:
     - communication with other (sesssion or regular) functions during execution
     - session customization
     '''
+
     def __init__(self, uid, sid, wid, funcstatename, key, publication_utils, is_session_workflow, is_session_function, session_utils, logger, datalayer, external_endpoint, internal_endpoint, useremail, usertoken, management_endpoints):
         '''
         Initialize data structures for MicroFunctionsAPI object created for a function instance.
@@ -86,7 +91,8 @@ class MicroFunctionsAPI:
         self._useremail = useremail
         self._usertoken = usertoken
 
-        self._data_layer_operator = DataLayerOperator(uid, sid, wid, self._datalayer)
+        self._data_layer_operator = DataLayerOperator(
+            uid, sid, wid, self._datalayer)
 
         # for sending immediate triggers to other functions
         self._publication_utils = publication_utils
@@ -96,7 +102,7 @@ class MicroFunctionsAPI:
         self._session_utils = session_utils
 
         self._function_state_name = funcstatename
-        self._function_version = 1 # Currently hardcoded to 1
+        self._function_version = 1  # Currently hardcoded to 1
 
         self._instanceid = key
 
@@ -107,32 +113,49 @@ class MicroFunctionsAPI:
         '''
         AWS context object properties required for API compatibility, TODO: remove hardcoding of some values
         '''
-        self.function_name = self._function_state_name # The name of the function.
-        self.function_version = self._function_version # The version of the function.
-        self.invoked_function_arn = self.function_name + ":" + str(self.function_version) # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias.
-        self.memory_limit_in_mb = 3008 # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
-        self.aws_request_id = self._instanceid # The identifier of the invocation request. Return the KNIX message key instead
-        self.log_group_name = "/knix/mfn/" + self.function_name # The log group name for the function. Follows a "/provider/service/functionname" scheme
+        self.function_name = self._function_state_name  # The name of the function.
+        # The version of the function.
+        self.function_version = self._function_version
+        # The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias.
+        self.invoked_function_arn = self.function_name + \
+            ":" + str(self.function_version)
+        # The amount of memory that's allocated for the function. Always -1, as there is no memory limit set for KNIX
+        self.memory_limit_in_mb = 3008
+        # The identifier of the invocation request. Return the KNIX message key instead
+        self.aws_request_id = self._instanceid
+        # The log group name for the function. Follows a "/provider/service/functionname" scheme
+        self.log_group_name = "/knix/mfn/" + self.function_name
 
-        today = date.today() # calculate date
+        today = date.today()  # calculate date
         d1 = today.strftime("%Y/%m/%d")
-        self.log_stream_name = str(d1) + "[$LATEST]" + str(self._logger.name) # The log stream name for this function instance.
+        # The log stream name for this function instance.
+        self.log_stream_name = str(d1) + "[$LATEST]" + str(self._logger.name)
 
-        self.identity = LambdaCognitoIdentity() # Amazon Cognito identity that authorized the request.
-        self.identity.cognito_identity_id = 'knix_cognito_identity_id' # set to knix identity id
-        self.identity.cognito_identity_pool_id = 'knix_cognito_identity_pool_id' # set to knix identity pool id
+        # Amazon Cognito identity that authorized the request.
+        self.identity = LambdaCognitoIdentity()
+        # set to knix identity id
+        self.identity.cognito_identity_id = 'knix_cognito_identity_id'
+        # set to knix identity pool id
+        self.identity.cognito_identity_pool_id = 'knix_cognito_identity_pool_id'
 
-        self.client_context_mobile_client = LambdaClientContextMobileClient() # generate ContextMobileClent object
-        self.client_context_mobile_client.installation_id = 'knix_installation_id' # set to KNIX id
-        self.client_context_mobile_client.app_title = 'knix_app_title' # set to KNIX app title
-        self.client_context_mobile_client.app_version_name = 'knix_app_version_name' # set to KNIX app name
-        self.client_context_mobile_client.app_version_code = 'knix_app_version_code' # set to KNIX app code
-        self.client_context_mobile_client.app_package_name = 'knix_app_package_name' # set to KNIX app package name
+        # generate ContextMobileClent object
+        self.client_context_mobile_client = LambdaClientContextMobileClient()
+        self.client_context_mobile_client.installation_id = 'knix_installation_id'  # set to KNIX id
+        self.client_context_mobile_client.app_title = 'knix_app_title'  # set to KNIX app title
+        # set to KNIX app name
+        self.client_context_mobile_client.app_version_name = 'knix_app_version_name'
+        # set to KNIX app code
+        self.client_context_mobile_client.app_version_code = 'knix_app_version_code'
+        # set to KNIX app package name
+        self.client_context_mobile_client.app_package_name = 'knix_app_package_name'
 
-        self.client_context = LambdaClientContext() # generate ClientContext object
-        self.client_context.client = self.client_context_mobile_client # set to client mobile context
-        self.client_context.custom = {'knix_custom': True} # set to KNIX context custom
-        self.client_context.env = {'knix_env': 'test'} # set to KNIX context env
+        self.client_context = LambdaClientContext()  # generate ClientContext object
+        # set to client mobile context
+        self.client_context.client = self.client_context_mobile_client
+        # set to KNIX context custom
+        self.client_context.custom = {'knix_custom': True}
+        # set to KNIX context env
+        self.client_context.env = {'knix_env': 'test'}
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
 
@@ -164,13 +187,12 @@ class MicroFunctionsAPI:
 
         return json.dumps(context_properties)
 
-
     def ping(self, num):
         self._logger.info("ping: " + str(num))
         output = num
         return 'pong ' + str(output)
 
-    def get_privileged_data_layer_client(self, suid=None, sid=None, is_wf_private=False, init_tables=False, drop_keyspace=False):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, is_wf_private=False, init_tables=False, drop_keyspace=False, tableName=None):
         '''
         Obtain a privileged data layer client to access a user's storage or a workflow-private storage.
         Only can be usable by the management service.
@@ -181,6 +203,8 @@ class MicroFunctionsAPI:
 
             init_tables (boolean): whether relevant data layer tables should be initialized; default: False.
             drop_keyspace (boolean): whether the relevant keyspace for the user's storage should be dropped; default: False.
+            tableName (string): name of the table to be used for subsequent storage operations. By default, the default table will be used.
+                 If this method is called with is_wf_private = True, then the tableName parameter will be ignored.
 
         Returns:
             A data layer client with access to a user's storage.
@@ -188,7 +212,10 @@ class MicroFunctionsAPI:
         '''
         if self._is_privileged:
             if suid is not None:
-                return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
+                if tableName is not None:
+                    return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace, tableName=tableName)
+                else:
+                    return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
             elif is_wf_private:
                 # we'll never try to access the metadata stored for mfn
                 return DataLayerClient(locality=1, sid=sid, wid=sid, for_mfn=False, is_wf_private=is_wf_private, connect=self._datalayer, drop_keyspace=drop_keyspace)
@@ -211,7 +238,8 @@ class MicroFunctionsAPI:
         if is_privileged_metadata and self._is_privileged:
             is_privileged = True
 
-        self._publication_utils.update_metadata(metadata_name, metadata_value, is_privileged=is_privileged)
+        self._publication_utils.update_metadata(
+            metadata_name, metadata_value, is_privileged=is_privileged)
 
     # session related API calls
     # only valid if the workflow has at least one session function
@@ -234,16 +262,19 @@ class MicroFunctionsAPI:
         '''
         # _XXX_: Java objects need to be serialized and passed to python; however, API functions expect python objects
         # we make the conversion according to the runtime
-        message = self._publication_utils.convert_api_message_to_python_object(message)
+        message = self._publication_utils.convert_api_message_to_python_object(
+            message)
 
         if not self._publication_utils.is_valid_value(message):
             errmsg = "Malformed message: 'message' must a python data type (dict, list, str, int, float, or None)."
             raise MicroFunctionsSessionAPIException(errmsg)
 
         if self._is_session_workflow:
-            self._session_utils.send_to_running_function_in_session(rgid, message, send_now)
+            self._session_utils.send_to_running_function_in_session(
+                rgid, message, send_now)
         else:
-            self._logger.warning("Cannot send a session update message in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot send a session update message in a workflow with no session functions.")
 
     def send_to_all_running_functions_in_session_with_function_name(self, gname, message, send_now=False):
         '''
@@ -267,16 +298,19 @@ class MicroFunctionsAPI:
         '''
         # _XXX_: Java objects need to be serialized and passed to python; however, API functions expect python objects
         # we make the conversion according to the runtime
-        message = self._publication_utils.convert_api_message_to_python_object(message)
+        message = self._publication_utils.convert_api_message_to_python_object(
+            message)
 
         if not self._publication_utils.is_valid_value(message):
             errmsg = "Malformed message: 'message' must a python data type (dict, list, str, int, float, or None)."
             raise MicroFunctionsSessionAPIException(errmsg)
 
         if self._is_session_workflow:
-            self._session_utils.send_to_all_running_functions_in_session_with_function_name(gname, message, send_now)
+            self._session_utils.send_to_all_running_functions_in_session_with_function_name(
+                gname, message, send_now)
         else:
-            self._logger.warning("Cannot send a session update message in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot send a session update message in a workflow with no session functions.")
 
     def send_to_all_running_functions_in_session(self, message, send_now=False):
         '''
@@ -296,16 +330,19 @@ class MicroFunctionsAPI:
         '''
         # _XXX_: Java objects need to be serialized and passed to python; however, API functions expect python objects
         # we make the conversion according to the runtime
-        message = self._publication_utils.convert_api_message_to_python_object(message)
+        message = self._publication_utils.convert_api_message_to_python_object(
+            message)
 
         if not self._publication_utils.is_valid_value(message):
             errmsg = "Malformed message: 'message' must a python data type (dict, list, str, int, float, or None)."
             raise MicroFunctionsSessionAPIException(errmsg)
 
         if self._is_session_workflow:
-            self._session_utils.send_to_all_running_functions_in_session(message, send_now)
+            self._session_utils.send_to_all_running_functions_in_session(
+                message, send_now)
         else:
-            self._logger.warning("Cannot send a session update message in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot send a session update message in a workflow with no session functions.")
 
     def send_to_running_function_in_session_with_alias(self, alias, message, send_now=False):
         '''
@@ -328,16 +365,19 @@ class MicroFunctionsAPI:
         '''
         # _XXX_: Java objects need to be serialized and passed to python; however, API functions expect python objects
         # we make the conversion according to the runtime
-        message = self._publication_utils.convert_api_message_to_python_object(message)
+        message = self._publication_utils.convert_api_message_to_python_object(
+            message)
 
         if not self._publication_utils.is_valid_value(message):
             errmsg = "Malformed message: 'message' must a python data type (dict, list, str, int, float, or None)."
             raise MicroFunctionsSessionAPIException(errmsg)
 
         if self._is_session_workflow:
-            self._session_utils.send_to_running_function_in_session_with_alias(alias, message, send_now)
+            self._session_utils.send_to_running_function_in_session_with_alias(
+                alias, message, send_now)
         else:
-            self._logger.warning("Cannot send a session update message in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot send a session update message in a workflow with no session functions.")
 
     def get_session_update_messages(self, count=1, block=False):
         '''
@@ -366,12 +406,15 @@ class MicroFunctionsAPI:
         messages = []
         if self._is_session_function:
             #self._logger.debug("[MicroFunctionsAPI] getting session update messages...")
-            messages2 = self._session_utils.get_session_update_messages_with_local_queue(count=count, block=block)
+            messages2 = self._session_utils.get_session_update_messages_with_local_queue(
+                count=count, block=block)
             for msg2 in messages2:
-                msg = self._publication_utils.convert_python_object_to_api_message(msg2)
+                msg = self._publication_utils.convert_python_object_to_api_message(
+                    msg2)
                 messages.append(msg)
         else:
-            self._logger.warning("Cannot get session update messages in a non-session function: " + self._function_state_name)
+            self._logger.warning(
+                "Cannot get session update messages in a non-session function: " + self._function_state_name)
 
         return messages
 
@@ -397,14 +440,17 @@ class MicroFunctionsAPI:
 
         '''
         if not py3utils.is_string(alias):
-            raise MicroFunctionsSessionAPIException("Invalid session alias; must be a non-empty string.")
+            raise MicroFunctionsSessionAPIException(
+                "Invalid session alias; must be a non-empty string.")
         elif alias == "":
-            raise MicroFunctionsSessionAPIException("Session alias cannot be empty.")
+            raise MicroFunctionsSessionAPIException(
+                "Session alias cannot be empty.")
 
         if self._is_session_workflow:
             self._session_utils.set_session_alias(alias)
         else:
-            self._logger.warning("Cannot set a session alias in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot set a session alias in a workflow with no session functions.")
 
     def unset_session_alias(self):
         '''
@@ -441,7 +487,8 @@ class MicroFunctionsAPI:
         if self._is_session_workflow:
             return self._session_utils.get_session_alias()
         else:
-            self._logger.warning("Cannot get a session alias in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot get a session alias in a workflow with no session functions.")
         return ""
 
     def set_session_function_alias(self, alias, session_function_id=None):
@@ -471,17 +518,21 @@ class MicroFunctionsAPI:
 
         '''
         if not py3utils.is_string(alias):
-            raise MicroFunctionsSessionAPIException("Invalid session function alias; must be a non-empty string.")
+            raise MicroFunctionsSessionAPIException(
+                "Invalid session function alias; must be a non-empty string.")
         elif alias == "":
-            raise MicroFunctionsSessionAPIException("Session function alias cannot be empty.")
+            raise MicroFunctionsSessionAPIException(
+                "Session function alias cannot be empty.")
 
         # handle another session function's alias
         if session_function_id is not None:
-            self._session_utils.set_session_function_alias(alias, session_function_id)
+            self._session_utils.set_session_function_alias(
+                alias, session_function_id)
         elif self._is_session_function:
             self._session_utils.set_session_function_alias(alias)
         else:
-            self._logger.warning("Cannot set a session function alias in a non-session function.")
+            self._logger.warning(
+                "Cannot set a session function alias in a non-session function.")
 
     def unset_session_function_alias(self, session_function_id=None):
         '''
@@ -506,11 +557,13 @@ class MicroFunctionsAPI:
         '''
         # handle another session function's alias
         if session_function_id is not None:
-            self._session_utils.unset_session_function_alias(session_function_id)
+            self._session_utils.unset_session_function_alias(
+                session_function_id)
         elif self._is_session_function:
             self._session_utils.unset_session_function_alias()
         else:
-            self._logger.warning("Cannot unset a session function alias in a non-session function.")
+            self._logger.warning(
+                "Cannot unset a session function alias in a non-session function.")
 
     def get_session_function_alias(self, session_function_id=None):
         '''
@@ -539,7 +592,8 @@ class MicroFunctionsAPI:
         elif self._is_session_function:
             return self._session_utils.get_session_function_alias()
         else:
-            self._logger.warning("Cannot get a session function alias in a non-session function.")
+            self._logger.warning(
+                "Cannot get a session function alias in a non-session function.")
         return None
 
     def get_all_session_function_aliases(self):
@@ -564,7 +618,8 @@ class MicroFunctionsAPI:
         if self._is_session_workflow:
             aliases = self._session_utils.get_all_session_function_aliases()
         else:
-            self._logger.warning("Cannot get session function aliases in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot get session function aliases in a workflow with no session functions.")
         return aliases
 
     def get_alias_summary(self):
@@ -593,7 +648,8 @@ class MicroFunctionsAPI:
         if self._is_session_workflow:
             alias_summary = self._session_utils.get_alias_summary()
         else:
-            self._logger.warning("Cannot get alias summary for session in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot get alias summary for session in a workflow with no session functions.")
         return alias_summary
 
     def get_session_id(self):
@@ -617,7 +673,8 @@ class MicroFunctionsAPI:
         if self._is_session_workflow:
             return self._session_utils.get_session_id()
         else:
-            self._logger.warning("Cannot get a session id in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot get a session id in a workflow with no session functions.")
         return None
 
     def get_session_function_id(self):
@@ -641,7 +698,8 @@ class MicroFunctionsAPI:
         if self._is_session_function:
             return self._session_utils.get_session_function_id()
         else:
-            self._logger.warning("Cannot get session function id in a non-session function.")
+            self._logger.warning(
+                "Cannot get session function id in a non-session function.")
         return None
 
     def get_session_function_id_with_alias(self, alias=None):
@@ -670,7 +728,8 @@ class MicroFunctionsAPI:
         elif self._is_session_function:
             return self._session_utils.get_session_function_id_with_alias()
         else:
-            self._logger.warning("Cannot get session function id in a non-session function.")
+            self._logger.warning(
+                "Cannot get session function id in a non-session function.")
         return None
 
     def get_all_session_function_ids(self):
@@ -695,7 +754,8 @@ class MicroFunctionsAPI:
         if self._is_session_workflow:
             rgidlist = self._session_utils.get_all_session_function_ids()
         else:
-            self._logger.warning("Cannot get session function ids in a workflow with no session functions.")
+            self._logger.warning(
+                "Cannot get session function ids in a workflow with no session functions.")
         return rgidlist
 
     def is_still_running(self):
@@ -722,7 +782,8 @@ class MicroFunctionsAPI:
         if self._is_session_function:
             return self._session_utils.is_session_function_running()
         else:
-            self._logger.warning("Cannot get status of running in a non-session function.")
+            self._logger.warning(
+                "Cannot get status of running in a non-session function.")
         return None
 
     ##########################
@@ -758,9 +819,11 @@ class MicroFunctionsAPI:
         '''
         # _XXX_: Java objects need to be serialized and passed to python; however, API functions expect python objects
         # we make the conversion according to the runtime
-        value = self._publication_utils.convert_api_message_to_python_object(value)
+        value = self._publication_utils.convert_api_message_to_python_object(
+            value)
 
-        is_valid, is_privileged, errmsg = self._publication_utils.is_valid_trigger_message(next, value, False)
+        is_valid, is_privileged, errmsg = self._publication_utils.is_valid_trigger_message(
+            next, value, False)
 
         if is_valid:
             trigger = {}
@@ -802,16 +865,19 @@ class MicroFunctionsAPI:
         '''
         # _XXX_: Java objects need to be serialized and passed to python; however, API functions expect python objects
         # we make the conversion according to the runtime
-        value = self._publication_utils.convert_api_message_to_python_object(value)
+        value = self._publication_utils.convert_api_message_to_python_object(
+            value)
 
-        is_valid, is_privileged, errmsg = self._publication_utils.is_valid_trigger_message(destination, value, True)
+        is_valid, is_privileged, errmsg = self._publication_utils.is_valid_trigger_message(
+            destination, value, True)
 
         if is_valid:
             trigger = {}
             trigger["next"] = destination
             trigger["value"] = value
             trigger["is_privileged"] = is_privileged
-            self._publication_utils.send_to_function_now(self._instanceid, trigger)
+            self._publication_utils.send_to_function_now(
+                self._instanceid, trigger)
         else:
             raise MicroFunctionsWorkflowException(errmsg)
 
@@ -843,14 +909,16 @@ class MicroFunctionsAPI:
         '''
         # _XXX_: Java objects need to be serialized and passed to python; however, API functions expect python objects
         # we make the conversion according to the runtime
-        dynamic_trigger = self._publication_utils.convert_api_message_to_python_object(dynamic_trigger)
+        dynamic_trigger = self._publication_utils.convert_api_message_to_python_object(
+            dynamic_trigger)
 
         is_valid = True
         # 'dynamic_trigger' can be a single dictionary or a list of dictionaries.
         # each dictionary must be of the form: {'next': <type 'str'>, 'value': <type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>}
         if isinstance(dynamic_trigger, dict):
             if 'next' in dynamic_trigger and 'value' in dynamic_trigger:
-                self.add_workflow_next(dynamic_trigger['next'], dynamic_trigger['value'])
+                self.add_workflow_next(
+                    dynamic_trigger['next'], dynamic_trigger['value'])
             else:
                 errmsg = "Malformed dynamic trigger definition; 'next' and 'value' must be present in the trigger dict()."
                 is_valid = False
@@ -918,7 +986,8 @@ class MicroFunctionsAPI:
         elif level == "ERROR":
             self._logger.error(text)
         else:
-            raise MicroFunctionsUserLogException("User logging exception; unsupported log level: " + str(level))
+            raise MicroFunctionsUserLogException(
+                "User logging exception; unsupported log level: " + str(level))
 
     def get_event_key(self):
         '''
@@ -927,7 +996,6 @@ class MicroFunctionsAPI:
         '''
         return self._instanceid
 
-
     def get_instance_id(self):
         '''
         Returns:
@@ -935,12 +1003,12 @@ class MicroFunctionsAPI:
         '''
         return self._instanceid
 
-    def put(self, key, value, is_private=False, is_queued=False, tableName=None):
+    def put(self, key, value, is_private=False, is_queued=False, bucketName=None):
         '''
         Access to data layer to store a data item in the form of a (key, value) pair.
         By default, the put operation is reflected on the data layer immediately.
         If the put operation is queued (i.e., is_queued = True),
-        the data item is put into the transient data table.
+        the data item is put into the transient data bucket.
         If the key was previously deleted by the function instance,
         it is removed from the list of items to be deleted.
         When the function instance finishes,
@@ -952,7 +1020,8 @@ class MicroFunctionsAPI:
             is_private (boolean): whether the item should be written to the private data layer of the workflow; default: False
             is_queued (boolean): whether the put operation should be reflected on the data layer after the execution finish; default: False
                 (i.e., the put operation will be reflected on the data layer immediately)
-            tableName (string): name of the table where to put the key. By default, it will be put in the default table.
+            bucketName (string): name of the bucket where to put the key. By default, it will be put in the default bucket. If this method is 
+                called with is_private = True, then the bucketName parameter will be ignored.
 
         Returns:
             None
@@ -961,31 +1030,34 @@ class MicroFunctionsAPI:
             MicroFunctionsDataLayerException: when the key and/or value are not strings.
         '''
         if py3utils.is_string(key) and py3utils.is_string(value) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.put(key, value, is_private, is_queued, table=tableName)
+            self._data_layer_operator.put(
+                key, value, is_private, is_queued, table=bucketName)
         else:
             errmsg = "MicroFunctionsAPI.put(key, value) accepts a string as 'key' and 'value'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
-    def get(self, key, is_private=False, tableName=None):
+    def get(self, key, is_private=False, bucketName=None):
         '''
         Access to data layer to load the value of a given key.
         The key is first checked in the transient deleted items.
-        If it is not deleted, the key is then checked in the transient data table.
+        If it is not deleted, the key is then checked in the transient data bucket.
         If it is not there, it is retrieved from the global data layer.
         As a result, the value returned is consistent with
         what this function instance does with the data item.
-        If the data item is not present in either the transient data table
+        If the data item is not present in either the transient data bucket
         nor in the global data layer, an empty string (i.e., "") will be
         returned.
         If the function used put() and delete() operations with is_queued=False (default),
-        then the checks of the transient table will result in empty values,
+        then the checks of the transient bucket will result in empty values,
         so that the item will be retrieved from the global data layer.
 
         Args:
             key (string): the key of the data item
             is_private (boolean): whether the item should be read from the private data layer of the workflow; default: False
-            tableName (string): name of the table where to get the key from. By default, it will be fetched from the default table.
+            bucketName (string): name of the bucket where to get the key from. By default, it will be fetched from the default bucket. If this method is 
+                called with is_private = True, then the bucketName parameter will be ignored.
 
         Returns:
             value (string): the value of the data item; empty string if the data item is not present.
@@ -997,24 +1069,25 @@ class MicroFunctionsAPI:
         # if not there, return the actual (global) data layer data item
         # if not there either, return empty string (as defined in the DataLayerClient)
         if py3utils.is_string(key) and isinstance(is_private, bool):
-            return self._data_layer_operator.get(key, is_private, table=tableName)
+            return self._data_layer_operator.get(key, is_private, table=bucketName)
         else:
             errmsg = "MicroFunctionsAPI.get(key) accepts a string as 'key'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
-    def delete(self, key, is_private=False, is_queued=False, tableName=None):
+    def delete(self, key, is_private=False, is_queued=False, bucketName=None):
         '''
         Alias for remove(key, is_private, is_queued, tableName).
         '''
-        self.remove(key, is_private, is_queued, tableName)
+        self.remove(key, is_private, is_queued, bucketName)
 
-    def remove(self, key, is_private=False, is_queued=False, tableName=None):
+    def remove(self, key, is_private=False, is_queued=False, bucketName=None):
         '''
         Access to data layer to remove data item associated with a given key.
         By default, the remove operation is reflected on the data layer immediately.
         If the delete operation is queued (i.e., is_queued = True),
-        the key is removed from the transient data table.
+        the key is removed from the transient data bucket.
         It is also added to the list of items to be deleted from the global
         data layer when the function instance finishes.
 
@@ -1023,7 +1096,7 @@ class MicroFunctionsAPI:
             is_private (boolean): whether the item should be deleted from the private data layer of the workflow; default: False
             is_queued (boolean): whether the delete operation should be reflected on the data layer after the execution finish; default: False
                 (i.e., the delete operation will be reflected on the data layer immediately)
-            tableName (string): name of the table where to remove the key from. By default, it will be deleted from the default table.
+            bucketName (string): name of the bucket where to remove the key from. By default, it will be deleted from the default bucket.
 
         Returns:
             None
@@ -1033,10 +1106,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(key) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.delete(key, is_private, is_queued, table=tableName)
+            self._data_layer_operator.delete(
+                key, is_private, is_queued, table=bucketName)
         else:
             errmsg = "MicroFunctionsAPI.delete(key) accepts a string as 'key'"
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     # map operations sanity checking
@@ -1063,12 +1138,14 @@ class MicroFunctionsAPI:
             Using a KNIX-specific feature might make the function incompatible with other platforms.
 
         '''
-        self._logger.warning("MicroFunctionsAPI.createMap() does not have an effect; it will be removed in the future.")
-        self._logger.warning("(Entries can still be added without calling createMap() beforehand.)")
+        self._logger.warning(
+            "MicroFunctionsAPI.createMap() does not have an effect; it will be removed in the future.")
+        self._logger.warning(
+            "(Entries can still be added without calling createMap() beforehand.)")
         return
-        #if py3utils.is_string(mapname) and isinstance(is_private, bool) and isinstance(is_queued, bool):
+        # if py3utils.is_string(mapname) and isinstance(is_private, bool) and isinstance(is_queued, bool):
         #    self._data_layer_operator.createMap(mapname, is_private, is_queued)
-        #else:
+        # else:
         #    errmsg = "MicroFunctionsAPI.createMap(mapname) accepts a string as 'mapname'."
         #    errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
         #    raise MicroFunctionsDataLayerException(errmsg)
@@ -1095,10 +1172,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(mapname) and py3utils.is_string(key) and py3utils.is_string(value) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.putMapEntry(mapname, key, value, is_private, is_queued)
+            self._data_layer_operator.putMapEntry(
+                mapname, key, value, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.putMapEntry(mapname, key, value) accepts a string as 'mapname', 'key' and 'value'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def getMapEntry(self, mapname, key, is_private=False):
@@ -1123,7 +1202,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.getMapEntry(mapname, key, is_private)
         else:
             errmsg = "MicroFunctionsAPI.getMapEntry(mapname, key) accepts a string as 'mapname' and 'key'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def deleteMapEntry(self, mapname, key, is_private=False, is_queued=False):
@@ -1147,10 +1227,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(mapname) and py3utils.is_string(key) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.deleteMapEntry(mapname, key, is_private, is_queued)
+            self._data_layer_operator.deleteMapEntry(
+                mapname, key, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.deleteMapEntry(mapname, key) accepts a string as 'mapname' and 'key'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def containsMapKey(self, mapname, key, is_private=False):
@@ -1175,7 +1257,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.containsMapKey(mapname, key, is_private)
         else:
             errmsg = "MicroFunctionsAPI.containsMapKey(mapname, key) accepts a string as 'mapname' and 'key'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def getMapKeys(self, mapname, is_private=False):
@@ -1199,7 +1282,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.getMapKeys(mapname, is_private)
         else:
             errmsg = "MicroFunctionsAPI.getMapKeys(mapname) accepts a string as 'mapname'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def clearMap(self, mapname, is_private=False, is_queued=False):
@@ -1225,7 +1309,8 @@ class MicroFunctionsAPI:
             self._data_layer_operator.clearMap(mapname, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.clearMap(mapname) accepts a string as 'mapname'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def deleteMap(self, mapname, is_private=False, is_queued=False):
@@ -1251,7 +1336,8 @@ class MicroFunctionsAPI:
             self._data_layer_operator.deleteMap(mapname, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.deleteMap(mapname) accepts a string as 'mapname'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def retrieveMap(self, mapname, is_private=False):
@@ -1275,7 +1361,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.retrieveMap(mapname, is_private)
         else:
             errmsg = "MicroFunctionsAPI.retrieveMap(mapname) accepts a string as 'mapname'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def getMapNames(self, start_index=0, end_index=2147483647, is_private=False):
@@ -1300,7 +1387,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.getMapNames(start_index, end_index, is_private)
         else:
             errmsg = "MicroFunctionsAPI.getMapNames(start_index, end_index) accepts indices between 0 and 2147483647 (defaults)."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     # set operations sanity checking
@@ -1327,12 +1415,14 @@ class MicroFunctionsAPI:
             Using a KNIX-specific feature might make the function incompatible with other platforms.
 
         '''
-        self._logger.warning("MicroFunctionsAPI.createSet() does not have an effect; it will be removed in the future.")
-        self._logger.warning("(Items can still be added without calling createSet() beforehand.)")
+        self._logger.warning(
+            "MicroFunctionsAPI.createSet() does not have an effect; it will be removed in the future.")
+        self._logger.warning(
+            "(Items can still be added without calling createSet() beforehand.)")
         return
-        #if py3utils.is_string(setname) and isinstance(is_private, bool) and isinstance(is_queued, bool):
+        # if py3utils.is_string(setname) and isinstance(is_private, bool) and isinstance(is_queued, bool):
         #    self._data_layer_operator.createSet(setname, is_private, is_queued)
-        #else:
+        # else:
         #    errmsg = "MicroFunctionsAPI.createSet(setname) accepts a string as 'setname'."
         #    errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
         #    raise MicroFunctionsDataLayerException(errmsg)
@@ -1358,10 +1448,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(setname) and py3utils.is_string(item) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.addSetEntry(setname, item, is_private, is_queued)
+            self._data_layer_operator.addSetEntry(
+                setname, item, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.addSetEntry(setname, item) accepts a string as 'setname' and 'item'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def removeSetEntry(self, setname, item, is_private=False, is_queued=False):
@@ -1385,10 +1477,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(setname) and py3utils.is_string(item) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.removeSetEntry(setname, item, is_private, is_queued)
+            self._data_layer_operator.removeSetEntry(
+                setname, item, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.removeSetEntry(setname, item) accepts a string as 'setname' and 'item'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def containsSetItem(self, setname, item, is_private=False):
@@ -1413,7 +1507,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.containsSetItem(setname, item, is_private)
         else:
             errmsg = "MicroFunctionsAPI.containsSetItem(setname, item) accepts a string as 'setname' and 'item'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def retrieveSet(self, setname, is_private=False):
@@ -1437,7 +1532,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.retrieveSet(setname, is_private)
         else:
             errmsg = "MicroFunctionsAPI.retrieveSet(setname) accepts a string as 'setname'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def clearSet(self, setname, is_private=False, is_queued=False):
@@ -1463,7 +1559,8 @@ class MicroFunctionsAPI:
             self._data_layer_operator.clearSet(setname, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.clearSet(setname) accepts a string as 'setname'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def deleteSet(self, setname, is_private=False, is_queued=False):
@@ -1489,7 +1586,8 @@ class MicroFunctionsAPI:
             self._data_layer_operator.deleteSet(setname, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.deleteSet(setname) accepts a string as 'setname'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def getSetNames(self, start_index=0, end_index=2147483647, is_private=False):
@@ -1514,7 +1612,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.getSetNames(start_index, end_index, is_private)
         else:
             errmsg = "MicroFunctionsAPI.getSetNames(start_index, end_index) accepts indices between 0 and 2147483647 (defaults)."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     # counter operations sanity checking
@@ -1539,10 +1638,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(countername) and isinstance(count, int) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.createCounter(countername, count, is_private, is_queued)
+            self._data_layer_operator.createCounter(
+                countername, count, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.createCounter(countername, count) accepts a string as 'countername' and an integer as 'count'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def getCounterValue(self, countername, is_private=False):
@@ -1589,10 +1690,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(countername) and isinstance(increment, int) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.incrementCounter(countername, increment, is_private, is_queued)
+            self._data_layer_operator.incrementCounter(
+                countername, increment, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.incrementCounter(countername, increment) accepts a string as 'countername' and an integer as 'increment'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def decrementCounter(self, countername, decrement, is_private=False, is_queued=False):
@@ -1616,10 +1719,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(countername) and isinstance(decrement, int) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.decrementCounter(countername, decrement, is_private, is_queued)
+            self._data_layer_operator.decrementCounter(
+                countername, decrement, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.decrementCounter(countername, increment) accepts a string as 'countername' and an integer as 'decrement'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def deleteCounter(self, countername, is_private=False, is_queued=False):
@@ -1642,10 +1747,12 @@ class MicroFunctionsAPI:
 
         '''
         if py3utils.is_string(countername) and isinstance(is_private, bool) and isinstance(is_queued, bool):
-            self._data_layer_operator.deleteCounter(countername, is_private, is_queued)
+            self._data_layer_operator.deleteCounter(
+                countername, is_private, is_queued)
         else:
             errmsg = "MicroFunctionsAPI.deleteCounter(countername) accepts a string as 'countername'."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def getCounterNames(self, start_index=0, end_index=2147483647, is_private=False):
@@ -1670,7 +1777,8 @@ class MicroFunctionsAPI:
             return self._data_layer_operator.getCounterNames(start_index, end_index, is_private)
         else:
             errmsg = "MicroFunctionsAPI.getCounterNames(start_index, end_index) accepts indices between 0 and 2147483647 (defaults)."
-            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            errmsg = errmsg + \
+                "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
     def get_transient_data_output(self, is_private=False):
@@ -1706,143 +1814,214 @@ class MicroFunctionsAPI:
         '''
         self._data_layer_operator._shutdown_data_layer_client()
 
-    def addTriggerableTable(self, tableName):
+    def addTriggerableBucket(self, bucketName):
+        '''
+        Args:
+            bucketName (string): the name of the bucket to be added
+
+        Returns:
+            Boolean, indicating whether the bucket was created successfully 
+
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for storage triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
         request = \
-        {
-            "action": "addTriggerableTable",
-            "data": {
-                "tablename": tableName
+            {
+                "action": "addTriggerableBucket",
+                "data": {
+                    "bucketname": bucketName
+                }
             }
-        }
-        status, message, response = self.invoke_management_api(request)
+        status, message, response = self._invoke_management_api(request)
 
         if status == False or response["status"] != 'success':
-            print("Error: Unable to add a triggerable table: " + tableName + ", Error message: "  + str(message) + ", response: " + str(response))
+            print("Error: Unable to add a triggerable bucket: " + bucketName +
+                  ", Error message: " + str(message) + ", response: " + str(response))
             return False
         return True
 
-    def addStorageTriggerForWorkflow(self, workflowName, tableName):
-        request = \
-        {
-            "action": "addStorageTriggerForWorkflow",
-            "data": {
-                "workflowname": workflowName,
-                "tablename": tableName
-            }
-        }
+    def addStorageTriggerForWorkflow(self, workflowName, bucketName):
+        '''
+        Args:
+            workflowName (string): the name of the workflow to be associated with a bucket. This workflow will be triggered whenever a key is added to the associated bucket.
+            bucketName (string): the name of the bucket with which to associate the workflow
 
-        status, message, response = self.invoke_management_api(request)
+        Returns:
+            Boolean, indicating whether the storage trigger was created successfully 
+
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for storage triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        request = \
+            {
+                "action": "addStorageTriggerForWorkflow",
+                "data": {
+                    "workflowname": workflowName,
+                    "bucketname": bucketName
+                }
+            }
+
+        status, message, response = self._invoke_management_api(request)
 
         if status == False or response["status"] != 'success':
-            print("Error: Unable to add a storage trigger for workflow " + workflowName + ", Triggerable table " + tableName + "Error message: "  + str(message) + ", response: " + str(response))
+            print("Error: Unable to add a storage trigger for workflow " + workflowName + ", Triggerable bucket " +
+                  bucketName + "Error message: " + str(message) + ", response: " + str(response))
             return False
         return True
 
+    def deleteTriggerableBucket(self, bucketName):
+        '''
+        Args:
+            bucketName (string): the name of the bucket to delete
 
-    def deleteTriggerableTable(self, tableName):
+        Returns:
+            Boolean, indicating whether the bucket was deleted successfully 
+
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for storage triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
         request = \
-        {
-            "action": "deleteTriggerableTable",
-            "data": {
-                "tablename": tableName
+            {
+                "action": "deleteTriggerableBucket",
+                "data": {
+                    "bucketname": bucketName
+                }
             }
-        }
 
-        status, message, response = self.invoke_management_api(request)
+        status, message, response = self._invoke_management_api(request)
 
         if status == False or response["status"] != 'success':
-            print("Error: Unable to delete a triggerable table: " + tableName + ", Error message: "  + str(message) + ", response: " + str(response))
+            print("Error: Unable to delete a triggerable bucket: " + bucketName +
+                  ", Error message: " + str(message) + ", response: " + str(response))
             return False
         return True
 
-    def deleteStorageTriggerForWorkflow(self, workflowName, tableName):
+    def deleteStorageTriggerForWorkflow(self, workflowName, bucketName):
+        '''
+        Args:
+            workflowName (string): the name of the workflow to disassociate from the bucket. This workflow will not be triggered anymore when a key is added to the associated bucket.
+            bucketName (string): the name of the bucket currently associated with the workflow
+
+        Returns:
+            Boolean, indicating whether the storage trigger was deleted successfully 
+
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for storage triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
         request = \
-        {
-            "action": "deleteStorageTriggerForWorkflow",
-            "data": {
-                "workflowname": workflowName,
-                "tablename": tableName
+            {
+                "action": "deleteStorageTriggerForWorkflow",
+                "data": {
+                    "workflowname": workflowName,
+                    "tablename": bucketName
+                }
             }
-        }
-        status, message, response = self.invoke_management_api(request)
+        status, message, response = self._invoke_management_api(request)
 
         if status == False or response["status"] != 'success':
-            print("Error: Unable to delete a storage trigger for workflow " + workflowName + ", Triggerable table " + tableName + "Error message: "  + str(message) + ", response: " + str(response))
+            print("Error: Unable to delete a storage trigger for workflow " + workflowName +
+                  ", Triggerable bucket " + bucketName + "Error message: " + str(message) + ", response: " + str(response))
             return False
         return True
 
-
-    def getTriggerableTables(self):
-        request = \
+    def _getTriggerableBuckets(self):
+        '''
+        Get a list of triggerable buckets. Response structure is
         {
-            "action": "getTriggerableTables",
-            "data": {
-            }
+          'status': 'success' or 'failure',
+          'data': {
+              'message': '...',
+              'buckets': {
+                  '<bucket-name-1>': [list of workflow names associated with <bucket-name-1>],
+                  '<bucket-name-2>': [list of workflow names associated with <bucket-name-2>],
+                  ...
+              }
+          }
         }
+        '''
+        request = \
+            {
+                "action": "getTriggerableBuckets",
+                "data": {
+                }
+            }
 
-        status, message, response = self.invoke_management_api(request)
+        status, message, response = self._invoke_management_api(request)
 
         if status == False or response["status"] != 'success':
-            print("Error: Unable to fetch a triggerable tables, Error message: "  + str(message) + ", response: " + str(response))
+            print("Error: Unable to fetch a triggerable buckets, Error message: " +
+                  str(message) + ", response: " + str(response))
             return None
 
-        # {
-        #   'status': 'success', 
-        #   'data': {
-        #       'message': '...',
-        #       'tables': {
-        #           '<table-name-1>': [list of workflow names associated with <table-name-1>],
-        #           '<table-name-2>': [list of workflow names associated with <table-name-2>],
-        #           ...
-        #       }
-        #   }
-        # }
         return response
 
-    def getWorkflowDetails(self, workflowName):
-        request = \
+    def _getWorkflowDetails(self, workflowName):
+        '''
+        Get details of a workflow. Response structure is
         {
-            "action": "getWorkflowDetails",
-            "data": {
-                "workflowname": workflowName
-            }
+          'status': 'success',
+          'data': {
+              'email': '...',
+              'name': '...',
+              'id': '...',
+              'status': '...',
+              'endpoints': '[]',
+              'modified': '...',
+              'associatedTriggerableTables': {
+                  '<table-name-1>': '',
+                  '<table-name-2>': '',
+                  ...
+              }
+          }
         }
+        '''
+        request = \
+            {
+                "action": "getWorkflowDetails",
+                "data": {
+                    "workflowname": workflowName
+                }
+            }
 
-        status, message, response = self.invoke_management_api(request)
+        status, message, response = self._invoke_management_api(request)
 
         if status == False or response["status"] != 'success':
-            print("Error: Unable to fetch details for workflow: " + workflowName + ", Error message: "  + str(message) + ", response: " + str(response))
+            print("Error: Unable to fetch details for workflow: " + workflowName +
+                  ", Error message: " + str(message) + ", response: " + str(response))
             return None
-        # {
-        #   'status': 'success', 
-        #   'data': {
-        #       'email': '...',
-        #       'name': '...',
-        #       'id': '...',
-        #       'status': '...',
-        #       'endpoints': '[]',
-        #       'modified': '...',
-        #       'associatedTriggerableTables': {
-        #           '<table-name-1>': '', 
-        #           '<table-name-2>': '', 
-        #           ...
-        #       }
-        #   }
-        # }
         return response
 
-
-    def invoke_management_api(self, request):
+    def _invoke_management_api(self, request):
         status = False
         message = ""
         response_data = None
-        
-        management_url = self.get_management_endpoint()
+
+        management_url = self._get_management_endpoint()
         if management_url == "" or management_url == None:
             message = "No management endpoint url found"
             print("[invoke_management_api] Error: " + message)
             return status, message, response_data
-        
+
         if type(request) != type({}):
             message = "Request must be specified as a dictionary"
             print("[invoke_management_api] Error: " + message)
@@ -1858,10 +2037,12 @@ class MicroFunctionsAPI:
         #print("[invoke_management_api] url: " + management_url + ", request: " + str(request))
         r = requests.post(management_url, json=request, verify=False)
         #print("[invoke_management_api] response status: " + str(r.status_code) + ", reason: " + str(r.reason) + ", body: " + str(r.text))
-        
+
         response = None
         if r.text == None or r.text == "" or r.status_code > 400:
-            message = "Received empty response or error status code: " + str(r.status_code) + ", reason: " + str(r.reason) + ", body: " + str(r.text)
+            message = "Received empty response or error status code: " + \
+                str(r.status_code) + ", reason: " + \
+                str(r.reason) + ", body: " + str(r.text)
             print("[invoke_management_api] Error: " + message)
             response_data = r.text
             return status, message, response
@@ -1869,7 +2050,8 @@ class MicroFunctionsAPI:
         try:
             response = json.loads(r.text)
         except Exception as e:
-            message = "Json parsing error: " + str(e) + ", response body: " + str(r.text)
+            message = "Json parsing error: " + \
+                str(e) + ", response body: " + str(r.text)
             print("[invoke_management_api] Error: " + message)
             return status, message, response
 
@@ -1877,19 +2059,19 @@ class MicroFunctionsAPI:
             status = True
             message = "Received a valid response from the management service"
         else:
-            message = "Received an incorrectly formed reponse from the management service: response body: " + str(response)
+            message = "Received an incorrectly formed reponse from the management service: response body: " + \
+                str(response)
             print("[invoke_management_api] Error: " + message)
-        
+
         return status, message, response
 
-
-    def get_management_endpoint(self):
+    def _get_management_endpoint(self):
         # get management endpoints from the datalayer for every request
         #management_data_layer_client = DataLayerClient(locality=1, sid="Management", wid="Management", is_wf_private=True, connect=self._datalayer)
         #management_endpoints = management_data_layer_client.get("management_endpoints")
-        #if management_endpoints is None or management_endpoints == "":
+        # if management_endpoints is None or management_endpoints == "":
         #    return ""
-        #else:
+        # else:
         #    management_endpoints = json.loads(management_endpoints)
 
         # use the management endpoints obtained from the datalayer while deploying the application sandbox
@@ -1897,5 +2079,6 @@ class MicroFunctionsAPI:
 
         management_url = ""
         if type(management_endpoints) == type([]) and len(management_endpoints) > 0:
-            management_url = management_endpoints[random.randint(0, len(management_endpoints)-1)]
+            management_url = management_endpoints[random.randint(
+                0, len(management_endpoints)-1)]
         return management_url
