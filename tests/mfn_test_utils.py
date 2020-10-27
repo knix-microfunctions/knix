@@ -343,12 +343,11 @@ class MFNTest():
         self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
 
     def report(self, success, inp, expected, actual):
-        short_inp = self._get_printable(inp)
-
         if success:
+            short_inp = self._get_printable(inp)
             print(self._test_name + " test " + mfntestpassed + " with input data:", short_inp)
         else:
-            print(self._test_name + " test " + mfntestfailed + " with input data:", short_inp + '(result: ' + json.dumps(actual) + ', expected: ' + json.dumps(expected) + ')')
+            print(self._test_name + " test " + mfntestfailed + " with input data:", str(inp) + '(result: ' + json.dumps(actual) + ', expected: ' + json.dumps(expected) + ')')
 
     def exec_only(self, inp):
         any_failed_tests = False

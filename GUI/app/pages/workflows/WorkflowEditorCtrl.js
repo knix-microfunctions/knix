@@ -104,11 +104,14 @@
 
      $scope.showFunctionCodeTab = new Array(10);
      $scope.changedBuffers = "";
+     $scope.bucketTables = { };
      var functionCodeEditor = new Array(10);
      var functionCodeBuffer = new Array(10);
      var functionCodeName = new Array(10);
      var nodeToTabMapping = new Array();
      var workflowBuffer = "";
+
+     var switchValue = new Array();
 
      var functionCode = "";
 
@@ -118,6 +121,9 @@
      $scope.sObjects = [ ];
 
      getStorageObjectsList();
+     getBucketList();
+     
+     $scope.switches = new Array();
 
      for (var i=0;i<10;i++) {
        $scope.showFunctionCodeTab[i] = false;
@@ -421,6 +427,63 @@
        }
      }
 
+     function getBucketList() {
+
+      var req = {
+          method: 'POST',
+          url: urlPath,
+          headers: {
+               'Content-Type': 'application/json'
+          },
+      
+         data:   JSON.stringify({ "action" : "getTriggerableTables", "data" : { "user" : { "token" : token }}})
+      }
+      
+      $http(req).then(function successCallback(response) {
+        
+            $scope.bucketTables = Object.keys(response.data.data.tables);
+            for (var i=0;i<$scope.bucketTables.length;i++) {
+              $scope.switches[$scope.bucketTables[i]] = false;
+              switchValue[$scope.bucketTables[i]] = false;
+            }
+            getWorkflowDetails();
+            
+
+      }, function errorCallback(response) {
+          console.log("Error occurred during getTriggerableTables action");
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+      });
+    }
+
+    $scope.tableListNotEmpty = function() {
+      return (($scope.bucketTables.length > 0) ? true : false);
+    }
+
+    $scope.switchChange = function(table, value) {
+      
+      if (switchValue[table] != value) {
+        if (value==true) {
+          addStorageTriggerToWorkflow(table);
+          switchValue[table] = true;
+        } else {
+          removeStorageTriggerFromWorkflow(table);
+          switchValue[table] = false;
+        }
+      }
+      
+    };
+
      function getStorageObjectsList() {
 
        var urlPath = sharedProperties.getUrlPath();
@@ -470,6 +533,117 @@
        return functionCodeName[id];
 
      };
+
+     function addStorageTriggerToWorkflow(tableName) {
+
+      var req = {
+          method: 'POST',
+          url: urlPath,
+          headers: {
+               'Content-Type': 'application/json'
+          },
+      
+         data:   JSON.stringify({ "action" : "addStorageTriggerForWorkflow", "data" : { "user" : { "token" : token }, "workflowname" : sharedProperties.getWorkflowName(), "tablename" : tableName }})
+      }
+      
+      $http(req).then(function successCallback(response) {
+        
+            
+
+      }, function errorCallback(response) {
+          console.log("Error occurred during addStorageTriggerForWorkflow action");
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+      });
+    }
+
+    function getWorkflowDetails() {
+
+      var req = {
+          method: 'POST',
+          url: urlPath,
+          headers: {
+               'Content-Type': 'application/json'
+          },
+      
+         data:   JSON.stringify({ "action" : "getWorkflowDetails", "data" : { "user" : { "token" : token }, "workflowname" : sharedProperties.getWorkflowName() }})
+      }
+      
+      $http(req).then(function successCallback(response) {
+        
+            associatedTables = Object.keys(response.data.data.associatedTriggerableTables);
+
+            for (var i=0;i<$scope.bucketTables.length;i++) {
+              for (var t=0;t<associatedTables.length;t++) {
+                if ($scope.bucketTables[i]==associatedTables[t]) {
+                  $scope.switches[$scope.bucketTables[i]] = true;
+                  switchValue[$scope.bucketTables[i]] = true;
+                }
+              }
+            }
+           
+            
+
+      }, function errorCallback(response) {
+          console.log("Error occurred during getWorkflowDetails action");
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+      });
+    }
+
+
+    function removeStorageTriggerFromWorkflow(tableName) {
+
+      var req = {
+          method: 'POST',
+          url: urlPath,
+          headers: {
+               'Content-Type': 'application/json'
+          },
+      
+         data:   JSON.stringify({ "action" : "deleteStorageTriggerForWorkflow", "data" : { "user" : { "token" : token }, "workflowname" : sharedProperties.getWorkflowName(), "tablename" : tableName }})
+      }
+      
+      $http(req).then(function successCallback(response) {
+        
+            
+
+      }, function errorCallback(response) {
+          console.log("Error occurred during deleteStorageTriggerForWorkflow action");
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+      });
+    }
 
 
      $scope.closeDialog = function() {
