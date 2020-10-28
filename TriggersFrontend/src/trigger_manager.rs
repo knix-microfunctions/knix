@@ -27,16 +27,17 @@ pub struct TriggerManagerInfo {
     pub management_url: String,
     pub management_action: String,
     pub update_interval: u32,
-    pub self_ip: String,
+    pub self_ip_port: String,
     pub server_url: String,
 }
 
 #[derive(Serialize)]
 pub struct TriggerManagerStatusUpdateMessageData {
     pub action: String,
-    pub self_ip: String,
+    pub self_ip_port: String,
     pub trigger_status_map: HashMap<String, TriggerStatus>,
     pub trigger_error_map: HashMap<String, String>,
+    pub user: HashMap<String, String>,
 }
 
 #[derive(Serialize)]
@@ -540,9 +541,10 @@ async fn send_shutdown_messages(
         action: manager_info.management_action.clone(),
         data: TriggerManagerStatusUpdateMessageData {
             action: "stop".into(),
-            self_ip: manager_info.self_ip.clone(),
+            self_ip_port: manager_info.self_ip_port.clone(),
             trigger_status_map: HashMap::new(),
             trigger_error_map: id_to_trigger_error_map.clone(),
+            user: HashMap::new(),
         },
     };
     let serialized_update_message = serde_json::to_string(&update_message);
@@ -909,9 +911,10 @@ async fn trigger_manager_actor_loop(
                     action: manager_info.management_action.clone(),
                     data: TriggerManagerStatusUpdateMessageData {
                         action: "status".into(),
-                        self_ip: manager_info.self_ip.clone(),
+                        self_ip_port: manager_info.self_ip_port.clone(),
                         trigger_status_map: id_to_trigger_status_map.clone(),
                         trigger_error_map: id_to_trigger_error_map.clone(),
+                        user: HashMap::new(),
                     }
                 };
 

@@ -3,8 +3,8 @@
 Frontend responsible for subscribing to external message queues on behalf of workflows. 
 
 ### Running the frontend
-Install rust <https://www.rust-lang.org/tools/install> on your linux environment
 ```bash
+make
 ./run.sh
 ```
 
@@ -153,7 +153,7 @@ The structure of the trigger messages received at the workflow is:
 
 ```
 {
-    "type": "amqp" or "timer",
+    "trigger_type": "amqp" or "timer",
     //tag is a user specified optional string while creating the trigger
     "tag": "<string>",
     // source is the topic name if available
@@ -170,7 +170,7 @@ The structure of the trigger messages received at the workflow is:
     "action":"triggersFrontendStatus",
     "data":{
       "action":"start" or "status" or "stop" ,
-      "self_ip":"10.0.2.15",
+      "self_ip_port":"10.0.2.15:4997",
       // Status information about the active triggers
       // Status should ideally be always "Ready", but it can also be "Starting", "Stopping", "StoppedNormal"
       "trigger_status_map":{"<trigger_id>" : "trigger_id_status", "<trigger_id>" : "trigger_id_status", ...},

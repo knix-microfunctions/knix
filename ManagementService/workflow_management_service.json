@@ -39,7 +39,8 @@
                 "deleteTriggerableBucket",
                 "deleteStorageTriggerForWorkflow",
                 "deleteAccount",
-                "performStorageAction"
+                "performStorageAction",
+                "triggersFrontendStatus"
             ]
         },
         {
@@ -168,9 +169,11 @@
         },
         {
             "name": "performStorageAction",
-            "next": [
-                "ManagementServiceExit"
-            ]
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "triggersFrontendStatus",
+            "next": ["ManagementServiceExit"]
         }
     ]
 }

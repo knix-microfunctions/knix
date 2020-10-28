@@ -33,7 +33,7 @@ pub struct MQTTTopicInfo {
 pub struct MQTTSubscriberInfo {
     mqtt_addr: String,
     topic_names: Vec<String>,
-    qos_values: Vec<i32>,
+    qos_values: Vec<u8>,
 }
 
 #[derive(Clone)]
@@ -138,18 +138,29 @@ pub async fn handle_create_mqtt_trigger(
     {
         return Err("One of the required fields, 'mqtt_addr' or 'topics' is missing".into());
     }
+
+    let addr = &trigger_info["mqtt_addr"].to_string();
+    let addr_vec: Vec<&str> = addr.split(":").collect();
+    if addr_vec.len() != 2 {
+        return Err("'mqtt_addr' should be of the format <host>:<port>".into());
+    } else if addr_vec[1].parse::<u16>().is_err() {
+        return Err("unable to parse 'mqtt_addr'".into());
+    } else {
+        // all good
+    }
+
     let topics_array = &trigger_info["topics"];
     let num_topics = topics_array.len();
     let mut topics_vec: Vec<String> = Vec::new();
-    let mut qos_vec: Vec<i32> = Vec::new();
+    let mut qos_vec: Vec<u8> = Vec::new();
     for i in 0..num_topics {
         let topic_info = &topics_array[i];
         if !topic_info.has_key("topic") {
             return Err("topic missing in topics list".into());
         }
         topics_vec.push(topic_info["topic"].to_string());
-        let qos: i32 = if topic_info.has_key("qos") {
-            topic_info["qos"].as_i32().unwrap()
+        let qos: u8 = if topic_info.has_key("qos") {
+            topic_info["qos"].as_u8().unwrap()
         } else {
             1
         };
@@ -260,12 +271,14 @@ pub async fn mqtt_actor_loop(
     info!("[amqp_actor_loop] {} start", trigger_id);
 
     let addr = &mqtt_sub_info.mqtt_addr;
+    let addr_vec: Vec<&str> = addr.split(":").collect();
+    let mqtt_port = addr_vec[1].parse::<u16>().unwrap();
 
-    let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
+    let mut mqttoptions = MqttOptions::new(trigger_id.as_str(), addr_vec[0], mqtt_port);
     mqttoptions.set_keep_alive(5);
 
     let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
-    client.subscribe("hello/rumqtt", QoS::AtMostOnce).await?;
+    client.subscribe(mqtt_sub_info.topic_names[0].clone(), QoS::AtMostOnce).await?;
 
     // Create the client. Use an ID for a persistent session.
     // A real system should try harder to use a unique ID.

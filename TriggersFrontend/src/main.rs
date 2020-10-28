@@ -592,9 +592,10 @@ async fn register_with_management(manager_info: TriggerManagerInfo) {
         action: manager_info.management_action.clone(),
         data: TriggerManagerStatusUpdateMessageData {
             action: "start".into(),
-            self_ip: manager_info.self_ip.clone(),
+            self_ip_port: manager_info.self_ip_port.clone(),
             trigger_status_map: HashMap::new(),
             trigger_error_map: HashMap::new(),
+            user: HashMap::new(),
         },
     };
     let serialized_update_message = serde_json::to_string(&update_message).unwrap();
@@ -621,9 +622,11 @@ async fn register_with_management(manager_info: TriggerManagerInfo) {
 }
 
 async fn stopserver(req: HttpRequest) -> impl Responder {
+    warn!("Stop server request received");
     let mut trigger_manager: TriggerManager = req.app_data::<TriggerManager>().unwrap().clone();
     let response: Result<String, String> = trigger_manager.handle_stop().await;
     tokio::spawn(async { create_delay(1000, "".into()).await; process::exit(0); });
+    warn!("Stopping in 1 second");
     HttpResponse::Ok().body("ok")
 }
 
@@ -665,13 +668,13 @@ async fn main() -> std::io::Result<()> {
         .parse::<u32>()
         .unwrap_or(60)
         * 1000;
-    let port: String = std::env::var("TRIGGERS_FRONTEND_PORT").unwrap_or("8080".into());
+    let port: String = std::env::var("TRIGGERS_FRONTEND_PORT").expect("TRIGGERS_FRONTEND_PORT env variable not specified");
 
     // let self_ip = machine_ip::get()
     //     .expect("Unable to get the IP address of the machine")
     //     .to_string();
     let self_ip = std::env::var("HOST_IP").expect("HOST_IP env variable not specified");
-
+    let self_ip_port = format!("{}:{}", self_ip, &port);
     let mut host_port: String = String::from("0.0.0.0:");
     host_port.push_str(&port);
 
@@ -679,7 +682,7 @@ async fn main() -> std::io::Result<()> {
         management_url,
         management_action,
         update_interval,
-        self_ip,
+        self_ip_port,
         server_url: host_port.clone(),
     };
 

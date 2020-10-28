@@ -21,7 +21,7 @@ NAMES := $(YAML:%.yaml=%)
 .PHONY: $(NAMES)
 default: prepare_packages install
 
-install: init_once riak elasticsearch fluentbit datalayer sandbox management nginx
+install: init_once riak elasticsearch fluentbit datalayer sandbox management nginx triggers_frontend
 	echo "Installed KNIX MicroFunctions"
 
 clean:
@@ -32,7 +32,8 @@ prepare_packages: ../../riak/knix_riak_deployment_package.tar.gz \
 	../../DataLayerService/target/datalayerservice.jar \
 	../../Sandbox/sandbox_deployment_package.tar.gz \
 	../../ManagementService/management_deployment_package.tar.gz \
-	../../GUI/knix_gui_deployment_package.tar.gz
+	../../GUI/knix_gui_deployment_package.tar.gz \
+	../../TriggersFrontend/target/release/TriggersFrontend
 
 
 $(NAMES): %: %.log
@@ -99,3 +100,9 @@ GUIFILES:=$(shell find $(GUI_SRC) | grep -v "knix_gui_deployment_package.tar.gz"
 nginx.yaml: ../../GUI/knix_gui_deployment_package.tar.gz
 	touch $@
 
+# triggers_frontend.yaml and dependencies
+../../TriggersFrontend/target/release/TriggersFrontend:
+	cd ../../TriggersFrontend/; make; cd -
+
+triggers_frontend.yaml: ../../TriggersFrontend/target/release/TriggersFrontend
+	touch $@

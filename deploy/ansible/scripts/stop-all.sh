@@ -13,6 +13,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+if [ -e ./triggers_frontend/stop.sh ]
+then
+    echo "Stopping triggers_frontend"
+    ./triggers_frontend/stop.sh; sleep 2
+fi
+
 
 if [ -e ./nginx/stop.sh ]
 then
@@ -50,4 +56,4 @@ then
     ./riak/stop.sh; sleep 2
 fi
 
-echo "MFN Stopped"
+echo "KNIX Stopped"
