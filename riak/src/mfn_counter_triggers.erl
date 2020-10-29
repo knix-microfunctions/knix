@@ -17,21 +17,45 @@
 -export([counter_trigger/1,test/0]).
 
 -define(CMETA_BUCKET, <<"counterTriggersInfoTable">>).
--define(LOG_PREFIX, "[COUNTER_TRIGGERS_v9] ").
+-define(LOG_PREFIX, "[COUNTER_TRIGGERS_v10] ").
 
 counter_trigger(RiakObject) ->
     try
+        %io:format(?LOG_PREFIX ++ "[counter_trigger] Received object:~p~n", [RiakObject]),
         Action = get_action(RiakObject),
-        {BucketType, Bucket} = riak_object:bucket(RiakObject),
-        %io:format(?LOG_PREFIX ++ "BucketType:~p, Bucket:~p~n", [BucketType,Bucket]),
+        %io:format(?LOG_PREFIX ++ "[counter_trigger] Action:~p~n", [Action]),
+        BucketReturn = riak_object:bucket(RiakObject),
+        %io:format(?LOG_PREFIX ++ "[counter_trigger] BucketReturn:~p~n", [BucketReturn]),
+        {BucketType, Bucket} = case is_tuple(BucketReturn) of
+            true -> BucketReturn;
+            false -> {<<"counters">>, BucketReturn}
+        end,
+
+        %Action = get_action(RiakObject),
+        %{BucketType, Bucket} = riak_object:bucket(RiakObject),
         CounterName = riak_object:key(RiakObject),
         {{_, CounterValue}, _} = riak_kv_crdt:value(RiakObject, riak_dt_pncounter),
-        [Keyspace, Table] = string:tokens(binary_to_list(Bucket), ";"),  
-        % Keyspace and Table are lists
-        io:format(?LOG_PREFIX ++ "[counter_trigger] Action:~p, Bucket:~p, BucketType:~p, Keyspace: ~p, Table: ~p, CounterName:~p, CounterValue:~p~n", [Action, Bucket, BucketType, list_to_binary(Keyspace), list_to_binary(Table), CounterName, CounterValue]),
 
-        Metadata = case Action of
-            delete -> handle_delete();
+        SplitResult = string:tokens(binary_to_list(Bucket), ";"),
+        %io:format(?LOG_PREFIX ++ "[counter_trigger] SplitResult~p~n", [SplitResult]),
+        [Keyspace, Table] = case length(SplitResult) of
+            1 -> [binary_to_list(<<"__NOT_DEFINED__">>), binary_to_list(<<"__NOT_DEFINED__">>)];
+            2 -> SplitResult
+        end,
+        %[Keyspace, Table] = string:tokens(binary_to_list(Bucket), ";"),  
+        % Keyspace, Table are lists
+
+        ActionToTake = case list_to_binary(Keyspace) of
+            <<"__NOT_DEFINED__">> -> ignore;
+            _ -> Action
+        end,
+
+        % Keyspace and Table are lists
+        io:format(?LOG_PREFIX ++ "[counter_trigger] ActionToTake:~p, Bucket:~p, BucketType:~p, Keyspace: ~p, Table: ~p, CounterName:~p, CounterValue:~p~n", [ActionToTake, Bucket, BucketType, list_to_binary(Keyspace), list_to_binary(Table), CounterName, CounterValue]),
+
+        Metadata = case ActionToTake of
+            delete -> none;
+            ignore -> none;
                  _ -> get_counter_metadata(Keyspace, CounterName)
         end,
         io:format(?LOG_PREFIX ++ "CounterMetadata:~p~n", [Metadata]),

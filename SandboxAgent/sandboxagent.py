@@ -90,6 +90,8 @@ class SandboxAgent:
         self._external_endpoint = None
         # visible internally: kubernetes node address or same as bare-metal external endpoint
         self._internal_endpoint = None
+        # external endpoints of management service
+        self._management_endpoints = None
 
         self._is_running = False
         self._shutting_down = False
@@ -168,7 +170,7 @@ class SandboxAgent:
         # for session support, in FunctionWorker, we need current host address (bare-metal)
         # or current node address (kubernetes)
 
-        # for parallel state support, in FunctionWorker, either would be fine
+        # for parallel state support, in FunctionWorker, we need current host address (bare-metal)
 
         # As such, let the FunctionWorker know both and let it decide what to do
         if 'KUBERNETES_SERVICE_HOST' in os.environ:
@@ -178,13 +180,33 @@ class SandboxAgent:
             # bare-metal mode: the current host's address and external address are the same
             self._internal_endpoint = self._external_endpoint
 
+        # get the management endpoints
+        if not has_error:
+            self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
+            num_trials = 0
+            sleep_time = 1.0
+            while num_trials < 5 and (self._management_endpoints is None or self._management_endpoints == ""):
+                time.sleep(sleep_time)
+                self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
+                num_trials = num_trials + 1
+                sleep_time = sleep_time * 2
+
+            if num_trials == 5:
+                has_error = True
+                errmsg = "Could not retrieve management endpoints"
+            else:
+                self._management_endpoints = json.loads(self._management_endpoints)
+
+
+
         if not has_error:
             self._logger.info("External endpoint: %s", self._external_endpoint)
             self._logger.info("Internal endpoint: %s", self._internal_endpoint)
+            self._logger.info("Management endpoints: %s", str(self._management_endpoints))
             self._deployment = Deployment(deployment_info,\
                 self._hostname, self._userid, self._sandboxid, self._workflowid,\
                 self._workflowname, self._queue, self._datalayer, \
-                self._logger, self._external_endpoint, self._internal_endpoint)
+                self._logger, self._external_endpoint, self._internal_endpoint, self._management_endpoints)
             self._deployment.set_child_process("fb", self._fluentbit_process, self._command_args_map_fluentbit)
             has_error, errmsg = self._deployment.process_deployment_info()
 

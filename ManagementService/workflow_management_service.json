@@ -2,7 +2,8 @@
     "name": "manager",
     "entry": "ManagementServiceEntry",
     "exit": "ManagementServiceExit",
-    "functions": [{
+    "functions": [
+        {
             "name": "ManagementServiceEntry",
             "next": [],
             "potentialNext": [
@@ -31,9 +32,12 @@
                 "getWorkflowJSON",
                 "clearAllWorkflowLogs",
                 "retrieveAllWorkflowLogs",
-                "addTriggerableTable",
+                "addTriggerableBucket",
                 "addStorageTriggerForWorkflow",
-                "getTriggerableTables",
+                "getTriggerableBuckets",
+                "getWorkflowDetails",
+                "deleteTriggerableBucket",
+                "deleteStorageTriggerForWorkflow",
                 "deleteAccount",
                 "performStorageAction"
             ]
@@ -135,7 +139,11 @@
             "next": ["ManagementServiceExit"]
         },
         {
-            "name": "addTriggerableTable",
+            "name": "addTriggerableBucket",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "deleteTriggerableBucket",
             "next": ["ManagementServiceExit"]
         },
         {
@@ -143,7 +151,15 @@
             "next": ["ManagementServiceExit"]
         },
         {
-            "name": "getTriggerableTables",
+            "name": "deleteStorageTriggerForWorkflow",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "getWorkflowDetails",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "getTriggerableBuckets",
             "next": ["ManagementServiceExit"]
         },
         {
@@ -152,7 +168,9 @@
         },
         {
             "name": "performStorageAction",
-            "next": ["ManagementServiceExit"]
+            "next": [
+                "ManagementServiceExit"
+            ]
         }
     ]
 }

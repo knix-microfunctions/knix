@@ -17,6 +17,7 @@ import os
 import traceback
 
 import requests
+import time
 
 #from random import randint
 
@@ -78,6 +79,15 @@ def handle(value, sapi):
         except:
             raise Exception("Couldn't undeploy workflow; workflow metadata seems not to be valid json ("+wf+")")
 
+        print("Current workflow metadata: " + str(wf))
+        if "associatedTriggerableTables" in wf:
+            dlc = sapi.get_privileged_data_layer_client(storage_userid)
+            tablenames = wf["associatedTriggerableTables"]
+            print("Current set of tables associated: " + str(tablenames))
+            for table in tablenames:
+                removeWorkflowFromTableMetadata(email, table, wf["name"], dlc)
+            dlc.shutdown()
+
         if 'KUBERNETES_PORT' not in os.environ:
             # BARE METAL
 
@@ -94,11 +104,10 @@ def handle(value, sapi):
 
                 sapi.clearSet(workflow["id"] + "_workflow_endpoints", is_private=True)
                 sapi.deleteMap(workflow["id"] + "_workflow_endpoint_map", is_private=True)
-
                 sapi.deleteMap(workflow["id"] + "_sandbox_status_map", is_private=True)
 
             #sapi.delete(email + "_workflow_hosts_" + workflow["id"], True, True)
-
+            wf["endpoints"] = []
         else:
             conf_file = '/opt/mfn/SandboxAgent/conf/new_workflow.conf'
             if not os.path.exists(conf_file):
@@ -134,6 +143,8 @@ def handle(value, sapi):
                 print(resp.text)
 
             sapi.clearSet(workflow["id"] + "_workflow_endpoints", is_private=True)
+            sapi.deleteMap(workflow["id"] + "_workflow_endpoint_map", is_private=True)
+            sapi.deleteMap(workflow["id"] + "_sandbox_status_map", is_private=True)
             wf["endpoints"] = []
             sapi.log(str(resp.status_code)+" "+str(resp.text))
 
@@ -169,3 +180,27 @@ def handle(value, sapi):
     sapi.log(json.dumps(response))
     return response
 
+def removeWorkflowFromTableMetadata(email, tablename, workflowname, dlc):
+    metadata_key = tablename
+    triggers_metadata_table = 'triggersInfoTable'
+    print("[removeWorkflowFromTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename)
+
+    current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    if current_meta == None or current_meta == '':
+        meta_list = []
+    else:
+        meta_list = json.loads(current_meta)
+
+    if type(meta_list == type([])):
+        for i in range(len(meta_list)):
+            meta=meta_list[i]
+            if meta["wfname"] == workflowname:
+                del meta_list[i]
+                break
+
+    dlc.put(metadata_key, json.dumps(meta_list), tableName=triggers_metadata_table)
+    
+    time.sleep(0.2)
+    updated_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    updated_meta_list = json.loads(updated_meta)
+    print("[removeWorkflowFromTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Updated metadata: " + str(updated_meta_list))

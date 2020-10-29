@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import json
+import time
 import os
 
 import requests
@@ -73,6 +74,12 @@ def handle(value, sapi):
                             dlc = sapi.get_privileged_data_layer_client(storage_userid)
                             dlc.delete("workflow_json_" + workflow["id"])
                             dlc.delete("workflow_requirements_" + workflow["id"])
+
+                            print("Current workflow metadata: " + str(wf))
+                            if "associatedTriggerableTables" in wf:
+                                for table in wf["associatedTriggerableTables"]:
+                                    removeWorkflowFromTableMetadata(email, table, wf["name"], dlc)
+
                             dlc.shutdown()
 
                             sapi.put(email + "_list_workflows", json.dumps(workflows), True, True)
@@ -105,3 +112,25 @@ def handle(value, sapi):
 
     return response
 
+def removeWorkflowFromTableMetadata(email, tablename, workflowname, dlc):
+    metadata_key = tablename
+    triggers_metadata_table = 'triggersInfoTable'
+    print("[removeWorkflowFromTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename)
+
+    current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+
+    meta_list = json.loads(current_meta)
+
+    if type(meta_list == type([])):
+        for i in range(len(meta_list)):
+            meta=meta_list[i]
+            if meta["wfname"] == workflowname:
+                del meta_list[i]
+                break
+
+    dlc.put(metadata_key, json.dumps(meta_list), tableName=triggers_metadata_table)
+
+    time.sleep(0.2)
+    updated_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    updated_meta_list = json.loads(updated_meta)
+    print("[removeWorkflowFromTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Updated metadata: " + str(updated_meta_list))

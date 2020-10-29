@@ -32,7 +32,7 @@ SINGLE_JVM_FOR_FUNCTIONS = True
 
 class Deployment:
 
-    def __init__(self, deployment_info, hostname, userid, sandboxid, workflowid, workflowname, queue, datalayer, logger, external_endpoint, internal_endpoint):
+    def __init__(self, deployment_info, hostname, userid, sandboxid, workflowid, workflowname, queue, datalayer, logger, external_endpoint, internal_endpoint, management_endpoints):
         self._logger = logger
         self._deployment_info = deployment_info
         self._hostname = hostname
@@ -44,6 +44,7 @@ class Deployment:
         self._datalayer = datalayer
         self._external_endpoint = external_endpoint
         self._internal_endpoint = internal_endpoint
+        self._management_endpoints = management_endpoints
 
         self._python_version = sys.version_info
 
@@ -584,6 +585,7 @@ class Deployment:
         worker_params["datalayer"] = self._datalayer
         worker_params["externalendpoint"] = self._external_endpoint
         worker_params["internalendpoint"] = self._internal_endpoint
+        worker_params["managementendpoints"] = self._management_endpoints
         worker_params["fnext"] = wf_node.getNextMap()
         worker_params["fpotnext"] = wf_node.getPotentialNextMap()
         worker_params["functionstatetype"] = wf_node.getGWFType()

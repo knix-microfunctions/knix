@@ -29,6 +29,7 @@ sed -i -r 's/^erlang\.schedulers\.total .*$//' $RIAK_CONF
 sed -i -r 's/^erlang\.schedulers\.online .*$//' $RIAK_CONF
 sed -i -r 's/^erlang\.schedulers\.force_wakeup_interval .*$//' $RIAK_CONF
 sed -i -r 's/^erlang\.schedulers\.compaction_of_load .*$//' $RIAK_CONF
+sed -i -r 's/^buckets\.default\.postcommit .*$//' $RIAK_CONF
 
 
 cat <<END >>$RIAK_CONF
@@ -46,6 +47,7 @@ erlang.schedulers.total = $ERLANG_SCHEDULERS_TOTAL
 erlang.schedulers.online = $ERLANG_SCHEDULERS_ONLINE
 erlang.schedulers.force_wakeup_interval = $ERLANG_SCHEDULERS_FORCE_WAKEUP_INTERVAL
 erlang.schedulers.compaction_of_load = $ERLANG_SCHEDULERS_COMPACTION_OF_LOAD
+buckets.default.postcommit = workflow_triggers:workflow_trigger
 END
 
 # Maybe add user config items
