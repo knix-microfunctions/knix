@@ -1,3 +1,4 @@
+#[allow(dead_code,unused,unused_must_use)]
 use crate::utils::create_delay;
 use crate::utils::send_post_json_message;
 use crate::utils::WorkflowInfo;
@@ -112,6 +113,7 @@ async fn send_timer_data(
         tokio::spawn(send_post_json_message(
             workflow_info.workflow_url,
             serialized_workflow_msg.unwrap(),
+            "".into(),
         ));
     }
 }

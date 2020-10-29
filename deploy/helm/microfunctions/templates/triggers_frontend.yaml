@@ -1,0 +1,97 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "triggersFrontend.fullname" . }}-headless
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: "microfunctions-triggers-frontend"
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+spec:
+  ports:
+  - port: {{ .Values.triggersFrontend.httpPort }}
+    name: controlport
+  clusterIP: None
+  selector:
+    app: "microfunctions-triggers-frontend"
+    release: {{ .Release.Name | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "triggersFrontend.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: "microfunctions-triggers-frontend"
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .Values.triggersFrontend.httpPort }}
+    name: controlport
+  selector:
+    app: "microfunctions-triggers-frontend"
+    release: {{ .Release.Name | quote }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ template "triggersFrontend.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: "microfunctions-triggers-frontend"
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+spec:
+  serviceName: {{ template "triggersFrontend.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "microfunctions-triggers-frontend"
+      release: {{ .Release.Name | quote }}
+  template:
+    metadata:
+      labels:
+        app: "microfunctions-triggers-frontend"
+        release: {{ .Release.Name | quote }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: triggers_frontend
+        image: "{{ .Values.imageRepo }}{{ .Values.triggersFrontend.imagePath }}:{{ .Values.triggersFrontend.imageTag }}"
+        imagePullPolicy: "{{ .Values.triggersFrontend.imagePullPolicy }}"
+        ports:
+        - containerPort: {{ .Values.triggersFrontend.httpPort }}
+          name: control
+        resources:
+{{ toYaml .Values.triggersFrontend.resources | indent 10}}
+        env:
+        - name: MANAGEMENT_URL
+          value: http://{{ include "nginx.mgmtService" . | regexFind "^[^.]+" }}
+        - name: MANAGEMENT_REQUEST_HOST_HEADER
+          value: {{ include "nginx.mgmtService" . }}
+        - name: TRIGGERS_FRONTEND_PORT
+          value: {{ .Values.triggersFrontend.httpPort }}
+        - name: TRIGGERS_FRONTEND_LOG_LEVEL
+          value: info
+        - name: MANAGEMENT_UPDATE_INTERVAL_SEC
+          value: {{ .Values.triggersFrontend.statusReportIntervalSec }}

@@ -1,3 +1,4 @@
+#[allow(dead_code,unused,unused_must_use)]
 use json::JsonValue;
 use log::*;
 use serde::{Deserialize, Serialize};
@@ -25,6 +26,7 @@ use crate::TriggerStatus;
 #[derive(Clone, Debug)]
 pub struct TriggerManagerInfo {
     pub management_url: String,
+    pub management_request_host_header: String,
     pub management_action: String,
     pub update_interval: u32,
     pub self_ip_port: String,
@@ -513,12 +515,12 @@ pub async fn send_status_update_from_trigger_to_manager(
     }
 }
 
-async fn report_status_to_management(management_url: String, data: String) {
+async fn report_status_to_management(management_url: String, data: String, host_header: String) {
     info!(
         "[report_status_to_management] POST to {}, with data {}",
         management_url, &data
     );
-    tokio::spawn(send_post_json_message(management_url, data));
+    tokio::spawn(send_post_json_message(management_url, data, host_header));
 }
 
 async fn send_server_stop_msg(url: String) {
@@ -551,6 +553,7 @@ async fn send_shutdown_messages(
     let posted = send_post_json_message(
         manager_info.management_url.clone(),
         serialized_update_message.unwrap(),
+        manager_info.management_request_host_header.clone(),
     )
     .await;
     if posted == false {
@@ -919,7 +922,7 @@ async fn trigger_manager_actor_loop(
                 };
 
                 let serialized_update_message = serde_json::to_string(&update_message);
-                tokio::spawn(report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap()));
+                tokio::spawn(report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()));
                 // we have reported it to management, so clear the error map
                 id_to_trigger_error_map.clear();
             }

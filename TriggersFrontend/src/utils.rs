@@ -1,3 +1,4 @@
+#[allow(dead_code,unused,unused_must_use)]
 use crate::TriggerStatus;
 use log::*;
 use rand::prelude::*;
@@ -82,6 +83,7 @@ pub async fn send_multiple_post_json_messages(urls: std::vec::Vec<String>, json_
         handles.push(tokio::spawn(send_post_json_message(
             url.clone(),
             json_body.clone(),
+            "".into(),
         )));
     }
     for handle in handles {
@@ -89,14 +91,25 @@ pub async fn send_multiple_post_json_messages(urls: std::vec::Vec<String>, json_
     }
 }
 
-pub async fn send_post_json_message(url: String, json_body: String) -> bool {
+pub async fn send_post_json_message(url: String, json_body: String, host_header: String) -> bool {
     let client = reqwest::Client::new();
-    let res = client
-        .post(&url)
-        .header("Content-Type", "application/json")
-        .body(json_body)
-        .send()
-        .await;
+    let res;
+    if host_header.len() > 0 {
+        res = client
+          .post(&url)
+          .header("Host", host_header.as_str())
+          .header("Content-Type", "application/json")
+          .body(json_body)
+          .send()
+          .await;
+    } else {
+        res = client
+          .post(&url)
+          .header("Content-Type", "application/json")
+          .body(json_body)
+          .send()
+          .await;
+    }
     if res.is_ok() {
         let ret_body = res.unwrap().text().await;
         if ret_body.is_ok() {

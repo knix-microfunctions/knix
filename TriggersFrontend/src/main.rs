@@ -1,3 +1,4 @@
+#[allow(dead_code,unused,unused_must_use)]
 use actix_web::{
     get, middleware::Logger, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -603,6 +604,7 @@ async fn register_with_management(manager_info: TriggerManagerInfo) {
         let ret = send_post_json_message(
             manager_info.management_url.clone(),
             serialized_update_message.clone(),
+            manager_info.management_request_host_header.clone(),
         )
         .await;
         if ret == false {
@@ -661,6 +663,8 @@ async fn main() -> std::io::Result<()> {
 
     let management_url =
         std::env::var("MANAGEMENT_URL").expect("MANAGEMENT_URL env variable not specified");
+    let management_request_host_header =
+        std::env::var("MANAGEMENT_REQUEST_HOST_HEADER").unwrap_or("".into());
     let management_action =
         std::env::var("MANAGEMENT_ACTION").unwrap_or("triggersFrontendStatus".into());
     let update_interval: u32 = std::env::var("MANAGEMENT_UPDATE_INTERVAL_SEC")
@@ -680,6 +684,7 @@ async fn main() -> std::io::Result<()> {
 
     let manager_info = TriggerManagerInfo {
         management_url,
+        management_request_host_header,
         management_action,
         update_interval,
         self_ip_port,
