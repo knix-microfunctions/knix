@@ -196,6 +196,7 @@ async fn send_mqtt_data(
             for workflow_info in workflows {
                 let workflow_msg = TriggerWorkflowMessage {
                     trigger_type: "mqtt".into(),
+                    id: trigger_id.clone(),
                     tag: workflow_info.tag,
                     source: source.clone(),
                     data: v.clone(), // TODO: Figure out how to pass the String around,

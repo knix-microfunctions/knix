@@ -32,6 +32,7 @@ pub struct WorkflowInfo {
 #[derive(Serialize)]
 pub struct TriggerWorkflowMessage {
     pub trigger_type: String,
+    pub id: String,
     pub tag: String,
     pub source: String,
     pub data: String,

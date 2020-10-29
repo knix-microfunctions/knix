@@ -1,4 +1,4 @@
-#[allow(dead_code,unused)]
+#[allow(dead_code,unused,unused_must_use)]
 use crate::utils::create_delay;
 use crate::utils::send_post_json_message;
 use crate::utils::WorkflowInfo;
@@ -182,6 +182,7 @@ async fn send_amqp_data(
             for workflow_info in workflows {
                 let workflow_msg = TriggerWorkflowMessage {
                     trigger_type: "ampq".into(),
+                    id: trigger_id.clone(),
                     tag: workflow_info.tag,
                     source: source.clone(),
                     data: v.clone(), // TODO: Figure out how to pass the String around,

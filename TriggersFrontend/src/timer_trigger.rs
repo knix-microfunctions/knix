@@ -99,6 +99,7 @@ async fn send_timer_data(
     for workflow_info in workflows {
         let workflow_msg = TriggerWorkflowMessage {
             trigger_type: "timer".into(),
+            id: trigger_id.clone(),
             tag: workflow_info.tag,
             source: source.clone(),
             data: timer_data.clone(), // TODO: Figure out how to pass the String around,

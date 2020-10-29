@@ -154,6 +154,8 @@ The structure of the trigger messages received at the workflow is:
 ```
 {
     "trigger_type": "amqp" or "timer",
+    //id is a globally unique identifier for this trigger. To be used for updating and deleting the trigger
+    "id": <string>
     //tag is a user specified optional string while creating the trigger
     "tag": "<string>",
     // source is the topic name if available
