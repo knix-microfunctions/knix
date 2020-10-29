@@ -221,17 +221,20 @@ class StateUtils:
 
                 self._logger.debug("received output_data: " + output_data)
 
-                output_data = json.loads(output_data)
-
-                if not output_data["hasError"]:
-                    java_output["functionResult"] = output_data["functionResult"]
-                    java_output["hasError"] = False
-                    java_output["errorType"] = ""
-                    java_output["errorTrace"] = ""
-                else:
-                    java_output["hasError"] = output_data["hasError"]
-                    java_output["errorType"] = output_data["errorType"]
-                    java_output["errorTrace"] = output_data["errorTrace"]
+                try:
+                    output_data = json.loads(output_data)
+                    if not output_data["hasError"]:
+                        java_output["functionResult"] = output_data["functionResult"]
+                        java_output["hasError"] = False
+                        java_output["errorType"] = ""
+                        java_output["errorTrace"] = ""
+                    else:
+                        java_output["hasError"] = output_data["hasError"]
+                        java_output["errorType"] = output_data["errorType"]
+                        java_output["errorTrace"] = output_data["errorTrace"]
+                except Exception as exc:
+                    self._logger.debug("Problem in received output_data: " + output_data)
+                    pass
 
                 # close the api server in the main thread, so that we can continue with publishing the output
                 api_server.close()
@@ -253,7 +256,7 @@ class StateUtils:
             java_input = exec_arguments["function_input"]
 
             processor = TProcessor(thriftAPIService, sapi)
-            server_socket = TServerSocket(unix_socket=api_uds)
+            server_socket = TServerSocket(unix_socket=api_uds, client_timeout=None)
             # no need for any other type of server; there will only be a single client: the java function instance
             api_server = TSimpleServer(processor, server_socket,
                                        iprot_factory=TCompactProtocolFactory(),
@@ -290,6 +293,7 @@ class StateUtils:
             if not has_error:
                 function_output = java_output["functionResult"]
             else:
+                # _XXX_: need to raise the exception, so that the catcher and retryer can have a chance
                 raise Exception(error_type)
 
         return function_output
@@ -402,7 +406,7 @@ class StateUtils:
         self._logger.debug("[StateUtils] evaluateMapState, maxConcurrency: " + str(maxConcurrency))
         self._logger.debug("[StateUtils] evaluateMapState metadata: " + str(metadata))
 
-        counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
+        counter_name_topic = self.functionstatename + "-" + self.sandboxid
 
         total_branch_count = len(function_input) # all branches executed concurrently
 
@@ -446,7 +450,8 @@ class StateUtils:
 
         counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
 
-        CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
+        #CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
+        CounterName = str(counter_name_topic) + "-" + str(total_branch_count) + "-" + str(counter_name_key)
 
         # prepare mapInfo metadata
         workflow_instance_outputkeys_set_key = key +"_"+ self.functionstatename + "_outputkeys_set"
@@ -674,7 +679,7 @@ class StateUtils:
         else:
             klist.append(total_branch_count)
 
-        counter_name_topic = self.sandboxid + "-" + self.workflowid + "-" + self.functionstatename
+        counter_name_topic = self.functionstatename + "-" + self.sandboxid 
         counter_name_trigger_metadata = {"k-list": klist, "total-branches": total_branch_count}
         counter_name_key = key
 
@@ -706,7 +711,8 @@ class StateUtils:
 
         counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
 
-        CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
+        #CounterName = json.dumps([str(counter_name_topic), str(counter_name_key), counter_name_trigger_metadata, counter_name_value])
+        CounterName = str(counter_name_topic) + "-" + str(total_branch_count) + "-" + str(counter_name_key)
 
         #CounterName = name_prefix + "_counter"
         counter_metadata_key_name = CounterName + "_metadata"

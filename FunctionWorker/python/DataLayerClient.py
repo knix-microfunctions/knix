@@ -27,7 +27,7 @@ MAX_RETRIES=3
 
 class DataLayerClient:
 
-    def __init__(self, locality=1, sid=None, wid=None, suid=None, is_wf_private=False, for_mfn=False, connect="127.0.0.1:4998", init_tables=False, drop_keyspace=False):
+    def __init__(self, locality=1, sid=None, wid=None, suid=None, is_wf_private=False, for_mfn=False, connect="127.0.0.1:4998", init_tables=False, drop_keyspace=False, tableName=None):
         self.dladdress = connect
 
         if for_mfn:
@@ -52,7 +52,10 @@ class DataLayerClient:
 
             else:
                 self.keyspace = "storage_" + suid
-                self.tablename = "defaultTable"
+                if tableName is not None:
+                    self.tablename = tableName
+                else:
+                    self.tablename = "defaultTable"
                 self.maptablename = "defaultMapTable"
                 self.settablename = "defaultSetTable"
                 self.countertablename = "defaultCounterTable"
@@ -84,7 +87,7 @@ class DataLayerClient:
             self.datalayer.createSetTable(self.keyspace, self.settablename, self.locality)
             self.datalayer.createCounterTable(self.keyspace, self.countertablename, Metadata(tableType="counters"), self.locality)
             self.datalayer.createTable(self.keyspace, self.triggersinfotablename, Metadata(tableType="default"), self.locality)
-            self.datalayer.createCounterTable(self.keyspace, self.countertriggerstable, Metadata(tableType="mfn_counter_trigger"), self.locality)
+            self.datalayer.createCounterTable(self.keyspace, self.countertriggerstable, Metadata(tableType="counters"), self.locality)
             self.datalayer.createTable(self.keyspace, self.countertriggersinfotable, Metadata(tableType="default"), self.locality)
         except Thrift.TException as exc:
             print("Could not initialize tables: " + str(exc))
@@ -263,7 +266,7 @@ class DataLayerClient:
         return ret
 
     def getMapKeys(self, mapname):
-        keys = None
+        keys = []
         for retry in range(MAX_RETRIES):
             try:
                 keyset = self.datalayer.retrieveKeysetFromMap(self.keyspace, self.maptablename, mapname, self.locality)
@@ -280,7 +283,7 @@ class DataLayerClient:
         return keys
 
     def retrieveMap(self, mapname):
-        mapentries = None
+        mapentries = {}
         for retry in range(MAX_RETRIES):
             try:
                 mapentries = self.datalayer.retrieveAllEntriesFromMap(self.keyspace, self.maptablename, mapname, self.locality)
@@ -398,7 +401,7 @@ class DataLayerClient:
         return ret
 
     def retrieveSet(self, setname):
-        items = None
+        items = []
         for retry in range(MAX_RETRIES):
             try:
                 itemsset = self.datalayer.retrieveSet(self.keyspace, self.settablename, setname, self.locality)
@@ -557,7 +560,7 @@ class DataLayerClient:
         status = False
         for retry in range(MAX_RETRIES):
             try:
-                status = self.datalayer.createTable(self.keyspace, tableName, Metadata(tableType="triggers"), self.locality)
+                status = self.datalayer.createTable(self.keyspace, tableName, Metadata(tableType="default"), self.locality)
                 break
             except TTransport.TTransportException as exc:
                 self.connect()

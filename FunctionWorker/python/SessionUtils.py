@@ -213,6 +213,8 @@ class SessionUtils:
         # 1. add current session alias
         alias_summary["session"] = {}
         session_alias = self.get_session_alias()
+        if session_alias is None:
+            session_alias = ""
         alias_summary["session"][self._session_id] = session_alias
 
         # 2. add current session function aliases
@@ -222,7 +224,7 @@ class SessionUtils:
         rgidlist = self.get_all_session_function_ids()
 
         for rgid in rgidlist:
-            alias_summary["session_functions"][rgid] = None
+            alias_summary["session_functions"][rgid] = ""
 
         # 2.2. get assigned aliases to all session functions
         alias_map = self.get_all_session_function_aliases()
@@ -372,7 +374,7 @@ class SessionUtils:
         params["communication_parameters"]["local_topic_communication"] = self._local_topic_communication
 
         self._helper_thread = SessionHelperThread(params, self._logger, self._publication_utils, self, self._queue, self._datalayer)
-        self._helper_thread.daemon = True
+        self._helper_thread.daemon = False
         self._helper_thread.start()
 
     def shutdown_helper_thread(self):
@@ -447,7 +449,7 @@ class SessionUtils:
             trigger["remote_address"] = function_metadata["remote_address"]
 
         if send_now:
-            self._publication_utils.send_message_to_running_function(trigger)
+            self._publication_utils.send_to_function_now("-1l", trigger)
         else:
             self._publication_utils.append_trigger(trigger)
 

@@ -21,11 +21,13 @@ _VERSION_STRING = ""
 
 _TIMEOUT = 6000000000
 
+
 def get_storage_userid(email):
     storage_userid = email.replace("@", "AT")
     storage_userid = storage_userid.replace(".", "_")
     storage_userid = storage_userid.replace("-", "_")
     return storage_userid
+
 
 def actionSignUp(user, sapi):
     response = {}
@@ -42,8 +44,11 @@ def actionSignUp(user, sapi):
             new_user["email"] = cur_email
             storage_userid = get_storage_userid(cur_email)
             new_user["storage_userid"] = storage_userid
-            new_user["passwordHash"] = hashlib.sha256(user["password"].encode()).hexdigest()
-            new_user["storageEndpoint"] = "/storage/" + hashlib.sha256((cur_email + "secretsanda").encode()).hexdigest()
+            new_user["passwordHash"] = hashlib.sha256(
+                user["password"].encode()).hexdigest()
+            new_user["storageEndpoint"] = "/storage/" + \
+                hashlib.sha256(
+                    (cur_email + "secretsanda").encode()).hexdigest()
 
             sapi.put(cur_email, json.dumps(new_user), True, True)
 
@@ -51,9 +56,9 @@ def actionSignUp(user, sapi):
             #global_dlc = sapi.get_privileged_data_layer_client(storage_userid, init_tables=True)
             # also create the "Results" and "Backups" maps
             # createMap() does not have an effect, so disable the call
-            #global_dlc.createMap("Results")
-            #global_dlc.createMap("Backups")
-            #global_dlc.shutdown()
+            # global_dlc.createMap("Results")
+            # global_dlc.createMap("Backups")
+            # global_dlc.shutdown()
 
             response["status"] = "success"
             response_data["message"] = "User created successfully."
@@ -86,7 +91,8 @@ def actionLogin(user, sapi):
             cur_user = json.loads(cur_user)
             if cur_user["passwordHash"] == hashlib.sha256(password.encode()).hexdigest():
                 timestamp = time.time()
-                token = hashlib.sha256((email + " " + password + " " + str(timestamp)).encode()).hexdigest()
+                token = hashlib.sha256(
+                    (email + " " + password + " " + str(timestamp)).encode()).hexdigest()
 
                 authenticated_user = {}
                 authenticated_user["email"] = email
@@ -95,10 +101,12 @@ def actionLogin(user, sapi):
 
                 sapi.put(token, json.dumps(authenticated_user), True, True)
 
-                sapi.addSetEntry(email + "_session_tokens", token, is_private=True)
+                sapi.addSetEntry(email + "_session_tokens",
+                                 token, is_private=True)
 
                 storage_userid = cur_user["storage_userid"]
-                global_dlc = sapi.get_privileged_data_layer_client(storage_userid, init_tables=True)
+                global_dlc = sapi.get_privileged_data_layer_client(
+                    storage_userid, init_tables=True)
                 global_dlc.shutdown()
 
                 response["status"] = "success"
@@ -125,6 +133,7 @@ def actionLogin(user, sapi):
     output = {"next": "ManagementServiceExit", "value": response}
     sapi.add_dynamic_workflow(output)
     return None
+
 
 def actionChangeName(user, sapi):
     response = {}
@@ -154,7 +163,8 @@ def actionChangeName(user, sapi):
                     response_data["storageEndpoint"] = cur_user["storageEndpoint"]
                     response["data"] = response_data
 
-                    output = {"next": "ManagementServiceExit", "value": response}
+                    output = {"next": "ManagementServiceExit",
+                              "value": response}
                     sapi.add_dynamic_workflow(output)
                     success = True
                 else:
@@ -168,6 +178,7 @@ def actionChangeName(user, sapi):
 
         output = {"next": "ManagementServiceExit", "value": response}
         sapi.add_dynamic_workflow(output)
+
 
 def actionChangePassword(user, sapi):
     response = {}
@@ -185,12 +196,14 @@ def actionChangePassword(user, sapi):
         if cur_user is not None and cur_user != "":
             cur_user = json.loads(cur_user)
             if cur_user["passwordHash"] == hashlib.sha256(password.encode()).hexdigest():
-                cur_user["passwordHash"] = hashlib.sha256(new_password.encode()).hexdigest()
+                cur_user["passwordHash"] = hashlib.sha256(
+                    new_password.encode()).hexdigest()
 
                 sapi.put(email, json.dumps(cur_user), True, True)
 
                 timestamp = time.time()
-                token = hashlib.sha256((email + " " + new_password + " " + str(timestamp)).encode()).hexdigest()
+                token = hashlib.sha256(
+                    (email + " " + new_password + " " + str(timestamp)).encode()).hexdigest()
 
                 authenticated_user = {}
                 authenticated_user["email"] = email
@@ -220,6 +233,7 @@ def actionChangePassword(user, sapi):
         output = {"next": "ManagementServiceExit", "value": response}
         sapi.add_dynamic_workflow(output)
 
+
 def actionResetPassword(user, sapi):
     # TODO: send email to user
     response = {}
@@ -232,6 +246,7 @@ def actionResetPassword(user, sapi):
     output = {"next": "ManagementServiceExit", "value": response}
     sapi.add_dynamic_workflow(output)
     return None
+
 
 def verifyUser(user, sapi, extendTokenExpiry=True):
     status = False
@@ -256,10 +271,12 @@ def verifyUser(user, sapi, extendTokenExpiry=True):
 
     return status, "User verified successfully.", token, authenticated_user
 
+
 def actionVerifyUser(user, sapi):
     response = {}
     response_data = {}
-    status, statusmessage, token, authenticated_user = verifyUser(user, sapi, extendTokenExpiry=True)
+    status, statusmessage, token, authenticated_user = verifyUser(
+        user, sapi, extendTokenExpiry=True)
     if status:
         response["status"] = "success"
         response_data["message"] = statusmessage
@@ -281,6 +298,7 @@ def actionVerifyUser(user, sapi):
     sapi.add_dynamic_workflow(output)
     return None
 
+
 def actionVersion(sapi):
     response = {}
     response_data = {}
@@ -291,6 +309,7 @@ def actionVersion(sapi):
     output = {"next": "ManagementServiceExit", "value": response}
     sapi.add_dynamic_workflow(output)
     return {}
+
 
 def actionOther(action, data, sapi):
     response = {}
@@ -322,18 +341,20 @@ def actionOther(action, data, sapi):
     possibleActions["uploadWorkflowJSON"] = True
     possibleActions["retrieveAllWorkflowLogs"] = True
     possibleActions["clearAllWorkflowLogs"] = True
-    possibleActions["addTriggerableTable"] = True
+    possibleActions["addTriggerableBucket"] = True
     possibleActions["addStorageTriggerForWorkflow"] = True
-    possibleActions["getTriggerableTables"] = True
+    possibleActions["getTriggerableBuckets"] = True
+    possibleActions["getWorkflowDetails"] = True
     possibleActions["deleteAccount"] = True
     possibleActions["performStorageAction"] = True
+    possibleActions["deleteTriggerableBucket"] = True
+    possibleActions["deleteStorageTriggerForWorkflow"] = True
 
     deprecatedActions = {}
     deprecatedActions["clearWorkflowLog"] = True
     deprecatedActions["prepareWorkflowLog"] = True
     deprecatedActions["prepareAllWorkflowLogs"] = True
     deprecatedActions["retrieveWorkflowLog"] = True
-    deprecatedActions["getWorkflowDetails"] = True
 
     if action in deprecatedActions:
         message = "[WARNING] Deprecated action: '" + action + "'"
@@ -352,9 +373,11 @@ def actionOther(action, data, sapi):
 
     elif action in possibleActions:
         user = data["user"]
-        status, statusmessage, token, authenticated_user = verifyUser(user, sapi, extendTokenExpiry=True)
+        status, statusmessage, token, authenticated_user = verifyUser(
+            user, sapi, extendTokenExpiry=True)
         if status:
-            sapi.log(statusmessage + " Authenticated user: " + str(authenticated_user))
+            sapi.log(statusmessage + " Authenticated user: " +
+                     str(authenticated_user))
             # pass the email to the next function,
             # so that they don't have to re-authenticate the again
             data["email"] = authenticated_user["email"]
@@ -365,7 +388,8 @@ def actionOther(action, data, sapi):
             sapi.add_dynamic_workflow(output)
             return {}
         else:
-            response_data["message"] = "User verification failed: " + statusmessage
+            response_data["message"] = "User verification failed: " + \
+                statusmessage
             sapi.log(response_data["message"])
     else:
         response_data["message"] = "Unsupported action."
@@ -376,6 +400,7 @@ def actionOther(action, data, sapi):
     output = {"next": "ManagementServiceExit", "value": response}
     sapi.add_dynamic_workflow(output)
     return None
+
 
 def handle(event, context):
     assert isinstance(event, dict)

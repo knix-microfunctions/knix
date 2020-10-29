@@ -517,10 +517,10 @@ class MfnClient(object):
         self.action('deleteWorkflow',{'workflow':{'id':wf.id}})
 
 
-    def keys(self, table="defaultTable", all_at_once=False):
-        return self.list_keys(table=table, all_at_once=all_at_once)
+    def keys(self, all_at_once=False):
+        return self.list_keys(all_at_once=all_at_once)
 
-    def keys(self,table="defaultTable"):
+    def keys(self):
         start=0
         step=100
         while start >= 0:
@@ -532,7 +532,6 @@ class MfnClient(object):
             data["user"] = user
             storage = {}
             storage["action"] = "listKeys"
-            storage["table"] = table
             storage["start"] = start
             storage["count"] = step
             data["storage"] = storage
@@ -551,7 +550,7 @@ class MfnClient(object):
             else:
                 raise Exception("LISTKEYS failed: " + r.json()["data"]["message"])
 
-    def list_keys(self,table="defaultTable", start=0, count=2000):
+    def list_keys(self, start=0, count=2000):
         data_to_send = {}
         data_to_send["action"] = "performStorageAction"
         data = {}
@@ -560,7 +559,6 @@ class MfnClient(object):
         data["user"] = user
         storage = {}
         storage["action"] = "listKeys"
-        storage["table"] = table
         storage["start"] = start
         storage["count"] = count
         data["storage"] = storage
@@ -575,7 +573,7 @@ class MfnClient(object):
         return r.json()["data"]["keylist"]
 
 
-    def get(self,key,table="defaultTable"):
+    def get(self, key):
         data_to_send = {}
         data_to_send["action"] = "performStorageAction"
         data = {}
@@ -584,7 +582,6 @@ class MfnClient(object):
         data["user"] = user
         storage = {}
         storage["action"] = "getdata"
-        storage["table"] = table
         storage["key"] = key
         data["storage"] = storage
         data_to_send["data"] = data
@@ -598,7 +595,7 @@ class MfnClient(object):
             raise Exception("GET failed: " + r.json()["data"]["message"])
 
 
-    def put(self,key,value,table="defaultTable"):
+    def put(self, key, value):
         data_to_send = {}
         data_to_send["action"] = "performStorageAction"
         data = {}
@@ -607,7 +604,6 @@ class MfnClient(object):
         data["user"] = user
         storage = {}
         storage["action"] = "putdata"
-        storage["table"] = table
         storage["key"] = key
         storage["value"] = value
         data["storage"] = storage
@@ -620,7 +616,7 @@ class MfnClient(object):
             raise Exception("PUT failed: " + r.json()["data"]["message"])
 
 
-    def delete(self,key,table="defaultTable"):
+    def delete(self, key):
         data_to_send = {}
         data_to_send["action"] = "performStorageAction"
         data = {}
@@ -629,7 +625,6 @@ class MfnClient(object):
         data["user"] = user
         storage = {}
         storage["action"] = "deletedata"
-        storage["table"] = table
         storage["key"] = key
         data["storage"] = storage
         data_to_send["data"] = data

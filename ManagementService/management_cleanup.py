@@ -26,9 +26,14 @@ with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r") as f:
     token = f.read()
 with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
     namespace = f.read()
-with open("/opt/mfn/conf/new_workflow.conf","r") as f:
-    conf = json.load(f)
-app = conf["app"] #"microfunctions-workflow"
+with open("/opt/mfn/conf/kservice.json","r") as f:
+    ksvc = json.load(f)
+try:
+    app = ksvc["metadata"]["labels"]["app"]
+except:
+    print('WARN: ksvc["metadata"]["labels"]["app"] not found, selecting label app=microfunctions-workflow')
+    app = "microfunctions-workflow"
+
 cafile = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
 # offline
 #with open("mgr-mfn1.json",'r') as f:

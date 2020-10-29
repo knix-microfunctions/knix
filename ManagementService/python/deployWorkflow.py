@@ -22,6 +22,7 @@ import traceback
 import docker
 from docker.types import LogConfig
 import requests
+import time
 
 WF_TYPE_SAND = 0
 WF_TYPE_ASL = 1
@@ -259,7 +260,6 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
 
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
     wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').lower() + '-wf'
-    wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').lower() + '-wf'
     emailSanitized = 'u-' + email.replace('@', '-').replace('_', '-').lower() + '-u'
     # Pod, Deployment and Hpa names for the new workflow will have a prefix containing the workflow name and user name
     app_fullname_prefix = ''
@@ -283,7 +283,6 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     labels['workflowid'] = workflow_info["workflowId"]
     labels = kservice['spec']['template']['metadata']['labels']
     labels['user'] = emailSanitized
-    labels['workflow'] = wfActualNameSanitized
     labels['workflowid'] = workflow_info["workflowId"]
     kservice['spec']['template']['spec']['containers'][0]['image'] = new_workflow_conf['image.'+runtime]
     env = kservice['spec']['template']['spec']['containers'][0]['env']
@@ -525,6 +524,11 @@ def handle(value, sapi):
         #dlc.put("workflow_status_" + workflow["id"], wfmeta["status"])
         sapi.put("workflow_status_" + workflow["id"], wfmeta["status"], True, True)
 
+        print("Current workflow metadata: " + str(wfmeta))
+        if status != "failed" and "associatedTriggerableTables" in wfmeta:
+            for table in wfmeta["associatedTriggerableTables"]:
+                addWorkflowToTableMetadata(email, table, wfmeta["name"], wfmeta["endpoints"], dlc)
+
         dlc.shutdown()
 
         sapi.put(email + "_workflow_" + workflow["id"], json.dumps(wfmeta), True, True)
@@ -535,9 +539,8 @@ def handle(value, sapi):
         response["status"] = "failure"
         response_data["message"] = "Couldn't deploy workflow; " + str(e)
         response["data"] = response_data
-        sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
         sapi.log(traceback.format_exc())
-        return {}
+        return response
 
     # Finish successfully
     response = {}
@@ -546,7 +549,34 @@ def handle(value, sapi):
     response_data["workflow"] = workflow
     response["status"] = "success"
     response["data"] = response_data
-    sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
     sapi.log(json.dumps(response))
-    return {}
+    return response
+
+def addWorkflowToTableMetadata(email, tablename, workflowname, workflow_endpoints, dlc):
+    metadata_key = tablename
+    metadata_urls = workflow_endpoints
+    triggers_metadata_table = 'triggersInfoTable'
+    bucket_metadata = {"urltype": "url", "urls": metadata_urls, "wfname": workflowname}
+    print("[addWorkflowToTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Adding metadata: " + str(bucket_metadata))
+
+    current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    if current_meta == None or current_meta == '':
+        meta_list = []
+    else:
+        meta_list = json.loads(current_meta)
+
+    if type(meta_list == type([])):
+        for i in range(len(meta_list)):
+            meta=meta_list[i]
+            if meta["wfname"] == bucket_metadata["wfname"]:
+                del meta_list[i]
+                break
+        meta_list.append(bucket_metadata)
+
+    dlc.put(metadata_key, json.dumps(meta_list), tableName=triggers_metadata_table)
+
+    time.sleep(0.2)
+    updated_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    updated_meta_list = json.loads(updated_meta)
+    print("[addWorkflowToTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Updated metadata: " + str(updated_meta_list))
 

@@ -24,8 +24,6 @@ import time
 import sys
 import signal
 
-WORKFLOW_INDEX = 'mfnwf'
-
 def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, userid=None, uuid=None, timestamp=None, indexedTimestamp=None, num_last_entries=150, alllogs=None, proxies=None):
     url="http://"+eshost+":" + str(esport)
     logging.debug("Url: " + url)
@@ -67,9 +65,10 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
     data["query"]["bool"]["filter"] = filters
 
     must_not = []
-    if alllogs == False:
+    if not alllogs:
         must_not.append({"match": {"message": "[__mfn_progress]"}})
         must_not.append({"match": {"message": "[__mfn_tracing]"}})
+        must_not.append({"match": {"message": "[__mfn_backup]"}})
         #must_not.append({"match": {"message": "[FunctionWorker]"}})
         #must_not.append({"match": {"message": "[StateUtils]"}})
 
@@ -77,9 +76,10 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
 
     logging.debug("Query data:\n" + json.dumps(data, indent=2))
 
+    workflow_index = "mfnwf-" + workflowid.lower()
 
     try:
-        r=requests.get(url+"/"+WORKFLOW_INDEX+'/_search', json=data, proxies=proxies)
+        r = requests.get(url + "/" + workflow_index + '/_search', json=data, proxies=proxies)
 
         logging.debug('Http response code: ' + str(r.status_code))
         logging.debug('Http status reason: ' + r.reason)
@@ -87,7 +87,7 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
 
         if r.status_code >= 500:
             return False, r.reason
-        if r.ok == False and r.text == None:
+        if not r.ok and r.text == None:
             return False, r.reason
 
         response = json.loads(r.text)
@@ -115,14 +115,15 @@ def get_workflow_log(eshost, esport=9200, workflowname=None, workflowid=None, us
 
 def printlog(outlog):
     for log in outlog:
-        log_str = '[%d] [%d] [%s] [%s] [%s] [%s] [%s] [%s] [%s] %s' % (log['indexed'], log['timestamp'], log['asctime'], log['loglevel'], log['userid'], log['workflowid'], log['uuid'], log['workflowname'], log['function'], log['message'])
-        logging.info(log_str)
-
+        # ensure that we get a message; otherwise, an empty message or a \n throws an exception
+        if "message" in log:
+            log_str = '[%d] [%d] [%s] [%s] [%s] [%s] [%s] [%s] [%s] %s' % (log['indexed'], log['timestamp'], log['asctime'], log['loglevel'], log['userid'], log['workflowid'], log['uuid'], log['workflowname'], log['function'], log['message'])
+            logging.info(log_str)
 
 def main():
     parser = argparse.ArgumentParser(description='Tail logs of microfunctions workflow(s) (queried from elasticsearch)', prog='wftail.py')
+    parser.add_argument('-wid', '--workflowid', type=str, metavar='WORKFLOW_ID', help='Tail logs for specific workflow id.', required=True)
     parser.add_argument('-wname', '--workflowname', type=str, metavar='WORKFLOW_NAME', help='Tail logs for specific workflow name.')
-    parser.add_argument('-wid', '--workflowid', type=str, metavar='WORKFLOW_ID', help='Tail logs for specific workflow id.')
     parser.add_argument('-uid', '--userid', type=str, metavar='USER_ID', help='Limit logs to workflows of a specific user.')
     parser.add_argument('-eid', '--eid', type=str, metavar='EXECUTION_UUID', help='Limit logs to a specific execution id.')
     parser.add_argument('-eshost', '--eshost', type=str, metavar='ES_HOST', default=socket.gethostname(), help='Elasticsearch host. Defaults to ' + socket.gethostname() + ':9200.')
@@ -152,19 +153,19 @@ def main():
     proxy = args.proxy
 
     formatstr = '%(message)s'
-    if debug == True:
+    if debug:
         logging.basicConfig(stream=sys.stdout, format=formatstr, level=logging.DEBUG)
     else:
         logging.basicConfig(stream=sys.stdout, format=formatstr, level=logging.INFO)
 
     follow = False
-    if followindexed == True or followtimestamp == True:
+    if followindexed or followtimestamp:
         follow = True
 
     follow_mode = 'not following'
-    if follow == True:
+    if follow:
         follow_mode = 'indexed timestamps'
-        if followtimestamp == True and followindexed == False:
+        if followtimestamp and not followindexed:
             follow_mode = 'function timestamps'
 
     http_proxy = os.getenv("http_proxy", None)
@@ -186,7 +187,7 @@ def main():
     logging.debug("Proxies: " + str(proxies))
     logging.debug("Explicitly pass proxy to python 'requests' package: " + str(proxy))
 
-    if proxy == False:
+    if not proxy:
         proxies = None
 
     lastTimestamp = timestamp
@@ -201,10 +202,11 @@ def main():
                                                 num_last_entries=num,
                                                 alllogs=alllogs,
                                                 proxies=proxies)
-        if status == True:
+        if status:
             printlog(result)
         else:
             logging.error(result)
+            break
 
         if not follow:
             break;

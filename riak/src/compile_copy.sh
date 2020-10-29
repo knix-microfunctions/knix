@@ -14,6 +14,7 @@
 #   limitations under the License.
 
 set -x
+
 sudo mkdir -p /usr/lib/riak/lib/mfn_counter_triggers
 sudo cp mfn_counter_triggers.erl /usr/lib/riak/lib/mfn_counter_triggers/.
 cd /usr/lib/riak/lib/mfn_counter_triggers
@@ -22,3 +23,10 @@ sudo chmod 775 mfn_counter_triggers.erl
 sudo chmod 775 mfn_counter_triggers.beam
 cd -
 
+sudo mkdir -p /usr/lib/riak/lib/workflow_triggers
+sudo cp workflow_triggers.erl /usr/lib/riak/lib/workflow_triggers/.
+cd /usr/lib/riak/lib/workflow_triggers
+sudo /usr/lib/riak/erts-5.10.3/bin/erlc workflow_triggers.erl
+sudo chmod 775 workflow_triggers.erl
+sudo chmod 775 workflow_triggers.beam
+cd -

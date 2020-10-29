@@ -2,6 +2,7 @@
   "Comment": "Session functions in KNIX",
   "StartAt": "entryFunction",
   "AllowImmediateMessages": true,
+  "EnableCheckpoints": false,
   "States": {
     "entryFunction": {
       "Type": "Task",
@@ -26,7 +27,7 @@
       "SessionFunctionParameters": {
           "heartbeat_method": "function",
           "heartbeat_function": "heartbeatHandler",
-          "heartbeat_interval_ms": 15000
+          "heartbeat_interval_ms": 10000
       },
       "Next": "finalFunction",
       "PotentialNext": ["telemetryHandler"]
@@ -38,7 +39,7 @@
       "SessionFunctionParameters": {
           "heartbeat_method": "function",
           "heartbeat_function": "heartbeatHandler",
-          "heartbeat_interval_ms": 15000
+          "heartbeat_interval_ms": 10000
       },
       "Next": "finalFunction",
       "PotentialNext": ["telemetryHandler"]

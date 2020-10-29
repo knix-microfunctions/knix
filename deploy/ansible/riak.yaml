@@ -167,7 +167,6 @@
   - name: compile mfn counter triggers
     shell: "cd {{ riak_server_dir }}/lib/mfn_counter_triggers; {{ riak_server_dir }}/erts-5.10.3/bin/erlc mfn_counter_triggers.erl"
 
-
   - name: ensure workflow_triggers folder exists in the riak libs folder
     file: path={{ riak_server_dir }}/lib/workflow_triggers state=directory mode='775'
 
@@ -264,6 +263,13 @@
       regexp: "^erlang.schedulers.compaction_of_load = "
       line: "erlang.schedulers.compaction_of_load = false"
 
+  - name: configure buckets.default.postcommit = workflow_triggers:workflow_trigger
+    lineinfile:
+      path: "{{ riak_server_config_filepath }}"
+      regexp: "^buckets.default.postcommit = "
+      line: "buckets.default.postcommit = workflow_triggers:workflow_trigger"
+
+
   - name: configure /etc/security/limits.conf riak soft nofile 65536
     lineinfile:
       path: "/etc/security/limits.conf"
@@ -302,15 +308,21 @@
         [Install]
         WantedBy=multi-user.target
 
-  # regardless of start_at_boot setting, we install the script and start it
-  # because we have to perform some operations
-  # if start_at_boot is set to false, we'll disable it afterwards
-  - name: systemd install and enable mfn-riak service to perform initialization operations
+  - name: systemd install, start riak, and enable mfn-riak service to start at boot
     systemd:
       daemon_reload: yes
       name: "{{ riak_server_service_name }}"
       enabled: true
       state: restarted
+    when: start_at_boot|bool
+
+  - name: systemd install, start riak, and diable mfn-riak service to start at boot
+    systemd:
+      daemon_reload: yes
+      name: "{{ riak_server_service_name }}"
+      enabled: false
+      state: restarted
+    when: not start_at_boot|bool
 
   - name: create riak start script
     copy:
@@ -390,7 +402,7 @@
 
   - name: set triggers bucket type
     shell: |
-      /usr/sbin/riak-admin bucket-type create triggers '{"props":{"postcommit":[{"mod":"workflow_triggers","fun":"workflow_trigger"}]}}'
+      /usr/sbin/riak-admin bucket-type create triggers '{"props":{"postcommit":[{"mod":"workflow_triggers","fun":"workflow_trigger"}], "allow_mult": false}}'
     register: output
     failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
 
@@ -410,7 +422,7 @@
 
   - name: riak-admin bucket-type create counters
     shell: |
-      /usr/sbin/riak-admin bucket-type create counters '{"props":{"datatype":"counter"}}'
+      /usr/sbin/riak-admin bucket-type create counters '{"props":{"datatype":"counter", "postcommit":[{"mod":"mfn_counter_triggers","fun":"counter_trigger"}]}}'
     register: output
     failed_when: output.rc == 1 and not ("'already_active' in output.stdout")
 
@@ -465,10 +477,10 @@
       /usr/sbin/riak-admin cluster commit
     when: hostvars[groups['riak'][0]].ansible_default_ipv4.address == ansible_default_ipv4.address
 
-  - name: systemd install and disable mfn-riak service
-    systemd:
-      daemon_reload: yes
-      name: "{{ riak_server_service_name }}"
-      enabled: false
-      state: stopped
-    when: not start_at_boot|bool
+#  - name: systemd install and disable mfn-riak service
+#    systemd:
+#      daemon_reload: yes
+#      name: "{{ riak_server_service_name }}"
+#      enabled: false
+#      state: stopped
+#    when: not start_at_boot|bool

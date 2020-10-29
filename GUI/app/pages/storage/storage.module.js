@@ -17,9 +17,7 @@
 (function () {
   'use strict';
 
-  angular.module('MfnWebConsole.pages.storage', [
-
-  ])
+  angular.module('MfnWebConsole.pages.storage', [ 'ui.select', 'ngSanitize' ])
       .config(routeConfig);
 
   /** @ngInject */
@@ -36,6 +34,13 @@
             icon: '',
             order: 10,
           },
+        })
+        .state('bucketList', {
+          url: '/bucketList',
+          templateUrl: 'app/pages/storage/smart/buckets.html',
+          
+          controller: 'BucketListCtrl'
+          
         })
   }
 

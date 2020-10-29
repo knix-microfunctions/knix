@@ -1398,7 +1398,7 @@
 
      $scope.clearLog =function() {
 
-       console.log('Deleting workflow log: ' + sharedProperties.getWorkflowId());
+       console.log('Clearing workflow logs: ' + sharedProperties.getWorkflowId());
        var token = $cookies.get('token');
 
        var req = {

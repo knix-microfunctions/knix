@@ -1,5 +1,7 @@
 # Overview
 
+![](logo/KNIX_logo_horizontal.jpg)
+
 **KNIX MicroFunctions** is an open source serverless computing platform for Knative as well as bare metal or virtual machine-based environments.
 It combines container-based resource isolation with a light-weight process-based execution model that significantly improves resource efficiency and decreases the function startup overhead.
 

@@ -76,32 +76,6 @@ public class LocalQueueServer implements Iface, Runnable {
     }
 
     @Override
-    public List<LocalQueueMessage> getAndRemoveMultiMessages(String topic, int maxCount, long timeout) throws TException {
-        if (maxCount < 1) {
-            return new ArrayList<LocalQueueMessage>(0);
-        }
-        
-        LocalQueueMessage message = queue.getAndRemoveMessage(topic, timeout);
-        if (message.getIndex() == LocalQueue.NO_MESSAGE_INDEX) {
-            return new ArrayList<LocalQueueMessage>(0);
-        }
-        
-        List<LocalQueueMessage> messages = new ArrayList<LocalQueueMessage>();
-        messages.add(message);
-        
-        for (int i = 1; i < maxCount; ++i) {
-            LocalQueueMessage message1 = queue.getAndRemoveMessage(topic, 0);
-            if (message1.getIndex() == LocalQueue.NO_MESSAGE_INDEX) {
-                break;
-            }
-            
-            messages.add(message1);
-        }
-        
-        return messages;
-    }
-    
-    @Override
     public LocalQueueMessage getMessage(String topic, long timeout) throws TException {
         return queue.getMessage(topic, timeout);
     }

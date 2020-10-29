@@ -20,10 +20,11 @@ import time
 import imp
 import json
 import logging
+import random
 import socket
 import subprocess
 import shlex
-#import hashlib
+import hashlib
 from threading import Timer
 
 import thriftpy2
@@ -116,6 +117,10 @@ class FunctionWorker:
 
         signal(SIGCHLD, SIG_IGN)
 
+        # do this once rather than at every forked process
+        if self._state_utils.isTaskState():
+            os.chdir(self._function_folder)
+
         self._is_running = False
         #self._print_self()
 
@@ -137,6 +142,7 @@ class FunctionWorker:
         self._datalayer = args["datalayer"]
         self._external_endpoint = args["externalendpoint"]
         self._internal_endpoint = args["internalendpoint"]
+        self._management_endpoints = args["managementendpoints"]
         self._wf_next = args["fnext"]
         self._wf_pot_next = args["fpotnext"]
         self._function_runtime = args["fruntime"]
@@ -208,6 +214,7 @@ class FunctionWorker:
         self._logger.debug("\tself._datalayer: %s", self._datalayer)
         self._logger.debug("\tself._external_endpoint: %s", str(self._external_endpoint))
         self._logger.debug("\tself._internal_endpoint: %s", str(self._internal_endpoint))
+        self._logger.debug("\tself._management_endpoints: %s", str(self._management_endpoints))
         self._logger.debug("\tself._wf_next: %s", ",".join(self._wf_next))
         self._logger.debug("\tself._wf_pot_next: %s", ",".join(self._wf_pot_next))
         self._logger.debug("\tself._wf_function_list: %s", ",".join(self._wf_function_list))
@@ -301,10 +308,7 @@ class FunctionWorker:
                         error_type = "User Input Decapsulation Error"
                         has_error = True
 
-                timestamp_map["t_start_chdir"] = time.time() * 1000.0
                 signal(SIGCHLD, SIG_DFL)
-                if self._state_utils.isTaskState():
-                    os.chdir(self._function_folder)
 
                 # 2. Decode input. Input (value) must be a valid JSON Text.
                 # Note: JSON Text is not the same as JSON string. JSON string a one variable type that can be contained inside a JSON Text.
@@ -393,7 +397,7 @@ class FunctionWorker:
                         # Maybe allow only if the destination is a session function? Requires a list of session functions and passing them to the MicroFunctionsAPI and SessionUtils
                         # Nonetheless, currently, MicroFunctionsAPI and SessionUtils write warning messages to the workflow log to indicate such problems
                         # (e.g., when this is not a workflow session or session function, when the destination running function instance does not exist)
-                        sapi = MicroFunctionsAPI(self._storage_userid, self._sandboxid, self._workflowid, self._function_state_name, key, publication_utils, self._is_session_workflow, self._is_session_function, session_utils, self._logger, self._datalayer, self._external_endpoint, self._internal_endpoint, self._userid, self._usertoken)
+                        sapi = MicroFunctionsAPI(self._storage_userid, self._sandboxid, self._workflowid, self._function_state_name, key, publication_utils, self._is_session_workflow, self._is_session_function, session_utils, self._logger, self._datalayer, self._external_endpoint, self._internal_endpoint, self._userid, self._usertoken, self._management_endpoints)
                         # need this to retrieve and publish the in-memory, transient data (i.e., stored/deleted via is_queued = True)
                         publication_utils.set_sapi(sapi)
                     except Exception as exc:
@@ -450,7 +454,10 @@ class FunctionWorker:
                     elif self._function_runtime == "java":
                         exec_arguments = {}
 
-                        api_uds = "/tmp/" + self._function_state_name + "_" + key + ".uds"
+                        random.seed()
+                        name = self._function_state_name + "_" + key + "_" + str(time.time() * 1000.0) + "_" + str(random.uniform(0, 100000))
+                        sha = hashlib.sha256(name.encode()).hexdigest()
+                        api_uds = "/tmp/" + sha + ".uds"
 
                         exec_arguments["api_uds"] = api_uds
                         exec_arguments["thriftAPIService"] = self._api_thrift.MicroFunctionsAPIService

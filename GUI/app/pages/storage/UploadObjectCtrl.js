@@ -20,7 +20,9 @@
     var token = $cookies.get('token');
     var email = $cookies.get('email');
     var uploadStorageObjectModalVisible = true;
+    var defaultTable = "defaultTable";
     var urlPath = sharedProperties.getUrlPath();
+    var storageLoc = sharedProperties.getStorageLocation();
 
 
      $scope.file_changed = function(element) {
@@ -61,13 +63,20 @@
 
        console.log('Loading object:' + sharedProperties.getObjectKey());
 
+       var table = "";
+       if (storageLoc.type=="Bucket") {
+        table = storageLoc.name;
+       } else {
+         table = defaultTable;
+       }
+
        var req = {
          method: 'POST',
          url: urlPath,
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "getdata", "key": sharedProperties.getObjectKey() } } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": sharedProperties.getObjectKey(), "tableName" : table, "workflowid" :  storageLoc.id } } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -145,13 +154,20 @@
            dataStr = objectData;
        }
 
+       var table = "";
+       if (storageLoc.type=="Bucket") {
+        table = storageLoc.name;
+       } else {
+         table = defaultTable;
+       }
+
       var req = {
          method: 'POST',
          url: urlPath,
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "tableName" : table, "workflowid" :  storageLoc.id } } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -210,6 +226,12 @@
                 dataStr = encodedFile;
             }
 
+            var table = "";
+            if (storageLoc.type=="Bucket") {
+             table = storageLoc.name;
+            } else {
+              table = defaultTable;
+            }
        var req = {
          method: 'POST',
          url: urlPath,
@@ -224,7 +246,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "table": "defaultTable", "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "tableName" : table, "workflowid" :  storageLoc.id } } })
        }
 
        $http(req).then(function successCallback(response) {
