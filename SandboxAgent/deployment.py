@@ -120,30 +120,35 @@ class Deployment:
             self._logger.error("Process with pid: " + str(pid) + " stopped.")
             if pid == self._fluentbit_actual_pid:
                 failed_process_name = "Fluent-bit"
+                log_filepath = "/opt/mfn/LoggingService/fluent-bit/fluent-bit.log"
             elif pid == self._queue_service_process.pid:
                 failed_process_name = "Queue service"
+                log_filepath = "/opt/mfn/logs/queueservice.log"
             elif pid == self._frontend_process.pid:
                 failed_process_name = "Frontend"
+                log_filepath = "/opt/mfn/logs/frontend.log"
             else:
                 for jrhp in self._javarequesthandler_process_list:
                     if pid == jrhp.pid:
                         failed_process_name = "Java request handler"
+                        log_filepath = "/opt/mfn/logs/javaworker.log"
                         break
                 for state_name in self._functionworker_process_map:
                     process = self._functionworker_process_map[state_name]
                     if pid == process.pid:
                         failed_process_name = "Function worker (" + state_name + ")"
+                        log_filepath = "/opt/mfn/logs/function_" + state_name + ".log"
                         del self._functionworker_process_map[state_name]
                         break
 
             self._logger.error("Failed process name: " + failed_process_name)
 
         if os.path.exists('/var/run/secrets/kubernetes.io'):
-            return True, pid, failed_process_name
+            return True, pid, failed_process_name, log_filepath
         else:
             # TODO: try to relaunch some of the processes (FWs, fluentbit, frontend)
             self._logger.info(self._child_process_command_args_map[pid])
-            return True, pid, failed_process_name
+            return True, pid, failed_process_name, log_filepath
 
     def shutdown(self):
         shutdown_message = {}

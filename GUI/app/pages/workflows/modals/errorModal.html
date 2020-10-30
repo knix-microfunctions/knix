@@ -13,13 +13,20 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
-
+<head>
+<style>
+.modal-body
+{
+white-space: pre-line; 
+}
+</style>
+</head>
 
 <div class="modal-content">
   <div class="modal-header bg-danger">
     <i class="ion-flame modal-icon"></i><span>Error</span>
   </div>
-  <div class="modal-body text-center">
+  <div class="modal-body text-left">
     {{ errorMessage }}
   </div>
   <div class="modal-footer">

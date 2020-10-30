@@ -366,7 +366,7 @@
 
         if (version) {
           dat.data.workflow.version = version;
-          
+
         }
 
         req = {
