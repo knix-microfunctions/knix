@@ -215,6 +215,7 @@ async fn send_mqtt_data(
                     workflow_info.workflow_url,
                     serialized_workflow_msg.unwrap(),
                     "".into(),
+                    workflow_info.workflow_state.clone(),
                 ));
             }
         }

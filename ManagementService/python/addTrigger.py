@@ -163,7 +163,7 @@ def handle(value, context):
                     "trigger_id": trigger_id,
                     "storage_userid": storage_userid,
                     "trigger_name": trigger_name,
-                    "associated_workflow_names": {},
+                    "associated_workflows": {},
                     "frontend_command_info": \
                         {
                             "trigger_type": trigger_type,
@@ -194,7 +194,7 @@ def handle(value, context):
                 # add the trigger_id to frontend map
                 print("Success response from frontend")
                 frontend_info = get_frontend_info(context, tf_ip_port)
-                print("get_frontend_info: " + str(frontend_info))
+                #print("get_frontend_info: " + str(frontend_info))
                 assert(frontend_info is not None)
                 frontend_info[trigger_id] = ''
                 add_frontend_info(context, tf_ip_port, json.dumps(frontend_info))

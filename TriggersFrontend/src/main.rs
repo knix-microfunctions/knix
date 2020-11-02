@@ -203,15 +203,16 @@ async fn add_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder {
     let workflows = &json_body["workflows"];
     for i in 0..workflows.len() {
         let workflow_info = &workflows[i];
-        if !workflow_info.has_key("workflow_url") || !workflow_info.has_key("workflow_name") {
+        if !workflow_info.has_key("workflow_url") || !workflow_info.has_key("workflow_name") || !workflow_info.has_key("workflow_state") {
             return HttpResponse::Ok().json(TriggersFrontendResponse {
                 status: "Failure".into(),
-                message: "workflow_url or workflow_name missing in workflows list".into(),
+                message: "workflow_url or workflow_name or workflow_state missing in workflows list".into(),
             });
         }
         workflows_vec.push(WorkflowInfo {
             workflow_url: workflow_info["workflow_url"].to_string(),
             workflow_name: workflow_info["workflow_name"].to_string(),
+            workflow_state: workflow_info["workflow_state"].to_string()
         });
     }
     info!(
@@ -302,6 +303,7 @@ async fn remove_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder 
         workflows_vec.push(WorkflowInfo {
             workflow_url: workflow_info["workflow_url"].to_string(),
             workflow_name: workflow_info["workflow_name"].to_string(),
+            workflow_state: "".into(),
         });
     }
     info!(
@@ -469,6 +471,7 @@ async fn register_with_management(manager_info: TriggerManagerInfo) {
             manager_info.management_url.clone(),
             serialized_update_message.clone(),
             manager_info.management_request_host_header.clone(),
+            "".into(),
         )
         .await;
         if ret == false {

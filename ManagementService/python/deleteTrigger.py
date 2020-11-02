@@ -82,7 +82,7 @@ def handle(value, context):
     try:
         if "email" not in data or "trigger_name" not in data:
             raise Exception(
-                "Couldn't add trigger; either user email or trigger_name is missing")
+                "Couldn't delete trigger; either user email or trigger_name is missing")
         email = data["email"]
         trigger_name = data["trigger_name"]
         storage_userid = data["storage_userid"]
@@ -131,6 +131,9 @@ def handle(value, context):
                     del user_triggers_list[trigger_name]
                 update_user_trigger_list(context, email, json.dumps(user_triggers_list))
 
+                #TODO: look up workflows associated with this trigger and remove the trigger from 
+                # associatedTriggers
+                
                 # write the user's list
                 status_msg = "Trigger deleted successfully. Message: " + res_obj["message"]
             else:
@@ -162,5 +165,5 @@ def handle(value, context):
     response["status"] = "success"
     response_data["message"] = status_msg
     response["data"] = response_data
-    print("[DeleteTrigger] response: str(response)")
+    print("[DeleteTrigger] response: " + str(response))
     return response

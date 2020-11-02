@@ -139,7 +139,7 @@ The structure of the trigger messages received at the workflow is:
     "workflow_name": "<string>"
     // source is the topic name if available
     "source": "<string>",
-    // if status is 'error' then 'data' will contain an error message
+    // if status is 'ready' then 'data' contains the actual data received. if status is 'error' then 'data' will contain an error message.
     "data": "<string>"
 }
 ```
@@ -162,4 +162,6 @@ The structure of the trigger messages received at the workflow is:
 }
 ```
 
-more explanations to be added
+#### TODOs:
+* Invoke a specific state (need to set headers)
+* If there is an a runtime error then invoke workflow with error message

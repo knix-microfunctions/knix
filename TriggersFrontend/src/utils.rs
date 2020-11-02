@@ -5,6 +5,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime};
 use tokio::time::delay_for;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 pub async fn create_delay(delay_duration_ms: u64, log_prefix: String) {
     let now = SystemTime::now();
@@ -27,6 +28,7 @@ pub fn get_unique_id() -> String {
 pub struct WorkflowInfo {
     pub workflow_url: String,
     pub workflow_name: String,
+    pub workflow_state: String,
 }
 
 #[derive(Serialize)]
@@ -86,6 +88,7 @@ pub async fn send_multiple_post_json_messages(urls: std::vec::Vec<String>, json_
             url.clone(),
             json_body.clone(),
             "".into(),
+            "".into(),
         )));
     }
     for handle in handles {
@@ -93,14 +96,31 @@ pub async fn send_multiple_post_json_messages(urls: std::vec::Vec<String>, json_
     }
 }
 
-pub async fn send_post_json_message(url: String, json_body: String, host_header: String) -> bool {
+pub fn generate_customer_headers(workflow_state: String) -> HeaderMap {
+    let mut custom_headers: HeaderMap = HeaderMap::new();
+    if workflow_state.len() > 0 {
+        custom_headers.insert(
+            HeaderName::from_static("x-mfn-action"),
+            HeaderValue::from_static("trigger-event"),
+        );
+        custom_headers.insert(
+            HeaderName::from_static("x-mfn-action-data"),
+            HeaderValue::from_str(workflow_state.as_str()).unwrap(),
+        );
+    }
+    return custom_headers;
+}
+
+pub async fn send_post_json_message(url: String, json_body: String, host_header: String, workflow_state: String) -> bool {
     let client = reqwest::Client::new();
+    let custom_headers: HeaderMap = generate_customer_headers(workflow_state);
     let res;
     if host_header.len() > 0 {
         res = client
           .post(&url)
           .header("Host", host_header.as_str())
           .header("Content-Type", "application/json")
+          .headers(custom_headers)
           .body(json_body)
           .send()
           .await;
@@ -108,6 +128,7 @@ pub async fn send_post_json_message(url: String, json_body: String, host_header:
         res = client
           .post(&url)
           .header("Content-Type", "application/json")
+          .headers(custom_headers)
           .body(json_body)
           .send()
           .await;

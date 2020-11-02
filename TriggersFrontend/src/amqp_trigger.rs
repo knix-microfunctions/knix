@@ -189,7 +189,7 @@ async fn send_amqp_data(
             for workflow_info in workflows {
                 let workflow_msg = TriggerWorkflowMessage {
                     trigger_status: "ready".into(),
-                    trigger_type: "ampq".into(),
+                    trigger_type: "amqp".into(),
                     trigger_name: trigger_name.clone(),
                     workflow_name: workflow_info.workflow_name,
                     source: source.clone(),
@@ -206,6 +206,7 @@ async fn send_amqp_data(
                     workflow_info.workflow_url,
                     serialized_workflow_msg.unwrap(),
                     "".into(),
+                    workflow_info.workflow_state.clone(),
                 ));
             }
         }

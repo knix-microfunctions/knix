@@ -527,7 +527,7 @@ async fn report_status_to_management(management_url: String, data: String, host_
         "[report_status_to_management] POST to {}, with data {}",
         management_url, &data
     );
-    tokio::spawn(send_post_json_message(management_url, data, host_header));
+    tokio::spawn(send_post_json_message(management_url, data, host_header, "".into()));
 }
 
 async fn send_server_stop_msg(url: String) {
@@ -561,6 +561,7 @@ async fn send_shutdown_messages(
         manager_info.management_url.clone(),
         serialized_update_message.unwrap(),
         manager_info.management_request_host_header.clone(),
+        "".into(),
     )
     .await;
     if posted == false {

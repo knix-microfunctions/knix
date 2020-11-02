@@ -90,6 +90,8 @@ class MicroFunctionsAPI:
         self._management_endpoints = management_endpoints
         self._useremail = useremail
         self._usertoken = usertoken
+        self._sid = sid
+        self._wid = wid
 
         self._data_layer_operator = DataLayerOperator(
             uid, sid, wid, self._datalayer)
@@ -2055,12 +2057,12 @@ class MicroFunctionsAPI:
         return True, response["data"]["message"]
 
 
-    def addTriggerForWorkflow(self, trigger_name, workflow_name, workflow_state_to_invoke = ""):
+    def addTriggerForWorkflow(self, trigger_name, workflow_name, workflow_state = ""):
         '''
         Args:
             trigger_name (string): Name of an existing trigger to a workflow to.
             workflow_name (string): Name of the workflow to add to the trigger.
-            workflow_state_to_invoke (string): (Optional) Name of the state within the workflow to invoke from the trigger. If not specified then the entry state will be invoked by default.
+            workflow_state (string): (Optional) Name of the state within the workflow to invoke from the trigger. If not specified then the entry state will be invoked by default.
         Returns:
             (status, status_message)
             status (boolean) - True, if the workflow was added to the trigger successfully. False, otherwise 
@@ -2073,13 +2075,17 @@ class MicroFunctionsAPI:
             Using a KNIX-specific feature might make the function incompatible with other platforms.
 
         '''
+        workflow_state_topic = ""
+        if type(workflow_state) == type("") and workflow_state is not "" and len(workflow_state) > 0:
+            workflow_state_topic = self._sid + "-" + self._wid + "-" + workflow_state
+        
         request = \
             {
                 "action": "addTriggerForWorkflow",
                 "data": {
                     "trigger_name": trigger_name,
                     "workflow_name": workflow_name,
-                    "workflow_state_to_invoke": workflow_state_to_invoke
+                    "workflow_state": workflow_state_topic
                 }
             }
 

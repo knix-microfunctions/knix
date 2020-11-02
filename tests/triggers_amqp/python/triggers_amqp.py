@@ -57,10 +57,26 @@ def handle(event, context):
             }
             addTrigger(trigger_name, trigger_info, context)
 
+            time.sleep(5)
+
+            # associating main wf with the trigger
+            addTriggerForWorkflow(trigger_name, workflowname, "triggers_amqp_state2", context)
+            
             time.sleep(10)
 
             # associating main wf with the trigger
-            #addTriggerForWorkflow(workflowname, trigger_name, context)
+            deleteTriggerForWorkflow(trigger_name, workflowname, context)
+
+            time.sleep(5)
+
+            # associating main wf with the trigger
+            addTriggerForWorkflow(trigger_name, workflowname, "", context)
+            
+            time.sleep(10)
+
+            # associating main wf with the trigger
+            deleteTriggerForWorkflow(trigger_name, workflowname, context)
+
 
             deleteTrigger(trigger_name, context)
 
@@ -69,6 +85,7 @@ def handle(event, context):
         except Exception as e:
             print("Exception: " + str(e))
             deleteTrigger(trigger_name, context)
+            time.sleep(3)
         return event
     else:
         if type(event) == type({}) \
@@ -80,16 +97,41 @@ def handle(event, context):
             and 'data' in event:
                 assert(event["trigger_type"] == "amqp")
                 assert(event["trigger_status"] == "ready" or event["trigger_status"] == "error")
-                print("_!_TRIGGER_START_" + event['trigger_name'] + ";" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
+                print("_!_TRIGGER_START_" + event['trigger_name'] + ";triggers_amqp;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
+                time.sleep(1)
         else:
             print("ERROR: received event: " + str(event))
             assert(0)
-        return event
+        return {}
 
 
 def addTrigger(trigger_name, trigger_info, context):
     message = f"addTrigger Trigger: {trigger_name}"
     status, status_msg = context.addTrigger(trigger_name, trigger_info)
+    if status == None or status == False:
+        message = f"{message}, Error: response: {status}, message: {status_msg}"
+        print(message)
+        raise Exception(message)
+    else:
+        message = f"{message}, Success: response: {status}, message: {status_msg}"
+        print(message)
+    time.sleep(1)
+
+def addTriggerForWorkflow(trigger_name, workflowname, workflow_state, context):
+    message = f"addTriggerForWorkflow Trigger: {trigger_name}"
+    status, status_msg = context.addTriggerForWorkflow(trigger_name, workflowname, workflow_state)
+    if status == None or status == False:
+        message = f"{message}, Error: response: {status}, message: {status_msg}"
+        print(message)
+        raise Exception(message)
+    else:
+        message = f"{message}, Success: response: {status}, message: {status_msg}"
+        print(message)
+    time.sleep(1)
+
+def deleteTriggerForWorkflow(trigger_name, workflowname, context):
+    message = f"deleteTriggerForWorkflow Trigger: {trigger_name}"
+    status, status_msg = context.deleteTriggerForWorkflow(trigger_name, workflowname)
     if status == None or status == False:
         message = f"{message}, Error: response: {status}, message: {status_msg}"
         print(message)

@@ -83,6 +83,7 @@ def handle(value, sapi):
         wf["modified"] = time.time()
         wf["endpoints"] = []
         wf['associatedTriggerableTables'] = {}
+        wf['associatedTriggers'] = {}
         wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest().lower()
 
         # make a request to elasticsearch to create the workflow index
