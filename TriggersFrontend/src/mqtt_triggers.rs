@@ -125,6 +125,7 @@ impl MQTTTrigger {
 
 pub async fn handle_create_mqtt_trigger(
     trigger_id: &String,
+    trigger_name: &String,
     workflows: Vec<WorkflowInfo>,
     request_body: &String,
     manager_cmd_channel_tx: TriggerManagerCommandChannelSender,
@@ -188,6 +189,7 @@ async fn send_mqtt_data(
     workflows: Vec<WorkflowInfo>,
     amqp_data: std::vec::Vec<u8>,
     trigger_id: String,
+    trigger_name: String,
     source: String,
 ) {
     let workflow_msg: TriggerWorkflowMessage;
@@ -195,9 +197,10 @@ async fn send_mqtt_data(
         Ok(v) => {
             for workflow_info in workflows {
                 let workflow_msg = TriggerWorkflowMessage {
+                    trigger_status: "ready".into(),
                     trigger_type: "mqtt".into(),
-                    id: trigger_id.clone(),
-                    tag: workflow_info.tag,
+                    trigger_name: trigger_name.clone(),
+                    workflow_name: workflow_info.workflow_name,
                     source: source.clone(),
                     data: v.clone(), // TODO: Figure out how to pass the String around,
                                      // without copying and keeping the borrow checker happy!

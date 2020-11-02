@@ -65,7 +65,7 @@ def is_frontend_registered(context, frontend_ip_port):
 
 def get_frontend_info(context, frontend_ip_port):
     ret = context.getMapEntry(MAP_AVAILABLE_FRONTENDS, frontend_ip_port, True)
-    if ret is "":
+    if ret is "" or ret is None:
         return None
     else:
         return json.loads(ret)
@@ -83,7 +83,7 @@ def is_trigger_registered(context, trigger_id):
 
 def get_trigger_info(context, trigger_id):
     ret = context.getMapEntry(MAP_TRIGGERS_TO_INFO, trigger_id, True)
-    if ret is "":
+    if ret is "" or ret is None:
         return None
     else:
         return json.loads(ret)
@@ -109,12 +109,14 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
     pending_triggers = []
     frontend_available = is_frontend_registered(context, frontend_ip_port)
     if frontend_available:
-        print("Frontend already registered!")
+        print("Frontend already registered, but it is reporting that it is starting!!")
         # we have the frontend already registered with us. Why is it starting again,
         # without telling us that it stopped? Maybe because the stop message did not reach us?
         # check if we have any triggers that we think should be active, 
         # and were earlier assigned to this frontend which has just started up
         # such triggers will have to be re-assigned
+
+        '''
         frontend_info = get_frontend_info(context, frontend_ip_port) # list of trigger ids that were earlier assigned to the frontend
         for trigger_id in frontend_info:
             trigger_info = get_trigger_info(context, trigger_id)
@@ -132,8 +134,10 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
                 print("Reported trigger_id: " + trigger_id + " not registered with management")
 
         remove_frontend_info(context, frontend_ip_port)
+        '''
+
     new_frontend_entry = '{}'
-    add_frontend_info(frontend_ip_port, new_frontend_entry)
+    add_frontend_info(context, frontend_ip_port, new_frontend_entry)
 
     if len(pending_triggers) > 0:
         handle_add_triggers(pending_triggers)
@@ -147,8 +151,11 @@ def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, conte
         frontend_info = get_frontend_info(context, frontend_ip_port)
         assert(frontend_info is not None)
         print("Known frontend with data: " + str(frontend_info))
+
         # first check if any trigger has stopped unexpectedly, and check if we had this trigger registered with us
         # if so, then remove this trigger from our known list and put them in pending list
+
+        '''
         for error_trigger_id in trigger_error_map:
             error_trigger_info = get_trigger_info(context, error_trigger_id)
             if error_trigger_id in frontend_info and error_trigger_info is not None:
@@ -186,14 +193,17 @@ def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, conte
 
         add_frontend_info(context, frontend_ip_port, frontend_info)
         # now process the pending list, to add triggers to available frontends
+        '''
         if len(pending_triggers) > 0:
             handle_add_triggers(pending_triggers)
     else:
         # we don't know about this frontend. Ideally it should not have any triggers
-        print("Unknown frontend!")
+        print("Unknown frontend sending a status update!!")
         new_frontend_entry = '{}'
+
         # add all the triggers in the reported list to our list of triggers associated with frontend
         # also make sure that those triggers exist in the larger trigger map
+        '''
         for (trigger_id, trigger_status) in trigger_status_map.items():
             trigger_status = trigger_status.lower()
             trigger_info = get_trigger_info(context, trigger_id)
@@ -206,24 +216,25 @@ def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, conte
             else:
                 # we dont have the triggered registerd with us but a frontend has it running!
                 pass
-        add_frontend_info(frontend_ip_port, json.dumps(new_frontend_entry))
-    pass
+        '''
+        add_frontend_info(context, frontend_ip_port, json.dumps(new_frontend_entry))
 
 def handle_stop(frontend_ip_port, trigger_status_map, trigger_error_map, context):
+    print("STOP Triggers Frontend: " + frontend_ip_port)
     assert(len(trigger_status_map) == 0)
     pending_triggers = []
     frontend_info = get_frontend_info(context, frontend_ip_port)
     assert(frontend_info is not None)
-
+    
+    '''
     for error_trigger_id in trigger_error_map:
         error_trigger_info = get_trigger_info(context, error_trigger_id)
         if error_trigger_id in frontend_info and error_trigger_info is not None:
             if error_trigger_info["status"] == "ready" or error_trigger_info["status"] == "starting":
                 pending_triggers.append(error_trigger_info)
         remove_trigger_info(context, error_trigger_id)
+    '''
     remove_frontend_info(context, frontend_ip_port)
-    # a frontend is stopping. All the triggers will be forcefully stopped. 
-    # all the triggers that are reported forcefully stopped and are known to the management, should be put in pending list
 
     if len(pending_triggers) > 0:
         handle_add_triggers(pending_triggers)

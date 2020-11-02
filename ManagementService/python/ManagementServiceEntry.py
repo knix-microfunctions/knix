@@ -351,6 +351,8 @@ def actionOther(action, data, sapi):
     possibleActions["deleteStorageTriggerForWorkflow"] = True
     possibleActions["addTrigger"] = True
     possibleActions["deleteTrigger"] = True
+    possibleActions["addTriggerForWorkflow"] = True
+    possibleActions["deleteTriggerForWorkflow"] = True
 
     possibleActionsUnauthenticated = {}
     possibleActionsUnauthenticated["triggersFrontendStatus"] = True

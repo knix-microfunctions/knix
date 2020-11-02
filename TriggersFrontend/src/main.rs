@@ -99,53 +99,28 @@ async fn create_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
     }
     let json_body = json_body.unwrap();
     if !(json_body.is_object()
-        && json_body.has_key("type")
-        && json_body.has_key("id")
-        && json_body.has_key("workflows")
-        && json_body["workflows"].is_array()
-        && json_body["workflows"].len() > 0
+        && json_body.has_key("trigger_type")
+        && json_body.has_key("trigger_id")
+        && json_body.has_key("trigger_name")
         && json_body.has_key("trigger_info")
         && json_body["trigger_info"].is_object()
         && json_body["trigger_info"].len() > 0)
     {
         return HttpResponse::Ok().json(TriggersFrontendResponse {
             status: "Failure".into(),
-            message: "One of the required fields, 'type', 'id', 'workflow_url', or 'trigger_info' is missing.
-            'type' = 'amqp', 'mqtt', or 'timer'.
-            'id' = user provided string to uniquely identify this trigger. This 'id' must be supplied while delete the trigger.
-            'workflows' = list of objects of type {'worklfow_url': workflow_url, 'tag': tag}
-            'trigger_info' = 'type' specific parameters for subscribing to a message queue or creating a timer
-            'tag' = optional string provided by the user which is included in each workflow invocation"
-            .into(),
+            message: "One of the required fields, 'trigger_type', 'trigger_id', 'trigger_name', or 'trigger_info' is missing".into(),
         });
     }
-    let trigger_type: String = json_body["type"].to_string();
-    let trigger_id: String = json_body["id"].to_string();
+    let trigger_type: String = json_body["trigger_type"].to_string();
+    let trigger_id: String = json_body["trigger_id"].to_string();
+    let trigger_name: String = json_body["trigger_name"].to_string();
     let trigger_info = &json_body["trigger_info"];
-    let mut workflows_vec: Vec<WorkflowInfo> = Vec::new();
-    let workflows = &json_body["workflows"];
-    for i in 0..workflows.len() {
-        let workflow_info = &workflows[i];
-        if !workflow_info.has_key("workflow_url") {
-            return HttpResponse::Ok().json(TriggersFrontendResponse {
-                status: "Failure".into(),
-                message: "workflow_url missing in workflows list".into(),
-            });
-        }
-        let tag: String = if workflow_info.has_key("tag") {
-            workflow_info["tag"].to_string()
-        } else {
-            "".into()
-        };
-        workflows_vec.push(WorkflowInfo {
-            workflow_url: workflow_info["workflow_url"].to_string(),
-            tag,
-        });
-    }
     info!(
-        "[CREATE_TRIGGER] request, id: {}, type: {}, workflow: {:?}, trigger_info: {:?}",
-        &trigger_id, &trigger_type, &workflows_vec, &trigger_info
+        "[CREATE_TRIGGER] request, trigger_id: {}, trigger_type: {}, trigger_name: {}, trigger_info: {:?}",
+        &trigger_id, &trigger_type, &trigger_name, &trigger_info
     );
+
+    let empty_workflows_vec: Vec<WorkflowInfo> = Vec::new();
 
     if trigger_type.eq("amqp") || trigger_type.eq("mqtt") || trigger_type.eq("timer") {
         let mut trigger_manager: TriggerManager = req.app_data::<TriggerManager>().unwrap().clone();
@@ -153,14 +128,15 @@ async fn create_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
             .handle_create_trigger(
                 &trigger_type,
                 &trigger_id,
-                workflows_vec.clone(),
+                &trigger_name,
+                empty_workflows_vec,
                 decoded_body.to_string(),
             )
             .await;
         let http_response: TriggersFrontendResponse = match response {
             Ok(msg) => {
                 let tid = thread::current().id();
-                let message: String = format!("Created trigger, id: {}, type: {}, workflows: {:?}, trigger_info {:?}, {:?}, {}", &trigger_id, &trigger_type, &workflows_vec, &trigger_info, tid, msg);
+                let message: String = format!("Created trigger, trigger_id: {}, trigger_type: {}, trigger_name: {}, trigger_info {:?}, {:?}, {}", &trigger_id, &trigger_type, &trigger_name, &trigger_info, tid, msg);
                 info!("[CREATE_TRIGGER] {}", &message);
                 TriggersFrontendResponse {
                     status: "Success".into(),
@@ -168,7 +144,7 @@ async fn create_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
                 }
             }
             Err(msg) => {
-                let message: String = format!("ERROR creating trigger, id: {}, type: {}, workflows: {:?}, trigger_info {:?}, {}", &trigger_id, &trigger_type, &workflows_vec, &trigger_info, msg);
+                let message: String = format!("ERROR creating trigger, trigger_id: {}, trigger_type: {}, trigger_name: {}, trigger_info {:?}, {}", &trigger_id, &trigger_type, &trigger_name, &trigger_info, msg);
                 warn!("[CREATE_TRIGGER] {}", &message);
                 TriggersFrontendResponse {
                     status: "Failure".into(),
@@ -212,39 +188,34 @@ async fn add_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder {
 
     let json_body = json_body.unwrap();
     if !(json_body.is_object()
-        && json_body.has_key("id")
+        && json_body.has_key("trigger_id")
         && json_body.has_key("workflows")
         && json_body["workflows"].is_array()
         && json_body["workflows"].len() > 0)
     {
         return HttpResponse::Ok().json(TriggersFrontendResponse {
             status: "Failure".into(),
-            message: "One of the required fields, 'id' or 'workflows'".into(),
+            message: "One of the required fields, 'trigger_id' or 'workflows' is missing".into(),
         });
     }
-    let trigger_id: String = json_body["id"].to_string();
+    let trigger_id: String = json_body["trigger_id"].to_string();
     let mut workflows_vec: Vec<WorkflowInfo> = Vec::new();
     let workflows = &json_body["workflows"];
     for i in 0..workflows.len() {
         let workflow_info = &workflows[i];
-        if !workflow_info.has_key("workflow_url") {
+        if !workflow_info.has_key("workflow_url") || !workflow_info.has_key("workflow_name") {
             return HttpResponse::Ok().json(TriggersFrontendResponse {
                 status: "Failure".into(),
-                message: "workflow_url missing in workflows list".into(),
+                message: "workflow_url or workflow_name missing in workflows list".into(),
             });
         }
-        let tag: String = if workflow_info.has_key("tag") {
-            workflow_info["tag"].to_string()
-        } else {
-            "".into()
-        };
         workflows_vec.push(WorkflowInfo {
             workflow_url: workflow_info["workflow_url"].to_string(),
-            tag,
+            workflow_name: workflow_info["workflow_name"].to_string(),
         });
     }
     info!(
-        "[ADD_WORKFLOW] request, id: {}, workflows: {:?}",
+        "[ADD_WORKFLOW] request, trigger_id: {}, workflows: {:?}",
         &trigger_id, &workflows_vec
     );
 
@@ -256,7 +227,7 @@ async fn add_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder {
         Ok(msg) => {
             let tid = thread::current().id();
             let message: String = format!(
-                "Add workflow, id: {}, workflows: {:?}, {}",
+                "Add workflow, trigger_id: {}, workflows: {:?}, {}",
                 &trigger_id, &workflows_vec, msg
             );
             info!("[ADD_WORKFLOW] {}", &message);
@@ -307,35 +278,30 @@ async fn remove_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder 
 
     let json_body = json_body.unwrap();
     if !(json_body.is_object()
-        && json_body.has_key("id")
+        && json_body.has_key("trigger_id")
         && json_body.has_key("workflows")
         && json_body["workflows"].is_array()
         && json_body["workflows"].len() > 0)
     {
         return HttpResponse::Ok().json(TriggersFrontendResponse {
             status: "Failure".into(),
-            message: "One of the required fields, 'id' or 'workflows'".into(),
+            message: "One of the required fields, 'trigger_id' or 'workflows' is missing".into(),
         });
     }
-    let trigger_id: String = json_body["id"].to_string();
+    let trigger_id: String = json_body["trigger_id"].to_string();
     let mut workflows_vec: Vec<WorkflowInfo> = Vec::new();
     let workflows = &json_body["workflows"];
     for i in 0..workflows.len() {
         let workflow_info = &workflows[i];
-        if !workflow_info.has_key("workflow_url") {
+        if !workflow_info.has_key("workflow_url") || !workflow_info.has_key("workflow_name") {
             return HttpResponse::Ok().json(TriggersFrontendResponse {
                 status: "Failure".into(),
-                message: "workflow_url missing in workflows list".into(),
+                message: "workflow_url or workflow_name missing in workflows list".into(),
             });
         }
-        let tag: String = if workflow_info.has_key("tag") {
-            workflow_info["tag"].to_string()
-        } else {
-            "".into()
-        };
         workflows_vec.push(WorkflowInfo {
             workflow_url: workflow_info["workflow_url"].to_string(),
-            tag,
+            workflow_name: workflow_info["workflow_name"].to_string(),
         });
     }
     info!(
@@ -400,14 +366,14 @@ async fn delete_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
         });
     }
     let json_body = json_body.unwrap();
-    if !(json_body.is_object() && json_body.has_key("id")) {
+    if !(json_body.is_object() && json_body.has_key("trigger_id")) {
         return HttpResponse::Ok().json(TriggersFrontendResponse {
             status: "Failure".into(),
-            message: "One of the required fields, 'id' is missing.".into(),
+            message: "One of the required fields, 'trigger_id' is missing.".into(),
         });
     }
-    let trigger_id: String = json_body["id"].to_string();
-    info!("[DELETE_TRIGGER] request, id: {}", &trigger_id);
+    let trigger_id: String = json_body["trigger_id"].to_string();
+    info!("[DELETE_TRIGGER] request, trigger_id: {}", &trigger_id);
 
     let mut trigger_manager: TriggerManager = req.app_data::<TriggerManager>().unwrap().clone();
     let response: Result<String, String> = trigger_manager.handle_delete_trigger(&trigger_id).await;
@@ -415,7 +381,7 @@ async fn delete_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
         Ok(msg) => {
             let tid = thread::current().id();
             let message: String =
-                format!("Deleted trigger, id: {}, {:?}, {}", &trigger_id, tid, msg);
+                format!("Deleted trigger, trigger_id: {}, {:?}, {}", &trigger_id, tid, msg);
             info!("[DELETE_TRIGGER] {}", &message);
             TriggersFrontendResponse {
                 status: "Success".into(),
@@ -423,7 +389,7 @@ async fn delete_trigger(req: HttpRequest, body: web::Bytes) -> impl Responder {
             }
         }
         Err(msg) => {
-            let message: String = format!("ERROR deleting trigger, id: {}, {}", &trigger_id, msg);
+            let message: String = format!("ERROR deleting trigger, trigger_id: {}, {}", &trigger_id, msg);
             warn!("[CREATE_TRIGGER] {}", &message);
             TriggersFrontendResponse {
                 status: "Failure".into(),

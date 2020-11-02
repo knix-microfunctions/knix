@@ -312,9 +312,10 @@ impl TriggerManager {
 
         if let None = curr_status {
             return Err("Unable to get status of the trigger".into());
-        } else if let TriggerStatus::Ready | TriggerStatus::Starting = curr_status.as_ref().unwrap()
-        {
+        } else if let TriggerStatus::Ready = curr_status.as_ref().unwrap() {
             Ok(curr_status.unwrap())
+        } else if let TriggerStatus::Starting = curr_status.as_ref().unwrap() {
+            Err("Trigger stuck in starting state".into())
         } else {
             Err(curr_status_msg)
         }
@@ -324,6 +325,7 @@ impl TriggerManager {
         &mut self,
         trigger_type: &String,
         trigger_id: &String,
+        trigger_name: &String,
         workflows: Vec<WorkflowInfo>,
         request_body: String,
     ) -> Result<String, String> {
@@ -337,6 +339,7 @@ impl TriggerManager {
                 "amqp" => {
                     handle_create_amqp_trigger(
                         &trigger_id,
+                        &trigger_name,
                         workflows,
                         &request_body,
                         self.cmd_channel_tx.clone(),
@@ -346,6 +349,7 @@ impl TriggerManager {
                 "mqtt" => {
                     handle_create_mqtt_trigger(
                         &trigger_id,
+                        &trigger_name,
                         workflows,
                         &request_body,
                         self.cmd_channel_tx.clone(),
@@ -355,6 +359,7 @@ impl TriggerManager {
                 "timer" => {
                     handle_create_timer_trigger(
                         &trigger_id,
+                        &trigger_name,
                         workflows,
                         &request_body,
                         self.cmd_channel_tx.clone(),
@@ -366,11 +371,11 @@ impl TriggerManager {
 
             match trigger_spawned {
                 Ok(chan) => {
-                    // wait for getting ready or timeout while in Starting state
+                    // wait for trigger to get into ready state
                     let ready_result = self.wait_for_trigger_ready(&trigger_id, 4000).await;
                     match ready_result {
                         Ok(status) => {
-                            // Either the trigger is ready or is starting
+                            // Trigger is ready
                             let chan_registered = self
                                 .send_register_trigger_channel_msg(&trigger_id, chan.clone())
                                 .await;
@@ -388,11 +393,13 @@ impl TriggerManager {
                             }
                         }
                         Err(msg) => {
-                            // Either the trigger has stopped, or something else
+                            // Either the trigger has stopped, or stuck in starting state
                             warn!(
                                 "Unable to get ready status for trigger {}, Error: {}",
                                 &trigger_id, &msg
                             );
+                            self.send_stop_trigger_msg(&trigger_id).await;
+                            self.send_delete_trigger_msg(&trigger_id).await;
                             return Err(msg);
                         }
                     }
@@ -799,7 +806,7 @@ async fn trigger_manager_actor_loop(
                                             Some(chan) => {
                                                 // send a message only if the status is Starting or Ready
                                                 match status {
-                                                    TriggerStatus::Starting | TriggerStatus::Ready => {
+                                                    TriggerStatus::Ready => {
                                                         let mut trigger_channel = chan.clone();
                                                         // do not wait here, as it might create a deadlock, since the trigger actor will
                                                         // try to send back a status update after the stop command has been received.

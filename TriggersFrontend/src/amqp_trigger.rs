@@ -38,6 +38,7 @@ pub struct AMQPSubscriberInfo {
 
 pub struct AMQPTrigger {
     trigger_id: String,
+    trigger_name: String,
     amqp_sub_info: AMQPSubscriberInfo,
     workflows: Vec<WorkflowInfo>,
     // Sender return
@@ -47,6 +48,7 @@ pub struct AMQPTrigger {
 impl AMQPTrigger {
     pub fn spawn(
         trigger_id: &String,
+        trigger_name: &String,
         amqp_sub_info: AMQPSubscriberInfo,
         workflows: Vec<WorkflowInfo>,
         manager_cmd_channel_tx: TriggerManagerCommandChannelSender,
@@ -55,6 +57,7 @@ impl AMQPTrigger {
             channel::<(TriggerCommand, CommandResponseChannel)>(5);
         tokio::spawn(amqp_actor_retry_loop(
             trigger_id.clone(),
+            trigger_name.clone(),
             amqp_sub_info.clone(),
             workflows.clone(),
             cmd_channel_rx,
@@ -62,6 +65,7 @@ impl AMQPTrigger {
         ));
         Ok(AMQPTrigger {
             trigger_id: trigger_id.clone(),
+            trigger_name: trigger_name.clone(),
             amqp_sub_info: amqp_sub_info.clone(),
             workflows: workflows.clone(),
             cmd_channel_tx,
@@ -123,6 +127,7 @@ impl AMQPTrigger {
 
 pub async fn handle_create_amqp_trigger(
     trigger_id: &String,
+    trigger_name: &String,
     workflows: Vec<WorkflowInfo>,
     request_body: &String,
     manager_cmd_channel_tx: TriggerManagerCommandChannelSender,
@@ -145,12 +150,12 @@ pub async fn handle_create_amqp_trigger(
         durable: if trigger_info.has_key("durable") {
             trigger_info["durable"].as_bool().unwrap()
         } else {
-            true
+            false
         },
         exclusive: if trigger_info.has_key("exclusive") {
             trigger_info["exclusive"].as_bool().unwrap()
         } else {
-            true
+            false
         },
         auto_ack: if trigger_info.has_key("auto_ack") {
             trigger_info["auto_ack"].as_bool().unwrap()
@@ -161,6 +166,7 @@ pub async fn handle_create_amqp_trigger(
 
     let amqp_trigger = AMQPTrigger::spawn(
         &trigger_id,
+        &trigger_name, 
         amqp_sub_info,
         workflows,
         manager_cmd_channel_tx,
@@ -174,6 +180,7 @@ async fn send_amqp_data(
     workflows: Vec<WorkflowInfo>,
     amqp_data: std::vec::Vec<u8>,
     trigger_id: String,
+    trigger_name: String,
     source: String,
 ) {
     let workflow_msg: TriggerWorkflowMessage;
@@ -181,9 +188,10 @@ async fn send_amqp_data(
         Ok(v) => {
             for workflow_info in workflows {
                 let workflow_msg = TriggerWorkflowMessage {
+                    trigger_status: "ready".into(),
                     trigger_type: "ampq".into(),
-                    id: trigger_id.clone(),
-                    tag: workflow_info.tag,
+                    trigger_name: trigger_name.clone(),
+                    workflow_name: workflow_info.workflow_name,
                     source: source.clone(),
                     data: v.clone(), // TODO: Figure out how to pass the String around,
                                      // without copying and keeping the borrow checker happy!
@@ -213,6 +221,7 @@ async fn send_amqp_data(
 
 pub async fn amqp_actor_retry_loop(
     trigger_id: String,
+    trigger_name: String,
     amqp_sub_info: AMQPSubscriberInfo,
     workflows: Vec<WorkflowInfo>,
     mut cmd_channel_rx: Receiver<(TriggerCommand, CommandResponseChannel)>,
@@ -220,6 +229,7 @@ pub async fn amqp_actor_retry_loop(
 ) {
     let res: std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> = amqp_actor_loop(
         &trigger_id,
+        &trigger_name,
         &amqp_sub_info,
         workflows,
         &mut cmd_channel_rx,
@@ -252,6 +262,7 @@ pub async fn amqp_actor_retry_loop(
 
 pub async fn amqp_actor_loop(
     trigger_id: &String,
+    trigger_name: &String,
     amqp_sub_info: &AMQPSubscriberInfo,
     mut workflows: Vec<WorkflowInfo>,
     cmd_channel_rx: &mut Receiver<(TriggerCommand, CommandResponseChannel)>,
@@ -381,7 +392,7 @@ pub async fn amqp_actor_loop(
                     Some(delivery) => {
                         match delivery {
                             Ok((chan, amqp_msg)) => {
-                                tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), amqp_sub_info.routing_key.clone()));
+                                tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), amqp_sub_info.routing_key.clone()));
                             }
                             Err(e) => {
                                 let ret_msg = format!("[amqp_actor_loop] Trigger id {}, recv a msg on amqp channel, but unwrapping produced an error: {:?}", trigger_id, e);

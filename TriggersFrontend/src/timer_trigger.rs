@@ -29,6 +29,7 @@ pub struct TimerInfo {
 
 pub struct TimerTrigger {
     trigger_id: String,
+    trigger_name: String,
     timer_info: TimerInfo,
     workflows: Vec<WorkflowInfo>,
     // Sender return
@@ -38,6 +39,7 @@ pub struct TimerTrigger {
 impl TimerTrigger {
     pub fn spawn(
         trigger_id: &String,
+        trigger_name: &String,
         timer_info: TimerInfo,
         workflows: Vec<WorkflowInfo>,
         manager_cmd_channel_tx: TriggerManagerCommandChannelSender,
@@ -46,6 +48,7 @@ impl TimerTrigger {
             channel::<(TriggerCommand, CommandResponseChannel)>(5);
         tokio::spawn(timer_actor_retry_loop(
             trigger_id.clone(),
+            trigger_name.clone(),
             timer_info.clone(),
             workflows.clone(),
             cmd_channel_rx,
@@ -53,6 +56,7 @@ impl TimerTrigger {
         ));
         Ok(TimerTrigger {
             trigger_id: trigger_id.clone(),
+            trigger_name: trigger_name.clone(),
             timer_info: timer_info.clone(),
             workflows: workflows.clone(),
             cmd_channel_tx,
@@ -62,6 +66,7 @@ impl TimerTrigger {
 
 pub async fn handle_create_timer_trigger(
     trigger_id: &String,
+    trigger_name: &String,
     workflows: Vec<WorkflowInfo>,
     request_body: &String,
     manager_cmd_channel_tx: TriggerManagerCommandChannelSender,
@@ -85,7 +90,7 @@ pub async fn handle_create_timer_trigger(
     let timer_info = TimerInfo { timer_interval };
 
     let timer_trigger =
-        TimerTrigger::spawn(&trigger_id, timer_info, workflows, manager_cmd_channel_tx).unwrap();
+        TimerTrigger::spawn(&trigger_id, &trigger_name, timer_info, workflows, manager_cmd_channel_tx).unwrap();
 
     Ok(timer_trigger.cmd_channel_tx)
 }
@@ -94,13 +99,15 @@ async fn send_timer_data(
     workflows: Vec<WorkflowInfo>,
     timer_data: String,
     trigger_id: String,
+    trigger_name: String,
     source: String,
 ) {
     for workflow_info in workflows {
         let workflow_msg = TriggerWorkflowMessage {
+            trigger_status: "ready".into(),
             trigger_type: "timer".into(),
-            id: trigger_id.clone(),
-            tag: workflow_info.tag,
+            trigger_name: trigger_name.clone(),
+            workflow_name: workflow_info.workflow_name,
             source: source.clone(),
             data: timer_data.clone(), // TODO: Figure out how to pass the String around,
                                       // without copying and keeping the borrow checker happy!
@@ -121,6 +128,7 @@ async fn send_timer_data(
 
 pub async fn timer_actor_retry_loop(
     trigger_id: String,
+    trigger_name: String,
     timer_info: TimerInfo,
     workflows: Vec<WorkflowInfo>,
     mut cmd_channel_rx: Receiver<(TriggerCommand, CommandResponseChannel)>,
@@ -128,6 +136,7 @@ pub async fn timer_actor_retry_loop(
 ) {
     let res: std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> = timer_actor_loop(
         &trigger_id,
+        &trigger_name,
         &timer_info,
         workflows,
         &mut cmd_channel_rx,
@@ -160,6 +169,7 @@ pub async fn timer_actor_retry_loop(
 
 pub async fn timer_actor_loop(
     trigger_id: &String,
+    trigger_name: &String,
     timer_info: &TimerInfo,
     mut workflows: Vec<WorkflowInfo>,
     cmd_channel_rx: &mut Receiver<(TriggerCommand, CommandResponseChannel)>,
@@ -227,7 +237,7 @@ pub async fn timer_actor_loop(
                 }
             }
             d = create_delay(timer_interval, "TimerTrigger, status push timer".to_string()) => {
-                tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), "".into()));
+                tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into()));
             }
         }
     }

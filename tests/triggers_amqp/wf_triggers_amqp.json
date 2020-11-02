@@ -1,0 +1,13 @@
+{
+    "Comment": "Workflow to test amqp triggers",
+    "StartAt": "triggers_amqp",
+    "States": {
+      "triggers_amqp": {
+        "Type": "Task",
+        "Resource": "triggers_amqp",
+        "End": true
+      }
+    }
+}
+  
+  

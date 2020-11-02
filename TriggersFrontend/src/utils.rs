@@ -26,14 +26,15 @@ pub fn get_unique_id() -> String {
 #[derive(Clone, Debug, Serialize)]
 pub struct WorkflowInfo {
     pub workflow_url: String,
-    pub tag: String,
+    pub workflow_name: String,
 }
 
 #[derive(Serialize)]
 pub struct TriggerWorkflowMessage {
+    pub trigger_status: String,
     pub trigger_type: String,
-    pub id: String,
-    pub tag: String,
+    pub trigger_name: String,
+    pub workflow_name: String,
     pub source: String,
     pub data: String,
 }
@@ -156,7 +157,7 @@ pub fn find_element_index(
     for workflow in workflows {
         i += 1;
         if workflow_to_search.workflow_url.eq(&workflow.workflow_url)
-            && workflow_to_search.tag.eq(&workflow.tag)
+            && workflow_to_search.workflow_name.eq(&workflow.workflow_name)
         {
             found = true;
             break;

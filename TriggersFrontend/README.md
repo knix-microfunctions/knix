@@ -13,23 +13,15 @@ make
 Send a `POST` request to: `http://[trigger_frontend_host]:[port]/create_trigger` with the following json body:
 ```
 {
-  "type": "amqp" or "timer",
-  // id is a knix management provided unique string to identify the trigger
-  "id": "<string>",
+  "trigger_type": "amqp" or "timer",
+  // trigger_id is a knix management provided globally unique string to identify the trigger
+  "trigger_id": "<string>",
+  // trigger_name_user is a knix user provided name for this trigger. Will be included in each event
+  "trigger_name": "<string>"
   // trigger_info is an object containing type specific information on how to subscribe to the queue
   "trigger_info": {
     ...
   }
-  // workflows is a list of workflows associated with this trigger
-  "workflows": [
-    {
-      // url of the workflow
-      "workflow_url": "<string>",
-      // workflow developer provided unique string to be included in each workflow invocation
-      "tag": "<string>"
-    }
-    ...
-  ]
 }
 ```
 
@@ -41,6 +33,48 @@ All response from the TriggersFrontend have the form:
 }
 ```
 
+### Adding workflows to a Trigger 
+
+Send a `POST` request to: `http://[trigger_frontend_host]:[port]/add_workflows` with the following json body:
+```
+{
+  // trigger_id is a knix management provided unique string to identify the trigger
+  "trigger_id": "<string>",
+  // workflows is a list of workflows associated with this trigger
+  "workflows": [
+    {
+      // url of the workflow
+      "workflow_url": "<string>",
+      // name of the workflow
+      "workflow_name": "<string>",
+      // name of the state within the workflow to invoke. Could be left blank to invoke the workflow's starting state
+      "workflow_state": ""
+    }
+    ...
+  ]
+}
+```
+
+
+### Removing workflows from a Trigger 
+
+Send a `POST` request to: `http://[trigger_frontend_host]:[port]/remove_workflows` with the following json body:
+```
+{
+  // id is a knix management provided unique string to identify the trigger
+  "trigger_id": "<string>",
+  "workflows": [
+    {
+      // url of the workflow
+      "workflow_url": "<string>",
+      // name of the workflow
+      "workflow_name": "<string>"
+    }
+    ...
+  ]
+}
+```
+
 ### Creating an AMQP trigger
 
 Example curl command to create an AMQP trigger
@@ -48,26 +82,17 @@ Example curl command to create an AMQP trigger
 ```bash
 curl -H "Content-Type: application/json" -d \
 '{
-  "type": "amqp",
-  "id": "1",
+  "trigger_type": "amqp",
+  "trigger_id": "1",
+  "trigger_name": "user_provided_name_for_trigger",
   "trigger_info": {
     "amqp_addr": "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost",
     "routing_key": "rabbit.routing.key",
     "exchange": "rabbitexchange",
-    "durable": true,
-    "exclusive": true,
-    "auto_ack": true
-  },
-  "workflows": [
-    {
-      "workflow_url": "http://httpbin.org/post",
-      "tag": "tag1"
-    },
-    {
-      "workflow_url": "http://httpbin.org/post",
-      "tag": "tag2"
-    }
-  ]
+    "auto_ack": true,
+    "durable": false,
+    "exclusive": false
+  }
 }' http://localhost:8080/create_trigger
 ```
 
@@ -78,21 +103,12 @@ Example curl command to create a timer trigger
 ```bash
 curl -H "Content-Type: application/json" -d \
 '{
-  "type": "timer",
-  "id": "2",
+  "trigger_type": "timer",
+  "trigger_id": "2",
+  "trigger_name": "user_provided_name_for_trigger",
   "trigger_info": {
     "timer_interval_ms": 1000
-  },
-  "workflows": [
-    {
-      "workflow_url": "http://httpbin.org/post",
-      "tag": "tag1"
-    },
-    {
-      "workflow_url": "http://httpbin.org/post",
-      "tag": "tag2"
-    }
-  ]
+  }
 }' http://localhost:8080/create_trigger
 ```
 
@@ -103,49 +119,11 @@ Example curl command to delete a trigger
 ```bash
 curl -H "Content-Type: application/json" -d \
 '{
-  "id": "1"
+  "trigger_id": "1"
 }' http://localhost:8080/delete_trigger
 ```
 
-### Adding more workflows to a Trigger 
 
-Send a `POST` request to: `http://[trigger_frontend_host]:[port]/add_workflows` with the following json body:
-```
-{
-  // id is a knix management provided unique string to identify the trigger
-  "id": "<string>",
-  // workflows is a list of workflows associated with this trigger
-  "workflows": [
-    {
-      // url of the workflow
-      "workflow_url": "<string>",
-      // workflow developer provided unique string to be included in each workflow invocation
-      "tag": "<string>"
-    }
-    ...
-  ]
-}
-```
-
-### Removing workflows to a Trigger 
-
-Send a `POST` request to: `http://[trigger_frontend_host]:[port]/remove_workflows` with the following json body:
-```
-{
-  // id is a knix management provided unique string to identify the trigger
-  "id": "<string>",
-  // workflows is a list of workflows associated with this trigger
-  "workflows": [
-    {
-      // url of the workflow
-      "workflow_url": "<string>",
-      // workflow developer provided unique string to be included in each workflow invocation
-      "tag": "<string>"
-    }
-    ...
-  ]
-}
-```
 
 ### Trigger Messages received at the workflow
 
@@ -153,13 +131,15 @@ The structure of the trigger messages received at the workflow is:
 
 ```
 {
+    "trigger_status": "ready" or "error",
     "trigger_type": "amqp" or "timer",
-    //id is a globally unique identifier for this trigger. To be used for updating and deleting the trigger
-    "id": <string>
-    //tag is a user specified optional string while creating the trigger
-    "tag": "<string>",
+    //trigger_name unique identifier for this trigger provided by the user
+    "trigger_name": "<string>"
+    // workflow_name is the name of the workflow being invoked
+    "workflow_name": "<string>"
     // source is the topic name if available
     "source": "<string>",
+    // if status is 'error' then 'data' will contain an error message
     "data": "<string>"
 }
 ```
