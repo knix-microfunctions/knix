@@ -221,10 +221,10 @@ class SandboxAgent:
 
     def sigchld(self, signum, _):
         if not self._shutting_down:
-            should_shutdown, pid, failed_process_name = self._deployment.check_child_process()
+            should_shutdown, pid, failed_process_name, log_filepath = self._deployment.check_child_process()
 
             if should_shutdown:
-                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name)
+                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name, log_filepath)
 
                 if pid == self._queue_service_process.pid:
                     self._queue_service_process = None
@@ -298,9 +298,13 @@ class SandboxAgent:
         self._management_data_layer_client.shutdown()
         os._exit(1)
 
-    def _update_deployment_status(self, has_error, errmsg):
+    def _update_deployment_status(self, has_error, errmsg, log_filepath=None):
         sbstatus = {}
         sbstatus["errmsg"] = errmsg
+        if log_filepath is not None:
+            with open(log_filepath, "r") as f:
+                data = f.read()
+                sbstatus["errmsg"] += "\rn" + data
         if has_error:
             sbstatus["status"] = "failed"
         else:

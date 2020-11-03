@@ -451,6 +451,8 @@ def handle(value, sapi):
 
         status = "deploying"
 
+        sapi.clearMap(workflow_info["workflowId"] + "_sandbox_status_map", is_private=True)
+
         if 'KUBERNETES_SERVICE_HOST' in os.environ:
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 runtime = "Java"
