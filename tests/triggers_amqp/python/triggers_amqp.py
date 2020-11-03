@@ -57,7 +57,7 @@ def handle(event, context):
             }
             addTrigger(trigger_name, trigger_info, context)
 
-            time.sleep(5)
+            time.sleep(1)
 
             # associating main wf with the trigger
             addTriggerForWorkflow(trigger_name, workflowname, "triggers_amqp_state2", context)
@@ -67,7 +67,7 @@ def handle(event, context):
             # associating main wf with the trigger
             deleteTriggerForWorkflow(trigger_name, workflowname, context)
 
-            time.sleep(5)
+            time.sleep(1)
 
             # associating main wf with the trigger
             addTriggerForWorkflow(trigger_name, workflowname, "", context)

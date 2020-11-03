@@ -17,9 +17,18 @@ import random
 import sys
 import time
 import unittest
+import socket
+
+import subprocess
 
 sys.path.append("../")
 from mfn_test_utils import MFNTest
+
+print("Starting rabbitmq")
+rabbit = subprocess.Popen(["scripts/run_local_rabbitmq.sh"], close_fds=True)
+time.sleep(10)
+print("Starting publisher")
+pub = subprocess.Popen(["scripts/run_local_publisher.sh"], close_fds=True)
 
 class TriggersAmqpTest(unittest.TestCase):
 
@@ -27,14 +36,19 @@ class TriggersAmqpTest(unittest.TestCase):
     def test_triggers_storage(self):
         test = MFNTest(test_name='triggers_amqp',
                        workflow_filename='wf_triggers_amqp.json')
+
+        time.sleep(5)
+        print("Executing test")
         nonce = str(int(time.time() * 1000))
+
+        curr_hostname = socket.gethostname()
 
         input_data = []
         workflowname = "wf_triggers_amqp"
         routingkey = "rabbit.routing.key"
         input_data.append(workflowname)
         input_data.append(nonce)
-        input_data.append("amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost")
+        input_data.append("amqp://rabbituser:rabbitpass@" + curr_hostname + ":5672/%2frabbitvhost")
         input_data.append(routingkey)
         input_data.append("rabbitexchange")
 
@@ -64,5 +78,12 @@ class TriggersAmqpTest(unittest.TestCase):
             for line in log_lines:
                 print(line.strip())
 
+
         test.undeploy_workflow()
         test.cleanup()
+
+        pub.terminate()
+        rabbit.terminate()
+
+        subprocess.Popen(["scripts/stop_local_rabbitmq.sh"])
+
