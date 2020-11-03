@@ -21,22 +21,18 @@ import unittest
 sys.path.append("../")
 from mfn_test_utils import MFNTest
 
-class TriggersAmqpTest(unittest.TestCase):
+class TriggersTimerTest(unittest.TestCase):
 
     # @unittest.skip("")
     def test_triggers_storage(self):
-        test = MFNTest(test_name='triggers_amqp',
-                       workflow_filename='wf_triggers_amqp.json')
+        test = MFNTest(test_name='triggers_timer',
+                       workflow_filename='wf_triggers_timer.json')
         nonce = str(int(time.time() * 1000))
 
         input_data = []
-        workflowname = "wf_triggers_amqp"
-        routingkey = "rabbit.routing.key"
+        workflowname = "wf_triggers_timer"
         input_data.append(workflowname)
         input_data.append(nonce)
-        input_data.append("amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost")
-        input_data.append(routingkey)
-        input_data.append("rabbitexchange")
 
         response = test.execute(input_data)
 
@@ -47,10 +43,9 @@ class TriggersAmqpTest(unittest.TestCase):
         counter_state_1 = 0
         counter_state_2 = 0
         for line in log_lines:
-            if "_!_TRIGGER_START_" + nonce + ";triggers_amqp;" + workflowname + ";" + routingkey + ";" in line.strip():
+            if "_!_TRIGGER_START_" + nonce + ";triggers_timer;" + workflowname in line.strip():
                 counter_state_1 = counter_state_1 + 1
-
-            if "_!_TRIGGER_START_" + nonce + ";triggers_amqp_state2;" + workflowname + ";" + routingkey + ";" in line.strip():
+            if "_!_TRIGGER_START_" + nonce + ";triggers_timer_state2;" + workflowname in line.strip():
                 counter_state_2 = counter_state_2 + 1
         
         if counter_state_1 >=9 and counter_state_2 >=9:

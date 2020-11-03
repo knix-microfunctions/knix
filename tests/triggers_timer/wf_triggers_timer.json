@@ -1,0 +1,16 @@
+{
+  "Comment": "Workflow to test timer triggers",
+  "StartAt": "triggers_timer",
+  "States": {
+    "triggers_timer": {
+      "Type": "Task",
+      "Resource": "triggers_timer",
+      "Next": "triggers_timer_state2"
+    },
+    "triggers_timer_state2": {
+      "Type": "Task",
+      "Resource": "triggers_timer_state2",
+      "End": true
+    }
+  }
+}

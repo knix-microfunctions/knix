@@ -147,6 +147,8 @@ def handle(value, context):
             if status == False:
                 raise Exception("Invalid trigger_info object: " + msg)
             
+            print("Validated trigger_info: " + str(trigger_type) + ", " + str(completed_trigger_info))
+            
             # get the list of available frontends. Select one
             tf_hosts = get_available_frontends(context)
             if len(tf_hosts) == 0:
