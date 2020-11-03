@@ -104,9 +104,9 @@ def handle(value, context):
             tf_ip_port = global_trigger_info["frontend_ip_port"]
             if tf_ip_port not in tf_hosts:
                 raise Exception("Frontend: " + tf_ip_port + " not available")
-            url = "http://" + tf_ip_port + "/delete_trigger"
-            # send the request and wait for response
 
+            # send the request and wait for response
+            url = "http://" + tf_ip_port + "/delete_trigger"
             res_obj = {}
             try:
                 res = requests.post(url, json={"trigger_id": trigger_id})
@@ -117,12 +117,16 @@ def handle(value, context):
                 status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
             
             if "status" in res_obj and res_obj["status"].lower() == "success":
-                # add the trigger_id to frontend map
+                # remove the trigger_id from frontend map
                 frontend_info = get_frontend_info(context, tf_ip_port)
                 assert(frontend_info is not None)
                 if trigger_id in frontend_info:
                     del frontend_info[trigger_id]
                 add_frontend_info(context, tf_ip_port, json.dumps(frontend_info))
+
+                associated_workflows = global_trigger_info["associated_workflows"]
+                for associated_workflow_name in associated_workflows:
+                    removeTriggerFromWorkflowAndUpdateWorkflowMetadata(email, trigger_name, trigger_id, associated_workflow_name, context)
 
                 remove_trigger_info(context, trigger_id)
 
@@ -130,9 +134,6 @@ def handle(value, context):
                 if trigger_name in user_triggers_list:
                     del user_triggers_list[trigger_name]
                 update_user_trigger_list(context, email, json.dumps(user_triggers_list))
-
-                #TODO: look up workflows associated with this trigger and remove the trigger from 
-                # associatedTriggers
                 
                 # write the user's list
                 status_msg = "Trigger deleted successfully. Message: " + res_obj["message"]
@@ -167,3 +168,127 @@ def handle(value, context):
     response["data"] = response_data
     print("[DeleteTrigger] response: " + str(response))
     return response
+
+
+def isWorkflowPresentAndDeployed(email, workflowname, sapi):
+    workflows = sapi.get(email + "_list_workflows", True)
+    if workflows is not None and workflows != "":
+        workflows = json.loads(workflows)
+    else:
+        workflows = {}
+
+    isWorkflowPresent = False
+    isWorkflowDeployed = False
+    details = {}
+    if workflowname in workflows:
+        wf_id = workflows[workflowname]
+        wf = sapi.get(email + "_workflow_" + wf_id, True)
+        if wf is not None and wf != "":
+            isWorkflowPresent = True
+            wf = json.loads(wf)
+            details["email"] = email
+            details["name"] = workflowname
+            details["id"] = wf_id
+            wf_status = sapi.get("workflow_status_" + wf_id, True)
+            details["status"] = wf_status
+            if "endpoints" in wf:
+                details["endpoints"] = wf["endpoints"]
+            if "modified" in wf:
+                details["modified"] = wf["modified"]
+            if "associatedTriggerableTables" in wf:
+                details["associatedTriggerableTables"] = wf["associatedTriggerableTables"]
+            if "associatedTriggers" in wf:
+                details["associatedTriggers"] = wf["associatedTriggers"]
+            if wf["status"] == "deployed" or wf["status"] == "deploying":
+                isWorkflowDeployed = True
+
+    return isWorkflowPresent, isWorkflowDeployed, details
+
+
+def deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_id, context):
+    wf = context.get(email + "_workflow_" + workflow_id, True)
+    if wf is None or wf == "":
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Workflow: " +
+              workflow_name + ": couldn't retrieve workflow metadata.")
+        raise Exception("[deleteTriggerFromWorkflowMetadata] User: " + email +
+                        ", Workflow: " + workflow_name + ": couldn't retrieve workflow metadata.")
+
+    wf = json.loads(wf)
+    print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Workflow: " +
+          workflow_name + ": Current workflow metadata: " + str(wf))
+
+    if 'associatedTriggers' not in wf:
+        wf['associatedTriggers'] = {}
+    associatedTriggers = wf['associatedTriggers']
+    if trigger_name in associatedTriggers:
+        del associatedTriggers[trigger_name]
+        wf['associatedTriggers'] = associatedTriggers
+        wf = context.put(email + "_workflow_" + workflow_id, json.dumps(wf), True)
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email +
+              ", Trigger: " + trigger_name + " removed from Workflow: " + workflow_name)
+    else:
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Trigger: " +
+              trigger_name + " not present in Workflow: " + workflow_name)
+
+
+def removeTriggerFromWorkflowAndUpdateWorkflowMetadata(email, trigger_name, trigger_id, workflow_name, context):
+    status_msg = ""
+    try:
+        removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context)
+    except Exception as e:
+        status_msg = status_msg + ", " + str(e)
+    finally:
+        isWorkflowPresent, isWorkflowDeployed, workflow_details = isWorkflowPresentAndDeployed(
+            email, workflow_name, context)
+        
+        try:
+            if isWorkflowPresent == True:
+                # add the trigger name in workflow's metadata
+                deleteTriggerFromWorkflowMetadata(
+                    email, trigger_name, workflow_name, workflow_details["id"], context)
+        except Exception as e:
+            status_msg = status_msg + ", " + str(e)
+
+    return status_msg
+
+
+def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
+    status_msg = ""
+    global_trigger_info = get_trigger_info(context, trigger_id)
+    workflow_to_remove = global_trigger_info["associated_workflows"][workflow_name]
+
+    # get the list of available frontends.
+    tf_hosts = get_available_frontends(context)
+    if len(tf_hosts) == 0:
+        raise Exception("No available TriggersFrontend found")
+
+    # if the frontend with the trigger is available
+    tf_ip_port = global_trigger_info["frontend_ip_port"]
+    if tf_ip_port not in tf_hosts:
+        raise Exception("Frontend: " + tf_ip_port + " not available")
+    
+    url = "http://" + tf_ip_port + "/remove_workflows"
+    # send the request and wait for response
+
+    req_obj = {"trigger_id": trigger_id, "workflows": [workflow_to_remove]}
+    print("Contacting: " + url + ", with data: " + str(req_obj))
+    res_obj = {}
+    try:
+        res = requests.post(url, json=req_obj)
+        if res.status_code != 200:
+            raise Exception("status code: " + str(res.status_code) + " returned")
+        res_obj = res.json()
+    except Exception as e:
+        status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
+    
+    if "status" in res_obj and res_obj["status"].lower() == "success":
+        # if success then update the global trigger table to add a new workflow.
+        print("Success response from " + url)
+        del global_trigger_info["associated_workflows"][workflow_name]
+        add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+        status_msg = "Trigger " + trigger_name + " removed successfully from workflow:" + workflow_name + ". Message: " + res_obj["message"]
+    else:
+        if "message" in res_obj:
+            status_msg = status_msg + ", message: " + res_obj["message"]
+        status_msg = "Error: " + status_msg + ", response: " + str(res_obj)
+        raise Exception(status_msg)
