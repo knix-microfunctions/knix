@@ -349,6 +349,13 @@ def actionOther(action, data, sapi):
     possibleActions["performStorageAction"] = True
     possibleActions["deleteTriggerableBucket"] = True
     possibleActions["deleteStorageTriggerForWorkflow"] = True
+    possibleActions["addTrigger"] = True
+    possibleActions["deleteTrigger"] = True
+    possibleActions["addTriggerForWorkflow"] = True
+    possibleActions["deleteTriggerForWorkflow"] = True
+
+    possibleActionsUnauthenticated = {}
+    possibleActionsUnauthenticated["triggersFrontendStatus"] = True
 
     deprecatedActions = {}
     deprecatedActions["clearWorkflowLog"] = True
@@ -391,6 +398,10 @@ def actionOther(action, data, sapi):
             response_data["message"] = "User verification failed: " + \
                 statusmessage
             sapi.log(response_data["message"])
+    elif action in possibleActionsUnauthenticated:
+        output = {"next": action, "value": data}
+        sapi.add_dynamic_workflow(output)
+        return {}
     else:
         response_data["message"] = "Unsupported action."
 

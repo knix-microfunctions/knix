@@ -316,8 +316,8 @@ class PublicationUtils():
             resp = requests.post(remote_address,
                                 params={"async": 1},
                                 json={},
-                                headers={"X-MFN-Action": "Session-Update",
-                                        "X-MFN-Action-Data": json.dumps(action_data)})
+                                headers={"x-mfn-action": "session-update",
+                                        "x-mfn-action-data": json.dumps(action_data)})
 
         elif message_type == "global_pub":
             # TODO: if global publishing, set headers appropriately (e.g., for load balancing)

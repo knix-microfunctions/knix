@@ -90,6 +90,8 @@ class MicroFunctionsAPI:
         self._management_endpoints = management_endpoints
         self._useremail = useremail
         self._usertoken = usertoken
+        self._sid = sid
+        self._wid = wid
 
         self._data_layer_operator = DataLayerOperator(
             uid, sid, wid, self._datalayer)
@@ -2010,6 +2012,157 @@ class MicroFunctionsAPI:
                   ", Error message: " + str(message) + ", response: " + str(response))
             return None
         return response
+
+
+    def addTrigger(self, trigger_name, trigger_info):
+        '''
+        Args:
+            trigger_name (string): User provided name for the trigger. Should be unique within this user's account.
+            trigger_info (dict): Trigger specific information. {
+                trigger_type (string): Type of trigger to associate with a workflow. Currently supported values: "amqp", "timer",
+                For "amqp",
+                    amqp_addr (string) 
+                    routing_key (string), 
+                    exchange (string),
+                For 'timer', 
+                    timer_interval_ms: specified in milli-seconds.
+            }
+        Returns:
+            (status, status_message)
+            status (boolean) - True, if the trigger was created successfully. False, otherwise 
+            status_message (string) - status message, depending on 'status'
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for message queue triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        request = \
+            {
+                "action": "addTrigger",
+                "data": {
+                    "trigger_name": trigger_name,
+                    "trigger_info": trigger_info
+                }
+            }
+
+        status, message, response = self._invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            error_msg = str(message) + ", response: " + str(response)
+            print("Error: Unable to create trigger " + trigger_name + " with information: " + str(trigger_info) + ", Error message: " + error_msg)
+            return False, error_msg
+        return True, response["data"]["message"]
+
+
+    def addTriggerForWorkflow(self, trigger_name, workflow_name, workflow_state = ""):
+        '''
+        Args:
+            trigger_name (string): Name of an existing trigger to a workflow to.
+            workflow_name (string): Name of the workflow to add to the trigger.
+            workflow_state (string): (Optional) Name of the state within the workflow to invoke from the trigger. If not specified then the entry state will be invoked by default.
+        Returns:
+            (status, status_message)
+            status (boolean) - True, if the workflow was added to the trigger successfully. False, otherwise 
+            status_message (string) - status message, depending on 'status'
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for message queue triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        workflow_state_topic = ""
+        if type(workflow_state) == type("") and workflow_state is not "" and len(workflow_state) > 0:
+            workflow_state_topic = self._sid + "-" + self._wid + "-" + workflow_state
+        
+        request = \
+            {
+                "action": "addTriggerForWorkflow",
+                "data": {
+                    "trigger_name": trigger_name,
+                    "workflow_name": workflow_name,
+                    "workflow_state": workflow_state_topic
+                }
+            }
+
+        status, message, response = self._invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            error_msg = str(message) + ", response: " + str(response)
+            print("Error: Unable to add trigger " + trigger_name + " for workflow " + workflow_name + ", Error message: " + error_msg)
+            return False, error_msg
+        return True, response["data"]["message"]
+
+
+    def deleteTriggerForWorkflow(self, trigger_name, workflow_name):
+        '''
+        Args:
+            trigger_name (string): Name of the trigger from which to remove a workflow.
+            workflow_name (string): Name of the workflow to remove from the trigger.
+        Returns:
+            (status, status_message)
+            status (boolean) - True, if the workflow was remove from this trigger successfully. False, otherwise 
+            status_message (string) - status message or error message, depending on 'status'
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for message queue triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+        '''
+        request = \
+            {
+                "action": "deleteTriggerForWorkflow",
+                "data": {
+                    "trigger_name": trigger_name,
+                    "workflow_name": workflow_name
+                    }
+            }
+
+        status, message, response = self._invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            error_msg = str(message) + ", response: " + str(response)
+            print("Error: Unable to remove workflow: " + workflow_name + " from the trigger: " + trigger_name + ", Error message: " + error_msg)
+            return False, error_msg
+        return True, response["data"]["message"]
+
+    def deleteTrigger(self, trigger_name):
+        '''
+        Args:
+            trigger_name (string): Name of an existing trigger to delete
+        Returns:
+            (status, status_message)
+            status (boolean) - True, if the trigger was deleted successfully. False, otherwise 
+            status_message (string) - status message, depending on 'status'
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for message queue triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        request = \
+            {
+                "action": "deleteTrigger",
+                "data": {
+                    "trigger_name": trigger_name
+                }
+            }
+
+        status, message, response = self._invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            error_msg = str(message) + ", response: " + str(response)
+            print("Error: Unable to delete trigger " + trigger_name + ", Error message: " + error_msg)
+            return False, error_msg
+        return True, response["data"]["message"]
+
 
     def _invoke_management_api(self, request):
         status = False

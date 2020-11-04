@@ -70,5 +70,7 @@ def getWorkflowDetails(email, workflowname, sapi):
         details["modified"] = wf["modified"]
     if "associatedTriggerableTables" in wf:
         details["associatedTriggerableTables"] = wf["associatedTriggerableTables"]
+    if "associatedTriggers" in wf:
+        details["associatedTriggers"] = wf["associatedTriggers"]
 
     return details

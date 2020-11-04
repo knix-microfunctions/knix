@@ -154,6 +154,9 @@ def delete_user(email, storage_userid, sapi):
     # delete also the metadata about triggerable tables
     sapi.delete(email + "_list_trigger_tables", True, True)
 
+    # delete metadata about message queue triggers
+    sapi.delete(email + "_list_triggers", True, True)
+
     # TODO: local data layer entries for user storage for each host
 
     # delete user login

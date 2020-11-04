@@ -116,7 +116,7 @@ or:
         # For a single remote host installation, the hostname should be added to all groups.
 
         # For a cluster of hosts (preferably 3 or more), all host names must be added to [riak] group.
-        #  Only one host name (referred to as the <frontend-hostname>) should be added for other groups [elasticsearch], [management], [frontend], and [nginx].
+        #  Only one host name (referred to as the <nginx-hostname>) should be added for other groups [elasticsearch], [management], [triggers_frontend], and [nginx].
         ```
 
 3. Update `settings.json`
@@ -139,4 +139,4 @@ or:
     make
     ```
 
-6. After installation, open a browser and access `http://<frontend-hostname>:<nginx_http_listen_port>/`
+6. After installation, open a browser and access `http://<nginx-hostname>:<nginx_http_listen_port>/`
