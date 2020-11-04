@@ -372,7 +372,7 @@ impl TriggerManager {
             match trigger_spawned {
                 Ok(chan) => {
                     // wait for trigger to get into ready state
-                    let ready_result = self.wait_for_trigger_ready(&trigger_id, 4000).await;
+                    let ready_result = self.wait_for_trigger_ready(&trigger_id, 5000).await;
                     match ready_result {
                         Ok(status) => {
                             // Trigger is ready

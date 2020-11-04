@@ -8,9 +8,9 @@ parameters = pika.ConnectionParameters('paarijaat-debian-vm', 5672, '/rabbitvhos
 connection = pika.BlockingConnection(parameters)
 channel = connection.channel()
 
-channel.exchange_declare(exchange='rabbitexchange', exchange_type='topic', durable=True)
+channel.exchange_declare(exchange='egress_exchange', exchange_type='topic', durable=False)
 
-routing_key = "rabbit.routing.key"
+routing_key = "rabbit.test.key"
 
 while True:
     value = input("Press Enter to send a message. Any other 'key + Enter' will exit. ")
@@ -18,7 +18,7 @@ while True:
     if len(value) > 0:
         break;
     message = 'Hello world ' + str(time.time())
-    channel.basic_publish(exchange='rabbitexchange', routing_key=routing_key, body=message)
+    channel.basic_publish(exchange='egress_exchange', routing_key=routing_key, body=message)
     print(" [x] Sent %r:%r" % (routing_key, message))
 
 connection.close()

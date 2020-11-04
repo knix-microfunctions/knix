@@ -45,12 +45,13 @@ class TriggersAmqpTest(unittest.TestCase):
 
         input_data = []
         workflowname = "wf_triggers_amqp"
-        routingkey = "rabbit.routing.key"
+        routingkey_to_expect = "rabbit.routing.key"
+        routingkey = "rabbit.*.*"
         input_data.append(workflowname)
         input_data.append(nonce)
         input_data.append("amqp://rabbituser:rabbitpass@" + curr_hostname + ":5672/%2frabbitvhost")
         input_data.append(routingkey)
-        input_data.append("rabbitexchange")
+        input_data.append("egress_exchange")
 
         response = test.execute(input_data)
 
@@ -61,13 +62,15 @@ class TriggersAmqpTest(unittest.TestCase):
         counter_state_1 = 0
         counter_state_2 = 0
         for line in log_lines:
-            if "_!_TRIGGER_START_" + nonce + ";triggers_amqp;" + workflowname + ";" + routingkey + ";" in line.strip():
+            if "_!_TRIGGER_START_" + nonce + ";triggers_amqp;" + workflowname + ";" + routingkey_to_expect + ";" in line.strip():
                 counter_state_1 = counter_state_1 + 1
+                print(line.strip())
 
-            if "_!_TRIGGER_START_" + nonce + ";triggers_amqp_state2;" + workflowname + ";" + routingkey + ";" in line.strip():
+            if "_!_TRIGGER_START_" + nonce + ";triggers_amqp_state2;" + workflowname + ";" + routingkey_to_expect + ";" in line.strip():
                 counter_state_2 = counter_state_2 + 1
+                print(line.strip())
         
-        if counter_state_1 >=9 and counter_state_2 >=9:
+        if counter_state_1 >=4 and counter_state_2 >=9:
             print("Number of state1 triggers: " + str(counter_state_1))
             print("Number of state2 triggers: " + str(counter_state_2))
             test.report(True, str(input_data), input_data, response)

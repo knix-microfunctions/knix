@@ -52,8 +52,9 @@ def handle(event, context):
                 "trigger_type": "amqp", 
                 "amqp_addr": amqp_addr, 
                 "routing_key": routing_key, 
-                "exchange": exchange,    # optional
-                "auto_ack": True         # optional
+                "exchange": exchange,    # optional, default "egress_exchange"
+                "with_ack": False,       # optional, default False. False means auto ack
+                "durable": False,        # optional, default False. 
             }
             addTrigger(trigger_name, trigger_info, context)
 
@@ -72,7 +73,7 @@ def handle(event, context):
             # associating main wf with the trigger
             addTriggerForWorkflow(trigger_name, workflowname, "", context)
             
-            time.sleep(10)
+            time.sleep(5)
 
             # associating main wf with the trigger
             deleteTriggerForWorkflow(trigger_name, workflowname, context)

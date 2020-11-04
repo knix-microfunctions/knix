@@ -30,10 +30,15 @@ use crate::TriggerStatus;
 pub struct AMQPSubscriberInfo {
     amqp_addr: String,
     routing_key: String,
-    exchange: String,
-    durable: bool,
-    exclusive: bool,
-    auto_ack: bool,
+    exchange: String,  // "egress_exchange", by default
+    durable: bool,     // False, by default
+    exclusive: bool,   // False, by default
+    auto_delete: bool, // True by default
+    no_wait: bool,     // True by default 
+    with_ack: bool,     // False, by default
+                        // False means no manual ack, hence means auto_ack
+                        // This is converted to basic_consume option: no_ack = !with_ack
+                        
 }
 
 pub struct AMQPTrigger {
@@ -145,7 +150,7 @@ pub async fn handle_create_amqp_trigger(
         exchange: if trigger_info.has_key("exchange") {
             trigger_info["exchange"].to_string()
         } else {
-            "".into()
+            "egress_exchange".into()
         },
         durable: if trigger_info.has_key("durable") {
             trigger_info["durable"].as_bool().unwrap()
@@ -157,10 +162,20 @@ pub async fn handle_create_amqp_trigger(
         } else {
             false
         },
-        auto_ack: if trigger_info.has_key("auto_ack") {
-            trigger_info["auto_ack"].as_bool().unwrap()
+        auto_delete: if trigger_info.has_key("auto_delete") {
+            trigger_info["auto_delete"].as_bool().unwrap()
         } else {
             true
+        },
+        no_wait: if trigger_info.has_key("no_wait") {
+            trigger_info["no_wait"].as_bool().unwrap()
+        } else {
+            true
+        },
+        with_ack: if trigger_info.has_key("with_ack") {
+            trigger_info["with_ack"].as_bool().unwrap()
+        } else {
+            false
         },
     };
 
@@ -186,6 +201,7 @@ async fn send_amqp_data(
     let workflow_msg: TriggerWorkflowMessage;
     match String::from_utf8(amqp_data) {
         Ok(v) => {
+            debug!("[send_amqp_data] source: {}, data: {}", &source, &v);
             for workflow_info in workflows {
                 let workflow_msg = TriggerWorkflowMessage {
                     trigger_status: "ready".into(),
@@ -272,18 +288,20 @@ pub async fn amqp_actor_loop(
     info!("[amqp_actor_loop] {} start", trigger_id);
 
     let addr = &amqp_sub_info.amqp_addr;
+    info!("[amqp_actor_loop] {} Before [connect], addr: {}", trigger_id, addr);
     let conn: lapin::Connection =
         Connection::connect(addr, ConnectionProperties::default()).await?;
-    info!("[amqp_actor_loop] {} connected", trigger_id);
+    info!("[amqp_actor_loop] {} After [connect]", trigger_id);
 
     //receive channel
     let channel: Channel = conn.create_channel().await?;
     info!(
-        "[amqp_actor_loop] {} state: {:?}",
+        "[amqp_actor_loop] {} After [create_channel] state: {:?}",
         trigger_id,
         conn.status().state()
     );
 
+    /*
     let eops = ExchangeDeclareOptions {
         durable: amqp_sub_info.durable,
         ..ExchangeDeclareOptions::default()
@@ -296,42 +314,59 @@ pub async fn amqp_actor_loop(
             FieldTable::default(),
         )
         .await?;
-
     info!("[amqp_actor_loop] {} After exchange_declare", trigger_id);
+    */
 
     let qops = QueueDeclareOptions {
         durable: amqp_sub_info.durable,
         exclusive: amqp_sub_info.exclusive,
+        auto_delete: amqp_sub_info.auto_delete,
+        nowait: amqp_sub_info.no_wait,
         ..QueueDeclareOptions::default()
     };
+    info!(
+        "[amqp_actor_loop] {} Before [queue_declare], queue_name: {}, options {:?}",
+        trigger_id, trigger_id, qops
+    );
+
     let queue: lapin::Queue = channel
-        .queue_declare("", qops, FieldTable::default())
+        .queue_declare(trigger_id.as_str(), qops, FieldTable::default())
         .await?;
 
     info!(
-        "[amqp_actor_loop] {} Declared queue {:?}",
-        trigger_id, queue
+        "[amqp_actor_loop] {} After [queue_declare], queue_name: {}, options {:?}",
+        trigger_id, trigger_id, qops
     );
+
+    let qbops = QueueBindOptions {
+        //nowait: amqp_sub_info.no_wait,
+        ..QueueBindOptions::default()
+    };
+
+    info!("[amqp_actor_loop] {} Before [queue_bind], queue_name: {}, exchange: {}, routing_key: {}, options: {:?}", trigger_id, trigger_id, &amqp_sub_info.exchange, &amqp_sub_info.routing_key, qbops);
 
     let qbind_response = channel
         .queue_bind(
-            queue.name().as_str(),
+            trigger_id.as_str(),
             &amqp_sub_info.exchange,
             &amqp_sub_info.routing_key,
-            QueueBindOptions::default(),
+            qbops,
             FieldTable::default(),
         )
         .await?;
 
-    info!("[amqp_actor_loop] {} After queue bind", trigger_id);
+    info!("[amqp_actor_loop] {} After [queue_bind], queue_name: {}, exchange: {}, routing_key: {}, options: {:?}", trigger_id, trigger_id, &amqp_sub_info.exchange, &amqp_sub_info.routing_key, qbops);
 
     let cops = BasicConsumeOptions {
-        no_ack: amqp_sub_info.auto_ack,
+        no_ack: !amqp_sub_info.with_ack,
         ..BasicConsumeOptions::default()
     };
+    info!("[amqp_actor_loop] {} Before [basic_consume], queue_name: {}, options: {:?}", trigger_id, trigger_id, cops);
     let mut consumer: Consumer = channel
-        .basic_consume(queue.name().as_str(), "", cops, FieldTable::default())
+        .basic_consume(trigger_id.as_str(), "", cops, FieldTable::default())
         .await?;
+
+    info!("[amqp_actor_loop] {} After [basic_consume], queue_name: {}, options: {:?}", trigger_id, trigger_id, cops);
 
     info!("[amqp_actor_loop] {} Ready to consume", trigger_id);
     send_status_update_from_trigger_to_manager(
@@ -393,7 +428,8 @@ pub async fn amqp_actor_loop(
                     Some(delivery) => {
                         match delivery {
                             Ok((chan, amqp_msg)) => {
-                                tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), amqp_sub_info.routing_key.clone()));
+                                let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
+                                tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key));
                             }
                             Err(e) => {
                                 let ret_msg = format!("[amqp_actor_loop] Trigger id {}, recv a msg on amqp channel, but unwrapping produced an error: {:?}", trigger_id, e);

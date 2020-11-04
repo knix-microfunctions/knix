@@ -87,13 +87,13 @@ curl -H "Content-Type: application/json" -d \
   "trigger_name": "user_provided_name_for_trigger",
   "trigger_info": {
     "amqp_addr": "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost",
-    "routing_key": "rabbit.routing.key",
-    "exchange": "rabbitexchange",
-    "auto_ack": true,
+    "routing_key": "rabbit.*.*",
+    "exchange": "egress_exchange",
     "durable": false,
-    "exclusive": false
+    "exclusive": false,
+    "with_ack": false
   }
-}' http://localhost:8080/create_trigger
+}' http://localhost:4997/create_trigger
 ```
 
 ### Creating a Timer Trigger

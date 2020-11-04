@@ -165,7 +165,7 @@ def handle(value, context):
                     "trigger_id": trigger_id,
                     "storage_userid": storage_userid,
                     "trigger_name": trigger_name,
-                    "associated_workflows": {},
+                    "associated_workflows": {}, # key = workflow_name, value: {"workflow_url": "", "workflow_name": "", "workflow_state": ""}
                     "frontend_command_info": \
                         {
                             "trigger_type": trigger_type,
