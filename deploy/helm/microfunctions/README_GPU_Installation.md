@@ -166,7 +166,7 @@ Note: This drop-in only works with kubeadm and kubelet v1.11+
 
 ```bat
 [Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf –kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf -–kubeconfig=/etc/kubernetes/kubelet.conf"
 
 Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
 Environment="KUBELET_EXTRA_ARGS=--feature-gates=DevicePlugins=true"
@@ -179,8 +179,12 @@ EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
 
 EnvironmentFile=-/etc/default/kubelet
 ExecStart=
-ExecStart=/usr/local/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGSOn the GPU node, reload and restart kubelet to apply previous changes to the configuration.
+ExecStart=/usr/local/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+```
 
+On the GPU node, reload and restart kubelet to apply previous changes to the configuration.
+
+```bat
 sudo systemctl daemon-reload
 sudo systemctl restart kubelet
 ```
