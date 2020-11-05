@@ -254,7 +254,8 @@ kubectl label nodes gpuhost accelerator=nvidia-gtx-1050
 ```
 
 13.  To check nodes for accelerator label, run 
-```bat kubectl get nodes -L accelerator
+```bat 
+kubectl get nodes -L accelerator
 ``` 
 on Kubernetes master.
 
