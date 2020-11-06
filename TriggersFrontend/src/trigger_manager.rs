@@ -686,12 +686,40 @@ async fn trigger_manager_actor_loop(
                                             TriggerStatus::StoppedError => {
                                                 let ret_msg = format!("[UpdateTriggerStatus] Trigger id {} stopped with Error: {}", &trigger_id, &status_msg);
                                                 warn!("{}", ret_msg);
+                                                let curr_status: TriggerStatus = current_status.clone();
                                                 // remove the trigger from the status map
                                                 id_to_trigger_status_map.remove(&trigger_id);
                                                 // insert error message in error map
                                                 id_to_trigger_error_map.insert(trigger_id.clone(), status_msg);
                                                 id_to_trigger_chan_map.remove(&trigger_id);
                                                 resp.send((true, "ok".to_string()));
+
+                                                match curr_status {
+                                                    TriggerStatus::Ready => {
+                                                        let ret_msg = format!("[UpdateTriggerStatus] Notifying management about change to StoppedError status for trigger {} from Ready state ", &trigger_id);
+                                                        warn!("{}", ret_msg);
+                                                        info!("[trigger_manager_actor_loop] Reporting status to {}", &manager_info.management_url);
+                                                        let update_message = TriggerManagerStatusUpdateMessage {
+                                                            action: manager_info.management_action.clone(),
+                                                            data: TriggerManagerStatusUpdateMessageData {
+                                                                action: "status".into(),
+                                                                self_ip_port: manager_info.self_ip_port.clone(),
+                                                                trigger_status_map: id_to_trigger_status_map.clone(),
+                                                                trigger_error_map: id_to_trigger_error_map.clone(),
+                                                                user: HashMap::new(),
+                                                            }
+                                                        };
+                                        
+                                                        let serialized_update_message = serde_json::to_string(&update_message);
+                                                        tokio::spawn(report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()));
+                                                        // we have reported it to management, so clear the error map
+                                                        id_to_trigger_error_map.clear();    
+                                                    }
+                                                    _ => {
+                                                        let ret_msg = format!("[UpdateTriggerStatus] Ignoring Trigger status changed to StoppedError {} from {} state", &trigger_id, trigger_status_to_string(&curr_status));
+                                                        warn!("{}", ret_msg);        
+                                                    }
+                                                }
                                             }
                                             TriggerStatus::Starting | TriggerStatus::Stopping => {
                                                 let ret_msg = format!("[UpdateTriggerStatus] Ignoring attempt to change status of Trigger id {} to {}, from an actor", &trigger_id, trigger_status_to_string(&status_update));

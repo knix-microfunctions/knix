@@ -92,11 +92,7 @@ class TriggersAmqpTest(unittest.TestCase):
         rabbit.terminate()
         subprocess.Popen(["scripts/stop_local_rabbitmq.sh"])
         
-        time.sleep(50)
-
-        logs = test.get_workflow_logs()
-        wflog = logs["log"]
-        log_lines = wflog.split("\n")
+        time.sleep(20)
 
         logs = test.get_workflow_logs()
         wflog = logs["log"]
