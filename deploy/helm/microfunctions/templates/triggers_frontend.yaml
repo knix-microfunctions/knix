@@ -76,7 +76,7 @@ spec:
         runAsUser: 1000
         fsGroup: 1000
       containers:
-      - name: triggers_frontend
+      - name: triggers-frontend
         image: "{{ .Values.imageRepo }}{{ .Values.triggersFrontend.imagePath }}:{{ .Values.triggersFrontend.imageTag }}"
         imagePullPolicy: "{{ .Values.triggersFrontend.imagePullPolicy }}"
         ports:
@@ -86,12 +86,12 @@ spec:
 {{ toYaml .Values.triggersFrontend.resources | indent 10}}
         env:
         - name: MANAGEMENT_URL
-          value: http://{{ include "nginx.mgmtService" . | regexFind "^[^.]+" }}
+          value: "http://{{ include "nginx.mgmtService" . | regexFind "^[^.]+" }}"
         - name: MANAGEMENT_REQUEST_HOST_HEADER
-          value: {{ include "nginx.mgmtService" . }}
+          value: "{{ include "nginx.mgmtService" . }}"
         - name: TRIGGERS_FRONTEND_PORT
-          value: {{ .Values.triggersFrontend.httpPort }}
+          value: "{{ .Values.triggersFrontend.httpPort }}"
         - name: TRIGGERS_FRONTEND_LOG_LEVEL
-          value: info
+          value: "info"
         - name: MANAGEMENT_UPDATE_INTERVAL_SEC
-          value: {{ .Values.triggersFrontend.statusReportIntervalSec }}
+          value: "{{ .Values.triggersFrontend.statusReportIntervalSec }}"

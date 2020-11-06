@@ -18,11 +18,11 @@ include ../build_env.mk
 UID:=`id -u`
 GID:=`id -g`
 
-all: target/release/triggers_frontend
+all: target/release/TriggersFrontend
 
 GIT_REVISION:=`git describe --tags --always --dirty=-dirty`
 RUST_SOURCES=$(shell find src/ -type f)
-target/release/triggers_frontend: $(JAVA_SOURCES) Cargo.toml ../build_env.mk
+target/release/TriggersFrontend: $(RUST_SOURCES) Cargo.toml ../build_env.mk
 	docker run -it --rm --name build_triggers_frontend \
 		--user $(UID):$(GID) \
 		-v $(CURDIR):/code -w /code \
@@ -33,9 +33,7 @@ clean:
 
 include ../docker.mk
 
-image: \
-	Dockerfile \
-	target/release/triggers_frontend
+image: Dockerfile target/release/TriggersFrontend
 	$(call build_image,Dockerfile,microfn/triggers_frontend)
 
 push: image
