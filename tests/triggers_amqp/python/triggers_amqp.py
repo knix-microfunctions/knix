@@ -33,7 +33,7 @@ workflow_other_json = '''{
 
 # sample input
 #    name of this wf,    nonce,         amqp address,                                                               routing key,    amqp exchange name
-# [ "wf_triggers_amqp", "23049823", "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost", "rabbit.routing.key", "rabbitexchange"]
+# [ "wf_triggers_amqp", "23049823", "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost", "rabbit.*.*", "egress_exchange"]
 
 def handle(event, context):
     if type(event) == type([]):
@@ -56,6 +56,9 @@ def handle(event, context):
                 "with_ack": False,       # optional, default False. False means auto ack
                 "durable": False,        # optional, default False. 
             }
+            
+            time.sleep(3)
+            
             addTrigger(trigger_name, trigger_info, context)
 
             time.sleep(1)
@@ -63,7 +66,7 @@ def handle(event, context):
             # associating main wf with the trigger
             addTriggerForWorkflow(trigger_name, workflowname, "triggers_amqp_state2", context)
             
-            time.sleep(10)
+            time.sleep(3)
 
             # associating main wf with the trigger
             deleteTriggerForWorkflow(trigger_name, workflowname, context)
@@ -78,10 +81,17 @@ def handle(event, context):
             # associating main wf with the trigger
             deleteTriggerForWorkflow(trigger_name, workflowname, context)
 
-
             deleteTrigger(trigger_name, context)
 
             time.sleep(3)
+
+            addTrigger(trigger_name, trigger_info, context)
+
+            time.sleep(1)
+
+            addTriggerForWorkflow(trigger_name, workflowname, "triggers_amqp_state2", context)
+
+            time.sleep(2)
 
         except Exception as e:
             print("Exception: " + str(e))
@@ -98,7 +108,10 @@ def handle(event, context):
             and 'data' in event:
                 assert(event["trigger_type"] == "amqp")
                 assert(event["trigger_status"] == "ready" or event["trigger_status"] == "error")
-                print("_!_TRIGGER_START_" + event['trigger_name'] + ";triggers_amqp;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
+                if event["trigger_status"] == "ready":
+                    print("_!_TRIGGER_START_" + event['trigger_name'] + ";triggers_amqp;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
+                else:
+                    print("_!_TRIGGER_ERROR_" + event['trigger_name'] + ";triggers_amqp;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
                 time.sleep(1)
         else:
             print("ERROR: received event: " + str(event))

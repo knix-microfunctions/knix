@@ -31,7 +31,10 @@ def handle(event, context):
             and 'data' in event:
                 assert(event["trigger_type"] == "amqp")
                 assert(event["trigger_status"] == "ready" or event["trigger_status"] == "error")
-                print("_!_TRIGGER_START_" + event['trigger_name'] + ";triggers_amqp_state2;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
+                if event["trigger_status"] == "ready":
+                    print("_!_TRIGGER_START_" + event['trigger_name'] + ";triggers_amqp_state2;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
+                else:
+                    print("_!_TRIGGER_ERROR_" + event['trigger_name'] + ";triggers_amqp_state2;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
                 time.sleep(1)
                 return {}
         elif type(event) == type({}):

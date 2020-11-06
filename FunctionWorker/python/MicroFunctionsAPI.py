@@ -2023,7 +2023,10 @@ class MicroFunctionsAPI:
                 For "amqp",
                     amqp_addr (string) 
                     routing_key (string), 
-                    exchange (string),
+                    exchange (string), "egress_exchange" (default)
+                    with_ack (boolean), False (default) - means automatic acks,
+                    durable (boolean), False (default),
+                    exclusive (boolean), False (default)
                 For 'timer', 
                     timer_interval_ms: specified in milli-seconds.
             }

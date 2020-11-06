@@ -89,9 +89,9 @@ curl -H "Content-Type: application/json" -d \
     "amqp_addr": "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost",
     "routing_key": "rabbit.*.*",
     "exchange": "egress_exchange",
+    "with_ack": false,
     "durable": false,
-    "exclusive": false,
-    "with_ack": false
+    "exclusive": false
   }
 }' http://localhost:4997/create_trigger
 ```

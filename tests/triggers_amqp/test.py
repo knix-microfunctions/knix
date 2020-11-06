@@ -18,20 +18,22 @@ import sys
 import time
 import unittest
 import socket
-
+import os
 import subprocess
 
 sys.path.append("../")
 from mfn_test_utils import MFNTest
 
 print("Starting rabbitmq")
-rabbit = subprocess.Popen(["scripts/run_local_rabbitmq.sh"], close_fds=True)
-time.sleep(10)
+rabbit = subprocess.Popen(["scripts/run_local_rabbitmq.sh"])
+time.sleep(20)
 print("Starting publisher")
-pub = subprocess.Popen(["scripts/run_local_publisher.sh"], close_fds=True)
+pub = subprocess.Popen(["scripts/run_local_publisher.sh"])
+time.sleep(10)
+os.system("scripts/run_local_subscriber.sh")
+print("Publisher is ready")
 
 class TriggersAmqpTest(unittest.TestCase):
-
     # @unittest.skip("")
     def test_triggers_storage(self):
         test = MFNTest(test_name='triggers_amqp',
@@ -55,38 +57,76 @@ class TriggersAmqpTest(unittest.TestCase):
 
         response = test.execute(input_data)
 
+        time.sleep(2)
+
+        counter_state_1 = 0
+        counter_state_2 = 0
+
+        counter_state_1_error = 0
+        counter_state_2_error = 0
+
         logs = test.get_workflow_logs()
         wflog = logs["log"]
         log_lines = wflog.split("\n")
 
-        counter_state_1 = 0
-        counter_state_2 = 0
         for line in log_lines:
             if "_!_TRIGGER_START_" + nonce + ";triggers_amqp;" + workflowname + ";" + routingkey_to_expect + ";" in line.strip():
                 counter_state_1 = counter_state_1 + 1
                 print(line.strip())
 
+            if "_!_TRIGGER_ERROR_" + nonce + ";triggers_amqp;" + workflowname + ";;" in line.strip():
+                counter_state_1_error = counter_state_1_error + 1
+                print(line.strip())
+
             if "_!_TRIGGER_START_" + nonce + ";triggers_amqp_state2;" + workflowname + ";" + routingkey_to_expect + ";" in line.strip():
                 counter_state_2 = counter_state_2 + 1
                 print(line.strip())
+
+            if "_!_TRIGGER_ERROR_" + nonce + ";triggers_amqp_state2;" + workflowname + ";;" in line.strip():
+                counter_state_2_error = counter_state_2_error + 1
+                print(line.strip())
+
+
+        print("Force stopping AMQP broker and checking for error message propagation")
+        pub.terminate()
+        rabbit.terminate()
+        subprocess.Popen(["scripts/stop_local_rabbitmq.sh"])
         
-        if counter_state_1 >=4 and counter_state_2 >=9:
+        time.sleep(50)
+
+        logs = test.get_workflow_logs()
+        wflog = logs["log"]
+        log_lines = wflog.split("\n")
+
+        logs = test.get_workflow_logs()
+        wflog = logs["log"]
+        log_lines = wflog.split("\n")
+
+        for line in log_lines:
+
+            if "_!_TRIGGER_ERROR_" + nonce + ";triggers_amqp;" + workflowname + ";;" in line.strip():
+                counter_state_1_error = counter_state_1_error + 1
+                print(line.strip())
+
+            if "_!_TRIGGER_ERROR_" + nonce + ";triggers_amqp_state2;" + workflowname + ";;" in line.strip():
+                counter_state_2_error = counter_state_2_error + 1
+                print(line.strip())
+
+
+        if counter_state_1 >=2 and counter_state_2 >=4 and counter_state_1_error == 0 and counter_state_2_error == 1:
             print("Number of state1 triggers: " + str(counter_state_1))
             print("Number of state2 triggers: " + str(counter_state_2))
+            print("Number of state1 error triggers: " + str(counter_state_1_error))
+            print("Number of state1 error triggers: " + str(counter_state_2_error))
             test.report(True, str(input_data), input_data, response)
         else:
             print("Number of state1 triggers: " + str(counter_state_1))
             print("Number of state2 triggers: " + str(counter_state_2))
+            print("Number of state1 error triggers: " + str(counter_state_1_error))
+            print("Number of state1 error triggers: " + str(counter_state_2_error))
             test.report(False, str(input_data), input_data, response)
             for line in log_lines:
                 print(line.strip())
 
-
         test.undeploy_workflow()
         test.cleanup()
-
-        pub.terminate()
-        rabbit.terminate()
-
-        subprocess.Popen(["scripts/stop_local_rabbitmq.sh"])
-

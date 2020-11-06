@@ -869,14 +869,14 @@ async fn trigger_manager_actor_loop(
                                                         resp.send((true, "ok".to_string()));
                                                     }
                                                     _ => {
-                                                        warn!("[RemoveWorkflows] Ignoring attempt to add workflows for Trigger id {}, as Trigger already in {} state", trigger_id, trigger_status_to_string(&status));
+                                                        warn!("[RemoveWorkflows] Ignoring attempt to remove workflows for Trigger id {}, as Trigger already in {} state", trigger_id, trigger_status_to_string(&status));
                                                         resp.send((true, "ok".to_string()));
                                                     }
                                                 }
                                             }
                                             None => {
                                                 //id_to_trigger_error_map.remove(&trigger_id);
-                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to add workflows for Trigger id {} in status {}, with a non-existent channel", &trigger_id, trigger_status_to_string(&status));
+                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to remove workflows for Trigger id {} in status {}, with a non-existent channel", &trigger_id, trigger_status_to_string(&status));
                                                 warn!("{}", ret_msg);
                                                 resp.send((false, ret_msg));
                                             }
@@ -887,12 +887,12 @@ async fn trigger_manager_actor_loop(
                                         let trigger_status_error = id_to_trigger_error_map.get(&trigger_id);
                                         match trigger_status_error {
                                             Some(status_msg) => {
-                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to add workflows for Trigger id {}, which stopped previously with Error: {}", &trigger_id, status_msg);
+                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to remove workflows for Trigger id {}, which stopped previously with Error: {}", &trigger_id, status_msg);
                                                 warn!("{}", ret_msg);
                                                 resp.send((true, ret_msg));
                                             }
                                             None => {
-                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to add workflows for a non existent Trigger id {}", &trigger_id);
+                                                let ret_msg = format!("[RemoveWorkflows] Ignoring attempt to remove workflows for a non existent Trigger id {}", &trigger_id);
                                                 warn!("{}", ret_msg);
                                                 resp.send((false, ret_msg));
                                             }
