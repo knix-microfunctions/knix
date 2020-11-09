@@ -132,6 +132,8 @@ def handle(value, sapi):
     assert isinstance(value, dict)
     data = value
 
+    print(data)
+
     message = ''
     success = False
     response = {}
@@ -162,11 +164,10 @@ def handle(value, sapi):
 
         if "workflowid" in storage and storage["workflowid"] is not None and storage["workflowid"] != "":
             dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=storage["workflowid"])
-        elif storage["tableName"] is not None:
+        elif "tableName" in storage and storage["tableName"] is not None:
             dlc = sapi.get_privileged_data_layer_client(storage_userid, tableName=storage["tableName"])
         else:
             dlc = sapi.get_privileged_data_layer_client(storage_userid)
-
 
         success, message, response_data = handle_storage_action(storage, dlc)
 
@@ -209,6 +210,8 @@ def handle_storage_action(storage, dlc):
     }
     '''
 
+    print(storage)
+
     message = ''
     response_data = {"status": False}
     storage_data_type = storage["data_type"]
@@ -222,6 +225,8 @@ def handle_storage_action(storage, dlc):
         status, message, response_data = handle_storage_action_set(parameters, dlc)
     elif storage_data_type == "counter":
         status, message, response_data = handle_storage_action_counter(parameters, dlc)
+    else:
+        print("storage data type not valid")
 
     return status, message, response_data
 

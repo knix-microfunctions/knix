@@ -284,8 +284,8 @@
          data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
        }
 
-      $http(req).then(function successCallback(response) {
-          if (response.data.status=="success") {
+     $http(req).then(function successCallback(response) {
+        if (response.data.status == "success") {
               resetScopeStorageObjects(data_type);
               var storageObjects = getScopeStorageObjects(data_type);
 
@@ -303,31 +303,10 @@
                       storageObjects.push(so);
                   }
               }
-              //sharedData.setStorageObjects($scope.storageObjects);
-
-           } else {
-             console.log("Failure status returned by performStorageAction / " + param_storage["parameters"]["action"]);
-             console.log("Message:" + response.data.data.message);
-             $scope.errorMessage = response.data.data.message;
-             $uibModal.open({
-               animation: true,
-               scope: $scope,
-               templateUrl: 'app/pages/workflows/modals/errorModal.html',
-               size: 'md',
-             });
-           }
-      }, function errorCallback(response) {
-          console.log("Error occurred during action: " + param_storage["parameters"]["action"]);
-          console.log("Response:" + response);
-          if (response.statusText) {
-            $scope.errorMessage = response.statusText;
-          } else {
-            $scope.errorMessage = response;
-          }
           //sharedData.setStorageObjects($scope.storageObjects);
 
         } else {
-          console.log("Failure status returned by performStorageAction / listKeys");
+          console.log("Failure status returned by performStorageAction / " + param_storage["parameters"]["action"]);
           console.log("Message:" + response.data.data.message);
           $scope.errorMessage = response.data.data.message;
           $uibModal.open({
@@ -338,7 +317,7 @@
           });
         }
       }, function errorCallback(response) {
-        console.log("Error occurred during listKeys action");
+        console.log("Error occurred during action: " + param_storage["parameters"]["action"]);
         console.log("Response:" + response);
         if (response.statusText) {
           $scope.errorMessage = response.statusText;
@@ -395,52 +374,23 @@
 
        $http(req).then(function successCallback(response) {
 
-          if (response.data.status == "success")
-          {
-              var objectData = response.data.data.value;
+        if (response.data.status == "success") {
+          var objectData = response.data.data.value;
 
-              if (objectData!="") {
-                console.log('Storage object successfully retrieved.');
+          if (objectData != "") {
+            console.log('Storage object sucessfully retrieved.');
 
-                var binaryString = "";
-                var blob = "";
-                try {
-                  binaryString = window.atob(objectData);
+            var binaryString = "";
+            var blob = "";
+            try {
+              binaryString = window.atob(objectData);
 
-                  var binaryLen = binaryString.length;
-                  var bytes = new Uint8Array(binaryLen);
-                  for (var i = 0; i < binaryLen; i++) {
-                    var ascii = binaryString.charCodeAt(i);
-                    bytes[i] = ascii;
-                  }
-                  blob = new Blob([bytes]);
-                  var link = document.createElement('a');
-                  link.href = window.URL.createObjectURL(blob);
-                  var fileName = "";
-                  if(key.indexOf('.') == -1) {
-                    fileName = key + '.dat';
-                  } else {
-                    fileName = key;
-                  }
-                  link.download = fileName;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                } catch(e) {
-                  var element = document.createElement('a');
-                  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(objectData));
-                  var fileName = "";
-                  if(key.indexOf('.') == -1) {
-                    fileName = key + '.dat';
-                  } else {
-                    fileName = key;
-                  }
-                  element.setAttribute('download', fileName);
-                  element.style.display = 'none';
-                  document.body.appendChild(element);
-                  element.click();
-                  document.body.removeChild(element);
-                }
+              var binaryLen = binaryString.length;
+              var bytes = new Uint8Array(binaryLen);
+              for (var i = 0; i < binaryLen; i++) {
+                var ascii = binaryString.charCodeAt(i);
+                bytes[i] = ascii;
+              }
               blob = new Blob([bytes]);
               var link = document.createElement('a');
               link.href = window.URL.createObjectURL(blob);
@@ -454,8 +404,23 @@
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
+            } catch (e) {
+              var element = document.createElement('a');
+              element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(objectData));
+              var fileName = "";
+              if (key.indexOf('.') == -1) {
+                fileName = key + '.dat';
+              } else {
+                fileName = key;
               }
-              else {
+              element.setAttribute('download', fileName);
+              element.style.display = 'none';
+              document.body.appendChild(element);
+              element.click();
+              document.body.removeChild(element);
+            }
+          }
+        } else {
           console.log("getData action returned empty string");
           $scope.errorMessage = "The object does not contain any data.";
           $uibModal.open({
@@ -523,29 +488,14 @@
 
        $http(req).then(function successCallback(response) {
 
-          if (response.data.status=="success") {
-            console.log('Storage object successfully deleted.');
-            toastr.success('Your object has been deleted successfully!');
-            scopeStorageObjects.splice(index, 1);
-          } else {
-            console.log("Failure status returned by deleteData action");
-            console.log(response.data);
-            $scope.errorMessage = "An error occurred while attempting to delete the object.";
-            $uibModal.open({
-              animation: true,
-              scope: $scope,
-              templateUrl: 'app/pages/workflows/modals/errorModal.html',
-              size: 'md',
-            });
-          }
-      }, function errorCallback(response) {
-          console.log("Error occurred during action: " + param_storage["parameters"]["action"]);
-          console.log("Response:" + response);
-          if (response.statusText) {
-            $scope.errorMessage = response.statusText;
-          } else {
-            $scope.errorMessage = response;
-          }
+        if (response.data.status == "success") {
+          console.log('Storage object sucessfully deleted.');
+          toastr.success('Your object has been deleted successfully!');
+          $scope.storageObjects.splice(index, 1);
+        } else {
+          console.log("Failure status returned by performStorageAction / " + param_storage["parameters"]["action"]);
+          console.log(response.data);
+          $scope.errorMessage = "An error occurred while attempting to delete the object.";
           $uibModal.open({
             animation: true,
             scope: $scope,
