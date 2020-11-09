@@ -79,3 +79,21 @@
 {{- $port := index .Values "elastic" "clientPort" | toString -}}
     es-{{$rlsname}}.{{$namespace}}.svc:{{$port}}
 {{- end -}}
+
+
+{{/* Microfunctions's triggers_frontend */}}
+
+{{- define "triggersFrontend.name" -}}
+{{- default .Chart.Name .Values.triggersFrontend.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "triggersFrontend.fullname" -}}
+{{- printf "tf-%s" .Release.Name | trunc 40 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "tfConnect.url" }}
+{{- $rlsname := .Release.Name -}}
+{{- $namespace := .Release.Namespace -}}
+{{- $port := index .Values "triggersFrontend" "httpPort" | toString -}}
+    tf-{{$rlsname}}.{{$namespace}}.svc:{{$port}}
+{{- end -}}

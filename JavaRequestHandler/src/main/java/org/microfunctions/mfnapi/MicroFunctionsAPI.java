@@ -34,6 +34,30 @@ import org.apache.thrift.transport.TTransportException;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 
+import org.json.JSONObject;
+
+class LambdaCognitoIdentity
+{
+	String cognitoIdentityId;
+	String cognitoIdentityPoolId;
+}
+
+class LambdaClientContextMobileClient
+{
+	String installationId;
+	String appTitle;
+	String appVersionName;
+	String appVersionCode;
+	String appPackageName;
+}
+
+class LambdaClientContext
+{
+	LambdaClientContextMobileClient client = new LambdaClientContextMobileClient();
+	HashMap<String, Object> custom = new HashMap<String, Object>();
+	HashMap<String, Object> env = new HashMap<String, Object>();
+}
+
 public class MicroFunctionsAPI
 {
     private static final Logger LOGGER = LogManager.getLogger(MicroFunctionsAPI.class);
@@ -42,16 +66,31 @@ public class MicroFunctionsAPI
 	private AFUNIXSocket APISocket = null;
 	private TTransport transport = null;
 	private MicroFunctionsAPIService.Client mfnapiClient = null;
+	
+	// Context object properties
+	private String functionName;
+	private int functionVersion;
+	private String invokedFunctionArn;
+	private int memoryLimitInMB;
+	private String awsRequestId;
+	private String logGroupName;
+	private String logStreamName;
+	
+	private LambdaCognitoIdentity identity;
+	private LambdaClientContext clientContext;
+	
+	private Logger logger = this.LOGGER;
 
 	private boolean hasError;
+	
 	public MicroFunctionsAPI(String APISocketFilename)
 	{
 		this.APISocketFilename = APISocketFilename;
 		this.hasError = false;
-		
+
         LOGGER.debug("API server at: " + this.APISocketFilename);
         final File APISocketFile = new File(this.APISocketFilename);
-        
+
         try
         {
             this.APISocket = AFUNIXSocket.newInstance();
@@ -111,6 +150,62 @@ public class MicroFunctionsAPI
                 LOGGER.error("Error in initializing API connection: " + this.APISocketFilename + " " + tte);
             }
         }
+        
+        // obtain the context object properties
+        if (!this.hasError)
+        {
+        	LOGGER.debug("Obtaining the context object properties...");
+        	try
+        	{
+        		String objectPropertiesStr = this.mfnapiClient.get_context_object_properties();
+        		JSONObject jobj = new JSONObject(objectPropertiesStr);
+        		// parse the object and initialize the parameters in Java
+        		this.initContextObjectProperties(jobj);
+        	}
+        	catch (Exception te)
+        	{
+        		this.hasError = true;
+        		LOGGER.error("Error obtaining the context object properties: " + this.APISocketFilename + " " + te);
+        	}
+        }
+	}
+	
+	private void initContextObjectProperties(JSONObject jobj)
+	{
+		this.functionName = jobj.getString("function_name");
+		this.functionVersion = jobj.getInt("function_version");
+		this.invokedFunctionArn = jobj.getString("invoked_function_arn");
+		this.memoryLimitInMB = jobj.getInt("memory_limit_in_mb");
+		this.awsRequestId = jobj.getString("aws_request_id");
+		this.logGroupName = jobj.getString("log_group_name");
+		this.logStreamName = jobj.getString("log_stream_name");
+		
+		this.identity = new LambdaCognitoIdentity();
+		JSONObject jobjIdentity = jobj.getJSONObject("identity");
+		this.identity.cognitoIdentityId = jobjIdentity.getString("cognito_identity_id");
+		this.identity.cognitoIdentityPoolId = jobjIdentity.getString("cognito_identity_pool_id");
+		
+		this.clientContext = new LambdaClientContext();
+		JSONObject jobjClientContext = jobj.getJSONObject("client_context");
+		JSONObject jobjClient = jobjClientContext.getJSONObject("client");
+		this.clientContext.client.installationId = jobjClient.getString("installation_id");
+		this.clientContext.client.appTitle = jobjClient.getString("app_title");
+		this.clientContext.client.appVersionName = jobjClient.getString("app_version_name");
+		this.clientContext.client.appVersionCode = jobjClient.getString("app_version_code");
+		this.clientContext.client.appPackageName = jobjClient.getString("app_package_name");
+		
+		JSONObject custom = jobjClientContext.getJSONObject("custom");
+		for (String key: custom.keySet())
+		{
+			this.clientContext.custom.put(key, custom.get(key));
+		}
+		
+		JSONObject env = jobjClientContext.getJSONObject("env");
+		for (String key: env.keySet())
+		{
+			this.clientContext.env.put(key, env.get(key));
+		}
+		
 	}
 	
 	public boolean hasError()
@@ -341,6 +436,27 @@ public class MicroFunctionsAPI
 	 * Retrieve the list of update messages sent to a session function instance.
 	 * The list contains messages that were sent and delivered since the last time the session function instance has retrieved it.
 	 * These messages are retrieved via a local queue. There can be more than one message.
+	 * By default, it returns only one message and does not block until that message is available.
+	 * 
+	 * @return list of messages that were sent to the session function instance.
+	 * 
+	 * <b>Warns:</b>
+	 * When the calling function is not a session function.
+	 * 
+	 * <b>Note:</b>
+	 * The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+	 * Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+	 * 
+	 */
+	public List<String> getSessionUpdateMessages()
+	{
+		return this.getSessionUpdateMessages(1, false);
+	}
+	
+	/**
+	 * Retrieve the list of update messages sent to a session function instance.
+	 * The list contains messages that were sent and delivered since the last time the session function instance has retrieved it.
+	 * These messages are retrieved via a local queue. There can be more than one message.
 	 * The optional count argument specifies how many messages should be retrieved.
 	 * If there are fewer messages than the requested count, all messages will be retrieved and returned.
 	 * 
@@ -408,7 +524,14 @@ public class MicroFunctionsAPI
 	    List<String> msglist = null;
 	    try
 	    {
-	        msglist = this.mfnapiClient.get_session_update_messages(count, block);
+	        List<String> msglist2 = this.mfnapiClient.get_session_update_messages(count, block);
+	        msglist = new ArrayList<String>();
+	        int size = msglist2.size();
+	        for (int i = 0; i < size; i++)
+	        {
+	        	FunctionAPIMessage fam = new FunctionAPIMessage((String) msglist2.get(i));
+	        	msglist.add((String) fam.getValue());
+	        }
 	    }
 	    catch (Exception e)
 	    {
@@ -1450,5 +1573,45 @@ public class MicroFunctionsAPI
         }
         return map;
     }
+
+	public String getFunctionName() {
+		return functionName;
+	}
+
+	public int getFunctionVersion() {
+		return functionVersion;
+	}
+
+	public String getInvokedFunctionArn() {
+		return invokedFunctionArn;
+	}
+
+	public int getMemoryLimitInMB() {
+		return memoryLimitInMB;
+	}
+
+	public String getAwsRequestId() {
+		return awsRequestId;
+	}
+
+	public String getLogGroupName() {
+		return logGroupName;
+	}
+
+	public String getLogStreamName() {
+		return logStreamName;
+	}
+
+	public LambdaCognitoIdentity getIdentity() {
+		return identity;
+	}
+
+	public LambdaClientContext getClientContext() {
+		return clientContext;
+	}
+
+	public Logger getLogger() {
+		return logger;
+	}
 
 }

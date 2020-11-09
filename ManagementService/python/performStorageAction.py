@@ -162,8 +162,11 @@ def handle(value, sapi):
 
         if "workflowid" in storage and storage["workflowid"] is not None and storage["workflowid"] != "":
             dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=storage["workflowid"])
+        elif storage["tableName"] is not None:
+            dlc = sapi.get_privileged_data_layer_client(storage_userid, tableName=storage["tableName"])
         else:
             dlc = sapi.get_privileged_data_layer_client(storage_userid)
+
 
         success, message, response_data = handle_storage_action(storage, dlc)
 

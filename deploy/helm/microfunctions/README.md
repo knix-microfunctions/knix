@@ -46,6 +46,7 @@ Our helm chart by default installs container images from a [private registry](ht
 [user@vm knix]# make -C DataLayerService push
 [user@vm knix]# make -C riak push
 [user@vm knix]# make -C GUI push
+[user@vm knix]# make -C TriggersFrontend push
 ```
 
 The push target in deploy/helm/Makefile can be used to build and push all container images:

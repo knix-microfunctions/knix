@@ -24,7 +24,7 @@ class EchoTest(unittest.TestCase):
     #@unittest.skip("")
     def test_echo_wfd(self):
         test_tuple_list=[]
-        for i in range(20):
+        for i in range(10):
             # 1MB
             #inp0 = "echo" * 1024 * 256
             #res0 = "echo" * 1024 * 256

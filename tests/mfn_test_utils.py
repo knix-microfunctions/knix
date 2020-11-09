@@ -84,8 +84,6 @@ class MFNTest():
         if timeout is not None:
             self._settings["timeout"] = timeout
 
-        self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
-
         # will be the deployed workflow object in self._client
         self._workflow = None
         self._deployment_error = ""
@@ -94,6 +92,7 @@ class MFNTest():
 
         self.upload_workflow()
         self.deploy_workflow()
+        time.sleep(5)
 
     def _get_json_file(self, filename):
         json_data = {}
@@ -298,7 +297,7 @@ class MFNTest():
             wf.deploy(self._settings["timeout"])
             self._workflow = wf
             if self._workflow.status != "failed":
-                print("MFN workflow " + self._workflow_name + " deployed.")
+                print("MFN workflow " + self._workflow_name + " deployed; workflow id: " + self._workflow.id)
             else:
                 print("MFN workflow " + self._workflow_name + " could not be deployed.")
                 self._deployment_error = self._workflow.get_deployment_error()
@@ -314,6 +313,7 @@ class MFNTest():
                 if wf.status == "deployed":
                     wf.undeploy(self._settings["timeout"])
                     print("Workflow undeployed.")
+                time.sleep(2)
                 self._client.delete_workflow(wf)
                 break
 
@@ -335,19 +335,18 @@ class MFNTest():
             return self._workflow.execute(message, timeout, check_duration)
 
     def get_workflow_logs(self, num_lines=500):
-        data = self._workflow.logs(ts_earliest=self._log_clear_timestamp, num_lines=num_lines)
+        data = self._workflow.logs(num_lines=num_lines)
         return data
 
     def clear_workflow_logs(self):
-        self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
+        self._workflow.clear_logs()
 
     def report(self, success, inp, expected, actual):
-        short_inp = self._get_printable(inp)
-
         if success:
+            short_inp = self._get_printable(inp)
             print(self._test_name + " test " + mfntestpassed + " with input data:", short_inp)
         else:
-            print(self._test_name + " test " + mfntestfailed + " with input data:", short_inp + '(result: ' + json.dumps(actual) + ', expected: ' + json.dumps(expected) + ')')
+            print(self._test_name + " test " + mfntestfailed + " with input data:", str(inp) + '(result: ' + json.dumps(actual) + ', expected: ' + json.dumps(expected) + ')')
 
     def exec_only(self, inp):
         any_failed_tests = False
@@ -365,14 +364,16 @@ class MFNTest():
             if any_failed_tests:
                 self._print_logs(self._workflow.logs())
 
-    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async_=False):
+    def exec_tests(self, testtuplelist, check_just_keys=False, check_duration=False, should_undeploy=True, async_=False, print_report=True):
         any_failed_tests = False
         durations = []
 
-        time.sleep(2)
-
         try:
+            i = 0
+            num_total = len(testtuplelist)
             for tup in testtuplelist:
+                i += 1
+                print("Test " + str(i) + "/" + str(num_total), end="\r")
                 current_test_passed = False
                 inp, res = tup
                 if check_duration:
@@ -411,21 +412,22 @@ class MFNTest():
                         if set(rn.keys()) == set(cur_res.keys()):
                              current_test_passed = True
                         else:
-                            raise Exception("Error: unsupported workflow result type")
+                            raise Exception("Error: mismatch in result keys: " + str(rn) + " and " + str(cur_res))
 
                     else:
                         if rn == cur_res:
                             current_test_passed = True
 
-                    self.report(current_test_passed, inp, cur_res, rn)
+                    if print_report:
+                        self.report(current_test_passed, inp, cur_res, rn)
                     any_failed_tests = any_failed_tests or (not current_test_passed)
 
                     time.sleep(1)
-
         except Exception as e:
             print(str(e))
             raise e
         finally:
+            print()
             time.sleep(2)
             if check_duration:
                 print("------")
@@ -504,7 +506,7 @@ class MFNTest():
                 f.write(line + "\n")
 
     def extract_execution_ids(self, num_last_executions, num_log_lines=2000):
-        cmd = "python3 ../wftail.py -n " + str(num_log_lines) + " -wname " + self._workflow_name
+        cmd = "python3 ../wftail.py -n " + str(num_log_lines) + " -wid " + self._workflow.id
         output, error = run_command_return_output(cmd)
         log_lines = combine_output(output, error)
         eidlist = []

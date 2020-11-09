@@ -18,7 +18,7 @@
 
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-    <button class="btn btn-primary" ng-click="addStorageObject('kv')">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('kv')">Refresh</button>
+    <button class="btn btn-primary" ng-click="addStorageObject('kv')">Add Object</button>&nbsp;&nbsp;<a href="#/bucketList"><button class="btn btn-primary" ng-click="" style="background-color: #969696; border-color: #969696;">Manage Buckets</button></a>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('kv')">Refresh</button>
   </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
 
   </td>
@@ -26,10 +26,10 @@
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;">
     <div style="width:100%">
       <ui-select ng-model="storageLocations.selected" on-select="onSelected($item)" class="btn-group bootstrap-select form-control">
-        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.realm}}</ui-select-match>
+        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.type}}</ui-select-match>
         <ui-select-choices repeat="item in storageLocations | filter: $select.search">
           <div ng-bind-html="item.name | highlight: $select.search"></div>
-          <small ng-bind-html="item.realm | highlight: $select.search"></small>
+          <small ng-bind-html="item.type | highlight: $select.search"></small>
         </ui-select-choices>
       </ui-select>
     </div>
@@ -52,7 +52,7 @@
         </span>
     </td>
     <td>
-      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveStorageObject(storageObject, 'kv');" class="form-buttons form-inline"
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="createNewStorageObject(storageObject, 'kv');" class="form-buttons form-inline"
             shown="inserted == storageObject">
         <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
           Save
@@ -82,3 +82,4 @@
 
     </tfoot>
 </table>
+

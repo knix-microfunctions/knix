@@ -20,18 +20,31 @@ import org.json.JSONObject;
 public class FunctionAPIMessage
 {
     private Object value;
+    private String serialized;
     
     public FunctionAPIMessage(Object value)
     {
         this.value = value;
+        this.serialize();
+    }
+    
+    public FunctionAPIMessage(String serialized)
+    {
+    	this.serialized = serialized;
+    	this.deserialize();
     }
     
     public String toString()
     {
-        return this.serialize();
+        return this.serialized;
     }
     
-    public String serialize()
+    public Object getValue()
+    {
+    	return this.value;
+    }
+    
+    public void serialize()
     {
         JSONObject obj = new JSONObject();
         if (this.value == null)
@@ -42,6 +55,19 @@ public class FunctionAPIMessage
         {
             obj.put("value", this.value);
         }
-        return obj.toString();
+        this.serialized = obj.toString();
+    }
+    
+    public void deserialize()
+    {
+    	try
+    	{
+    		JSONObject obj = new JSONObject(this.serialized);
+    		this.value = obj.get("value");
+    	}
+    	catch (Exception e)
+    	{
+    		this.value = this.serialized;
+    	}
     }
 }

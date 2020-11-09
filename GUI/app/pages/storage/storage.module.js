@@ -70,8 +70,16 @@
            order: 300,
          },
        })
+       .state('bucketList', {
+          url: '/bucketList',
+          templateUrl: 'app/pages/storage/smart/buckets.html',
+          title: 'Triggerable Buckets',
+          controller: 'BucketListCtrl',
+          sidebarMeta: {
+              order: 400,
+          },
 
-
+      })
   }
 
 })();

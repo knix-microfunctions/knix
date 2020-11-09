@@ -24,36 +24,36 @@ set -ex
 if [ 1 = 1 ]
 then
     until curl http://$(hostname):9200/
-    do 
+    do
         sleep 1
     done
 
     #curl -XDELETE http://$(hostname):9200/mfnwf
     #echo "mfnwf index deleted"
 
-    curl --header "Content-Type: application/json" \
-        --request PUT \
-        --data '
-        {
-            "mappings": {
-                "properties": {
-                    "indexed": {"type": "long"},
-                    "timestamp": {"type": "long"},
-                    "loglevel": {"type": "keyword"},
-                    "hostname": {"type": "keyword"},
-                    "containername": {"type": "keyword"},
-                    "uuid": {"type": "keyword"},
-                    "userid": {"type": "keyword"},
-                    "workflowname": {"type": "keyword"},
-                    "workflowid": {"type": "keyword"},
-                    "function": {"type": "keyword"},
-                    "asctime": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS"},
-                    "message": {"type": "text"}
-                }
-            }
-        }' \
-        http://$(hostname):9200/mfnwf
-    echo "mfnwf index created"
+    #curl --header "Content-Type: application/json" \
+    #    --request PUT \
+    #    --data '
+    #    {
+    #        "mappings": {
+    #            "properties": {
+    #                "indexed": {"type": "long"},
+    #                "timestamp": {"type": "long"},
+    #                "loglevel": {"type": "keyword"},
+    #                "hostname": {"type": "keyword"},
+    #                "containername": {"type": "keyword"},
+    #                "uuid": {"type": "keyword"},
+    #                "userid": {"type": "keyword"},
+    #                "workflowname": {"type": "keyword"},
+    #                "workflowid": {"type": "keyword"},
+    #                "function": {"type": "keyword"},
+    #                "asctime": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS"},
+    #                "message": {"type": "text"}
+    #            }
+    #        }
+    #    }' \
+    #    http://$(hostname):9200/mfnwf
+    #echo "mfnwf index created"
 
 
 

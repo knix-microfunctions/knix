@@ -18,21 +18,25 @@
   'use strict';
 
   angular.module('MfnWebConsole.pages.storage')
-      .controller('StorageTableCtrl', StorageTableCtrl);
+    .controller('StorageTableCtrl', StorageTableCtrl);
 
   /** @ngInject */
   function StorageTableCtrl($scope, $http, $cookies, $filter, editableOptions, editableThemes, $uibModal, baProgressModal, toastr, sharedProperties, sharedData) {
 
+    $scope.storageLocations = {};
+    $scope.bucketTables = {};
+    var defaultTable = "defaultTable";
+
     $scope.storageLocations = [
-      { name: 'General Storage',  realm: 'Global', id: '' }
+      { name: 'General Storage', type: 'Default Bucket', id: '' }
     ];
 
-    $scope.storageLocations.selected = { name: "General Storage", realm: "Global"};
+    $scope.storageLocations.selected = { name: "General Storage", type: "Default Bucket", id: '' };
 
-    $scope.itemsByPage=10;
+    $scope.itemsByPage = 10;
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ];
 
     var token = $cookies.get('token');
@@ -44,18 +48,9 @@
 
     $scope.workflows = sharedData.getWorkflows();
 
-    if (!$scope.workflows) {
-      getWorkflows();
-    } else {
-        for (var i = 0; i < $scope.workflows.length; i++)
-        {
-            $scope.storageLocations.push({name : $scope.workflows[i].name, realm : "Private Workflow Storage", id : $scope.workflows[i].id});
-            if ($scope.workflows[i].id == storageLoc) {
-              $scope.storageLocations.selected = { name: $scope.workflows[i].name, realm: "Private Workflow Storage"};
-            }
-        }
-    }
+    $scope.workflows = sharedData.getWorkflows();
 
+    getBucketList();
 
     function getWorkflows() {
 
@@ -63,49 +58,48 @@
         method: 'POST',
         url: urlPath,
         headers: {
-             'Content-Type': 'application/json'
+          'Content-Type': 'application/json'
         },
-        data:   JSON.stringify({ "action" : "getWorkflows", "data" : { "user" : { "token" : token } } })
+        data: JSON.stringify({ "action": "getWorkflows", "data": { "user": { "token": token } } })
       }
 
       $http(req).then(function successCallback(response) {
 
-          if (response.data.status=="success") {
+        if (response.data.status == "success") {
 
-            $scope.workflows = response.data.data.workflows;
-            sharedData.setWorkflows(response.data.data.workflows);
-            for (var i = 0; i < $scope.workflows.length; i++)
-            {
-                $scope.storageLocations.push({name : $scope.workflows[i].name, realm : "Private Workflow Storage", id : $scope.workflows[i].id});
-                if ($scope.workflows[i].id == storageLoc) {
-                  $scope.storageLocations.selected = { name: $scope.workflows[i].name, realm: "Private Workflow Storage"};
-                }
+          $scope.workflows = response.data.data.workflows;
+          sharedData.setWorkflows(response.data.data.workflows);
+          for (var i = 0; i < $scope.workflows.length; i++) {
+            $scope.storageLocations.push({ name: $scope.workflows[i].name, type: "Private Workflow Storage", id: $scope.workflows[i].id });
+            if ($scope.workflows[i].id == storageLoc.id) {
+              $scope.storageLocations.selected = { name: $scope.workflows[i].name, type: "Private Workflow Storage" };
             }
-          } else {
-            console.log("Failure status returned by getWorkflows");
-            console.log("Message:" + response.data.data.message);
-            $scope.errorMessage = response.data.data.message;
-            $uibModal.open({
-              animation: true,
-              scope: $scope,
-              templateUrl: 'app/pages/workflows/modals/errorModal.html',
-              size: 'md',
-            });
           }
-      }, function errorCallback(response) {
-          console.log("Error occurred during getWorkflows");
-          console.log("Response:" + response);
-          if (response.statusText) {
-            $scope.errorMessage = response.statusText;
-          } else {
-            $scope.errorMessage = response;
-          }
+        } else {
+          console.log("Failure status returned by getWorkflows");
+          console.log("Message:" + response.data.data.message);
+          $scope.errorMessage = response.data.data.message;
           $uibModal.open({
             animation: true,
             scope: $scope,
             templateUrl: 'app/pages/workflows/modals/errorModal.html',
             size: 'md',
           });
+        }
+      }, function errorCallback(response) {
+        console.log("Error occurred during getWorkflows");
+        console.log("Response:" + response);
+        if (response.statusText) {
+          $scope.errorMessage = response.statusText;
+        } else {
+          $scope.errorMessage = response;
+        }
+        $uibModal.open({
+          animation: true,
+          scope: $scope,
+          templateUrl: 'app/pages/workflows/modals/errorModal.html',
+          size: 'md',
+        });
 
       });
     }
@@ -176,8 +170,8 @@
       $uibModal.open({
         animation: true,
         scope: $scope,
-        backdrop  : 'static',
-        keyboard  : false,
+        backdrop: 'static',
+        keyboard: false,
         templateUrl: page,
         size: size,
       });
@@ -193,7 +187,77 @@
         }
     }
 
+    function getBucketList() {
+
+      var req = {
+        method: 'POST',
+        url: urlPath,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        data: JSON.stringify({ "action": "getTriggerableBuckets", "data": { "user": { "token": token } } })
+      }
+
+      $http(req).then(function successCallback(response) {
+
+        if (response.data.status == "success") {
+          $scope.bucketTables = Object.keys(response.data.data.buckets);
+          for (var i = 0; i < $scope.bucketTables.length; i++) {
+            $scope.storageLocations.push({ name: $scope.bucketTables[i], type: "Bucket", id: "" });
+            if ($scope.bucketTables[i] == storageLoc.name) {
+              $scope.storageLocations.selected = { name: $scope.bucketTables[i], type: "Bucket", id: "" };
+            }
+          }
+          if (!$scope.workflows) {
+            getWorkflows();
+          } else {
+            for (var i = 0; i < $scope.workflows.length; i++) {
+              $scope.storageLocations.push({ name: $scope.workflows[i].name, type: "Private Workflow Storage", id: $scope.workflows[i].id });
+              if ($scope.workflows[i].id == storageLoc.id) {
+                $scope.storageLocations.selected = { name: $scope.workflows[i].name, type: "Private Workflow Storage", id: $scope.workflows[i].id };
+              }
+            }
+          }
+
+        } else {
+          console.log("Failure status returned by getTriggerableBuckets action");
+          console.log("Message:" + response.data);
+          $scope.errorMessage = "An error occurred while attempting to retrieve the list of storage trigger tables.";
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+        }
+
+
+      }, function errorCallback(response) {
+        console.log("Error occurred during getTriggerableBuckets action");
+        console.log("Response:" + response);
+        if (response.statusText) {
+          $scope.errorMessage = response.statusText;
+        } else {
+          $scope.errorMessage = response;
+        }
+        $uibModal.open({
+          animation: true,
+          scope: $scope,
+          templateUrl: 'app/pages/workflows/modals/errorModal.html',
+          size: 'md',
+        });
+      });
+    }
+
     function getStorageObjectsList(data_type) {
+
+      var table = "";
+      if (storageLoc.type == "Bucket") {
+        table = storageLoc.name;
+      } else {
+        table = defaultTable;
+      }
 
       var param_storage = {};
       param_storage["data_type"] = data_type;
@@ -201,6 +265,7 @@
       if (data_type == "kv")
       {
           param_storage["parameters"]["action"] = "listkeys";
+          param_storage["parameters"]["tableName"] = table;
       }
       else
       {
@@ -208,7 +273,7 @@
       }
       param_storage["parameters"]["start"] = 0;
       param_storage["parameters"]["count"] = 2000;
-      param_storage["workflowid"] = storageLoc;
+      param_storage["workflowid"] = storageLoc.id;
 
       var req = {
          method: 'POST',
@@ -259,19 +324,39 @@
           } else {
             $scope.errorMessage = response;
           }
+          //sharedData.setStorageObjects($scope.storageObjects);
+
+        } else {
+          console.log("Failure status returned by performStorageAction / listKeys");
+          console.log("Message:" + response.data.data.message);
+          $scope.errorMessage = response.data.data.message;
           $uibModal.open({
             animation: true,
             scope: $scope,
             templateUrl: 'app/pages/workflows/modals/errorModal.html',
             size: 'md',
           });
+        }
+      }, function errorCallback(response) {
+        console.log("Error occurred during listKeys action");
+        console.log("Response:" + response);
+        if (response.statusText) {
+          $scope.errorMessage = response.statusText;
+        } else {
+          $scope.errorMessage = response;
+        }
+        $uibModal.open({
+          animation: true,
+          scope: $scope,
+          templateUrl: 'app/pages/workflows/modals/errorModal.html',
+          size: 'md',
+        });
       });
     }
 
     $scope.getStorageObjectKey = function(storageObject, data_type)
     {
         var idx = $scope.getIndex(storageObject, data_type);
-
         var storageObjects = getScopeStorageObjects(data_type);
         return storageObjects[idx].key;
     }
@@ -289,17 +374,23 @@
 
 
 
-    $scope.downloadStorageObject = function(key) {
+    $scope.downloadStorageObject = function (key) {
       console.log('retrieving storage object ' + key);
       toastr.success('Your object is being downloaded');
 
+      var table = "";
+      if (storageLoc.type == "Bucket") {
+        table = storageLoc.name;
+      } else {
+        table = defaultTable;
+      }
       var req = {
          method: 'POST',
          url: urlPath,
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "getdata", "key": key }, "workflowid" :  storageLoc} } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "getdata", "key": key, "tableName": table }, "workflowid" :  storageLoc.id} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -350,31 +441,44 @@
                   element.click();
                   document.body.removeChild(element);
                 }
+              blob = new Blob([bytes]);
+              var link = document.createElement('a');
+              link.href = window.URL.createObjectURL(blob);
+              var fileName = "";
+              if (key.indexOf('.') == -1) {
+                fileName = key + '.dat';
+              } else {
+                fileName = key;
               }
-          } else {
-            console.log("getData action returned empty string");
-            $scope.errorMessage = "The object does not contain any data.";
-            $uibModal.open({
-              animation: true,
-              scope: $scope,
-              templateUrl: 'app/pages/workflows/modals/errorModal.html',
-              size: 'md',
-            });
-          }
-      }, function errorCallback(response) {
-          console.log("Error occurred during getData action");
-          console.log("Response:" + response);
-          if (response.statusText) {
-            $scope.errorMessage = response.statusText;
-          } else {
-            $scope.errorMessage = response;
-          }
+              link.download = fileName;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              }
+              else {
+          console.log("getData action returned empty string");
+          $scope.errorMessage = "The object does not contain any data.";
           $uibModal.open({
             animation: true,
             scope: $scope,
             templateUrl: 'app/pages/workflows/modals/errorModal.html',
             size: 'md',
           });
+        }
+      }, function errorCallback(response) {
+        console.log("Error occurred during getData action");
+        console.log("Response:" + response);
+        if (response.statusText) {
+          $scope.errorMessage = response.statusText;
+        } else {
+          $scope.errorMessage = response;
+        }
+        $uibModal.open({
+          animation: true,
+          scope: $scope,
+          templateUrl: 'app/pages/workflows/modals/errorModal.html',
+          size: 'md',
+        });
 
       });
 
@@ -385,6 +489,13 @@
         var scopeStorageObjects = getScopeStorageObjects(data_type);
       console.log('deleting storage object ' + scopeStorageObjects[index].key);
 
+      var table = "";
+      if (storageLoc.type == "Bucket") {
+        table = storageLoc.name;
+      } else {
+        table = defaultTable;
+      }
+
       var param_storage = {};
       param_storage["data_type"] = data_type;
       param_storage["parameters"] = {};
@@ -392,14 +503,14 @@
       {
           param_storage["parameters"]["action"] = "deletedata";
           param_storage["parameters"]["key"] = scopeStorageObjects[index].key;
+          param_storage["parameters"]["tableName"] = table;
       }
       else
       {
           param_storage["parameters"]["action"] = "delete" + data_type;
           param_storage["parameters"][data_type + "name"] = scopeStorageObjects[index].key;
       }
-      param_storage["workflowid"] = storageLoc;
-
+      param_storage["workflowid"] = storageLoc.id;
 
       var req = {
          method: 'POST',
@@ -441,6 +552,21 @@
             templateUrl: 'app/pages/workflows/modals/errorModal.html',
             size: 'md',
           });
+        }
+      }, function errorCallback(response) {
+        console.log("Error occurred during deleteData action");
+        console.log("Response:" + response);
+        if (response.statusText) {
+          $scope.errorMessage = response.statusText;
+        } else {
+          $scope.errorMessage = response;
+        }
+        $uibModal.open({
+          animation: true,
+          scope: $scope,
+          templateUrl: 'app/pages/workflows/modals/errorModal.html',
+          size: 'md',
+        });
 
       });
 
@@ -527,12 +653,12 @@
 
     };
 
-    $scope.gotoPage = function(page) {
+    $scope.gotoPage = function (page) {
 
       angular
-       .element( $('#storageObjectPagination') )
-       .isolateScope()
-       .selectPage(page);
+        .element($('#storageObjectPagination'))
+        .isolateScope()
+        .selectPage(page);
 
     }
 
@@ -540,9 +666,9 @@
         getStorageObjectsList(data_type);
     }
 
-    $scope.navigate = function(event,rowform,storageObject) {
+    $scope.navigate = function (event, rowform, storageObject) {
 
-      if (event.keyCode==13) {
+      if (event.keyCode == 13) {
         rowform.$submit();
       }
 
@@ -631,8 +757,8 @@
 
     }
 
-    // save storage object
-    $scope.saveStorageObject = function(storageObject, data_type) {
+    // create new storage object
+    $scope.createNewStorageObject = function(storageObject, data_type) {
 
       if (storageObject.key!='')
       {

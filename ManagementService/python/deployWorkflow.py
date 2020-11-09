@@ -22,6 +22,8 @@ import traceback
 import docker
 from docker.types import LogConfig
 import requests
+import time
+import random
 
 WF_TYPE_SAND = 0
 WF_TYPE_ASL = 1
@@ -259,7 +261,6 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
 
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
     wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').lower() + '-wf'
-    wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').lower() + '-wf'
     emailSanitized = 'u-' + email.replace('@', '-').replace('_', '-').lower() + '-u'
     # Pod, Deployment and Hpa names for the new workflow will have a prefix containing the workflow name and user name
     app_fullname_prefix = ''
@@ -283,7 +284,6 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     labels['workflowid'] = workflow_info["workflowId"]
     labels = kservice['spec']['template']['metadata']['labels']
     labels['user'] = emailSanitized
-    labels['workflow'] = wfActualNameSanitized
     labels['workflowid'] = workflow_info["workflowId"]
     kservice['spec']['template']['spec']['containers'][0]['image'] = new_workflow_conf['image.'+runtime]
     env = kservice['spec']['template']['spec']['containers'][0]['env']
@@ -451,6 +451,8 @@ def handle(value, sapi):
 
         status = "deploying"
 
+        sapi.clearMap(workflow_info["workflowId"] + "_sandbox_status_map", is_private=True)
+
         if 'KUBERNETES_SERVICE_HOST' in os.environ:
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 runtime = "Java"
@@ -525,9 +527,29 @@ def handle(value, sapi):
         #dlc.put("workflow_status_" + workflow["id"], wfmeta["status"])
         sapi.put("workflow_status_" + workflow["id"], wfmeta["status"], True, True)
 
-        dlc.shutdown()
+        print("Current workflow metadata: " + str(wfmeta))
+        if status != "failed" and "associatedTriggerableTables" in wfmeta:
+            for table in wfmeta["associatedTriggerableTables"]:
+                addWorkflowToTableMetadata(email, table, wfmeta["name"], wfmeta["endpoints"], dlc)
 
-        sapi.put(email + "_workflow_" + workflow["id"], json.dumps(wfmeta), True, True)
+        sapi.put(email + "_workflow_" + workflow["id"], json.dumps(wfmeta), True)
+
+        # deploy queued up triggers
+        if status != "failed" and "associatedTriggers" in wfmeta:
+            for trigger_name in wfmeta["associatedTriggers"]:
+                trigger_id = storage_userid + "_" + trigger_name
+                if isTriggerPresent(email, trigger_id, trigger_name, sapi) == True:
+                    trigger_info = get_trigger_info(sapi, trigger_id)
+                    if wfmeta["name"] in trigger_info["associated_workflows"]:
+                        workflow_info = trigger_info["associated_workflows"][wfmeta["name"]]
+                        # this can potentially update workflow metadata
+                        addWorkflowToTrigger(email, wfmeta["name"], workflow_info["workflow_state"], wfmeta, trigger_id, trigger_name, sapi)
+                else:
+                    # workflow has an associated trigger name, but the trigger may have been deleted
+                    # so remove the associated trigger name
+                    deleteTriggerFromWorkflowMetadata(email, trigger_name, wfmeta["name"],  workflow["id"], sapi)
+        
+        dlc.shutdown()
 
     except Exception as e:
         response = {}
@@ -535,9 +557,8 @@ def handle(value, sapi):
         response["status"] = "failure"
         response_data["message"] = "Couldn't deploy workflow; " + str(e)
         response["data"] = response_data
-        sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
         sapi.log(traceback.format_exc())
-        return {}
+        return response
 
     # Finish successfully
     response = {}
@@ -546,7 +567,173 @@ def handle(value, sapi):
     response_data["workflow"] = workflow
     response["status"] = "success"
     response["data"] = response_data
-    sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
     sapi.log(json.dumps(response))
-    return {}
+    return response
 
+def addWorkflowToTableMetadata(email, tablename, workflowname, workflow_endpoints, dlc):
+    metadata_key = tablename
+    metadata_urls = workflow_endpoints
+    triggers_metadata_table = 'triggersInfoTable'
+    bucket_metadata = {"urltype": "url", "urls": metadata_urls, "wfname": workflowname}
+    print("[addWorkflowToTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Adding metadata: " + str(bucket_metadata))
+
+    current_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    if current_meta == None or current_meta == '':
+        meta_list = []
+    else:
+        meta_list = json.loads(current_meta)
+
+    if type(meta_list == type([])):
+        for i in range(len(meta_list)):
+            meta=meta_list[i]
+            if meta["wfname"] == bucket_metadata["wfname"]:
+                del meta_list[i]
+                break
+        meta_list.append(bucket_metadata)
+
+    dlc.put(metadata_key, json.dumps(meta_list), tableName=triggers_metadata_table)
+
+    time.sleep(0.2)
+    updated_meta = dlc.get(metadata_key, tableName=triggers_metadata_table)
+    updated_meta_list = json.loads(updated_meta)
+    print("[addWorkflowToTableMetadata] User: " + email + ", Workflow: " + workflowname + ", Table: " + tablename + ", Updated metadata: " + str(updated_meta_list))
+
+
+MAP_AVAILABLE_FRONTENDS = "available_triggers_frontned_map"
+MAP_TRIGGERS_TO_INFO = "triggers_to_info_map"
+
+### Utility functions ###
+def get_available_frontends(context):
+    tf_hosts = context.getMapKeys(MAP_AVAILABLE_FRONTENDS, True)
+    return tf_hosts
+
+def get_frontend_info(context, frontend_ip_port):
+    ret = context.getMapEntry(MAP_AVAILABLE_FRONTENDS, frontend_ip_port, True)
+    if ret is "" or ret is None:
+        return None
+    else:
+        return json.loads(ret)
+
+def get_trigger_info(context, trigger_id):
+    ret = context.getMapEntry(MAP_TRIGGERS_TO_INFO, trigger_id, True)
+    if ret is "" or ret is None:
+        return None
+    else:
+        return json.loads(ret)
+
+def add_trigger_info(context, trigger_id, data):
+    print("add_trigger_info: " + trigger_id + ", data: " + data)
+    context.putMapEntry(MAP_TRIGGERS_TO_INFO, trigger_id, data, True)
+
+def remove_trigger_info(context, trigger_id):
+    print("remove_trigger_info: " + trigger_id)
+    context.deleteMapEntry(MAP_TRIGGERS_TO_INFO, trigger_id, True)
+
+def get_user_trigger_list(context, email):
+    user_triggers_list = context.get(email + "_list_triggers", True)
+    if user_triggers_list is not None and user_triggers_list != "":
+        user_triggers_list = json.loads(user_triggers_list)
+    else:
+        user_triggers_list = {}
+    return user_triggers_list
+
+def isTriggerPresent(email, trigger_id, trigger_name, context):
+    # check if the global trigger is present
+    global_trigger_info = get_trigger_info(context, trigger_id)
+    # check the user's storage area for the trigger name
+    user_triggers_list = get_user_trigger_list(context, email)
+
+    # check if the trigger does not exist in global and user's list
+    if global_trigger_info is None and trigger_name not in user_triggers_list:
+        return False
+
+    # check if the trigger is missing in one of the lists
+    elif global_trigger_info is None or trigger_name not in user_triggers_list:
+        print("[addTriggerForWorkflow] User: " + email +
+                "Mismatch between global and user's trigger list for Trigger: " + trigger_name)
+        raise Exception("Mismatch between global and user's trigger list for Trigger: " + trigger_name)
+    
+    # trigger is present in both global and user's list
+    assert(global_trigger_info is not None)
+    assert(trigger_name in user_triggers_list)
+    return True
+
+def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details, trigger_id, trigger_name, context):
+    status_msg = ""
+    workflow_endpoints = workflow_details["endpoints"]
+    # TODO: [For bare metal clusters] send all workflow endpoints to frontend to let is load balance between wf endpoints. For k8s there will only be one name
+    selected_workflow_endpoint = workflow_endpoints[random.randint(0,len(workflow_endpoints)-1)]
+    print("[addTriggerForWorkflow] selected workflow endpoint: " + selected_workflow_endpoint)
+
+    workflow_to_add = \
+    {
+        "workflow_url": selected_workflow_endpoint,
+        "workflow_name": workflow_name,
+        "workflow_state": workflow_state
+    }
+
+    # get the list of available frontends.
+    tf_hosts = get_available_frontends(context)
+    if len(tf_hosts) == 0:
+        raise Exception("No available TriggersFrontend found")
+
+    # if the frontend with the trigger is available
+    global_trigger_info = get_trigger_info(context, trigger_id)
+    tf_ip_port = global_trigger_info["frontend_ip_port"]
+    if tf_ip_port not in tf_hosts:
+        raise Exception("Frontend: " + tf_ip_port + " not available")
+    
+    url = "http://" + tf_ip_port + "/add_workflows"
+    # send the request and wait for response
+
+    req_obj = {"trigger_id": trigger_id, "workflows": [workflow_to_add]}
+    print("Contacting: " + url + ", with data: " + str(req_obj))
+    res_obj = {}
+    try:
+        res = requests.post(url, json=req_obj)
+        if res.status_code != 200:
+            raise Exception("status code: " + str(res.status_code) + " returned")
+        res_obj = res.json()
+    except Exception as e:
+        status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
+    
+    if "status" in res_obj and res_obj["status"].lower() == "success":
+        # if success then update the global trigger table to add a new workflow.
+        print("Success response from " + url)
+        global_trigger_info["associated_workflows"][workflow_name] = workflow_to_add
+        add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+
+        status_msg = "Trigger " + trigger_name + " added successfully to workflow:" + workflow_name + ". Message: " + res_obj["message"]
+    else:
+        if "message" in res_obj:
+            status_msg = status_msg + ", message: " + res_obj["message"]
+        status_msg = "Error: " + status_msg + ", response: " + str(res_obj)
+        deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_details["id"], context)
+        raise Exception(status_msg)
+
+
+def deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_id, context):
+    wf = context.get(email + "_workflow_" + workflow_id, True)
+    if wf is None or wf == "":
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Workflow: " +
+              workflow_name + ": couldn't retrieve workflow metadata.")
+        #raise Exception("[deleteTriggerFromWorkflowMetadata] User: " + email +
+        #                ", Workflow: " + workflow_name + ": couldn't retrieve workflow metadata.")
+        return
+
+    wf = json.loads(wf)
+    print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Workflow: " +
+          workflow_name + ": Current workflow metadata: " + str(wf))
+
+    if 'associatedTriggers' not in wf:
+        wf['associatedTriggers'] = {}
+    associatedTriggers = wf['associatedTriggers']
+    if trigger_name in associatedTriggers:
+        del associatedTriggers[trigger_name]
+        wf['associatedTriggers'] = associatedTriggers
+        wf = context.put(email + "_workflow_" + workflow_id, json.dumps(wf), True)
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email +
+              ", Trigger: " + trigger_name + " removed from Workflow: " + workflow_name)
+    else:
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Trigger: " +
+              trigger_name + " not present in Workflow: " + workflow_name)

@@ -187,8 +187,8 @@ data:
   new_workflow.conf: |-
     {
       "app.fullname.prefix": "wf-{{ .Release.Name }}",
-      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}",
-      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}",
+      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag }}",
+      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}:{{ .Values.manager.sandbox.imageTag }}",
     {{- if (.Values.manager.createServiceAccounts) -}}
       "mgmtserviceaccount": "{{ template "manager.fullname" . }}",
     {{- else -}}

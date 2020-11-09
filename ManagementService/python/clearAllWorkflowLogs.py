@@ -13,6 +13,58 @@
 #   limitations under the License.
 
 import json
+import os
+
+import requests
+
+MFN_ELASTICSEARCH = os.getenv("MFN_ELASTICSEARCH", os.getenv("MFN_HOSTNAME"))
+ELASTICSEARCH_HOST = MFN_ELASTICSEARCH.split(':')[0]
+try:
+    ELASTICSEARCH_PORT = MFN_ELASTICSEARCH.split(':')[1]
+except:
+    ELASTICSEARCH_PORT = 9200
+
+ELASTICSEARCH_URL = "http://" + ELASTICSEARCH_HOST + ":" + str(ELASTICSEARCH_PORT)
+
+def delete_workflow_index(index_name):
+    try:
+        r = requests.delete(ELASTICSEARCH_URL + "/" + index_name, proxies={"http":None})
+    except Exception as e:
+        if type(e).__name__ == 'ConnectionError':
+            print('Could not connect to: ' + ELASTICSEARCH_URL)
+        else:
+            raise e
+
+def create_workflow_index(index_name):
+    index_data = \
+    {
+        "mappings": {
+            "properties": {
+                "indexed": {"type": "long"},
+                "timestamp": {"type": "long"},
+                "loglevel": {"type": "keyword"},
+                "hostname": {"type": "keyword"},
+                "containername": {"type": "keyword"},
+                "uuid": {"type": "keyword"},
+                "userid": {"type": "keyword"},
+                "workflowname": {"type": "keyword"},
+                "workflowid": {"type": "keyword"},
+                "function": {"type": "keyword"},
+                "asctime": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS"},
+                "message": {"type": "text"}
+            }
+        }
+    }
+
+    try:
+        r = requests.put(ELASTICSEARCH_URL + "/" + index_name, json=index_data, proxies={"http":None})
+        #response = r.json()
+        #print(str(response))
+    except Exception as e:
+        if type(e).__name__ == 'ConnectionError':
+            print('Could not connect to: ' + ELASTICSEARCH_URL)
+        else:
+            raise e
 
 def handle(value, sapi):
     assert isinstance(value, dict)
@@ -27,33 +79,24 @@ def handle(value, sapi):
 
     if "workflow" in data:
         workflow = data["workflow"]
-
-        sapi.log(json.dumps(workflow))
-        '''
         if "id" in workflow:
-            wfhosts = sapi.get(email + "_workflow_hosts_" + workflow["id"], True)
+            workflows = sapi.get(email + "_list_workflows", True)
+            if workflows is not None and workflows != "":
+                workflows = json.loads(workflows)
+                if workflow["id"] in workflows.values():
+                    # first, delete the workflow logs
+                    delete_workflow_index("mfnwf-" + workflow["id"])
 
-            if wfhosts is not None and wfhosts != "":
-                # check each host's output to the data layer
-                wfhosts = json.loads(wfhosts)
+                    # second, create the same index
+                    create_workflow_index("mfnwf-" + workflow["id"])
 
-                clear_logs_instruction = {}
-                clear_logs_instruction["action"] = "--clear-logs"
-                clear_logs_instruction["sandboxId"] = workflow["id"]
-                clear_logs_instruction["workflowId"] = workflow["id"]
-
-                for host in wfhosts:
-                    sapi.delete("workflow_logs_" + host + "_" + workflow["id"], True, True)
-                    sapi.add_dynamic_workflow({"next": "HMQ_" + host, "value": clear_logs_instruction})
-
-                success = True
-
+                    success = True
+                else:
+                    response_data["message"] = "Couldn't clear logs; no such workflow."
             else:
-                response_data["message"] = "Couldn't clear logs; workflow is not active."
+                response_data["message"] = "Couldn't clear logs; no such workflow."
         else:
             response_data["message"] = "Couldn't clear logs; malformed input."
-        '''
-        success = True
     else:
         response_data["message"] = "Couldn't clear logs; malformed input."
 
@@ -64,9 +107,6 @@ def handle(value, sapi):
 
     response["data"] = response_data
 
-    sapi.add_dynamic_workflow({"next": "ManagementServiceExit", "value": response})
+    sapi.log(json.dumps(response))
 
-    sapi.log(response["status"])
-
-    return {}
-
+    return response

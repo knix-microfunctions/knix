@@ -47,7 +47,7 @@ var app = angular.module('MfnWebConsole', [
     var mapName = '';
     var setName = '';
     var codeError = '';
-    var storageLocation = '';
+    var storageLocation = { };
 
     var urlPath = "/management";
     var dataPrefix = "value=";

@@ -1,0 +1,12 @@
+{
+  "Comment": "Workflow to test storage triggers",
+  "StartAt": "triggers_storage",
+  "States": {
+    "triggers_storage": {
+      "Type": "Task",
+      "Resource": "triggers_storage",
+      "End": true
+    }
+  }
+}
+

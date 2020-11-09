@@ -32,4 +32,4 @@ NO_PROXY=$NO_PROXY
 ELASTICSEARCH_HOSTS=http://$(hostname):9200
 END
 
-docker run -it --rm --name kibana --env-file .env -p 5601:5601 --add-host=$(hostname):$(hostname -i) docker.elastic.co/kibana/kibana:7.2.0 $1
+docker run -i --rm --name kibana --env-file .env -p 5601:5601 --add-host=$(hostname):$(hostname -i) docker.elastic.co/kibana/kibana:7.2.0 $1

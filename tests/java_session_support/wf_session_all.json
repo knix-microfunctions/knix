@@ -1,0 +1,54 @@
+{
+  "Comment": "Java Session functions in KNIX",
+  "StartAt": "EntryFunction",
+  "AllowImmediateMessages": true,
+  "EnableCheckpoints": false,
+  "States": {
+    "EntryFunction": {
+      "Type": "Task",
+      "Resource": "EntryFunction",
+      "PotentialNext": ["SessionFunction1", "SessionFunction2", "finalFunction", "telemetryHandler"],
+      "End": true
+    },
+    "heartbeatHandler": {
+      "Type": "Task",
+      "Resource": "heartbeatHandler",
+      "PotentialNext": ["healthChecker"]
+    },
+    "telemetryHandler": {
+      "Type": "Task",
+      "Resource": "telemetryHandler",
+      "PotentialNext": ["finalFunction"]
+    },
+    "SessionFunction1": {
+      "Type": "Task",
+      "Resource": "SessionFunction1",
+      "SessionFunction": true,
+      "SessionFunctionParameters": {
+          "heartbeat_method": "function",
+          "heartbeat_function": "heartbeatHandler",
+          "heartbeat_interval_ms": 10000
+      },
+      "Next": "finalFunction",
+      "PotentialNext": ["telemetryHandler"]
+    },
+    "SessionFunction2": {
+      "Type": "Task",
+      "Resource": "SessionFunction2",
+      "SessionFunction": true,
+      "SessionFunctionParameters": {
+          "heartbeat_method": "function",
+          "heartbeat_function": "heartbeatHandler",
+          "heartbeat_interval_ms": 10000
+      },
+      "Next": "finalFunction",
+      "PotentialNext": ["telemetryHandler"]
+    },
+    "finalFunction": {
+      "Type": "Task",
+      "Resource": "finalFunction",
+      "End": true
+    }
+  }
+}
+
