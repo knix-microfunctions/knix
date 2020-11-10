@@ -70,7 +70,7 @@
            order: 300,
          },
        })
-       .state('bucketList', {
+       .state('storage.bucketList', {
           url: '/bucketList',
           templateUrl: 'app/pages/storage/smart/buckets.html',
           title: 'Triggerable Buckets',
