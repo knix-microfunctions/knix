@@ -32,7 +32,7 @@ workflow_other_json = '''{
 }'''
 
 # sample input
-#    name of this wf,    nonce,         amqp address,                                                               routing key,    amqp exchange name
+#    name of this wf,    nonce,         amqp address,                                                        routing key,    amqp exchange name
 # [ "wf_triggers_amqp", "23049823", "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost", "rabbit.*.*", "egress_exchange"]
 
 def handle(event, context):
@@ -59,32 +59,35 @@ def handle(event, context):
             
             time.sleep(3)
             
+            # create a named amqp trigger
             addTrigger(trigger_name, trigger_info, context)
 
             time.sleep(1)
 
-            # associating main wf with the trigger
+            # associate a specific workflow state with the named trigger
             addTriggerForWorkflow(trigger_name, workflowname, "triggers_amqp_state2", context)
             
             time.sleep(3)
 
-            # associating main wf with the trigger
+            # disassociate a workflow from a named trigger
             deleteTriggerForWorkflow(trigger_name, workflowname, context)
 
             time.sleep(1)
 
-            # associating main wf with the trigger
+            # associate a beginning workflow state with the named trigger
             addTriggerForWorkflow(trigger_name, workflowname, "", context)
             
             time.sleep(5)
 
-            # associating main wf with the trigger
+            # disassociate a workflow from a named trigger
             deleteTriggerForWorkflow(trigger_name, workflowname, context)
 
+            # delete the named trigger
             deleteTrigger(trigger_name, context)
 
             time.sleep(3)
 
+            # add the trigger again, to test error conditions
             addTrigger(trigger_name, trigger_info, context)
 
             time.sleep(1)
@@ -111,6 +114,7 @@ def handle(event, context):
                 if event["trigger_status"] == "ready":
                     print("_!_TRIGGER_START_" + event['trigger_name'] + ";triggers_amqp;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
                 else:
+                    # if there is an error while the trigger was already running. The 'data' field will contain an error message
                     print("_!_TRIGGER_ERROR_" + event['trigger_name'] + ";triggers_amqp;" + event['workflow_name'] + ";" + event['source'] + ";" + event['data'])
                 time.sleep(1)
         else:

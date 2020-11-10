@@ -139,9 +139,8 @@ def handle(value, context):
         user_triggers_list = get_user_trigger_list(context, email)
         print("Retrieved user_triggers_list: " + str(user_triggers_list))
 
-        if global_trigger_info is None and trigger_name not in user_triggers_list:
+        if global_trigger_info is None:
             # we dont know about the trigger. Create it
-            
             # valid user provided trigger_info
             status, msg, trigger_type, completed_trigger_info = validate_and_get_trigger_info(trigger_info)
             if status == False:
@@ -217,12 +216,9 @@ def handle(value, context):
                 remove_trigger_info(context, trigger_id)
                 raise Exception(status_msg)
 
-        elif global_trigger_info is not None and trigger_name in user_triggers_list:
+        else:
             # both the global list has the trigger and user_trigger_list has the trigger.
             status_msg = "Not creating trigger again. Trigger " + trigger_name + " already exists, with information: " + str(global_trigger_info)
-        else:
-            # only one of the list has has the trigger. Should not happen
-            raise Exception("Error: mismatch between global trigger list and user's trigger list")
 
     except Exception as e:
         response = {}
