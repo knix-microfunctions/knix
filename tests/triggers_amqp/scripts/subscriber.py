@@ -3,9 +3,11 @@ import pika
 import json
 import time
 import os
+import socket
 
+curr_hostname = socket.gethostname()
 credentials = pika.PlainCredentials('rabbituser', 'rabbitpass')
-parameters = pika.ConnectionParameters('paarijaat-debian-vm', 5672, '/rabbitvhost', credentials)
+parameters = pika.ConnectionParameters(curr_hostname, 5672, '/rabbitvhost', credentials)
 connection = pika.BlockingConnection(parameters)
 channel = connection.channel()
 
