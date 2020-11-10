@@ -296,10 +296,13 @@ def inform_workflows_for_triggers(pending_triggers, context):
 
 
 def removeTriggerAndWorkflowAssociations(pending_triggers, context):
-    for (trigger_info, error_msg) in pending_triggers:        
+    for (trigger_info, error_msg) in pending_triggers:
         removeTriggerFromFrontend(trigger_info, context)
 
-        removeTriggerFromWorkflow(trigger_info, context)
+        try:
+            removeTriggerFromWorkflow(trigger_info, context)
+        except Exception as e:
+            print("Exception in removeTriggerFromWorkflow: " + str(e))
 
         remove_trigger_info(context, trigger_info["trigger_id"])
 
