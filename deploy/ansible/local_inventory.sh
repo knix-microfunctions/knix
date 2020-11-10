@@ -27,4 +27,7 @@ $HOSTNAME
 
 [nginx]
 $HOSTNAME
+
+[triggers_frontend]
+$HOSTNAME
 END
