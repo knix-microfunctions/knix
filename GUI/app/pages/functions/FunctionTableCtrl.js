@@ -635,7 +635,7 @@
 
           },
 
-		data:   JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage": mFunction.gpu_cores } } })
+		data:   JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage": mFunction.gpu_usage } } })
 
         }
         $http(req).then(function successCallback(response) {
@@ -689,7 +689,7 @@
 
           },
 
-		data:   JSON.stringify({ "action" : "modifyFunction", "data" : { "user" : { "token" : token } , "function" : { "id": mFunction.id, "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage" : mFunction.gpu_cores } } })
+		data:   JSON.stringify({ "action" : "modifyFunction", "data" : { "user" : { "token" : token } , "function" : { "id": mFunction.id, "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage" : mFunction.gpu_usage } } })
 
         }
         $http(req).then(function successCallback(response) {
