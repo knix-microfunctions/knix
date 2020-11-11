@@ -246,6 +246,8 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
     status_msg = ""
     global_trigger_info = get_trigger_info(context, trigger_id)
     try:
+        if workflow_name not in global_trigger_info["associated_workflows"]:
+            return
         workflow_to_remove = global_trigger_info["associated_workflows"][workflow_name]
 
         # get the list of available frontends.
