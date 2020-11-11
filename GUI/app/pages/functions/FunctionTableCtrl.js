@@ -171,7 +171,6 @@
       return selected.length ? mFunction.runtime : 'Not set';
     };
 
-
     function createTemporaryWorkflow(functionIndex) {
       var req = {
         method: 'POST',
@@ -636,7 +635,7 @@
 
           },
 
-		data:   JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage": mFunction.gpu_usage } } })
+		data:   JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage": mFunction.gpu_cores } } })
 
         }
         $http(req).then(function successCallback(response) {
@@ -690,7 +689,7 @@
 
           },
 
-		data:   JSON.stringify({ "action" : "modifyFunction", "data" : { "user" : { "token" : token } , "function" : { "id": mFunction.id, "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage" : mFunction.gpu_usage } } })
+		data:   JSON.stringify({ "action" : "modifyFunction", "data" : { "user" : { "token" : token } , "function" : { "id": mFunction.id, "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage" : mFunction.gpu_cores } } })
 
         }
         $http(req).then(function successCallback(response) {
@@ -736,6 +735,7 @@
         name: '',
         status: 'undeployed',
         runtime: 'Python 3.6',
+        gpu_usage: '0',
         modified: '0'
       };
       $scope.functions.push($scope.inserted);
