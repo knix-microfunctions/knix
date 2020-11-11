@@ -106,9 +106,11 @@ def handle(value, sapi):
                 else:
                     # workflow has an associated trigger name, but the trigger may have been deleted
                     # so remove the associated trigger name
+                    print("Trigger id: " + str(trigger_id) + " not present. Removing trigger_name: " + str(trigger_name) + " from associatedTriggers of the workflow")
                     assocTriggers = wf['associatedTriggers']
                     del assocTriggers[trigger_name]
                     wf['associatedTriggers'] = assocTriggers
+                    print("Writing updated workflow metadata: " + str(wf))
                     sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True)
                     #deleteTriggerFromWorkflowMetadata(email, trigger_name, wfmeta["name"],  workflow["id"], sapi)
 
@@ -274,7 +276,7 @@ def get_user_trigger_list(context, email):
 def isTriggerPresent(email, trigger_id, trigger_name, context):
     # check if the global trigger is present
     global_trigger_info = get_trigger_info(context, trigger_id)
-
+    print("[isTriggerPresent] global_trigger_info = " + str(global_trigger_info))
     # check if the trigger does not exist in global and user's list
     if global_trigger_info is None:
         return False
@@ -282,8 +284,10 @@ def isTriggerPresent(email, trigger_id, trigger_name, context):
     return True
 
 def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
+    print("[removeTriggerFromWorkflow] called with: trigger_name: " + str(trigger_name) + ", trigger_id: " + str(trigger_id) + ", workflow_name: " + str(workflow_name))
     status_msg = ""
     global_trigger_info = get_trigger_info(context, trigger_id)
+    print("[removeTriggerFromWorkflow] global_trigger_info = " + str(global_trigger_info))
     if workflow_name not in global_trigger_info["associated_workflows"]:
         return
     workflow_to_remove = global_trigger_info["associated_workflows"][workflow_name]
@@ -321,6 +325,7 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
         status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
         print("[removeTriggerFromWorkflow] " + status_msg)
     finally:
+        print("[removeTriggerFromWorkflow] Removing workflow: " + str(workflow_name) + ", from associated_workflows of a trigger")
         del global_trigger_info["associated_workflows"][workflow_name]
         add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
         status_msg = "Trigger " + trigger_name + " removed successfully from workflow:" + workflow_name

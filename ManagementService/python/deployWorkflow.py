@@ -540,18 +540,21 @@ def handle(value, sapi):
             associatedTriggers = wfmeta["associatedTriggers"].copy()
             for trigger_name in associatedTriggers:
                 trigger_id = storage_userid + "_" + trigger_name
+                print("Adding trigger_id: " + str(trigger_id) + "  to workflow")
                 if isTriggerPresent(email, trigger_id, trigger_name, sapi) == True:
                     trigger_info = get_trigger_info(sapi, trigger_id)
                     if wfmeta["name"] in trigger_info["associated_workflows"]:
-                        workflow_info = trigger_info["associated_workflows"][wfmeta["name"]]
-                        # this can potentially update workflow metadata
-                        addWorkflowToTrigger(email, wfmeta["name"], workflow_info["workflow_state"], wfmeta, trigger_id, trigger_name, sapi)
+                        print("[deployWorkflow] Strangely global trigger info already has workflow_name: " + str(wfmeta["name"]) + ", in associated_workflows")
+                    workflow_state = associatedTriggers[trigger_name]
+                    addWorkflowToTrigger(email, wfmeta["name"], workflow_state, wfmeta, trigger_id, trigger_name, sapi)
                 else:
                     # workflow has an associated trigger name, but the trigger may have been deleted
                     # so remove the associated trigger name
+                    print("Trigger_id: " + str(trigger_id) + "  info not found. Removing trigger name: " + str(trigger_name) + ", from workflow's associatedTriggers")
                     assocTriggers = wfmeta['associatedTriggers']
                     del assocTriggers[trigger_name]
                     wfmeta['associatedTriggers'] = assocTriggers
+                    print("Updating workflow meta to: " + str(wfmeta))
                     sapi.put(email + "_workflow_" + wfmeta["id"], json.dumps(wfmeta), True)
                     #deleteTriggerFromWorkflowMetadata(email, trigger_name, wfmeta["name"],  workflow["id"], sapi)
 
@@ -645,6 +648,7 @@ def get_user_trigger_list(context, email):
 def isTriggerPresent(email, trigger_id, trigger_name, context):
     # check if the global trigger is present
     global_trigger_info = get_trigger_info(context, trigger_id)
+    print("[isTriggerPresent] global_trigger_info = " + str(global_trigger_info))
 
     # check if the trigger does not exist in global and user's list
     if global_trigger_info is None:
@@ -654,6 +658,7 @@ def isTriggerPresent(email, trigger_id, trigger_name, context):
 
 
 def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details, trigger_id, trigger_name, context):
+    print("[addTriggerForWorkflow] called with workflow_name: " + str(workflow_name) + ", workflow_state: " + str(workflow_name) + ", workflow_details: " + str(workflow_details) + ", trigger_id: " + str(trigger_id) + ", trigger_name: " + trigger_name)
     status_msg = ""
     try:
         workflow_endpoints = workflow_details["endpoints"]
@@ -708,11 +713,11 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             status_msg = "[addTriggerForWorkflow] Error: " + status_msg + ", response: " + str(res_obj)
             raise Exception(status_msg)
     except Exception as e:
-        if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:
+        print("[addTriggerForWorkflow] exception: " + str(e))
+        if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:            
             associatedTriggers = workflow_details['associatedTriggers']
             del associatedTriggers[trigger_name]
             workflow_details['associatedTriggers'] = associatedTriggers
+            print("Removing trigger_name: " + str(trigger_name) + ", from associatedTriggers for the workflow. Updated workflow metadata: " + str(workflow_details))
             context.put(email + "_workflow_" + workflow_details["id"], json.dumps(workflow_details), True)
-        #deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_details["id"], context)
-        #raise Exception(status_msg)
 
