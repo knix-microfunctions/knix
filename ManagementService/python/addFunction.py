@@ -42,6 +42,7 @@ def handle(value, sapi):
         else:
             f["name"] = function["name"]
             f["runtime"] = function["runtime"]
+            f["gpu_usage"] = function["gpu_usage"]
             f["modified"] = time.time()
 
             f["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest()

@@ -636,7 +636,7 @@
 
           },
 
-          data:   JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : mFunction.name, "runtime" : mFunction.runtime } } })
+		data:   JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage": mFunction.gpu_usage } } })
 
         }
         $http(req).then(function successCallback(response) {
@@ -646,7 +646,7 @@
               console.log('new function id:' + response.data.data.function.id);
               toastr.success('Your function has been created successfully!');
               $scope.reloadFunctions();
-              $scope.open('app/pages/functions/modals/codeEditorModal.html', 'lg', mFunction.id, mFunction.name, mFunction.status, mFunction.runtime);
+              $scope.open('app/pages/functions/modals/codeEditorModal.html', 'lg', mFunction.id, mFunction.name, mFunction.status, mFunction.runtime, mFunction.gpu_usage);
 
             } else {
               console.log("Failure status returned by addFunction");
@@ -690,7 +690,7 @@
 
           },
 
-          data:   JSON.stringify({ "action" : "modifyFunction", "data" : { "user" : { "token" : token } , "function" : { "id": mFunction.id, "name" : mFunction.name, "runtime" : mFunction.runtime } } })
+		data:   JSON.stringify({ "action" : "modifyFunction", "data" : { "user" : { "token" : token } , "function" : { "id": mFunction.id, "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage" : mFunction.gpu_usage } } })
 
         }
         $http(req).then(function successCallback(response) {

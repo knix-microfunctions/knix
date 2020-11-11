@@ -330,14 +330,14 @@ class MfnClient(object):
             return res[0]
 
     @deprecated(reason="Grains have been renamed to functions, use add_function(..) instead")
-    def addGrain(self,name,runtime='Python 3.6'):
-        return self.add_function(name,runtime)
+    def addGrain(self,name,runtime='Python 3.6',gpu_usage="0."):
+        return self.add_function(name,runtime,gpu_usage)
 
     @deprecated(reason="Grains have been renamed to functions, use add_function(..) instead")
-    def add_grain(self,name,runtime='Python 3.6'):
-        return self.add_function(name, runtime)
+    def add_grain(self,name,runtime='Python 3.6',gpu_usage="0."):
+        return self.add_function(name, runtime, gpu_usage)
 
-    def add_function(self,name,runtime='Python 3.6'):
+    def add_function(self,name,runtime='Python 3.6',gpu_usage="0."):
         """ add a function
 
         returns an existing function if the name exists, registers a new function name if it doesn't exist
@@ -346,7 +346,7 @@ class MfnClient(object):
         for f in self.functions:
             if f._name == name:
                 return f
-        data = self.action('addFunction',{'function':{'name':name,'runtime':runtime}})
+        data = self.action('addFunction',{'function':{'name':name,'runtime':runtime, 'gpu_usage': gpu_usage}})
         gd = data['function']
         f = Function(self,gd)
         self._functions.append(f)
