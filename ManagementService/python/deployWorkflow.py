@@ -537,14 +537,11 @@ def handle(value, sapi):
         else:
             # We're running BARE METAL mode
             # _XXX_: due to the queue service still being in java in the sandbox
-            gpu_usage=0
-            runtime="Python" # HARDCODED
 
             if gpu_usage == 0:
                 sandbox_image_name = "microfn/sandbox" # default value
             elif gpu_usage != 0 and runtime == "Python":
                 sandbox_image_name = "microfn/sandbox_gpu" # sandbox uses GPU
-                     
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 sandbox_image_name = "microfn/sandbox_java"
 
@@ -564,7 +561,7 @@ def handle(value, sapi):
                         gpu_hosts[hostname] = hostip
 
                 # instruct hosts to start the sandbox and deploy workflow
-                if runtime=="Java" or sandbox_image_name == "microfn/sandbox": # can use any host 
+                if sandbox_image_name == "microfn/sandbox" or sandbox_image_name=="microfn/sandbox_java": # can use any host 
                     picked_hosts = hosts
                 elif len(gpu_hosts) > 0:
                     picked_hosts = gpu_hosts 
