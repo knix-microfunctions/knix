@@ -215,7 +215,7 @@
 
     <button type="button" class="btn btn-info" ng-click="closeModal();open('app/pages/workflows/modals/workflowEditorModal.html', 'lg', getWorkflowId(), getWorkflowName(), getWorkflowStatus(), getWorkflowUrl(), getCodeError());$dismiss();">{{ workflowButtonLabel }}</button>
     <button type="button" class="btn btn-info" ng-click="reloadLog();">Refresh Logs</button>
-    <!--<button type="button" class="btn btn-info" ng-click="clearLog();">Clear Logs</button>-->
+    <button type="button" class="btn btn-info" ng-click="clearLog();">Clear Logs</button>
     <button type="button" class="btn btn-primary" ng-click="closeModal();$dismiss()">Close</button>
     <button id="switchTabButton" style="display:none" type="button" class="btn btn-primary" ng-click="activeTab=gTab;setTabFocus(gTab);">TT</button>
   </div>

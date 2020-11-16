@@ -44,7 +44,7 @@ var app = angular.module('MfnWebConsole', [
     var workflowUrl = '';
     var objectKey = '';
     var codeError = '';
-    var storageLocation = '';
+    var storageLocation = { };
 
     var urlPath = "/management";
     var dataPrefix = "value=";

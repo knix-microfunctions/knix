@@ -2,7 +2,8 @@
     "name": "manager",
     "entry": "ManagementServiceEntry",
     "exit": "ManagementServiceExit",
-    "functions": [{
+    "functions": [
+        {
             "name": "ManagementServiceEntry",
             "next": [],
             "potentialNext": [
@@ -31,155 +32,167 @@
                 "getWorkflowJSON",
                 "clearAllWorkflowLogs",
                 "retrieveAllWorkflowLogs",
-                "addTriggerableTable",
+                "addTriggerableBucket",
                 "addStorageTriggerForWorkflow",
-                "getTriggerableTables",
+                "getTriggerableBuckets",
+                "getWorkflowDetails",
+                "deleteTriggerableBucket",
+                "deleteStorageTriggerForWorkflow",
                 "deleteAccount",
-                "performStorageAction"
+                "performStorageAction",
+                "triggersFrontendStatus",
+                "addTrigger",
+                "deleteTrigger",
+                "addTriggerForWorkflow",
+                "deleteTriggerForWorkflow"
             ]
         },
         {
             "name": "getFunctionEnvironmentVariables",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "uploadFunctionEnvironmentVariables",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "getFunctions",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "addFunction",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "modifyFunction",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "deleteFunction",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "getFunctionCode",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "getFunctionZip",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "getFunctionZipMetadata",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "uploadFunctionCode",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "uploadFunctionZipMetadata",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "getFunctionRequirements",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "uploadFunctionRequirements",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "getWorkflows",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "addWorkflow",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "modifyWorkflow",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "executeWorkflow",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "uploadWorkflowJSON",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "getWorkflowJSON",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "deployWorkflow",
-            "next": [],
-            "potentialNext": ["ManagementServiceExit"]
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "undeployWorkflow",
-            "next": [],
-            "potentialNext": ["ManagementServiceExit"]
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "deleteWorkflow",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "clearAllWorkflowLogs",
-            "potentialNext": ["ManagementServiceExit"],
-            "next": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "retrieveAllWorkflowLogs",
-            "potentialNext": ["ManagementServiceExit"],
-            "next": []
+            "next": ["ManagementServiceExit"]
         },
         {
-            "name": "addTriggerableTable",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "name": "addTriggerableBucket",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "deleteTriggerableBucket",
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "addStorageTriggerForWorkflow",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
-            "name": "getTriggerableTables",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "name": "deleteStorageTriggerForWorkflow",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "getWorkflowDetails",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "getTriggerableBuckets",
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "deleteAccount",
-            "next": ["ManagementServiceExit"],
-            "potentialNext": []
+            "next": ["ManagementServiceExit"]
         },
         {
             "name": "performStorageAction",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "triggersFrontendStatus",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "addTrigger",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "deleteTrigger",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "addTriggerForWorkflow",
+            "next": ["ManagementServiceExit"]
+        },
+        {
+            "name": "deleteTriggerForWorkflow",
             "next": ["ManagementServiceExit"]
         }
     ]

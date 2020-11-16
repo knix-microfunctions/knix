@@ -74,10 +74,10 @@ public class RiakAccess {
     private static final Logger LOGGER = LogManager.getLogger(RiakAccess.class);
 
 	public static String BUCKET_TYPE_DEFAULT = "default";
-    public static final String BUCKET_TYPE_STRONG_CONSISTENCY = "strong"; // make sure there is a Riak bucket type called "strong" for strong consistency.
-	public static final String BUCKET_TYPE_TRIGGERS = "triggers"; // make sure there is a Riak bucket type called "triggers".
+    //public static final String BUCKET_TYPE_STRONG_CONSISTENCY = "strong"; // make sure there is a Riak bucket type called "strong" for strong consistency.
+	// public static final String BUCKET_TYPE_TRIGGERS = "triggers"; // make sure there is a Riak bucket type called "triggers".
 	public static final String BUCKET_TYPE_COUNTERS = "counters";	// make sure there is a Riak bucket type called "counters" with its data type being "counter".
-    public static final String BUCKET_TYPE_TRIGGERABLE_COUNTERS = "mfn_counter_trigger"; // make sure there is a Riak bucket type called "mfn_counter_trigger".
+    // public static final String BUCKET_TYPE_TRIGGERABLE_COUNTERS = "mfn_counter_trigger"; // make sure there is a Riak bucket type called "mfn_counter_trigger".
 	public static final String BUCKET_TYPE_SETS = "sets";	// make sure there is a Riak bucket type called "sets" with its data type being "set".
 	public static final String BUCKET_TYPE_MAPS = "maps";	// make sure there is a Riak bucket type called "maps" with its data type being "map".
 	public static final String BUCKET_TYPE_ALL = "all";
@@ -119,28 +119,28 @@ public class RiakAccess {
 		cluster.start();
 
         ALL_BUCKET_TYPES.add(BUCKET_TYPE_DEFAULT);
-        ALL_BUCKET_TYPES.add(BUCKET_TYPE_STRONG_CONSISTENCY);
-		ALL_BUCKET_TYPES.add(BUCKET_TYPE_TRIGGERS);
+        //ALL_BUCKET_TYPES.add(BUCKET_TYPE_STRONG_CONSISTENCY);
+		// ALL_BUCKET_TYPES.add(BUCKET_TYPE_TRIGGERS);
         ALL_BUCKET_TYPES.add(BUCKET_TYPE_COUNTERS);
-        ALL_BUCKET_TYPES.add(BUCKET_TYPE_TRIGGERABLE_COUNTERS);
+        // ALL_BUCKET_TYPES.add(BUCKET_TYPE_TRIGGERABLE_COUNTERS);
         ALL_BUCKET_TYPES.add(BUCKET_TYPE_SETS);
         ALL_BUCKET_TYPES.add(BUCKET_TYPE_MAPS);
         ALL_BUCKET_TYPES.add(BUCKET_TYPE_ALL);
         
         KV_BUCKET_TYPES.add(BUCKET_TYPE_DEFAULT);
-        KV_BUCKET_TYPES.add(BUCKET_TYPE_STRONG_CONSISTENCY);
-		KV_BUCKET_TYPES.add(BUCKET_TYPE_TRIGGERS);
+        //KV_BUCKET_TYPES.add(BUCKET_TYPE_STRONG_CONSISTENCY);
+		// KV_BUCKET_TYPES.add(BUCKET_TYPE_TRIGGERS);
         
         COUNTER_BUCKET_TYPES.add(BUCKET_TYPE_COUNTERS);
-        COUNTER_BUCKET_TYPES.add(BUCKET_TYPE_TRIGGERABLE_COUNTERS);
+        // COUNTER_BUCKET_TYPES.add(BUCKET_TYPE_TRIGGERABLE_COUNTERS);
         
         CONSISTENCY_BUCKET_TYPES.add(BUCKET_TYPE_DEFAULT);
-        CONSISTENCY_BUCKET_TYPES.add(BUCKET_TYPE_STRONG_CONSISTENCY);
+        //CONSISTENCY_BUCKET_TYPES.add(BUCKET_TYPE_STRONG_CONSISTENCY);
         
 		NUM_NODES = cluster.getNodes().size();
-		if (NUM_NODES >= MIN_NODES_FOR_STRONG_CONSISTENCY) {
-		    BUCKET_TYPE_DEFAULT = BUCKET_TYPE_STRONG_CONSISTENCY;
-		}
+		//if (NUM_NODES >= MIN_NODES_FOR_STRONG_CONSISTENCY) {
+		//    BUCKET_TYPE_DEFAULT = BUCKET_TYPE_STRONG_CONSISTENCY;
+		//}
 		
         client = new RiakClient(cluster);
         
@@ -393,7 +393,7 @@ public class RiakAccess {
 			}
 			
 			Namespace bucket = new Namespace(tableType, keyspace + ";" + table);
-			StoreBucketProperties props = new StoreBucketProperties.Builder(bucket).withNVal(replicationFactor).build();
+			StoreBucketProperties props = new StoreBucketProperties.Builder(bucket).withNVal(replicationFactor).withW(replicationFactor).build();
 			client.execute(props);
 			LOGGER.info("createTableWithType() Keyspace: " + keyspace + "  Table: " + table + "  TableType: " + tableType);
 			boolean success = this.insertRow(keyspace, null, table, ByteBuffer.wrap(tableType.getBytes(StandardCharsets.UTF_8)));

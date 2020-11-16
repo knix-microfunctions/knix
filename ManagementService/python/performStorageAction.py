@@ -49,8 +49,11 @@ def handle(value, sapi):
 
         if "workflowid" in storage and storage["workflowid"] is not None and storage["workflowid"] != "":
             dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=storage["workflowid"])
+        elif storage["tableName"] is not None:
+            dlc = sapi.get_privileged_data_layer_client(storage_userid, tableName=storage["tableName"])
         else:
             dlc = sapi.get_privileged_data_layer_client(storage_userid)
+            
 
         success, message, response_data = handleStorageAction(storage, dlc)
 
@@ -88,6 +91,7 @@ def handleStorageAction(storage, dlc):
     '''
     "storage": {
         "workflowid": <workflowid> OR non-existing (i.e., user-level storage)
+        "tableName": name of table to perform storage operations on
         "action": "getdata",  OR  "deletedata",  OR  "putdata",  OR  "listkeys",  <case insensitive>
         "key": "keyname",               (for getdata, deletedata, and putdata)
         "value": "stringdata",          (for putdata)
@@ -97,6 +101,7 @@ def handleStorageAction(storage, dlc):
     '''
 
     message = ''
+    
     response_data = {"status": False}
     storage_action = storage['action'].lower()
 
@@ -107,10 +112,8 @@ def handleStorageAction(storage, dlc):
         if val is None:
             return False, "getdata returned None value. " + message, response_data
 
-        # the GUI expects this to be base64-encoded
-        val = bytes(val, 'utf-8')
-        response_data['value'] = base64.b64encode(val).decode()
-
+        response_data['value'] = val
+        
     elif storage_action == 'deletedata':
         message = "deletedata, key:" + storage['key'] + ", table: " + dlc.tablename + ", keyspace: " + dlc.keyspace
         print("[StorageAction] " + message)

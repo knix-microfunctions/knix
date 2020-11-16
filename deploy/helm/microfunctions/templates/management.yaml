@@ -191,9 +191,9 @@ data:
   new_workflow.conf: |-
     {
       "app.fullname.prefix": "wf-{{ .Release.Name }}",
-      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}",
-      "image.PythonGPU": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPythonGPU }}",
-      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}",
+      "image.PythonGPU": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPythonGPU }}:{{ .Values.manager.sandbox.imageTag }}",
+      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag }}",
+      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}:{{ .Values.manager.sandbox.imageTag }}",
     {{- if (.Values.manager.createServiceAccounts) -}}
       "mgmtserviceaccount": "{{ template "manager.fullname" . }}",
     {{- else -}}

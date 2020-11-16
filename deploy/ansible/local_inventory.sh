@@ -25,9 +25,9 @@ $HOSTNAME
 [management]
 $HOSTNAME
 
-[frontend]
+[nginx]
 $HOSTNAME
 
-[nginx]
+[triggers_frontend]
 $HOSTNAME
 END

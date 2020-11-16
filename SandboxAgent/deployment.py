@@ -32,7 +32,7 @@ SINGLE_JVM_FOR_FUNCTIONS = True
 
 class Deployment:
 
-    def __init__(self, deployment_info, hostname, userid, sandboxid, workflowid, workflowname, queue, datalayer, logger, external_endpoint, internal_endpoint):
+    def __init__(self, deployment_info, hostname, userid, sandboxid, workflowid, workflowname, queue, datalayer, logger, external_endpoint, internal_endpoint, management_endpoints):
         self._logger = logger
         self._deployment_info = deployment_info
         self._hostname = hostname
@@ -44,6 +44,7 @@ class Deployment:
         self._datalayer = datalayer
         self._external_endpoint = external_endpoint
         self._internal_endpoint = internal_endpoint
+        self._management_endpoints = management_endpoints
 
         self._python_version = sys.version_info
 
@@ -119,30 +120,35 @@ class Deployment:
             self._logger.error("Process with pid: " + str(pid) + " stopped.")
             if pid == self._fluentbit_actual_pid:
                 failed_process_name = "Fluent-bit"
+                log_filepath = "/opt/mfn/LoggingService/fluent-bit/fluent-bit.log"
             elif pid == self._queue_service_process.pid:
                 failed_process_name = "Queue service"
+                log_filepath = "/opt/mfn/logs/queueservice.log"
             elif pid == self._frontend_process.pid:
                 failed_process_name = "Frontend"
+                log_filepath = "/opt/mfn/logs/frontend.log"
             else:
                 for jrhp in self._javarequesthandler_process_list:
                     if pid == jrhp.pid:
                         failed_process_name = "Java request handler"
+                        log_filepath = "/opt/mfn/logs/javaworker.log"
                         break
                 for state_name in self._functionworker_process_map:
                     process = self._functionworker_process_map[state_name]
                     if pid == process.pid:
                         failed_process_name = "Function worker (" + state_name + ")"
+                        log_filepath = "/opt/mfn/logs/function_" + state_name + ".log"
                         del self._functionworker_process_map[state_name]
                         break
 
             self._logger.error("Failed process name: " + failed_process_name)
 
         if os.path.exists('/var/run/secrets/kubernetes.io'):
-            return True, pid, failed_process_name
+            return True, pid, failed_process_name, log_filepath
         else:
             # TODO: try to relaunch some of the processes (FWs, fluentbit, frontend)
             self._logger.info(self._child_process_command_args_map[pid])
-            return True, pid, failed_process_name
+            return True, pid, failed_process_name, log_filepath
 
     def shutdown(self):
         shutdown_message = {}
@@ -584,6 +590,7 @@ class Deployment:
         worker_params["datalayer"] = self._datalayer
         worker_params["externalendpoint"] = self._external_endpoint
         worker_params["internalendpoint"] = self._internal_endpoint
+        worker_params["managementendpoints"] = self._management_endpoints
         worker_params["fnext"] = wf_node.getNextMap()
         worker_params["fpotnext"] = wf_node.getPotentialNextMap()
         worker_params["functionstatetype"] = wf_node.getGWFType()

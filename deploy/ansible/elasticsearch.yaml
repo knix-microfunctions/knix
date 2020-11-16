@@ -245,16 +245,23 @@
         [Install]
         WantedBy=multi-user.target
 
-  # regardless of start_at_boot setting, we install the script and start it
-  # because we have to perform some operations
-  # if start_at_boot is set to false, we'll disable it afterwards
-  - name: systemd install and start mfn-elasticsearch service to perform initialization operations
+  - name: systemd install, start mfn-elasticsearch service, and enable starting after boot
     systemd:
       daemon_reload: yes
       name: "{{ es_server_service_name }}"
       enabled: true
       state: restarted
     become: yes
+    when: start_at_boot|bool
+
+  - name: systemd install, start mfn-elasticsearch service, and disale starting after boot
+    systemd:
+      daemon_reload: yes
+      name: "{{ es_server_service_name }}"
+      enabled: false
+      state: restarted
+    become: yes
+    when: not start_at_boot|bool
 
   - name: create elasticsearch start script
     copy:
@@ -314,11 +321,11 @@
       var: esconfig_command.stdout
     when: ansible_default_ipv4.address == es_master_ip
 
-  - name: systemd install and disable mfn-elasticsearch service
-    systemd:
-      daemon_reload: yes
-      name: "{{ es_server_service_name }}"
-      enabled: false
-      state: stopped
-    become: yes
-    when: not start_at_boot|bool
+#  - name: systemd install and disable mfn-elasticsearch service
+#    systemd:
+#      daemon_reload: yes
+#      name: "{{ es_server_service_name }}"
+#      enabled: false
+#      state: stopped
+#    become: yes
+#    when: not start_at_boot|bool

@@ -13,9 +13,53 @@
 #   limitations under the License.
 
 import json
-import uuid
 import hashlib
+import os
 import time
+import uuid
+
+import requests
+
+MFN_ELASTICSEARCH = os.getenv("MFN_ELASTICSEARCH", os.getenv("MFN_HOSTNAME"))
+ELASTICSEARCH_HOST = MFN_ELASTICSEARCH.split(':')[0]
+try:
+    ELASTICSEARCH_PORT = MFN_ELASTICSEARCH.split(':')[1]
+except:
+    ELASTICSEARCH_PORT = 9200
+
+ELASTICSEARCH_URL = "http://" + ELASTICSEARCH_HOST + ":" + str(ELASTICSEARCH_PORT)
+
+def create_workflow_index(index_name):
+    index_data = \
+    {
+        "mappings": {
+            "properties": {
+                "indexed": {"type": "long"},
+                "timestamp": {"type": "long"},
+                "loglevel": {"type": "keyword"},
+                "hostname": {"type": "keyword"},
+                "containername": {"type": "keyword"},
+                "uuid": {"type": "keyword"},
+                "userid": {"type": "keyword"},
+                "workflowname": {"type": "keyword"},
+                "workflowid": {"type": "keyword"},
+                "function": {"type": "keyword"},
+                "asctime": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS"},
+                "message": {"type": "text"}
+            }
+        }
+    }
+
+    try:
+        r = requests.put(ELASTICSEARCH_URL + "/" + index_name, json=index_data, proxies={"http":None})
+        #response = r.json()
+        #print(str(response))
+    except Exception as e:
+        if type(e).__name__ == 'ConnectionError':
+            print('Could not connect to: ' + ELASTICSEARCH_URL)
+        else:
+            raise e
+
 
 def handle(value, sapi):
     assert isinstance(value, dict)
@@ -42,8 +86,12 @@ def handle(value, sapi):
         #wf["gpu_usage"] = None
         if "gpu_usage" in workflow:
             wf["gpu_usage"] = str(workflow["gpu_usage"])
+        wf['associatedTriggerableTables'] = {}
+        wf['associatedTriggers'] = {}
+        wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest().lower()
 
-        wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest()
+        # make a request to elasticsearch to create the workflow index
+        create_workflow_index("mfnwf-" + wf["id"])
 
         #wf["on_gpu"] = True # add metadata on GPU requirements for this workflow. ToDo: make this configurable via GUI
 
@@ -77,4 +125,3 @@ def handle(value, sapi):
     sapi.log(json.dumps(response))
 
     return response
-

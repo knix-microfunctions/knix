@@ -38,7 +38,6 @@ from LocalQueueClientMessage import LocalQueueClientMessage
 
 LOG_FILENAME = '/opt/mfn/logs/sandboxagent.log'
 FLUENTBIT_FOLDER = '/opt/mfn/LoggingService/fluent-bit' # this a symbolic link to the actual fluent-bit folder location inside the sandbox container
-ELASTICSEARCH_INDEX_WF = 'mfnwf'
 ELASTICSEARCH_INDEX_FE = 'mfnfe'
 
 POLL_TIMEOUT = py3utils.ensure_long(60000)
@@ -64,7 +63,8 @@ class SandboxAgent:
         self._deployment_info_key = "deployment_info_workflow_" + self._workflowid
 
         self._logger = logging_helpers.setup_logger(self._sandboxid, LOG_FILENAME)
-        self._fluentbit_process, self._command_args_map_fluentbit = logging_helpers.setup_fluentbit_and_elasticsearch_index(self._logger, FLUENTBIT_FOLDER, self._elasticsearch, ELASTICSEARCH_INDEX_WF, ELASTICSEARCH_INDEX_FE)
+        self._index_wf = "mfnwf-" + self._workflowid.lower()
+        self._fluentbit_process, self._command_args_map_fluentbit = logging_helpers.setup_fluentbit_and_elasticsearch_index(self._logger, FLUENTBIT_FOLDER, self._elasticsearch, self._index_wf, ELASTICSEARCH_INDEX_FE)
 
         self._logger.info("hostname (and container name): %s", self._hostname)
         self._logger.info("elasticsearch nodes: %s", self._elasticsearch)
@@ -90,6 +90,8 @@ class SandboxAgent:
         self._external_endpoint = None
         # visible internally: kubernetes node address or same as bare-metal external endpoint
         self._internal_endpoint = None
+        # external endpoints of management service
+        self._management_endpoints = None
 
         self._is_running = False
         self._shutting_down = False
@@ -168,7 +170,7 @@ class SandboxAgent:
         # for session support, in FunctionWorker, we need current host address (bare-metal)
         # or current node address (kubernetes)
 
-        # for parallel state support, in FunctionWorker, either would be fine
+        # for parallel state support, in FunctionWorker, we need current host address (bare-metal)
 
         # As such, let the FunctionWorker know both and let it decide what to do
         if 'KUBERNETES_SERVICE_HOST' in os.environ:
@@ -178,13 +180,33 @@ class SandboxAgent:
             # bare-metal mode: the current host's address and external address are the same
             self._internal_endpoint = self._external_endpoint
 
+        # get the management endpoints
+        if not has_error:
+            self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
+            num_trials = 0
+            sleep_time = 1.0
+            while num_trials < 5 and (self._management_endpoints is None or self._management_endpoints == ""):
+                time.sleep(sleep_time)
+                self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
+                num_trials = num_trials + 1
+                sleep_time = sleep_time * 2
+
+            if num_trials == 5:
+                has_error = True
+                errmsg = "Could not retrieve management endpoints"
+            else:
+                self._management_endpoints = json.loads(self._management_endpoints)
+
+
+
         if not has_error:
             self._logger.info("External endpoint: %s", self._external_endpoint)
             self._logger.info("Internal endpoint: %s", self._internal_endpoint)
+            self._logger.info("Management endpoints: %s", str(self._management_endpoints))
             self._deployment = Deployment(deployment_info,\
                 self._hostname, self._userid, self._sandboxid, self._workflowid,\
                 self._workflowname, self._queue, self._datalayer, \
-                self._logger, self._external_endpoint, self._internal_endpoint)
+                self._logger, self._external_endpoint, self._internal_endpoint, self._management_endpoints)
             self._deployment.set_child_process("fb", self._fluentbit_process, self._command_args_map_fluentbit)
             has_error, errmsg = self._deployment.process_deployment_info()
 
@@ -199,10 +221,10 @@ class SandboxAgent:
 
     def sigchld(self, signum, _):
         if not self._shutting_down:
-            should_shutdown, pid, failed_process_name = self._deployment.check_child_process()
+            should_shutdown, pid, failed_process_name, log_filepath = self._deployment.check_child_process()
 
             if should_shutdown:
-                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name)
+                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name, log_filepath)
 
                 if pid == self._queue_service_process.pid:
                     self._queue_service_process = None
@@ -276,9 +298,13 @@ class SandboxAgent:
         self._management_data_layer_client.shutdown()
         os._exit(1)
 
-    def _update_deployment_status(self, has_error, errmsg):
+    def _update_deployment_status(self, has_error, errmsg, log_filepath=None):
         sbstatus = {}
         sbstatus["errmsg"] = errmsg
+        if log_filepath is not None:
+            with open(log_filepath, "r") as f:
+                data = f.read()
+                sbstatus["errmsg"] += "\rn" + data
         if has_error:
             sbstatus["status"] = "failed"
         else:

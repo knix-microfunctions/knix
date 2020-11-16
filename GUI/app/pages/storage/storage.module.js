@@ -35,6 +35,13 @@
             order: 10,
           },
         })
+        .state('bucketList', {
+          url: '/bucketList',
+          templateUrl: 'app/pages/storage/smart/buckets.html',
+          
+          controller: 'BucketListCtrl'
+          
+        })
   }
 
 })();

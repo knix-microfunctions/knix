@@ -14,7 +14,7 @@
 #   limitations under the License.
 
 sudo journalctl -efb \
-  | GREP_COLOR='01;32' egrep -i --color=always 'run_frontend.sh|$' \
+  | GREP_COLOR='01;32' egrep -i --color=always 'run_triggers_frontend.sh|$' \
   | GREP_COLOR='01;34' egrep --color=always 'riak|$' \
   | GREP_COLOR='01;35' egrep --color=always 'elasticsearch|$' \
   | GREP_COLOR='01;37' egrep -i --color=always 'run_datalayer.sh|mfn-datalayer.service|$'

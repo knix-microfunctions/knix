@@ -324,7 +324,7 @@ class Workflow(object):
 
     def logs(self, clear=False, ts_earliest=0.0, num_lines=500):
         """ fetch logs of this workflow
-        :clear: default=False; if True, the function calls delete_logs() before returning
+        :clear: default=False; if True, the function calls clear_logs() before returning
         :returns: a dict {'exceptions':<str>,'progress':<str>,'log':<str>}
         """
         #print("earliest: " + str(ts_earliest))
@@ -334,19 +334,20 @@ class Workflow(object):
                'log':base64.b64decode(data['workflow']['log']).decode(),
                 'timestamp': data['workflow']['timestamp']}
         if clear:
-            self.delete_logs()
+            self.clear_logs()
         return res
 
+    def clear_logs(self):
+        """ clear logs of this workflow """
+        try:
+            self.client.action('clearAllWorkflowLogs',{'workflow':{'id':self.id}})
+        except requests.exceptions.HTTPError as e:
+            e.strerror += "while trying to clearAllWorkflowLogs for wf '"+self.name+"'/"+self.id
+            raise e
 
     def delete_logs(self):
-        """ delete logs of this workflow """
-        return
-        #try:
-        #    self.client.action('clearAllWorkflowLogs',{'workflow':{'id':self.id}})
-        #except requests.exceptions.HTTPError as e:
-        #    e.strerror += "while trying to clearAllWorkflowLogs for wf '"+self.name+"'/"+self.id
-        #    raise e
-
+        """ alias for clear_logs() """
+        self.clear_logs()
 
     def get_functions(self):
         fnames = []

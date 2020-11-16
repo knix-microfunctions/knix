@@ -89,7 +89,7 @@
         [Install]
         WantedBy=multi-user.target
 
-  - name: systemd install and enable datalayer service
+  - name: systemd install, start the service, and enable datalayer service at boot
     systemd:
       daemon_reload: yes
       name: "{{ service_name }}"
@@ -97,12 +97,12 @@
       state: restarted
     when: start_at_boot|bool
 
-  - name: systemd install and disable datalayer service
+  - name: systemd install, start the service, and disable datalayer service at boot
     systemd:
       daemon_reload: yes
       name: "{{ service_name }}"
       enabled: false
-      state: stopped
+      state: restarted
     when: not start_at_boot|bool
 
   - name: create start script

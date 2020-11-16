@@ -11,4 +11,7 @@ knix-test
 knix-test
 
 [gpu_workstations]
-gpuhost
+knix-test
+
+[triggers_frontend]
+knix-test
