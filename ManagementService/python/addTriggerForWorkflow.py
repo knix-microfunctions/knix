@@ -294,7 +294,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
     except Exception as e:
         print("[addWorkflowToTrigger] exception: " + str(e))
         deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_details["id"], context)
-        raise Exception(status_msg)
+        raise e
 
 
 def tryRemovingFirst(tf_ip_port, trigger_id, workflow_to_remove):

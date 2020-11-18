@@ -14,7 +14,7 @@ channel.exchange_declare(exchange='egress_exchange', exchange_type='topic', dura
 
 routing_key = "rabbit.routing.key"
 
-for i in range(100):
+for i in range(10000):
     message = str(int(time.time() * 1000))
     channel.basic_publish(exchange='egress_exchange', routing_key=routing_key, body=message)
     time.sleep(1)

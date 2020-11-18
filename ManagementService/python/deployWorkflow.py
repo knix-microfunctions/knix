@@ -536,7 +536,7 @@ def handle(value, sapi):
         dlc.shutdown()
 
         # deploy queued up triggers
-        if status is not "failed" and "associatedTriggers" in wfmeta:
+        if status is not "failed" and "associatedTriggers" in wfmeta and "endpoints" in wfmeta and len(wfmeta["endpoints"]) > 0:
             associatedTriggers = wfmeta["associatedTriggers"].copy()
             for trigger_name in associatedTriggers:
                 trigger_id = storage_userid + "_" + trigger_name
@@ -557,7 +557,8 @@ def handle(value, sapi):
                     print("Updating workflow meta to: " + str(wfmeta))
                     sapi.put(email + "_workflow_" + wfmeta["id"], json.dumps(wfmeta), True)
                     #deleteTriggerFromWorkflowMetadata(email, trigger_name, wfmeta["name"],  workflow["id"], sapi)
-
+        else:
+            print("Unable to associate queued up triggers with workflow. Workflow meta: " + str(wfmeta))
 
     except Exception as e:
         response = {}

@@ -15,7 +15,6 @@
 import json
 import time
 import requests
-from requests.api import head
 
 MAP_AVAILABLE_FRONTENDS = "available_triggers_frontned_map"
 MAP_TRIGGERS_TO_INFO = "triggers_to_info_map"
@@ -129,7 +128,6 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
     assert(len(trigger_status_map) == 0) # frontend should not be running anything yet
     assert(len(trigger_error_map) == 0) # frontend should not be running anything yet
 
-    pending_triggers = []
     frontend_available = is_frontend_registered(context, frontend_ip_port)
     if frontend_available:
         print("Frontend already registered, but it is reporting that it is starting!!")
@@ -138,6 +136,27 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
         # check if we have any triggers that we think should be active, 
         # and were earlier assigned to this frontend which has just started up
         # such triggers will have to be re-assigned
+
+        print("[handle_start] First removing information about the old frontend with same ip: " + frontend_ip_port)
+        pending_triggers = []
+        frontend_info = get_frontend_info(context, frontend_ip_port)
+
+        for trigger_id in frontend_info:
+            trigger_info = get_trigger_info(context, trigger_id)
+            if trigger_info is not None and trigger_info["frontend_ip_port"] == frontend_ip_port:
+                # this trigger is still associated with an inactive frontend
+                pending_triggers.append((trigger_info, "Associated Triggers Frontend not active"))
+            else:
+                # this trigger is now associated with a different frontend, simply remove information
+                pass
+        
+        if len(pending_triggers) > 0:
+            inform_workflows_for_triggers(pending_triggers, context)
+
+        if len(pending_triggers) > 0:
+            removeTriggerAndWorkflowAssociations(pending_triggers, context)
+
+        remove_frontend_info(context, frontend_ip_port)
 
         '''
         frontend_info = get_frontend_info(context, frontend_ip_port) # list of trigger ids that were earlier assigned to the frontend
@@ -161,9 +180,6 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
 
     new_frontend_entry = '{}'
     add_frontend_info(context, frontend_ip_port, new_frontend_entry)
-
-    if len(pending_triggers) > 0:
-        inform_workflows_for_triggers(pending_triggers)
 
 
 def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, context):
@@ -252,6 +268,8 @@ def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, conte
                 pass
         '''
         add_frontend_info(context, frontend_ip_port, json.dumps(new_frontend_entry))
+    
+    health_check_registered_frontends(context)
 
 def handle_stop(frontend_ip_port, trigger_status_map, trigger_error_map, context):
     print("[TriggersFrontend] [STOP], frontend_ip_port: " + frontend_ip_port + ", trigger_status_map: " + str(trigger_status_map) + ", trigger_error_map: " + str(trigger_error_map))
@@ -274,6 +292,60 @@ def handle_stop(frontend_ip_port, trigger_status_map, trigger_error_map, context
 
     remove_frontend_info(context, frontend_ip_port)
 
+def health_check_registered_frontends(context):
+    tf_hosts = get_available_frontends(context)
+    if len(tf_hosts) == 0:
+        print("[health_check_registered_frontends] No available TriggersFrontend found")
+        return
+    tf_hosts = list(tf_hosts)
+
+    for tf_ip_port in tf_hosts:
+        if not is_frontend_active(tf_ip_port):
+            # frontend is not active but is still registered with management
+
+            print("[health_check_registered_frontends] Removing inactive frontend: " + tf_ip_port)
+            pending_triggers = []
+            frontend_info = get_frontend_info(context, tf_ip_port)
+            if frontend_info is None:
+                continue
+
+            for trigger_id in frontend_info:
+                trigger_info = get_trigger_info(context, trigger_id)
+                if trigger_info is not None and trigger_info["frontend_ip_port"] == tf_ip_port:
+                    # this trigger is still associated with an inactive frontend
+                    pending_triggers.append((trigger_info, "Associated Triggers Frontend not active"))
+                else:
+                    # this trigger is now associated with a different frontend, simply remove information
+                    pass
+            
+            if len(pending_triggers) > 0:
+                inform_workflows_for_triggers(pending_triggers, context)
+
+            if len(pending_triggers) > 0:
+                removeTriggerAndWorkflowAssociations(pending_triggers, context)
+
+            remove_frontend_info(context, tf_ip_port)
+
+
+def is_frontend_active(tf_ip_port):
+    if tf_ip_port is None or tf_ip_port is "":
+        return False
+    url = "http://" + tf_ip_port + "/"
+    print("[is_frontend_active] Contacting: " + url + ", to check if it is alive")
+
+    try:
+        res = requests.get(url)
+        if res.status_code != 200:
+            raise Exception("[is_frontend_active] status code: " + str(res.status_code) + " returned")
+        if res.text is None or res.text != 'ok':
+            raise Exception("[is_frontend_active] response body: " + str(res.text) + " returned")
+        if res.text == 'ok':
+            print("[is_frontend_active] " + url + " is alive")
+            return True
+    except Exception as e:
+        status_msg = "[is_frontend_active] Error: " + str(e)
+        print(status_msg)
+        return False
 
 def inform_workflows_for_triggers(pending_triggers, context):
     for (trigger_info, error_msg) in pending_triggers:
@@ -322,7 +394,7 @@ def removeTriggerFromFrontend(trigger_info, context):
 
 def removeTriggerFromWorkflow(trigger_info,context):
     print("[removeTriggerFromWorkflow] for trigger: " + str(trigger_info))
-    associated_workflows = trigger_info["associated_workflows"]
+    associated_workflows = trigger_info["associated_workflows"].copy()
     email = trigger_info["email"]
     trigger_name = trigger_info["trigger_name"]
     storage_userid = trigger_info["storage_userid"]
@@ -353,7 +425,7 @@ def removeTriggerFromWorkflow(trigger_info,context):
 
     if trigger_name in user_triggers_list:
         del user_triggers_list[trigger_name]
-    update_user_trigger_list(context, email, json.dumps(user_triggers_list))
+        update_user_trigger_list(context, email, json.dumps(user_triggers_list))
 
     return status_msg
 
