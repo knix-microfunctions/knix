@@ -226,7 +226,7 @@ class MFNTest():
         else:
             print("ERROR: invalid workflow description.")
             assert False
-        print("RESOURCE_INFO_MAPi: " + json.dumps(resource_info_map))
+        #print("RESOURCE_INFO_MAP: " + json.dumps(resource_info_map))
         return resource_info_map
 
     def _delete_resource_if_existing(self, existing_resources, resource_name):

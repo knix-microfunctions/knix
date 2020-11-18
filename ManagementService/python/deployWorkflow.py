@@ -540,7 +540,7 @@ def handle(value, sapi):
 
             if gpu_usage == 0:
                 sandbox_image_name = "microfn/sandbox" # default value
-            elif gpu_usage != 0 and runtime == "Python":
+            elif gpu_usage > 0:
                 sandbox_image_name = "microfn/sandbox_gpu" # sandbox uses GPU
             if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 sandbox_image_name = "microfn/sandbox_java"
