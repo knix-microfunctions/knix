@@ -12,15 +12,17 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-#import json 
 
+import tensorflow as tf
+ 
 def handle(event, context):
-    import tensorflow as tf
     # Simple hello world using TensorFlow
 
     x = [[2.]]
+    hello = tf.constant('Hello, TensorFlow!')
     print('tensorflow version', tf.__version__)
     print('hello, {}'.format(tf.matmul(x, x)))
+
     #return "Hello from Tensorflow " + str(tf.__version__)
     #return "GPU available: " + str(tf.test.is_gpu_available(cuda_only=False, min_cuda_compute_capability=None))
     return "GPU available: " + str(tf.test.is_built_with_cuda())
