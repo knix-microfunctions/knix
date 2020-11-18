@@ -67,10 +67,11 @@ datalayer:
   imagePullPolicy: "Always"
   port: 4998
   initialDelaySeconds: 0
+  javaOpts: "-Xmx1024m"
   resources:
     limits:
       cpu: 500m
-      memory: 500Mi
+      memory: 2000Mi
     requests:
       cpu: 100m
       memory: 200Mi

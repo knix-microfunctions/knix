@@ -81,6 +81,8 @@ spec:
           value: "0.0.0.0:{{ .Values.datalayer.port }}"
         - name: ALL_DATALAYER_BIND
           value: {{ include "dlConnect" . | quote }}
+        - name: JAVA_OPTS
+          value: "{{ .Values.datalayer.javaOpts }}"
         ports:
         - containerPort: {{ .Values.datalayer.port }}
           name: datalayer
