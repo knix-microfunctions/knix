@@ -152,6 +152,9 @@ def compile_resource_info_map(resource_names, uploaded_resources, email, sapi, d
                 if "runtime" in resource_metadata:
                     resource_info["runtime"] = resource_metadata["runtime"]
 
+                if "gpu_usage" in resource_metadata:
+                    resource_info["gpu_usage"] = resource_metadata["gpu_usage"]
+
             num_chunks_str = dlc.get("grain_source_zip_num_chunks_" + resource_id)
             try:
                 num_chunks = int(num_chunks_str)
@@ -504,13 +507,21 @@ def handle(value, sapi):
         #dlc.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info))
         # _XXX_: important!
         # put must not be queued as the function currently waits for the container to become ready
-
+        # case 1: gpu_usage is explicitly set in workflow metadata
         if "gpu_usage" in wfmeta and wfmeta["gpu_usage"] != "None":
             gpu_usage = float(wfmeta["gpu_usage"])
         else:
             gpu_usage = 0.
 
-        print("deduced gpu_usage: " + str(gpu_usage))
+        print("deduced gpu_usage from workflow metadata: " + str(gpu_usage))
+        
+        print("print deployment_info[resources] to evaluate: " + str(deployment_info["resources"]))
+        # case 2: gpu_usage is set in deployment info
+        for res in deployment_info["resources"]:
+            if "gpu_usage" in deployment_info["resources"][res].keys():
+                result_gpu = float(deployment_info["resources"][res]["gpu_usage"]) 
+                if result_gpu > 0.:
+                    gpu_usage = result_gpu
 
         sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
 
@@ -537,7 +548,7 @@ def handle(value, sapi):
         else:
             # We're running BARE METAL mode
             # _XXX_: due to the queue service still being in java in the sandbox
-
+            print("gpu_usage before decision:" + str(gpu_usage))
             if gpu_usage == 0:
                 sandbox_image_name = "microfn/sandbox" # default value
             elif gpu_usage > 0:
@@ -555,6 +566,7 @@ def handle(value, sapi):
                 picked_hosts = {}
 
                 for hostname in hosts:
+                    print("current host: " + str(hosts[hostname]))
                     #if hostname.endswith("_gpu"):
                     if "has_gpu" in hosts[hostname]:
                         hostip = hosts[hostname]
