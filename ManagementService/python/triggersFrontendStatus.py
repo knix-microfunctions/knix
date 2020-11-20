@@ -249,7 +249,6 @@ def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, conte
     else:
         # we don't know about this frontend. Ideally it should not have any triggers
         print("Unknown frontend sending a status update!!")
-        new_frontend_entry = '{}'
 
         # add all the triggers in the reported list to our list of triggers associated with frontend
         # also make sure that those triggers exist in the larger trigger map
@@ -267,7 +266,8 @@ def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, conte
                 # we dont have the triggered registerd with us but a frontend has it running!
                 pass
         '''
-        add_frontend_info(context, frontend_ip_port, json.dumps(new_frontend_entry))
+        new_frontend_entry = '{}'
+        add_frontend_info(context, frontend_ip_port, new_frontend_entry)
     
     health_check_registered_frontends(context)
 
