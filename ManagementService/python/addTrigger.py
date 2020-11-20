@@ -15,6 +15,8 @@
 import json
 import random
 import requests
+import traceback
+import sys
 
 MAP_AVAILABLE_FRONTENDS = "available_triggers_frontned_map"
 MAP_TRIGGERS_TO_INFO = "triggers_to_info_map"
@@ -29,6 +31,7 @@ def is_frontend_registered(context, frontend_ip_port):
 
 def get_frontend_info(context, frontend_ip_port):
     ret = context.getMapEntry(MAP_AVAILABLE_FRONTENDS, frontend_ip_port, True)
+    print("get_frontend_info: data: " + str(ret))
     if ret is "" or ret is None:
         return None
     else:
@@ -47,6 +50,7 @@ def is_trigger_registered(context, trigger_id):
 
 def get_trigger_info(context, trigger_id):
     ret = context.getMapEntry(MAP_TRIGGERS_TO_INFO, trigger_id, True)
+    print("get_trigger_info: data: " + str(ret))
     if ret is "" or ret is None:
         return None
     else:
@@ -258,6 +262,7 @@ def handle(value, context):
         response_data["message"] = "Couldn't create the trigger; " + str(e)
         response["data"] = response_data
         print("[AddTrigger] Error: " + str(response))
+        traceback.print_exc()
         return response
 
     # finish successfully
