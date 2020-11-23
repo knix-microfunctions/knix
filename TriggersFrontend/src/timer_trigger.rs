@@ -123,6 +123,7 @@ async fn send_timer_data(
             serialized_workflow_msg.unwrap(),
             "".into(),
             workflow_info.workflow_state.clone(),
+            true
         ));
     }
 }

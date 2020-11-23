@@ -96,9 +96,9 @@ def handle(value, sapi):
                 if isTriggerPresent(email, trigger_id, trigger_name, sapi) == True:
                     try:
                         removeTriggerFromWorkflow(trigger_name, trigger_id, wf["name"], sapi)
-                        # at this point, the trigger_name is still associated with the workflow
-                        # frontend does not know about the trigger
-                        # workflow name has also been removed from global trigger table
+                        # at this point, the trigger_name is still associated with the workflow in wf metadata
+                        # workflow name still exists in the associated_workflows in global trigger info
+                        # trigger name still exists in frontend info
 
                     except Exception as e:
                         print("Removing associated triggers error: " + str(e))
@@ -325,8 +325,8 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
         status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
         print("[removeTriggerFromWorkflow] " + status_msg)
     finally:
-        print("[removeTriggerFromWorkflow] Removing workflow: " + str(workflow_name) + ", from associated_workflows of a trigger")
-        del global_trigger_info["associated_workflows"][workflow_name]
-        add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
-        status_msg = "Trigger " + trigger_name + " removed successfully from workflow:" + workflow_name
-        print("[removeTriggerFromWorkflow] " + status_msg)
+        print("[removeTriggerFromWorkflow] Not Removing workflow: " + str(workflow_name) + ", from associated_workflows of a trigger")
+        #del global_trigger_info["associated_workflows"][workflow_name]
+        #add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+        #status_msg = "Trigger " + trigger_name + " removed successfully from workflow:" + workflow_name
+        #print("[removeTriggerFromWorkflow] " + status_msg)

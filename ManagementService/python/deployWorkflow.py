@@ -540,11 +540,11 @@ def handle(value, sapi):
             associatedTriggers = wfmeta["associatedTriggers"].copy()
             for trigger_name in associatedTriggers:
                 trigger_id = storage_userid + "_" + trigger_name
-                print("Adding trigger_id: " + str(trigger_id) + "  to workflow")
+                print("Adding trigger name: " + str(trigger_name) + "  to workflow")
                 if isTriggerPresent(email, trigger_id, trigger_name, sapi) == True:
-                    trigger_info = get_trigger_info(sapi, trigger_id)
-                    if wfmeta["name"] in trigger_info["associated_workflows"]:
-                        print("[deployWorkflow] Strangely global trigger info already has workflow_name: " + str(wfmeta["name"]) + ", in associated_workflows")
+                    #trigger_info = get_trigger_info(sapi, trigger_id)
+                    #if wfmeta["name"] in trigger_info["associated_workflows"]:
+                    #    print("[deployWorkflow] Strangely global trigger info already has workflow_name: " + str(wfmeta["name"]) + ", in associated_workflows")
                     workflow_state = associatedTriggers[trigger_name]
                     addWorkflowToTrigger(email, wfmeta["name"], workflow_state, wfmeta, trigger_id, trigger_name, sapi)
                 else:
@@ -715,10 +715,11 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             raise Exception(status_msg)
     except Exception as e:
         print("[addTriggerForWorkflow] exception: " + str(e))
-        if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:            
-            associatedTriggers = workflow_details['associatedTriggers']
-            del associatedTriggers[trigger_name]
-            workflow_details['associatedTriggers'] = associatedTriggers
-            print("Removing trigger_name: " + str(trigger_name) + ", from associatedTriggers for the workflow. Updated workflow metadata: " + str(workflow_details))
-            context.put(email + "_workflow_" + workflow_details["id"], json.dumps(workflow_details), True)
+        # TODO: why remove this?
+        #if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:            
+        #    associatedTriggers = workflow_details['associatedTriggers']
+        #    del associatedTriggers[trigger_name]
+        #    workflow_details['associatedTriggers'] = associatedTriggers
+        #    print("Removing trigger_name: " + str(trigger_name) + ", from associatedTriggers for the workflow. Updated workflow metadata: " + str(workflow_details))
+        #    context.put(email + "_workflow_" + workflow_details["id"], json.dumps(workflow_details), True)
 

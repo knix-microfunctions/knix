@@ -472,6 +472,7 @@ async fn register_with_management(manager_info: TriggerManagerInfo) {
             serialized_update_message.clone(),
             manager_info.management_request_host_header.clone(),
             "".into(),
+            true
         )
         .await;
         if ret == false {

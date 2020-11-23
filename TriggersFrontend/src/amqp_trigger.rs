@@ -223,6 +223,7 @@ async fn send_amqp_data(
                     serialized_workflow_msg.unwrap(),
                     "".into(),
                     workflow_info.workflow_state.clone(),
+                    true,
                 ));
             }
         }

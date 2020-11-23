@@ -137,6 +137,7 @@ def handle(value, context):
                     
                     # write the user's list
                     status_msg = "Trigger deleted successfully. Message: " + res_obj["message"]
+                    print(status_msg)
                 else:
                     if "message" in res_obj:
                         status_msg = status_msg + ", message: " + res_obj["message"]
@@ -305,8 +306,9 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
             print("Success response from " + url)
             if workflow_name in global_trigger_info["associated_workflows"]:
                 del global_trigger_info["associated_workflows"][workflow_name]
-            add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+                add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
             status_msg = "Trigger " + trigger_name + " removed successfully from workflow:" + workflow_name + ". Message: " + res_obj["message"]
+            print(status_msg)
         else:
             if "message" in res_obj:
                 status_msg = status_msg + ", message: " + res_obj["message"]

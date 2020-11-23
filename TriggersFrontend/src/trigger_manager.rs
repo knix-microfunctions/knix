@@ -527,7 +527,7 @@ async fn report_status_to_management(management_url: String, data: String, host_
         "[report_status_to_management] POST to {}, with data {}",
         management_url, &data
     );
-    tokio::spawn(send_post_json_message(management_url, data, host_header, "".into()));
+    tokio::spawn(send_post_json_message(management_url, data, host_header, "".into(), true));
 }
 
 async fn send_server_stop_msg(url: String) {
@@ -540,10 +540,14 @@ async fn send_shutdown_messages(
     id_to_trigger_chan_map: &mut HashMap<String, TriggerCommandChannel>,
     manager_info: TriggerManagerInfo,
 ) {
-    for (trigger_id, _) in id_to_trigger_status_map.iter() {
+    for (trigger_id, current_status) in id_to_trigger_status_map.iter() {
+        let status_message = match current_status {
+            TriggerStatus::Ready => "READY trigger shutdown! TriggersFrontend shutdown.".into(),
+            _ => "TriggersFrontend shutdown".into(),
+        };
         id_to_trigger_error_map.insert(
             trigger_id.clone(),
-            "TriggerFrontend shutdown initiated".into(),
+            status_message
         );
     }
     let update_message = TriggerManagerStatusUpdateMessage {
@@ -562,6 +566,7 @@ async fn send_shutdown_messages(
         serialized_update_message.unwrap(),
         manager_info.management_request_host_header.clone(),
         "".into(),
+        true
     )
     .await;
     if posted == false {

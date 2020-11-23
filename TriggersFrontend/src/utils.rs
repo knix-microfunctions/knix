@@ -89,6 +89,7 @@ pub async fn send_multiple_post_json_messages(urls: std::vec::Vec<String>, json_
             json_body.clone(),
             "".into(),
             "".into(),
+            true
         )));
     }
     for handle in handles {
@@ -111,27 +112,50 @@ pub fn generate_customer_headers(workflow_state: String) -> HeaderMap {
     return custom_headers;
 }
 
-pub async fn send_post_json_message(url: String, json_body: String, host_header: String, workflow_state: String) -> bool {
+pub async fn send_post_json_message(url: String, json_body: String, host_header: String, workflow_state: String, async_exec: bool) -> bool {
     let client = reqwest::Client::new();
     let custom_headers: HeaderMap = generate_customer_headers(workflow_state);
     let res;
     if host_header.len() > 0 {
-        res = client
-          .post(&url)
-          .header("Host", host_header.as_str())
-          .header("Content-Type", "application/json")
-          .headers(custom_headers)
-          .body(json_body)
-          .send()
-          .await;
+        if async_exec == true {
+            res = client
+            .post(&url)
+            .header("Host", host_header.as_str())
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .query(&[("async", "true")])
+            .body(json_body)
+            .send()
+            .await;
+        } else {
+            res = client
+            .post(&url)
+            .header("Host", host_header.as_str())
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .body(json_body)
+            .send()
+            .await;
+        }
     } else {
-        res = client
-          .post(&url)
-          .header("Content-Type", "application/json")
-          .headers(custom_headers)
-          .body(json_body)
-          .send()
-          .await;
+        if async_exec == true {
+            res = client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .query(&[("async", "true")])
+            .body(json_body)
+            .send()
+            .await;
+        } else {
+            res = client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .body(json_body)
+            .send()
+            .await;
+        }
     }
     if res.is_ok() {
         let ret_body = res.unwrap().text().await;
