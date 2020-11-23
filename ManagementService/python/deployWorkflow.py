@@ -295,8 +295,17 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
 
     # Special handling for the management container
     if management:
+        management_workflow_conf = {}
+        conf_file = '/opt/mfn/SandboxAgent/conf/management_workflow.conf'
+        try:
+            with open(conf_file, 'r') as fp:
+                management_workflow_conf = json.load(fp)
+        except IOError as e:
+            raise Exception("Unable to load "+conf_file+". Ensure that the configmap has been setup properly", e)
+
         kservice['spec']['template']['spec']['volumes'] = [{ 'name': 'new-workflow-conf', 'configMap': {'name': new_workflow_conf['configmap']}}]
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
+        kservice['spec']['template']['spec']['containers'][0]['resources'] = management_workflow_conf['resources']
         kservice['spec']['template']['spec']['serviceAccountName'] = new_workflow_conf['mgmtserviceaccount']
         if 'HTTP_GATEWAYPORT' in new_workflow_conf:
             env.append({'name': 'HTTP_GATEWAYPORT', 'value': new_workflow_conf['HTTP_GATEWAYPORT']})
