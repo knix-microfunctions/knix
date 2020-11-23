@@ -161,8 +161,10 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
             trigger_info = get_trigger_info(context, trigger_id)
             if trigger_info is not None and trigger_info["frontend_ip_port"] == frontend_ip_port:
                 if trigger_info["status"].lower() == "ready":
+                    print("[handle_start] queuing trigger to be re-created, since status is ready: " + str(trigger_info))
                     triggers_to_recreate.append((trigger_info, ""))
                 else:
+                    print("[handle_start] queuing trigger to be removed, since status is not ready: " + str(trigger_info))
                     triggers_to_inform_and_remove.append((trigger_info, "Associated Triggers Frontend not active"))
             else:
                 # this trigger is now associated with a different frontend, simply remove information
@@ -173,26 +175,6 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
             removeTriggerAndWorkflowAssociations(triggers_to_inform_and_remove, context)
 
         remove_frontend_info(context, frontend_ip_port)
-
-        '''
-        frontend_info = get_frontend_info(context, frontend_ip_port) # list of trigger ids that were earlier assigned to the frontend
-        for trigger_id in frontend_info:
-            trigger_info = get_trigger_info(context, trigger_id)
-            if trigger_info is not None:
-                if trigger_info["frontend_ip_port"] == frontend_ip_port:
-                    # we have a registered trigger which we think is ready, but the corresponding frontend just restarted
-                    if trigger_info["status"] == "ready" or trigger_info["status"] == "starting":
-                        pending_triggers.append(trigger_info)
-                    remove_trigger_info(context, trigger_id)
-                else:
-                    # trigger is registered with a different frontend?
-                    print("Trigger_id " + trigger_id + " is already registered with a different frontend: " + trigger_info["frontend_ip_port"])
-            else:
-                # the trigger is not registered with us. do nothing
-                print("Reported trigger_id: " + trigger_id + " not registered with management")
-
-        remove_frontend_info(context, frontend_ip_port)
-        '''
 
     new_frontend_entry = {}
     add_frontend_info(context, frontend_ip_port, json.dumps(new_frontend_entry))
@@ -223,47 +205,9 @@ def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, conte
             error_trigger_info = get_trigger_info(context, error_trigger_id)
             if error_trigger_id in frontend_info and error_trigger_info is not None:
                 if error_trigger_info["status"].lower() == "ready":
+                    print("[handle_status] queuing trigger to be removed, since it stopped unexpectedly: " + str(error_trigger_info) + ", error message: " + str(trigger_error_map[error_trigger_id]))
                     triggers_to_inform_and_remove.append((error_trigger_info, trigger_error_map[error_trigger_id]))
 
-        '''
-        for error_trigger_id in trigger_error_map:
-            error_trigger_info = get_trigger_info(context, error_trigger_id)
-            if error_trigger_id in frontend_info and error_trigger_info is not None:
-                if error_trigger_info["status"] == "ready" or error_trigger_info["status"] == "starting":
-                    pending_triggers.append(error_trigger_info)
-            remove_trigger_info(context, error_trigger_id)
-            if error_trigger_id in frontend_info:
-                print("Removing error_trigger_id: " + error_trigger_id + " from frontend_info")
-                del frontend_info[error_trigger_id]
-
-        # for any trigger that stopped normally and is listed with us, remove it from our list
-        for (trigger_id, trigger_status) in trigger_status_map.items():
-            trigger_status = trigger_status.lower()
-            trigger_info = get_trigger_info(context, trigger_id)
-            if trigger_status == "stoppednormal" or trigger_status == "stopping":
-                remove_trigger_info(context, trigger_id)
-                if trigger_id in frontend_info:
-                    print("Removing trigger_id: " + trigger_id + " from frontend_info")
-                    del frontend_info[trigger_id]
-            elif trigger_info is not None:
-                assert(trigger_info["frontend_ip_port"] == frontend_ip_port)
-                if trigger_info["status"].lower() == "starting" and trigger_status == "ready":
-                    trigger_info["status"] = trigger_status
-                    add_trigger_info(context, trigger_id, json.dumps(trigger_info))
-
-        # any trigger that is known to be active for us, but not in the reported list, should also be
-        # added to pending list
-        for known_trigger_id in frontend_info:
-            know_trigger_info = get_trigger_info(context, known_trigger_id)
-            assert(know_trigger_info is not None)
-            assert(know_trigger_info["frontend_ip_port"] == frontend_ip_port)
-            if know_trigger_info["status"] == "ready" or know_trigger_info["status"] == "starting":
-                if known_trigger_id not in trigger_status_map:
-                    pending_triggers.append(know_trigger_info)
-
-        add_frontend_info(context, frontend_ip_port, frontend_info)
-        # now process the pending list, to add triggers to available frontends
-        '''
         if len(triggers_to_inform_and_remove) > 0:
             inform_workflows_for_triggers(triggers_to_inform_and_remove, context)
             removeTriggerAndWorkflowAssociations(triggers_to_inform_and_remove, context)
@@ -272,22 +216,6 @@ def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, conte
         # we don't know about this frontend. Ideally it should not have any triggers
         print("Unknown frontend sending a status update!!")
 
-        # add all the triggers in the reported list to our list of triggers associated with frontend
-        # also make sure that those triggers exist in the larger trigger map
-        '''
-        for (trigger_id, trigger_status) in trigger_status_map.items():
-            trigger_status = trigger_status.lower()
-            trigger_info = get_trigger_info(context, trigger_id)
-            if trigger_info is not None:
-                assert(trigger_info["frontend_ip_port"] == frontend_ip_port)
-                if trigger_info["status"] != trigger_status:
-                    trigger_info["status"] = trigger_status
-                    add_trigger_info(context, trigger_id, json.dumps(trigger_info))
-                new_frontend_entry[trigger_id] = ""
-            else:
-                # we dont have the triggered registerd with us but a frontend has it running!
-                pass
-        '''
         new_frontend_entry = {}
         add_frontend_info(context, frontend_ip_port, json.dumps(new_frontend_entry))
 
@@ -315,6 +243,7 @@ def handle_stop(frontend_ip_port, trigger_status_map, trigger_error_map, context
             if error_trigger_info["status"].lower() == "ready":
                 triggers_to_recreate.append((error_trigger_info, trigger_error_map[error_trigger_id]))
             else:
+                print("[handle_stop] queuing trigger to be removed, since status is not ready: " + str(error_trigger_info))
                 triggers_to_inform_and_remove.append((error_trigger_info, trigger_error_map[error_trigger_id]))
 
     if len(triggers_to_inform_and_remove) > 0:
@@ -340,6 +269,7 @@ def get_info_for_global_pending_triggers(context):
     for trigger_id in global_pending_triggers:
         pending_trigger_info = get_trigger_info(context, trigger_id)
         if pending_trigger_info is not None:
+            print("[get_info_for_global_pending_triggers] Queuing trigger to be re-created: pending_trigger_info = " + str(pending_trigger_info))
             triggers_to_recreate.append((pending_trigger_info, ""))
     return triggers_to_recreate
 
@@ -362,7 +292,7 @@ def recreate_pending_triggers(triggers_to_recreate, context):
     triggers_to_inform_and_remove = []
 
     for (trigger_info, error_msg) in triggers_to_recreate:
-        print("[recreate_pending_triggers] Attempting to recreate trigger_id: " + trigger_info["trigger_id"])
+        print("[recreate_pending_triggers] Attempting to recreate trigger_id: " + trigger_info["trigger_id"] + ", trigger_info: " + str(trigger_info))
         active_frontend = get_active_frontend(context)
         if active_frontend is not "":
             # there is an active frontend available, try to re-create the trigger
@@ -371,18 +301,24 @@ def recreate_pending_triggers(triggers_to_recreate, context):
                 if status:
                     # trigger created, attempt to add workflow associations
                     associated_workflows = updated_info["associated_workflows"].copy()
+                    print("[recreate_pending_triggers] Attempting to attach trigger to associated_workflows = " + str(associated_workflows))
                     for workflow_name in associated_workflows:
-                        attempt_to_associate_trigger_with_workflows(updated_info["trigger_id"], workflow_name, context)
+                        association_status = attempt_to_associate_trigger_with_workflows(updated_info["trigger_id"], workflow_name, context)
+                        if association_status == False:
+                            del updated_info["associated_workflows"][workflow_name]
+                            add_trigger_info(context, updated_info["trigger_id"], json.dumps(updated_info))
+                            print("[recreate_pending_triggers] Removed workflow: " + str(workflow_name) + ", from associated_workflows of trigger_info: " + str(updated_info))
                 else:
                     # need to add this to the list of inform list and then remove it
-                    print("[recreate_pending_triggers] Unable to recreate trigger, trigger_id: " + trigger_info["trigger_id"])
-                    triggers_to_inform_and_remove.append((trigger_info, "Unable to recreate trigger"))
+                    if updated_info is not None:
+                        print("[recreate_pending_triggers] Unable to recreate trigger. Queuing to be removed, trigger_id: " + updated_info["trigger_id"] + ", trigger_info: " + str(updated_info))
+                        triggers_to_inform_and_remove.append((updated_info, "Unable to recreate trigger"))
             except Exception as e:
-                print("[recreate_pending_triggers] Exception in attempt_to_recreate_single_trigger: " + str(e))
+                print("[recreate_pending_triggers] Exception in attempt_to_recreate_single_trigger, Queuing trigger to be removed: " + str(e) + ", trigger_info: " + str(trigger_info))
                 triggers_to_inform_and_remove.append((trigger_info, "Unable to recreate trigger"))
         else:
             # no active triggers frontend, add to the pending set again
-            print("[recreate_pending_triggers] Queuing up to be recreated, trigger_id: " + trigger_info["trigger_id"])
+            print("[recreate_pending_triggers] No active frontend, Queuing up to be recreated, trigger_id: " + trigger_info["trigger_id"] + ", trigger_info: " + str(trigger_info))
             add_to_global_pending_trigger_set(context, trigger_info["trigger_id"])
 
 
@@ -450,6 +386,7 @@ def attempt_to_recreate_single_trigger(trigger_info, tf_ip_port, context):
 
 
 def attempt_to_associate_trigger_with_workflows(trigger_id, workflow_name, context):
+    print("[attempt_to_associate_trigger_with_workflows] called with: trigger_id: " + str(trigger_id) + ", workflow_name: " + str(workflow_name))
     trigger_info = get_trigger_info(context, trigger_id)
     trigger_id = trigger_info["trigger_id"]
     email = trigger_info["email"]
@@ -462,21 +399,20 @@ def attempt_to_associate_trigger_with_workflows(trigger_id, workflow_name, conte
     isWorkflowPresent, isWorkflowDeployed, workflow_details = isWorkflowPresentAndDeployed(email, workflow_name, context)
     if isWorkflowPresent == False:
         print("[attempt_to_associate_trigger_with_workflows] User: " + email + "Workflow: " + workflow_name + " not found.")
-        del trigger_info["associated_workflows"][workflow_name]
-        add_trigger_info(context, trigger_id, json.dumps(trigger_info))
+        return False
 
     if isWorkflowPresent == True:
         # add the trigger name in workflow's metadata
+        print("[attempt_to_associate_trigger_with_workflows] User: " + email + "Workflow: " + workflow_name + " is present.")
         addTriggerToWorkflowMetadata(email, trigger_name, workflow_name, workflow_state, workflow_details["id"], context)
+        addWorkflowToTriggerMetadata(workflow_name, workflow_state, trigger_id, context)
 
     if isWorkflowDeployed == True:
         # add the workflow to the trigger
-        status = addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details, trigger_id, trigger_name, context)
-        if not status:
-            print("[attempt_to_associate_trigger_with_workflows] addWorkflowToTrigger failed: Removing workflow from associated_workflows of the trigger")
-            del trigger_info["associated_workflows"][workflow_name]
-            add_trigger_info(context, trigger_id, json.dumps(trigger_info))
-        return status
+        print("[attempt_to_associate_trigger_with_workflows] User: " + email + "Workflow: " + workflow_name + " is deployed.")
+        addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details, trigger_id, trigger_name, context)
+    else:
+        print("[attempt_to_associate_trigger_with_workflows] User: " + email + "Workflow: " + workflow_name + " is not deployed. Keeping workflow to trigger association intact.")
 
     return True
     # TODO: write updated trigger info
@@ -500,17 +436,20 @@ def health_check_registered_frontends(context):
             frontend_info = get_frontend_info(context, tf_ip_port)
             if frontend_info is None:
                 continue
+            print("[health_check_registered_frontends] Removing inactive frontend: frontend_info = " + str(frontend_info))
 
             for trigger_id in frontend_info:
                 trigger_info = get_trigger_info(context, trigger_id)
                 if trigger_info is not None and trigger_info["frontend_ip_port"] == tf_ip_port:
                     if trigger_info["status"] == "ready":
                         # this ready trigger is still associated with an inactive frontend
-                        print("[health_check_registered_frontends] Queuing up to be recreated, trigger_id: " + str(trigger_id))
+                        print("[health_check_registered_frontends] Queuing up to be recreated, trigger_id: " + str(trigger_id) + ", trigger_info: " + str(trigger_info))
                         triggers_to_recreate.append((trigger_info, "READY trigger frontend not active"))
                     else:
+                        print("[health_check_registered_frontends] Queuing up to be removed, since status is not ready, trigger_id: " + str(trigger_id) + ", trigger_info: " + str(trigger_info))
                         triggers_to_inform_and_remove.append((trigger_info, "Triggers frontend not active"))
                 else:
+                    print("[health_check_registered_frontends] Ignoring trigger, since it belongs to a different frontend or does not exist, trigger_id: " + str(trigger_id) + ", trigger_info: " + str(trigger_info))
                     # this trigger is now associated with a different frontend, simply remove frontend information
                     pass
             
@@ -699,7 +638,7 @@ def addTriggerToWorkflowMetadata(email, trigger_name, workflow_name, workflow_st
     if wf is None or wf == "":
         print("[addTriggerToWorkflowMetadata] User: " + email + ", Workflow: " +
               workflow_name + ": couldn't retrieve workflow metadata.")
-        return False
+        return
 
     wf = json.loads(wf)
     print("[addTriggerToWorkflowMetadata] User: " + email + ", Workflow: " +
@@ -716,8 +655,20 @@ def addTriggerToWorkflowMetadata(email, trigger_name, workflow_name, workflow_st
         print("[addTriggerToWorkflowMetadata] User: " + email +
               ", Trigger: " + trigger_name + " added to Workflow: " + workflow_name)
     else:
-        print("[addTableToWorkflowMetadata] User: " + email + ", Trigger: " +
+        print("[addTriggerToWorkflowMetadata] User: " + email + ", Trigger: " +
               trigger_name + " already present in Workflow: " + workflow_name)
+
+def addWorkflowToTriggerMetadata(workflow_name, workflow_state, trigger_id, context):
+    print("[addWorkflowToTriggerMetadata] called with: workflow_name" + str(workflow_name) + ", workflow_state: " + str(workflow_state) + ", trigger_id: " + str(trigger_id))
+    workflow_to_add = \
+    {
+        "workflow_url": "",
+        "workflow_name": workflow_name,
+        "workflow_state": workflow_state
+    }
+    global_trigger_info = get_trigger_info(context, trigger_id)
+    global_trigger_info["associated_workflows"][workflow_name] = workflow_to_add
+    add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
 
 def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details, trigger_id, trigger_name, context):
     print("[addWorkflowToTrigger] called with: trigger_id: " + str(trigger_id) + ", trigger_name: " + str(trigger_name) + ", workflow_name: " + str(workflow_name) + ", workflow_state: " + str(workflow_state) + ", workflow_details: " + str(workflow_details))
@@ -765,6 +716,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
 
             status_msg = "[addTriggerForWorkflow] Trigger " + trigger_name + " added successfully to workflow:" + workflow_name + ". Message: " + res_obj["message"]
+            print(status_msg)
             return True
         else:
             if "message" in res_obj:
@@ -773,7 +725,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             raise Exception(status_msg)
     except Exception as e:
         print("[addWorkflowToTrigger] exception: " + str(e))
-        deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_details["id"], context)
+        #deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_details["id"], context)
         return False
 
 
