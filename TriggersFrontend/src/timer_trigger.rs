@@ -239,7 +239,9 @@ pub async fn timer_actor_loop(
                 }
             }
             d = create_delay(timer_interval, "TimerTrigger, status push timer".to_string()) => {
-                tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into()));
+                if workflows.len() > 0 {
+                    tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into())).await;
+                }
             }
         }
     }

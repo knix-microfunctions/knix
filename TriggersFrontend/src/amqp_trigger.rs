@@ -429,8 +429,10 @@ pub async fn amqp_actor_loop(
                     Some(delivery) => {
                         match delivery {
                             Ok((chan, amqp_msg)) => {
-                                let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
-                                tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key));
+                                if workflows.len() > 0 {
+                                    let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
+                                    tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key)).await;    
+                                }
                             }
                             Err(e) => {
                                 let ret_msg = format!("[amqp_actor_loop] Trigger id {}, recv a msg on amqp channel, but unwrapping produced an error: {:?}", trigger_id, e);
