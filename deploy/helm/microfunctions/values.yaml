@@ -75,14 +75,14 @@ datalayer:
   imagePullPolicy: "Always"
   port: 4998
   initialDelaySeconds: 0
-  javaOpts: "-Xmx1024m"
+  javaOpts: "-Xmx4096m"
   resources:
     limits:
-      cpu: 500m
-      memory: 2000Mi
+      cpu: 4
+      memory: 8Gi
     requests:
-      cpu: 100m
-      memory: 200Mi
+      cpu: 4
+      memory: 8Gi
 
 #------------------------------------------------------------------------------
 # Riak global data storage

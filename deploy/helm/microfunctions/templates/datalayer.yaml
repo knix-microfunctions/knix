@@ -90,6 +90,7 @@ spec:
           tcpSocket:
             port: {{ .Values.datalayer.port }}
           initialDelaySeconds: {{ .Values.datalayer.initialDelaySeconds }}
+          periodSeconds: 10
           timeoutSeconds: 30
           failureThreshold: 10
         resources:
