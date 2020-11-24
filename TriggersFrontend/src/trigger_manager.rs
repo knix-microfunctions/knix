@@ -527,7 +527,7 @@ async fn report_status_to_management(management_url: String, data: String, host_
         "[report_status_to_management] POST to {}, with data {}",
         management_url, &data
     );
-    tokio::spawn(send_post_json_message(management_url, data, host_header, "".into(), true));
+    send_post_json_message(management_url, data, host_header, "".into(), true).await;
 }
 
 async fn send_server_stop_msg(url: String) {
@@ -716,7 +716,7 @@ async fn trigger_manager_actor_loop(
                                                         };
                                         
                                                         let serialized_update_message = serde_json::to_string(&update_message);
-                                                        tokio::spawn(report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()));
+                                                        report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()).await;
                                                         // we have reported it to management, so clear the error map
                                                         id_to_trigger_error_map.clear();    
                                                     }
@@ -963,7 +963,7 @@ async fn trigger_manager_actor_loop(
                 };
 
                 let serialized_update_message = serde_json::to_string(&update_message);
-                tokio::spawn(report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()));
+                report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()).await;
                 // we have reported it to management, so clear the error map
                 id_to_trigger_error_map.clear();
             }

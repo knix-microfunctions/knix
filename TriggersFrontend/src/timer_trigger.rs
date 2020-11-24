@@ -118,13 +118,13 @@ async fn send_timer_data(
             trigger_id,
             serialized_workflow_msg.as_ref().unwrap()
         );
-        tokio::spawn(send_post_json_message(
+        send_post_json_message(
             workflow_info.workflow_url,
             serialized_workflow_msg.unwrap(),
             "".into(),
             workflow_info.workflow_state.clone(),
             true
-        ));
+        ).await;
     }
 }
 
@@ -240,7 +240,8 @@ pub async fn timer_actor_loop(
             }
             d = create_delay(timer_interval, "TimerTrigger, status push timer".to_string()) => {
                 if workflows.len() > 0 {
-                    tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into())).await;
+                    //tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into())).await;
+                    send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into()).await;
                 }
             }
         }

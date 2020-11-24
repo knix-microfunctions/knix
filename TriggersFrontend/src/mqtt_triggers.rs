@@ -211,13 +211,13 @@ async fn send_mqtt_data(
                     trigger_id,
                     serialized_workflow_msg.as_ref().unwrap()
                 );
-                tokio::spawn(send_post_json_message(
+                send_post_json_message(
                     workflow_info.workflow_url,
                     serialized_workflow_msg.unwrap(),
                     "".into(),
                     workflow_info.workflow_state.clone(),
                     true
-                ));
+                ).await;
             }
         }
         Err(e) => {

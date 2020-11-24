@@ -218,13 +218,13 @@ async fn send_amqp_data(
                     trigger_id,
                     serialized_workflow_msg.as_ref().unwrap()
                 );
-                tokio::spawn(send_post_json_message(
+                send_post_json_message(
                     workflow_info.workflow_url,
                     serialized_workflow_msg.unwrap(),
                     "".into(),
                     workflow_info.workflow_state.clone(),
                     true,
-                ));
+                ).await;
             }
         }
         Err(e) => {
@@ -431,7 +431,8 @@ pub async fn amqp_actor_loop(
                             Ok((chan, amqp_msg)) => {
                                 if workflows.len() > 0 {
                                     let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
-                                    tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key)).await;    
+                                    //tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key)).await;
+                                    send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key).await; 
                                 }
                             }
                             Err(e) => {
