@@ -145,6 +145,7 @@ def handle(value, context):
                     raise Exception(status_msg)
 
             except Exception as e:
+                print("[DeleteTrigger] Exception: " + str(e))
                 if tf_ip_port is not "":
                     frontend_info = get_frontend_info(context, tf_ip_port)
                     if frontend_info is not None and trigger_id in frontend_info:
@@ -256,6 +257,7 @@ def removeTriggerFromWorkflowAndUpdateWorkflowMetadata(email, trigger_name, trig
         removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context)
     except Exception as e:
         status_msg = status_msg + ", " + str(e)
+        print("[removeTriggerFromWorkflowAndUpdateWorkflowMetadata] " + status_msg)
     finally:
         isWorkflowPresent, isWorkflowDeployed, workflow_details = isWorkflowPresentAndDeployed(
             email, workflow_name, context)
@@ -267,11 +269,13 @@ def removeTriggerFromWorkflowAndUpdateWorkflowMetadata(email, trigger_name, trig
                     email, trigger_name, workflow_name, workflow_details["id"], context)
         except Exception as e:
             status_msg = status_msg + ", " + str(e)
+            print("[removeTriggerFromWorkflowAndUpdateWorkflowMetadata] " + status_msg)
 
     return status_msg
 
 
 def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
+    print("[removeTriggerFromWorkflow] called with: trigger_name: " + trigger_name + ", trigger_id: " + trigger_id + ", workflow_name: " + workflow_name)
     status_msg = ""
     global_trigger_info = get_trigger_info(context, trigger_id)
     try:
@@ -316,6 +320,7 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
             raise Exception(status_msg)
 
     except Exception as e:
+        print("[removeTriggerFromWorkflow] Exception: " + str(e))
         if workflow_name in global_trigger_info["associated_workflows"]:
             del global_trigger_info["associated_workflows"][workflow_name]
             add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
