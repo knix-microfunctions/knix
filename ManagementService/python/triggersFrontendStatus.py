@@ -252,13 +252,19 @@ def handle_stop(frontend_ip_port, trigger_status_map, trigger_error_map, context
 
     remove_frontend_info(context, frontend_ip_port)
 
-    pending_triggers_from_other_inactive_frontends = health_check_registered_frontends(context)
-    triggers_to_recreate = triggers_to_recreate + pending_triggers_from_other_inactive_frontends
+    #pending_triggers_from_other_inactive_frontends = health_check_registered_frontends(context)
+    #triggers_to_recreate = triggers_to_recreate + pending_triggers_from_other_inactive_frontends
 
-    pending_global_triggers = get_info_for_global_pending_triggers(context)
-    triggers_to_recreate = triggers_to_recreate + pending_global_triggers
+    #pending_global_triggers = get_info_for_global_pending_triggers(context)
+    #triggers_to_recreate = triggers_to_recreate + pending_global_triggers
 
-    recreate_pending_triggers(triggers_to_recreate, context)
+    #recreate_pending_triggers(triggers_to_recreate, context)
+
+    for (trigger_info, error_msg) in triggers_to_recreate:
+        print("[handle_stop] Queuing up to be recreated, trigger_id: " + trigger_info["trigger_id"] + ", trigger_info: " + str(trigger_info))
+        add_to_global_pending_trigger_set(context, trigger_info["trigger_id"])
+
+
 
 def get_info_for_global_pending_triggers(context):
     global_pending_triggers = get_global_pending_trigger_set(context)

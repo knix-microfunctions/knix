@@ -245,20 +245,20 @@ impl TriggerManager {
     pub async fn register_trigger_if_not_present_or_stopped(
         &mut self,
         trigger_id: &String,
-    ) -> bool {
+    ) -> (bool, TriggerStatus) {
         let status = self.send_get_status_msg(&trigger_id).await;
         match status {
             Some((status, status_msg)) => match status {
-                TriggerStatus::Starting | TriggerStatus::Ready => false,
+                TriggerStatus::Starting | TriggerStatus::Ready => (false, status),
                 _ => {
                     self.send_delete_trigger_msg(&trigger_id).await;
                     self.send_register_trigger_id_msg(&trigger_id).await;
-                    true
+                    (true, status)
                 }
             },
             None => {
                 self.send_register_trigger_id_msg(&trigger_id).await;
-                true
+                (true, TriggerStatus::Starting)
             }
         }
     }
@@ -330,7 +330,7 @@ impl TriggerManager {
         request_body: String,
     ) -> Result<String, String> {
         // this will return false if the trigger_id is already registered with either Ready or Starting state
-        let id_registered = self
+        let (id_registered, trigger_status) = self
             .register_trigger_if_not_present_or_stopped(&trigger_id)
             .await;
 
@@ -410,10 +410,10 @@ impl TriggerManager {
                 }
             }
         } else {
-            Err(format!(
-                "Trigger {} exists in either Starting or Ready state",
-                &trigger_id
-            ))
+            match trigger_status {
+                TriggerStatus::Starting | TriggerStatus::Ready => Ok(format!("Trigger already {} exists in {} state", &trigger_id, trigger_status_to_string(&trigger_status))),
+                _ =>  Err(format!("Unexpected error. Trigger already {} exists in {} state.", &trigger_id, trigger_status_to_string(&trigger_status))),
+            }
         }
     }
 
