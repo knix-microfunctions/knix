@@ -105,6 +105,11 @@ def handle(value, context):
                 tf_ip_port = global_trigger_info["frontend_ip_port"]
                 if tf_ip_port not in tf_hosts:
                     raise Exception("[DeleteTrigger] Frontend: " + tf_ip_port + " not available")
+                
+                # first remove workflow associations, if any
+                associated_workflows = global_trigger_info["associated_workflows"]
+                for associated_workflow_name in associated_workflows:
+                    removeTriggerFromWorkflowAndUpdateWorkflowMetadata(email, trigger_name, trigger_id, associated_workflow_name, context)
 
                 # send the request and wait for response
                 url = "http://" + tf_ip_port + "/delete_trigger"
@@ -123,10 +128,6 @@ def handle(value, context):
                     if frontend_info is not None and trigger_id in frontend_info:
                         del frontend_info[trigger_id]
                         add_frontend_info(context, tf_ip_port, json.dumps(frontend_info))
-
-                    associated_workflows = global_trigger_info["associated_workflows"]
-                    for associated_workflow_name in associated_workflows:
-                        removeTriggerFromWorkflowAndUpdateWorkflowMetadata(email, trigger_name, trigger_id, associated_workflow_name, context)
 
                     remove_trigger_info(context, trigger_id)
 
