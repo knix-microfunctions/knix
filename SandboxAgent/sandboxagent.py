@@ -323,7 +323,7 @@ class SandboxAgent:
         ts_qs_launch = time.time()
         # 1. launch the QueueService here
         self._logger.info("Launching QueueService...")
-        cmdqs = "java -jar /opt/mfn/queueservice.jar"
+        cmdqs = "java -Xmx1024m -jar /opt/mfn/queueservice.jar"
         command_args_map_qs = {}
         command_args_map_qs["command"] = cmdqs
         command_args_map_qs["wait_until"] = "Starting local queue..."
