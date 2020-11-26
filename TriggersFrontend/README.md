@@ -109,7 +109,7 @@ curl -H "Content-Type: application/json" -d \
   "trigger_info": {
     "timer_interval_ms": 1000
   }
-}' http://localhost:8080/create_trigger
+}' http://localhost:4997/create_trigger
 ```
 
 ### Deleting a trigger
@@ -120,10 +120,75 @@ Example curl command to delete a trigger
 curl -H "Content-Type: application/json" -d \
 '{
   "trigger_id": "1"
-}' http://localhost:8080/delete_trigger
+}' http://localhost:4997/delete_trigger
 ```
 
 
+### Getting Details of a trigger
+
+Example curl command for getting details of a trigger
+
+```bash
+curl -H "Content-Type: application/json" -d \
+'{
+  "trigger_id": "1"
+}' http://localhost:4997/trigger_details
+```
+
+Sample response, if the trigger exists
+
+```json
+{
+  "status": "Success",
+  "message": "{\"trigger_name\":\"trigger_amqp_to_be_controlled_1606418134461\",\"trigger_status\":\"ready\",\"trigger_type\":\"amqp\",\"trigger_id\":\"knixATknix_trigger_amqp_to_be_controlled_1606418134461\",\"status_msg\":\"\",\"trigger_count\":212,\"associated_workflows\":[{\"workflow_name\":\"wf_triggers_timer_based_trigger_control\",\"workflow_url\":\"http://10.0.2.15:32768\",\"workflow_state\":\"\"}],\"trigger_info\":{\"amqp_addr\":\"amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost\",\"routing_key\":\"rabbit.*.*\",\"exchange\":\"egress_exchange\",\"durable\":false,\"exclusive\":false,\"auto_delete\":true,\"no_wait\":true,\"with_ack\":false}}"
+}
+```
+
+The `message` field is json encoded:
+```json
+{
+  "trigger_name": "trigger_amqp_to_be_controlled_1606418134461",
+  "trigger_status": "ready",
+  "trigger_type": "amqp",
+  "trigger_id": "knixATknix_trigger_amqp_to_be_controlled_1606418134461",
+  "status_msg": "",
+  "trigger_count": 212,
+  "associated_workflows": [
+    {
+      "workflow_name": "wf_triggers_timer_based_trigger_control",
+      "workflow_url": "http://10.0.2.15:32768",
+      "workflow_state": ""
+    }
+  ],
+  "trigger_info": {
+    "amqp_addr": "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost",
+    "routing_key": "rabbit.*.*",
+    "exchange": "egress_exchange",
+    "durable": false,
+    "exclusive": false,
+    "auto_delete": true,
+    "no_wait": true,
+    "with_ack": false
+  }
+}
+```
+
+Response when the trigger does not exist, or is not in `Ready` state, or for any other error:
+```json
+{
+  "status": "Failure",
+  "message": "{\"trigger_status\":\"non_existent\",\"trigger_id\":\"knixATknix_trigger_amqp_to_be_controlled_1606418134461\",\"status_msg\":\"Trigger not found\"}"
+}
+```
+
+The `message` field is json encoded, with the following structure:
+```json
+{
+  "trigger_status": "non_existent",
+  "trigger_id": "knixATknix_trigger_amqp_to_be_controlled_1606418134461",
+  "status_msg": "Trigger not found"
+}
+```
 
 ### Trigger Messages received at the workflow
 

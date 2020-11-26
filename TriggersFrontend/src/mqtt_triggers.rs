@@ -360,11 +360,19 @@ pub async fn mqtt_actor_loop(
                 match cmd {
                     Some((c, resp)) => {
                         match c {
-                            TriggerCommand::Status => {
+                            TriggerCommand::GetStatus => {
                                 info!("[mqtt_actor_loop] {} Status cmd recv", trigger_id);
+
                                 resp.send((true, "ok".to_string()));
                             }
                             TriggerCommand::AddWorkflows(workflows_to_add) => {
+                                for workflow in workflows_to_add.clone() {
+                                    let idx = find_element_index(&workflow, &workflows);
+                                    if idx >= 0 {
+                                        workflows.remove(idx as usize);
+                                    }
+                                }
+
                                 for workflow in workflows_to_add {
                                     workflows.push(workflow.clone());
                                 }

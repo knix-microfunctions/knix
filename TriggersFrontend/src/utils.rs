@@ -26,8 +26,8 @@ pub fn get_unique_id() -> String {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct WorkflowInfo {
-    pub workflow_url: String,
     pub workflow_name: String,
+    pub workflow_url: String,
     pub workflow_state: String,
 }
 
@@ -201,8 +201,7 @@ pub fn find_element_index(
     let mut found = false;
     for workflow in workflows {
         i += 1;
-        if workflow_to_search.workflow_url.eq(&workflow.workflow_url)
-            && workflow_to_search.workflow_name.eq(&workflow.workflow_name)
+        if workflow_to_search.workflow_name.eq(&workflow.workflow_name)
         {
             found = true;
             break;
