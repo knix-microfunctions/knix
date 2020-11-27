@@ -1,0 +1,16 @@
+{
+  "Comment": "Workflow to test amqp trigger being controlled by a timer trigger as a ttl",
+  "StartAt": "timer_based_trigger_control",
+  "States": {
+    "timer_based_trigger_control": {
+      "Type": "Task",
+      "Resource": "timer_based_trigger_control",
+      "Next": "timer_based_trigger_control_state2"
+    },
+    "timer_based_trigger_control_state2": {
+      "Type": "Task",
+      "Resource": "timer_based_trigger_control_state2",
+      "End": true
+    }
+  }
+}

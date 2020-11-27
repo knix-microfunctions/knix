@@ -5,6 +5,7 @@ use crate::utils::WorkflowInfo;
 use crate::CommandResponseChannel;
 use crate::TriggerCommand;
 use crate::TriggerCommandChannel;
+use serde::{Deserialize, Serialize};
 use crate::TriggerManager;
 use json::JsonValue;
 use lapin::{
@@ -26,7 +27,7 @@ use crate::utils::TriggerError;
 use crate::utils::TriggerWorkflowMessage;
 use crate::TriggerStatus;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize)]
 pub struct AMQPSubscriberInfo {
     amqp_addr: String,
     routing_key: String,
@@ -48,6 +49,18 @@ pub struct AMQPTrigger {
     workflows: Vec<WorkflowInfo>,
     // Sender return
     cmd_channel_tx: TriggerCommandChannel,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct AMQPTriggerStatus {
+    trigger_name: String,
+    trigger_status: String,
+    trigger_type: String,
+    trigger_id: String,
+    status_msg: String,
+    trigger_count: u64,
+    associated_workflows: Vec<WorkflowInfo>,
+    trigger_info: AMQPSubscriberInfo,
 }
 
 impl AMQPTrigger {
@@ -191,6 +204,7 @@ pub async fn handle_create_amqp_trigger(
     Ok(amqp_trigger.cmd_channel_tx)
 }
 
+
 async fn send_amqp_data(
     workflows: Vec<WorkflowInfo>,
     amqp_data: std::vec::Vec<u8>,
@@ -218,12 +232,13 @@ async fn send_amqp_data(
                     trigger_id,
                     serialized_workflow_msg.as_ref().unwrap()
                 );
-                tokio::spawn(send_post_json_message(
+                send_post_json_message(
                     workflow_info.workflow_url,
                     serialized_workflow_msg.unwrap(),
                     "".into(),
                     workflow_info.workflow_state.clone(),
-                ));
+                    true,
+                ).await;
             }
         }
         Err(e) => {
@@ -286,6 +301,8 @@ pub async fn amqp_actor_loop(
     manager_cmd_channel_tx: &mut TriggerManagerCommandChannelSender,
 ) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
     info!("[amqp_actor_loop] {} start", trigger_id);
+    
+    let mut trigger_count: u64 = 0;
 
     let addr = &amqp_sub_info.amqp_addr;
     info!("[amqp_actor_loop] {} Before [connect], addr: {}", trigger_id, addr);
@@ -383,11 +400,30 @@ pub async fn amqp_actor_loop(
                 match cmd {
                     Some((c, resp)) => {
                         match c {
-                            TriggerCommand::Status => {
+                            TriggerCommand::GetStatus => {
                                 info!("[amqp_actor_loop] {} Status cmd recv", trigger_id);
-                                resp.send((true, "ok".to_string()));
+                                let status_info = AMQPTriggerStatus {
+                                    trigger_status: "ready".into(),
+                                    trigger_type: "amqp".into(),
+                                    trigger_name: trigger_name.clone(),
+                                    trigger_id: trigger_id.clone(),
+                                    status_msg: "".into(),
+                                    trigger_count,
+                                    associated_workflows: workflows.clone(),
+                                    trigger_info: amqp_sub_info.clone(),
+                                };
+                                let serialized_status_msg: String = serde_json::to_string(&status_info).unwrap();
+
+                                resp.send((true, serialized_status_msg));
                             }
                             TriggerCommand::AddWorkflows(workflows_to_add) => {
+                                for workflow in workflows_to_add.clone() {
+                                    let idx = find_element_index(&workflow, &workflows);
+                                    if idx >= 0 {
+                                        workflows.remove(idx as usize);
+                                    }
+                                }
+
                                 for workflow in workflows_to_add {
                                     workflows.push(workflow.clone());
                                 }
@@ -428,8 +464,12 @@ pub async fn amqp_actor_loop(
                     Some(delivery) => {
                         match delivery {
                             Ok((chan, amqp_msg)) => {
-                                let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
-                                tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key));
+                                trigger_count += 1;
+                                if workflows.len() > 0 {
+                                    let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
+                                    //tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key)).await;
+                                    send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key).await; 
+                                }
                             }
                             Err(e) => {
                                 let ret_msg = format!("[amqp_actor_loop] Trigger id {}, recv a msg on amqp channel, but unwrapping produced an error: {:?}", trigger_id, e);

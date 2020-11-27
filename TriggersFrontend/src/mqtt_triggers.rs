@@ -211,12 +211,13 @@ async fn send_mqtt_data(
                     trigger_id,
                     serialized_workflow_msg.as_ref().unwrap()
                 );
-                tokio::spawn(send_post_json_message(
+                send_post_json_message(
                     workflow_info.workflow_url,
                     serialized_workflow_msg.unwrap(),
                     "".into(),
                     workflow_info.workflow_state.clone(),
-                ));
+                    true
+                ).await;
             }
         }
         Err(e) => {
@@ -359,11 +360,19 @@ pub async fn mqtt_actor_loop(
                 match cmd {
                     Some((c, resp)) => {
                         match c {
-                            TriggerCommand::Status => {
+                            TriggerCommand::GetStatus => {
                                 info!("[mqtt_actor_loop] {} Status cmd recv", trigger_id);
+
                                 resp.send((true, "ok".to_string()));
                             }
                             TriggerCommand::AddWorkflows(workflows_to_add) => {
+                                for workflow in workflows_to_add.clone() {
+                                    let idx = find_element_index(&workflow, &workflows);
+                                    if idx >= 0 {
+                                        workflows.remove(idx as usize);
+                                    }
+                                }
+
                                 for workflow in workflows_to_add {
                                     workflows.push(workflow.clone());
                                 }

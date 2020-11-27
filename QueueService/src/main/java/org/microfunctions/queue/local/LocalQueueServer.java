@@ -62,7 +62,11 @@ public class LocalQueueServer implements Iface, Runnable {
 
     @Override
     public boolean addMessage(String topic, LocalQueueMessage message) throws TException {
-        return queue.addMessage(topic, message);
+        boolean success = queue.addMessage(topic, message);
+        if (!success) {
+            LOGGER.warn("Topic " + topic + " doesn't exist!");
+        }
+        return success;
     }
 
     @Override
