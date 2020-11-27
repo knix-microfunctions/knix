@@ -25,11 +25,11 @@
   </tr>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;">
     <div style="width:100%">
-      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item)" class="btn-group bootstrap-select form-control">
-        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.realm}}</ui-select-match>
+      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item, 'map')" class="btn-group bootstrap-select form-control">
+        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.type}}</ui-select-match>
         <ui-select-choices repeat="item in storageLocations | filter: $select.search">
           <div ng-bind-html="item.name | highlight: $select.search"></div>
-          <small ng-bind-html="item.realm | highlight: $select.search"></small>
+          <small ng-bind-html="item.type | highlight: $select.search"></small>
         </ui-select-choices>
       </ui-select>
     </div>
@@ -53,7 +53,7 @@
     </td>
 
     <td>
-      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="saveStorageObject(storageObject, 'map');" class="form-buttons form-inline"
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="createNewStorageObject(storageObject, 'map');" class="form-buttons form-inline"
             shown="inserted == storageObject">
         <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
           Save

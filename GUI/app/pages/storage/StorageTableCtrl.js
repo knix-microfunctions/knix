@@ -178,13 +178,10 @@
 
     };
 
-    $scope.onSelected = function (selectedItem) {
-        storageLoc = selectedItem.id;
+    $scope.onSelected = function (selectedItem, data_type) {
+        storageLoc = selectedItem;
         sharedProperties.setStorageLocation(storageLoc);
-        for (var i = 0; i < storage_data_types.length; i++)
-        {
-            getStorageObjectsList(storage_data_types[i]);
-        }
+        getStorageObjectsList(data_type);
     }
 
     function getBucketList() {
@@ -251,7 +248,7 @@
     }
 
     function getStorageObjectsList(data_type) {
-
+        var storageLoc = sharedProperties.getStorageLocation();
       var table = "";
       if (storageLoc.type == "Bucket") {
         table = storageLoc.name;
@@ -378,7 +375,7 @@
           var objectData = response.data.data.value;
 
           if (objectData != "") {
-            console.log('Storage object sucessfully retrieved.');
+            console.log('Storage object successfully retrieved.');
 
             var binaryString = "";
             var blob = "";
@@ -451,6 +448,7 @@
 
 
     $scope.deleteStorageObject = function(index, data_type) {
+        var storageLoc = sharedProperties.getStorageLocation();
         var scopeStorageObjects = getScopeStorageObjects(data_type);
       console.log('deleting storage object ' + scopeStorageObjects[index].key);
 
@@ -489,9 +487,10 @@
        $http(req).then(function successCallback(response) {
 
         if (response.data.status == "success") {
-          console.log('Storage object sucessfully deleted.');
+          console.log('Storage object successfully deleted.');
           toastr.success('Your object has been deleted successfully!');
-          $scope.storageObjects.splice(index, 1);
+          scopeStorageObjects.splice(index, 1);
+          //$scope.storageObjects.splice(index, 1);
         } else {
           console.log("Failure status returned by performStorageAction / " + param_storage["parameters"]["action"]);
           console.log(response.data);
@@ -529,7 +528,7 @@
       param_storage["parameters"] = {};
       param_storage["parameters"]["action"] = "clear" + data_type;
       param_storage["parameters"][data_type + "name"] = scopeStorageObjects[index].key;
-      param_storage["workflowid"] = storageLoc;
+      param_storage["workflowid"] = storageLoc.id;
 
       var req = {
          method: 'POST',
@@ -647,7 +646,7 @@
             param_storage["parameters"]["action"] = "addsetentry";
             param_storage["parameters"]["item"] = "";
         }
-        param_storage["workflowid"] = storageLoc;
+        param_storage["workflowid"] = storageLoc.id;
 
         var req = {
          method: 'POST',
@@ -709,6 +708,7 @@
 
     // create new storage object
     $scope.createNewStorageObject = function(storageObject, data_type) {
+        var storageLoc = sharedProperties.getStorageLocation();
 
       if (storageObject.key!='')
       {
@@ -731,7 +731,7 @@
               param_storage["parameters"][data_type + "value"] = 0;
           }
       }
-      param_storage["workflowid"] = storageLoc;
+      param_storage["workflowid"] = storageLoc.id;
 
       var req = {
          method: 'POST',

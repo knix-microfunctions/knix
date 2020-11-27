@@ -25,7 +25,7 @@
   </tr>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;">
     <div style="width:100%">
-      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item)" class="btn-group bootstrap-select form-control">
+      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item, 'kv')" class="btn-group bootstrap-select form-control">
         <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.type}}</ui-select-match>
         <ui-select-choices repeat="item in storageLocations | filter: $select.search">
           <div ng-bind-html="item.name | highlight: $select.search"></div>
