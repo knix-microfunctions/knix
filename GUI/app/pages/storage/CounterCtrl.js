@@ -49,7 +49,7 @@
       param_storage["parameters"] = {};
       param_storage["parameters"]["action"] = "getcounter";
       param_storage["parameters"]["countername"] = countername;
-      param_storage["workflowid"] = storageLoc;
+      param_storage["workflowid"] = storageLoc.id;
 
        var req = {
          method: 'POST',
@@ -128,7 +128,7 @@
       param_storage["parameters"]["action"] = modtype + "counter";
       param_storage["parameters"]["countername"] = countername;
       param_storage["parameters"][modtype] = objectData;
-      param_storage["workflowid"] = storageLoc;
+      param_storage["workflowid"] = storageLoc.id;
 
       var req = {
          method: 'POST',
