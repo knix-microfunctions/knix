@@ -15,18 +15,18 @@
 */
 
 (function() {
-  angular.module('MfnWebConsole').controller('CounterCtrl', function($scope, $http, $cookies, $timeout, $uibModal, toastr, sharedProperties) {
+  angular.module('MfnWebConsole').controller('SetCtrl', function($scope, $http, $cookies, $timeout, $uibModal, toastr, sharedProperties) {
 
     var token = $cookies.get('token');
     var email = $cookies.get('email');
-    var viewCounterModalVisible = true;
+    var viewSetModalVisible = true;
     var urlPath = sharedProperties.getUrlPath();
     var storageLoc = sharedProperties.getStorageLocation();
 
-    $scope.counterValue = "0";
+    $scope.setItems = set();
 
-     $scope.getCounterName = function() {
-         return sharedProperties.getCounterName();
+     $scope.getSetName = function() {
+         return sharedProperties.getSetName();
      }
 
      $scope.setFocus = function() {
@@ -37,18 +37,18 @@
      }
 
      $scope.$on('$destroy', function(){
-         viewCounterModalVisible = false;
+         viewSetModalVisible = false;
      });
 
-     $scope.reloadCounterValue = function() {
-      var countername = sharedProperties.getCounterName();
-      console.log('Loading counter:' + countername);
+     $scope.reloadSetItems = function() {
+      var setname = sharedProperties.getSetName();
+      console.log('Loading set:' + setname);
 
       var param_storage = {};
-      param_storage["data_type"] = "counter";
+      param_storage["data_type"] = "set";
       param_storage["parameters"] = {};
-      param_storage["parameters"]["action"] = "getcounter";
-      param_storage["parameters"]["countername"] = countername;
+      param_storage["parameters"]["action"] = "retrieveset";
+      param_storage["parameters"]["setname"] = setname;
       param_storage["workflowid"] = storageLoc.id;
 
        var req = {
@@ -66,21 +66,21 @@
           {
 
           console.log('Storage object successfully downloaded.');
-          var objectData = response.data.data["countervalue"] + "";
+          var objectData = response.data.data["setitems"] + "";
 
-          $scope.counterValue = objectData + "";
-          console.log("counter value: " + $scope.counterValue);
+          $scope.setItems = set(objectData);
+          console.log("set items: " + $scope.setItems);
 
           }
        }, function errorCallback(response) {
-           console.log("Error occurred during getcounter");
+           console.log("Error occurred during retrieveset");
            console.log("Response:" + response);
            if (response.statusText) {
              $scope.errorMessage = response.statusText;
            } else {
              $scope.errorMessage = response;
            }
-           if (viewCounterModalVisible) {
+           if (viewSetModalVisible) {
              $uibModal.open({
                animation: true,
                scope: $scope,
@@ -99,34 +99,27 @@
        _editor.$blockScrolling = Infinity;
        _editor.focus();
 
-       $scope.reloadCounterValue();
+       $scope.reloadSetValue();
        _editor.getSession().setValue("");
 
      };
 
-     $scope.modifyCounterValue = function(modtype) {
-      var countername = sharedProperties.getCounterName();
+     $scope.modifySetValue = function(modtype) {
+      var setname = sharedProperties.getSetName();
 
        var objectDataStr = $scope.aceSession.getDocument().getValue().trim();
-       console.log(objectDataStr);
        if (objectDataStr == "")
        {
            return;
        }
 
-       var objectData = 0;
-       objectData = parseInt(objectDataStr);
-       if (isNaN(objectData) || !isFinite(objectData))
-       {
-           return;
-       }
-       console.log('Updating counter: ' + countername + " " + modtype + " " + objectData);
+       console.log('Updating set: ' + setname + " " + modtype + " " + objectDataStr);
 
       var param_storage = {};
-      param_storage["data_type"] = "counter";
+      param_storage["data_type"] = "set";
       param_storage["parameters"] = {};
-      param_storage["parameters"]["action"] = modtype + "counter";
-      param_storage["parameters"]["countername"] = countername;
+      param_storage["parameters"]["action"] = modtype + "setentry";
+      param_storage["parameters"]["setname"] = setname;
       param_storage["parameters"][modtype] = objectData;
       param_storage["workflowid"] = storageLoc.id;
 
@@ -143,13 +136,13 @@
 
          if (response.data.status=="success") {
 
-             console.log('Counter updated.');
-             toastr.success('Counter value updated!');
+             console.log('Set updated.');
+             toastr.success('Set content updated!');
              //$scope.reloadStorageObjects();
            } else {
-             console.log("Failure status returned by: " + modtype + " counter");
+             console.log("Failure status returned by: " + modtype + "setentry");
              $scope.errorMessage = "An error occured while saving your object.";
-             if (viewCounterModalVisible) {
+             if (viewSetModalVisible) {
                $uibModal.open({
                  animation: true,
                  scope: $scope,
@@ -159,14 +152,14 @@
              }
            }
        }, function errorCallback(response) {
-           console.log("Error occurred during " + modtype + "counter");
+           console.log("Error occurred during " + modtype + "setentry");
            console.log(response);
            if (response.statusText) {
              $scope.errorMessage = response.statusText;
            } else {
              $scope.errorMessage = response;
            }
-           if (viewCounterModalVisible) {
+           if (viewSetModalVisible) {
              $uibModal.open({
                animation: true,
                scope: $scope,

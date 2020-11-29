@@ -16,16 +16,16 @@
 
 
 <div class="modal-content" style="margin-top:50px;">
-  <div ng-app="MfnWebConsole" ng-controller="CounterCtrl">
+  <div ng-app="MfnWebConsole" ng-controller="SetCtrl">
   <div class="modal-header">
     <button type="button" class="close" ng-click="$dismiss()" aria-label="Close">
       <em class="ion-ios-close-empty sn-link-close"></em>
     </button>
-    <h4 class="modal-title">Edit Counter: {{ getCounterName() }}</h4>
+    <h4 class="modal-title">Edit Set: {{ getSetName() }}</h4>
   </div>
   <div style="margin-left:15px;margin-right:15px">
     <div>
-    <span><h4><b>Current counter value:</b> {{ counterValue }}</h4> </span>
+    <span><h4><b>Current set items:</b> {{ setItems.length }}</h4> </span>
     </div>
     <br/>
     <br/>
@@ -45,8 +45,8 @@
               }" >
             </div>
             <br>
-              <button type="button" class="btn btn-primary" ng-click="modifyCounterValue('increment');$dismiss()">Increment</button>
-          <button type="button" class="btn btn-primary" ng-click="modifyCounterValue('decrement');$dismiss()">Decrement</button>
+              <button type="button" class="btn btn-primary" ng-click="modifySetValue('add');$dismiss()">Add to set</button>
+          <button type="button" class="btn btn-primary" ng-click="modifySetValue('remove');$dismiss()">Remove from set</button>
           <br/>
     </div>
   </div>
