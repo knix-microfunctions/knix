@@ -63,7 +63,7 @@
         </button>
       </form>
       <div class="buttons" ng-show="!rowform.$visible">
-        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="">View/Edit</button>
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="open('app/pages/storage/modals/viewSetModal.html', 'lg', getStorageObjectKey(storageObject, 'set'), '', 'set')">View/Edit</button>
         <button class="btn btn-danger editable-table-button btn-xs" ng-click="clearStorageObjectPrep(getIndex(storageObject, 'set'), 'set')">Clear</button>
         <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject, 'set'), 'set')">Delete</button>
       </div>

@@ -25,7 +25,7 @@
   </div>
   <div style="margin-left:15px;margin-right:15px">
     <div>
-    <span><h4><b>Current set items:</b> {{ setItems.length }}</h4> </span>
+    <span><h4><b>Current set items:</b> {{ setItems }}</h4> </span>
     </div>
     <br/>
     <br/>
@@ -47,6 +47,8 @@
             <br>
               <button type="button" class="btn btn-primary" ng-click="modifySetValue('add');$dismiss()">Add to set</button>
           <button type="button" class="btn btn-primary" ng-click="modifySetValue('remove');$dismiss()">Remove from set</button>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          <button type="button" class="btn btn-primary" ng-click="containsSetItem();">Contains item?</button> &nbsp;&nbsp;&nbsp;&nbsp;{{ containsSetItem() }}
           <br/>
     </div>
   </div>

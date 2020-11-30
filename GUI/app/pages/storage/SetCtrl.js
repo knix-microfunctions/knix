@@ -23,7 +23,7 @@
     var urlPath = sharedProperties.getUrlPath();
     var storageLoc = sharedProperties.getStorageLocation();
 
-    $scope.setItems = set();
+    $scope.setItems = [];
 
      $scope.getSetName = function() {
          return sharedProperties.getSetName();
@@ -66,9 +66,8 @@
           {
 
           console.log('Storage object successfully downloaded.');
-          var objectData = response.data.data["setitems"] + "";
+          $scope.setItems = response.data.data["items"];
 
-          $scope.setItems = set(objectData);
           console.log("set items: " + $scope.setItems);
 
           }
@@ -94,17 +93,34 @@
      }
 
      $scope.aceLoaded = function(_editor) {
+         $scope._editor = _editor;
         $scope.aceSession = _editor.getSession();
        $scope.aceCodeEditor = _editor;
        _editor.$blockScrolling = Infinity;
        _editor.focus();
 
-       $scope.reloadSetValue();
+       $scope.reloadSetItems();
        _editor.getSession().setValue("");
 
      };
 
-     $scope.modifySetValue = function(modtype) {
+      $scope.containsSetItem = function() {
+       var objectDataStr = $scope.aceSession.getDocument().getValue().trim();
+       if (objectDataStr == "")
+       {
+           return undefined;
+       }
+       if ($scope.setItems.indexOf(objectDataStr) != -1)
+       {
+           return true;
+       }
+       else
+       {
+           return false;
+       }
+     }
+
+    $scope.modifySetValue = function(modtype) {
       var setname = sharedProperties.getSetName();
 
        var objectDataStr = $scope.aceSession.getDocument().getValue().trim();
@@ -120,7 +136,7 @@
       param_storage["parameters"] = {};
       param_storage["parameters"]["action"] = modtype + "setentry";
       param_storage["parameters"]["setname"] = setname;
-      param_storage["parameters"][modtype] = objectData;
+      param_storage["parameters"]["item"] = objectDataStr;
       param_storage["workflowid"] = storageLoc.id;
 
       var req = {
