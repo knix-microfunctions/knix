@@ -156,6 +156,7 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
 
         print("[handle_start] First removing information about the old frontend with same ip: " + frontend_ip_port)
         frontend_info = get_frontend_info(context, frontend_ip_port)
+        remove_frontend_info(context, frontend_ip_port)
 
         for trigger_id in frontend_info:
             trigger_info = get_trigger_info(context, trigger_id)
@@ -172,20 +173,24 @@ def handle_start(frontend_ip_port, trigger_status_map, trigger_error_map, contex
         
         if len(triggers_to_inform_and_remove) > 0:
             inform_workflows_for_triggers(triggers_to_inform_and_remove, context)
-            removeTriggerAndWorkflowAssociations(triggers_to_inform_and_remove, context)
+            removeTriggerAndWorkflowAssociations(triggers_to_inform_and_remove, context, update_frontend_info=False)
 
-        remove_frontend_info(context, frontend_ip_port)
 
     new_frontend_entry = {}
     add_frontend_info(context, frontend_ip_port, json.dumps(new_frontend_entry))
 
-    pending_triggers_from_other_inactive_frontends = health_check_registered_frontends(context)
-    triggers_to_recreate = triggers_to_recreate + pending_triggers_from_other_inactive_frontends
+    # pending_triggers_from_other_inactive_frontends = health_check_registered_frontends(context)
+    # triggers_to_recreate = triggers_to_recreate + pending_triggers_from_other_inactive_frontends
 
-    pending_global_triggers = get_info_for_global_pending_triggers(context)
-    triggers_to_recreate = triggers_to_recreate + pending_global_triggers
+    # pending_global_triggers = get_info_for_global_pending_triggers(context)
+    # triggers_to_recreate = triggers_to_recreate + pending_global_triggers
 
-    recreate_pending_triggers(triggers_to_recreate, context)
+    # recreate_pending_triggers(triggers_to_recreate, context)
+
+    for (trigger_info, error_msg) in triggers_to_recreate:
+        print("[handle_start] Queuing up to be recreated, trigger_id: " + trigger_info["trigger_id"] + ", trigger_info: " + str(trigger_info))
+        add_to_global_pending_trigger_set(context, trigger_info["trigger_id"])
+
 
 def handle_status(frontend_ip_port, trigger_status_map, trigger_error_map, context):
     print("[TriggersFrontend] [STATUS], frontend_ip_port: " + frontend_ip_port + ", trigger_status_map: " + str(trigger_status_map) + ", trigger_error_map: " + str(trigger_error_map))
@@ -232,6 +237,7 @@ def handle_stop(frontend_ip_port, trigger_status_map, trigger_error_map, context
     assert(len(trigger_status_map) == 0)
     frontend_info = get_frontend_info(context, frontend_ip_port)
     assert(frontend_info is not None)
+    remove_frontend_info(context, frontend_ip_port)
 
     triggers_to_recreate = []
     triggers_to_inform_and_remove = []
@@ -248,9 +254,7 @@ def handle_stop(frontend_ip_port, trigger_status_map, trigger_error_map, context
 
     if len(triggers_to_inform_and_remove) > 0:
         inform_workflows_for_triggers(triggers_to_inform_and_remove, context)
-        removeTriggerAndWorkflowAssociations(triggers_to_inform_and_remove, context)
-
-    remove_frontend_info(context, frontend_ip_port)
+        removeTriggerAndWorkflowAssociations(triggers_to_inform_and_remove, context, update_frontend_info=False)
 
     #pending_triggers_from_other_inactive_frontends = health_check_registered_frontends(context)
     #triggers_to_recreate = triggers_to_recreate + pending_triggers_from_other_inactive_frontends
@@ -442,6 +446,7 @@ def health_check_registered_frontends(context):
             frontend_info = get_frontend_info(context, tf_ip_port)
             if frontend_info is None:
                 continue
+            remove_frontend_info(context, tf_ip_port)
             print("[health_check_registered_frontends] Removing inactive frontend: frontend_info = " + str(frontend_info))
 
             for trigger_id in frontend_info:
@@ -461,9 +466,7 @@ def health_check_registered_frontends(context):
             
             if len(triggers_to_inform_and_remove) > 0:
                 inform_workflows_for_triggers(triggers_to_inform_and_remove, context)
-                removeTriggerAndWorkflowAssociations(triggers_to_inform_and_remove, context)
-
-            remove_frontend_info(context, tf_ip_port)
+                removeTriggerAndWorkflowAssociations(triggers_to_inform_and_remove, context, update_frontend_info=False)
 
     return triggers_to_recreate
 
@@ -507,9 +510,10 @@ def inform_workflows_for_triggers(pending_triggers, context):
             execute_workflow(url, request_obj, workflow_state)
 
 
-def removeTriggerAndWorkflowAssociations(pending_triggers, context):
+def removeTriggerAndWorkflowAssociations(pending_triggers, context, update_frontend_info=True):
     for (trigger_info, error_msg) in pending_triggers:
-        removeTriggerFromFrontend(trigger_info, context)
+        if update_frontend_info == True:
+            removeTriggerFromFrontend(trigger_info, context)
 
         try:
             removeTriggerFromWorkflow(trigger_info, context)
@@ -568,6 +572,7 @@ def removeTriggerFromWorkflow(trigger_info,context):
     return status_msg
 
 def select_random_active_frontend(tf_hosts):
+    random.seed(time.time())
     selected_tf = ""
     while len(tf_hosts) > 0:
         tf_ip_port = tf_hosts[random.randint(0,len(tf_hosts)-1)]

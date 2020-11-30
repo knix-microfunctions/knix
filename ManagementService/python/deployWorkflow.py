@@ -259,9 +259,12 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     except IOError as e:
         raise Exception("Unable to load "+ksvc_file+". Ensure that the configmap has been setup properly", e)
 
-    # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
-    wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').lower() + '-wf'
-    emailSanitized = 'u-' + email.replace('@', '-').replace('_', '-').lower() + '-u'
+    # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters (and not be greater than 63 chars)
+    workflowNameForLabel = workflow_info["workflowName"].replace('@', '-').replace('_', '-').lower()
+    wfNameSanitized = 'w-' + workflowNameForLabel[:59] + '-w'
+
+    emailForLabel = email.replace('@', '-').replace('_', '-').lower()
+    emailSanitized = 'u-' + emailForLabel[:59] + '-u'
     # Pod, Deployment and Hpa names for the new workflow will have a prefix containing the workflow name and user name
     app_fullname_prefix = ''
     if 'app.fullname.prefix' in new_workflow_conf:

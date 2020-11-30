@@ -17,6 +17,7 @@ import random
 import requests
 import traceback
 import sys
+import time
 
 MAP_AVAILABLE_FRONTENDS = "available_triggers_frontned_map"
 MAP_TRIGGERS_TO_INFO = "triggers_to_info_map"
@@ -284,6 +285,7 @@ def handle(value, context):
     return response
 
 def select_random_active_frontend(tf_hosts):
+    random.seed(time.time())
     selected_tf = ""
     while len(tf_hosts) > 0:
         tf_ip_port = tf_hosts[random.randint(0,len(tf_hosts)-1)]
