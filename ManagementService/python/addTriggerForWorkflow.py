@@ -109,6 +109,7 @@ def handle(value, context):
         if isWorkflowPresent == True:
             # add the trigger name in workflow's metadata
             addTriggerToWorkflowMetadata(email, trigger_name, workflow_name, workflow_state, workflow_details["id"], context)
+            addWorkflowToTriggerMetadata(workflow_name, workflow_state, trigger_id, context)
 
         if isWorkflowDeployed == True:
             # add the workflow to the trigger
@@ -234,6 +235,20 @@ def isTriggerPresent(email, trigger_id, trigger_name, context):
     return True
 
 
+def addWorkflowToTriggerMetadata(workflow_name, workflow_state, trigger_id, context):
+    print("[addWorkflowToTriggerMetadata] called with: workflow_name" + str(workflow_name) + ", workflow_state: " + str(workflow_state) + ", trigger_id: " + str(trigger_id))
+    workflow_to_add = \
+    {
+        "workflow_url": "",
+        "workflow_name": workflow_name,
+        "workflow_state": workflow_state
+    }
+    global_trigger_info = get_trigger_info(context, trigger_id)
+    global_trigger_info["associated_workflows"][workflow_name] = workflow_to_add
+    add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+
+
+
 def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details, trigger_id, trigger_name, context):
     print("[addWorkflowToTrigger] called with: trigger_id: " + str(trigger_id) + ", trigger_name: " + str(trigger_name) + ", workflow_name: " + str(workflow_name) + ", workflow_state: " + str(workflow_state) + ", workflow_details: " + str(workflow_details))
     status_msg = ""
@@ -293,8 +308,8 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             raise Exception(status_msg)
     except Exception as e:
         print("[addWorkflowToTrigger] exception: " + str(e))
-        deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_details["id"], context)
-        raise Exception(status_msg)
+        #deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_details["id"], context)
+        raise e
 
 
 def tryRemovingFirst(tf_ip_port, trigger_id, workflow_to_remove):

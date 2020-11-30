@@ -279,7 +279,7 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
             print("Success response from " + url)
             if workflow_name in global_trigger_info["associated_workflows"]:
                 del global_trigger_info["associated_workflows"][workflow_name]
-            add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+                add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
             status_msg = "Trigger " + trigger_name + " removed successfully from workflow:" + workflow_name + ". Message: " + res_obj["message"]
         else:
             if "message" in res_obj:
@@ -291,6 +291,6 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
         print("[removeTriggerFromWorkflow] Exeception: " + str(e))
         if workflow_name in global_trigger_info["associated_workflows"]:
             del global_trigger_info["associated_workflows"][workflow_name]
-        add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+            add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
         raise e
 

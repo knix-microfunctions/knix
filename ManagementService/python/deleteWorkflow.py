@@ -243,6 +243,6 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
     except Exception as e:
         if workflow_name in global_trigger_info["associated_workflows"]:
             del global_trigger_info["associated_workflows"][workflow_name]
-        add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+            add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
         raise e
         #print("[removeTriggerFromWorkflow] " + str(e))

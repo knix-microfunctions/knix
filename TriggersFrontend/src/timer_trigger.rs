@@ -5,6 +5,7 @@ use crate::utils::WorkflowInfo;
 use crate::CommandResponseChannel;
 use crate::TriggerCommand;
 use crate::TriggerCommandChannel;
+use serde::{Deserialize, Serialize};
 use crate::TriggerManager;
 use json::JsonValue;
 use log::*;
@@ -22,7 +23,7 @@ use crate::utils::TriggerError;
 use crate::utils::TriggerWorkflowMessage;
 use crate::TriggerStatus;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize)]
 pub struct TimerInfo {
     timer_interval: u64,
 }
@@ -34,6 +35,18 @@ pub struct TimerTrigger {
     workflows: Vec<WorkflowInfo>,
     // Sender return
     cmd_channel_tx: TriggerCommandChannel,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct TimerTriggerStatus {
+    trigger_name: String,
+    trigger_status: String,
+    trigger_type: String,
+    trigger_id: String,
+    status_msg: String,
+    trigger_count: u64,
+    associated_workflows: Vec<WorkflowInfo>,
+    trigger_info: TimerInfo,
 }
 
 impl TimerTrigger {
@@ -118,12 +131,13 @@ async fn send_timer_data(
             trigger_id,
             serialized_workflow_msg.as_ref().unwrap()
         );
-        tokio::spawn(send_post_json_message(
+        send_post_json_message(
             workflow_info.workflow_url,
             serialized_workflow_msg.unwrap(),
             "".into(),
             workflow_info.workflow_state.clone(),
-        ));
+            true
+        ).await;
     }
 }
 
@@ -182,6 +196,8 @@ pub async fn timer_actor_loop(
         trigger_id, timer_interval
     );
 
+    let mut trigger_count: u64 = 0;
+
     let timer_interval = timer_info.timer_interval;
     info!("[timer_actor_loop] {} Ready", trigger_id);
     send_status_update_from_trigger_to_manager(
@@ -198,9 +214,21 @@ pub async fn timer_actor_loop(
                 match cmd {
                     Some((c, resp)) => {
                         match c {
-                            TriggerCommand::Status => {
+                            TriggerCommand::GetStatus => {
                                 info!("[timer_actor_loop] {} Status cmd recv", trigger_id);
-                                resp.send((true, "ok".to_string()));
+                                let status_info = TimerTriggerStatus {
+                                    trigger_name: trigger_name.clone(),
+                                    trigger_status: "ready".into(),
+                                    trigger_type: "timer".into(),
+                                    trigger_id: trigger_id.clone(),
+                                    status_msg: "".into(),
+                                    trigger_count,
+                                    associated_workflows: workflows.clone(),
+                                    trigger_info: timer_info.clone(),
+                                };
+                                let serialized_status_msg: String = serde_json::to_string(&status_info).unwrap();
+
+                                resp.send((true, serialized_status_msg));
                             }
                             TriggerCommand::AddWorkflows(workflows_to_add) => {
                                 for workflow in workflows_to_add {
@@ -238,7 +266,11 @@ pub async fn timer_actor_loop(
                 }
             }
             d = create_delay(timer_interval, "TimerTrigger, status push timer".to_string()) => {
-                tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into()));
+                trigger_count += 1;
+                if workflows.len() > 0 {
+                    //tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into())).await;
+                    send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into()).await;
+                }
             }
         }
     }

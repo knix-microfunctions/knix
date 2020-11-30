@@ -21,11 +21,11 @@ import base64
 
 workflow_other_json = '''{
 	"Comment": "other Workflow",
-	"StartAt": "test",
+	"StartAt": "triggers_amqp_state2",
 	"States": {
-		"test": {
+		"triggers_amqp_state2": {
 			"Type": "Task",
-			"Resource": "triggers_amqp",
+			"Resource": "triggers_amqp_state2",
 			"End": true
 		}
 	}

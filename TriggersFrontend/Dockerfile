@@ -1,6 +1,6 @@
 FROM debian:buster
 
-RUN apt-get update && apt-get install -y apt-utils net-tools vim curl inetutils-ping telnet wget netcat && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y apt-utils net-tools vim curl inetutils-ping telnet wget netcat htop && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -o -g 1000 -r mfn && useradd -d /opt/mfn -u 1000 -m -r -g mfn mfn
 USER mfn

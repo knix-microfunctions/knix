@@ -55,6 +55,14 @@ manager:
       requests:
         cpu: 1
         memory: 1Gi
+  managementSandbox:
+    resources:
+      limits:
+        cpu: 4
+        memory: 4Gi
+      requests:
+        cpu: 2
+        memory: 2Gi
   createServiceAccounts: true
 
 #------------------------------------------------------------------------------
@@ -68,13 +76,14 @@ datalayer:
   imagePullPolicy: "Always"
   port: 4998
   initialDelaySeconds: 0
+  javaOpts: "-Xmx4096m"
   resources:
     limits:
-      cpu: 500m
-      memory: 500Mi
+      cpu: 4
+      memory: 8Gi
     requests:
-      cpu: 100m
-      memory: 200Mi
+      cpu: 4
+      memory: 8Gi
 
 #------------------------------------------------------------------------------
 # Riak global data storage
@@ -171,8 +180,8 @@ triggersFrontend:
   statusReportIntervalSec: 30
   resources:
     limits:
-      cpu: 2000m
-      memory: 1Gi
+      cpu: 4
+      memory: 8Gi
     requests:
-      cpu: 1000m
-      memory: 200Mi
+      cpu: 2
+      memory: 1Gi

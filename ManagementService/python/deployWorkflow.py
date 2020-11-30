@@ -343,8 +343,17 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
      
     # Special handling for the management container: never run on gpu
     if management:
+        management_workflow_conf = {}
+        conf_file = '/opt/mfn/SandboxAgent/conf/management_workflow.conf'
+        try:
+            with open(conf_file, 'r') as fp:
+                management_workflow_conf = json.load(fp)
+        except IOError as e:
+            raise Exception("Unable to load "+conf_file+". Ensure that the configmap has been setup properly", e)
+
         kservice['spec']['template']['spec']['volumes'] = [{ 'name': 'new-workflow-conf', 'configMap': {'name': new_workflow_conf['configmap']}}]
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
+        kservice['spec']['template']['spec']['containers'][0]['resources'] = management_workflow_conf['resources']
         kservice['spec']['template']['spec']['serviceAccountName'] = new_workflow_conf['mgmtserviceaccount']
         
         # management container should not consume a CPU and use standard sandbox image
@@ -635,15 +644,15 @@ def handle(value, sapi):
         dlc.shutdown()
 
         # deploy queued up triggers
-        if status is not "failed" and "associatedTriggers" in wfmeta:
+        if status is not "failed" and "associatedTriggers" in wfmeta and "endpoints" in wfmeta and len(wfmeta["endpoints"]) > 0:
             associatedTriggers = wfmeta["associatedTriggers"].copy()
             for trigger_name in associatedTriggers:
                 trigger_id = storage_userid + "_" + trigger_name
-                print("Adding trigger_id: " + str(trigger_id) + "  to workflow")
+                print("Adding trigger name: " + str(trigger_name) + "  to workflow")
                 if isTriggerPresent(email, trigger_id, trigger_name, sapi) == True:
-                    trigger_info = get_trigger_info(sapi, trigger_id)
-                    if wfmeta["name"] in trigger_info["associated_workflows"]:
-                        print("[deployWorkflow] Strangely global trigger info already has workflow_name: " + str(wfmeta["name"]) + ", in associated_workflows")
+                    #trigger_info = get_trigger_info(sapi, trigger_id)
+                    #if wfmeta["name"] in trigger_info["associated_workflows"]:
+                    #    print("[deployWorkflow] Strangely global trigger info already has workflow_name: " + str(wfmeta["name"]) + ", in associated_workflows")
                     workflow_state = associatedTriggers[trigger_name]
                     addWorkflowToTrigger(email, wfmeta["name"], workflow_state, wfmeta, trigger_id, trigger_name, sapi)
                 else:
@@ -656,7 +665,8 @@ def handle(value, sapi):
                     print("Updating workflow meta to: " + str(wfmeta))
                     sapi.put(email + "_workflow_" + wfmeta["id"], json.dumps(wfmeta), True)
                     #deleteTriggerFromWorkflowMetadata(email, trigger_name, wfmeta["name"],  workflow["id"], sapi)
-
+        else:
+            print("Unable to associate queued up triggers with workflow. Workflow meta: " + str(wfmeta))
 
     except Exception as e:
         response = {}
@@ -813,10 +823,11 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             raise Exception(status_msg)
     except Exception as e:
         print("[addTriggerForWorkflow] exception: " + str(e))
-        if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:            
-            associatedTriggers = workflow_details['associatedTriggers']
-            del associatedTriggers[trigger_name]
-            workflow_details['associatedTriggers'] = associatedTriggers
-            print("Removing trigger_name: " + str(trigger_name) + ", from associatedTriggers for the workflow. Updated workflow metadata: " + str(workflow_details))
-            context.put(email + "_workflow_" + workflow_details["id"], json.dumps(workflow_details), True)
+        # TODO: why remove this?
+        #if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:            
+        #    associatedTriggers = workflow_details['associatedTriggers']
+        #    del associatedTriggers[trigger_name]
+        #    workflow_details['associatedTriggers'] = associatedTriggers
+        #    print("Removing trigger_name: " + str(trigger_name) + ", from associatedTriggers for the workflow. Updated workflow metadata: " + str(workflow_details))
+        #    context.put(email + "_workflow_" + workflow_details["id"], json.dumps(workflow_details), True)
 

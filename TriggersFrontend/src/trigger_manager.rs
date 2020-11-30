@@ -54,6 +54,7 @@ pub enum TriggerManagerCommand {
     RegisterTriggerChannel(String, TriggerCommandChannel), // id, sending channel to trigger actor
     UpdateTriggerStatus(String, TriggerStatus, String), // id, status, status_message (incase of error)
     GetTriggerStatus(String),                           // id, status_msg (incase of error)
+    GetTriggerDetails(String),                          // id
     StopTrigger(String),                                // id
     DeleteTrigger(String),                              // id
     AddWorkflows(String, Vec<WorkflowInfo>),            // id, Workflows to be added
@@ -197,6 +198,36 @@ impl TriggerManager {
         }
     }
 
+    pub async fn send_get_trigger_details_msg(
+        &mut self,
+        trigger_id: &String,
+    ) -> Result<String, String> {
+        let details = self
+            .send_cmd(
+                &trigger_id,
+                TriggerManagerCommand::GetTriggerDetails(trigger_id.clone()),
+            )
+            .await;
+        match details {
+            Ok(message) => {
+                return Ok(message)
+            }
+            Err(message) => {
+                let valid_json = json::parse(&message);
+                match valid_json {
+                    Ok(_) => return Err(message),
+                    Err(_) => {
+                        let error_msg: String = format!("Error fetching details. Error: {}", message);
+                        let status_msg: JsonValue = json::object! {"trigger_status" => "unknown", "trigger_id" => trigger_id.clone(), "status_msg" => error_msg.clone() };
+                        let ret_msg = format!("[send_get_trigger_details_msg] Trigger id {}, {}", &trigger_id, error_msg);
+                        warn!("{}", ret_msg);
+                        return Err(status_msg.dump());
+                    }
+                }
+            }
+        }
+    }
+
     pub async fn send_stop_trigger_msg(&mut self, trigger_id: &String) -> Result<String, String> {
         self.send_cmd(
             &trigger_id,
@@ -245,20 +276,20 @@ impl TriggerManager {
     pub async fn register_trigger_if_not_present_or_stopped(
         &mut self,
         trigger_id: &String,
-    ) -> bool {
+    ) -> (bool, TriggerStatus) {
         let status = self.send_get_status_msg(&trigger_id).await;
         match status {
             Some((status, status_msg)) => match status {
-                TriggerStatus::Starting | TriggerStatus::Ready => false,
+                TriggerStatus::Starting | TriggerStatus::Ready => (false, status),
                 _ => {
                     self.send_delete_trigger_msg(&trigger_id).await;
                     self.send_register_trigger_id_msg(&trigger_id).await;
-                    true
+                    (true, status)
                 }
             },
             None => {
                 self.send_register_trigger_id_msg(&trigger_id).await;
-                true
+                (true, TriggerStatus::Starting)
             }
         }
     }
@@ -330,7 +361,7 @@ impl TriggerManager {
         request_body: String,
     ) -> Result<String, String> {
         // this will return false if the trigger_id is already registered with either Ready or Starting state
-        let id_registered = self
+        let (id_registered, trigger_status) = self
             .register_trigger_if_not_present_or_stopped(&trigger_id)
             .await;
 
@@ -410,10 +441,10 @@ impl TriggerManager {
                 }
             }
         } else {
-            Err(format!(
-                "Trigger {} exists in either Starting or Ready state",
-                &trigger_id
-            ))
+            match trigger_status {
+                TriggerStatus::Starting | TriggerStatus::Ready => Ok(format!("Trigger already {} exists in {} state", &trigger_id, trigger_status_to_string(&trigger_status))),
+                _ =>  Err(format!("Unexpected error. Trigger already {} exists in {} state.", &trigger_id, trigger_status_to_string(&trigger_status))),
+            }
         }
     }
 
@@ -464,6 +495,28 @@ impl TriggerManager {
             warn!("{}", ret_msg);
             self.send_delete_trigger_msg(&trigger_id).await;
             return Err(ret_msg);
+        }
+    }
+
+    pub async fn handle_trigger_details(&mut self, trigger_id: &String) -> Result<String, String> {
+        let details_result = self.send_get_trigger_details_msg(&trigger_id).await;
+        match details_result {
+            Ok(status_msg) => {
+                let ret_msg = format!(
+                    "[handle_trigger_details] Trigger id {} details: {}",
+                    &trigger_id, status_msg
+                );
+                info!("{}", &ret_msg);
+                return Ok(status_msg);
+            }
+            Err(status_msg) => {
+                let ret_msg = format!(
+                    "[handle_trigger_details] Error fetching details, Trigger id {}. {}",
+                    &trigger_id, status_msg
+                );
+                warn!("{}", &ret_msg);
+                return Err(status_msg);
+            }
         }
     }
 
@@ -527,7 +580,7 @@ async fn report_status_to_management(management_url: String, data: String, host_
         "[report_status_to_management] POST to {}, with data {}",
         management_url, &data
     );
-    tokio::spawn(send_post_json_message(management_url, data, host_header, "".into()));
+    send_post_json_message(management_url, data, host_header, "".into(), true).await;
 }
 
 async fn send_server_stop_msg(url: String) {
@@ -540,10 +593,14 @@ async fn send_shutdown_messages(
     id_to_trigger_chan_map: &mut HashMap<String, TriggerCommandChannel>,
     manager_info: TriggerManagerInfo,
 ) {
-    for (trigger_id, _) in id_to_trigger_status_map.iter() {
+    for (trigger_id, current_status) in id_to_trigger_status_map.iter() {
+        let status_message = match current_status {
+            TriggerStatus::Ready => "READY trigger shutdown! TriggersFrontend shutdown.".into(),
+            _ => "TriggersFrontend shutdown".into(),
+        };
         id_to_trigger_error_map.insert(
             trigger_id.clone(),
-            "TriggerFrontend shutdown initiated".into(),
+            status_message
         );
     }
     let update_message = TriggerManagerStatusUpdateMessage {
@@ -562,6 +619,7 @@ async fn send_shutdown_messages(
         serialized_update_message.unwrap(),
         manager_info.management_request_host_header.clone(),
         "".into(),
+        true
     )
     .await;
     if posted == false {
@@ -711,7 +769,7 @@ async fn trigger_manager_actor_loop(
                                                         };
                                         
                                                         let serialized_update_message = serde_json::to_string(&update_message);
-                                                        tokio::spawn(report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()));
+                                                        report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()).await;
                                                         // we have reported it to management, so clear the error map
                                                         id_to_trigger_error_map.clear();    
                                                     }
@@ -761,6 +819,93 @@ async fn trigger_manager_actor_loop(
                                                 let ret_msg = format!("[GetTriggerStatus] Ignoring attempt to get status of a non existent Trigger id {}", &trigger_id);
                                                 warn!("{}", ret_msg);
                                                 resp.send((false, ret_msg));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            TriggerManagerCommand::GetTriggerDetails(trigger_id) => {
+                                info!("[GetTriggerDetails] cmd recv for id {}", &trigger_id);
+                                let trigger_status = id_to_trigger_status_map.get(&trigger_id);
+                                let trigger_error_status = id_to_trigger_error_map.get(&trigger_id);
+                                match trigger_status {
+                                    Some(status) => {
+                                        match status {
+                                            TriggerStatus::Ready => {
+                                                let trigger_chan = id_to_trigger_chan_map.get(&trigger_id);
+                                                match trigger_chan {
+                                                    Some(chan) => {
+                                                        let mut trigger_channel = chan.clone();
+                                                        let (resp_tx, resp_rx) = oneshot::channel::<(bool, String)>();
+                                                        let send_result = trigger_channel.send((TriggerCommand::GetStatus, resp_tx)).await;
+                                                        match send_result {
+                                                            Ok(m) => {
+                                                                // No error on sending channel, so check for a response
+                                                                let response = resp_rx.await;
+                                                                match response {
+                                                                    // No error on response channel
+                                                                    Ok((status_bool, message)) => {
+                                                                        info!("[GetTriggerDetails] response: {}", &message);
+                                                                        resp.send((true, message));
+                                                                    }
+                                                                    Err(e) => {
+                                                                        // Some error on response channel
+                                                                        let error_msg: String = format!("Error response on receiving channel. Error message: {:?}", e);
+                                                                        let status_msg: JsonValue = json::object! {"trigger_status" => trigger_status_to_string(&status), "trigger_id" => trigger_id.clone(), "status_msg" => error_msg.clone() };
+                                                                        let ret_msg = format!("[GetTriggerDetails] Trigger id {} is in state: {}. {}", &trigger_id, trigger_status_to_string(&status), error_msg);
+                                                                        warn!("{}", ret_msg);
+                                                                        resp.send((false, status_msg.dump()));
+                                                                    }
+                                                                }
+                                                            }
+                                                            Err(e) => {
+                                                                // Error on sending channel
+                                                                let error_msg: String = format!("Error on sending channel. Error message: {:?}", e);
+                                                                let status_msg: JsonValue = json::object! {"trigger_status" => trigger_status_to_string(&status), "trigger_id" => trigger_id.clone(), "status_msg" => error_msg.clone() };
+                                                                let ret_msg = format!("[GetTriggerDetails] Trigger id {} is in state: {}. {}", &trigger_id, trigger_status_to_string(&status), error_msg);
+                                                                warn!("{}", ret_msg);
+                                                                resp.send((false, status_msg.dump()));
+                                                            }
+                                                        }
+                                                    }
+                                                    None => {
+                                                        // chan not found
+                                                        let error_msg: String = format!("Error: Trigger's sending channel not found");
+                                                        let status_msg: JsonValue = json::object! {"trigger_status" => trigger_status_to_string(&status), "trigger_id" => trigger_id.clone(), "status_msg" => error_msg.clone() };
+                                                        let ret_msg = format!("[GetTriggerDetails] Trigger id {} is in state: {}. {}", &trigger_id, trigger_status_to_string(&status), error_msg);
+                                                        warn!("{}", ret_msg);
+                                                        resp.send((false, status_msg.dump()));
+                                                    }
+                                                }
+                                            }
+                                            _ => {
+                                                let error_msg: String = format!("Error: Trigger is not in ready state.");
+                                                let status_msg: JsonValue = json::object! {"trigger_status" => trigger_status_to_string(&status), "trigger_id" => trigger_id.clone(), "status_msg" => error_msg.clone() };
+                                                let ret_msg = format!("[GetTriggerDetails] Trigger id {} is in state: {}. {}", &trigger_id, trigger_status_to_string(&status), &error_msg);
+                                                warn!("{}", ret_msg);
+                                                resp.send((false, status_msg.dump()));
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        // status does not exist
+                                        id_to_trigger_chan_map.remove(&trigger_id);
+                                        // check if we have trigger_id in error map (that is if it stopped with error)
+                                        match trigger_error_status {
+                                            Some(error_message) => {
+                                                let error_msg: String = format!("Trigger stopped with Error: {}", &error_message);
+                                                let status_msg: JsonValue = json::object! {"trigger_status" => trigger_status_to_string(&TriggerStatus::StoppedError), "trigger_id" => trigger_id.clone(), "status_msg" => error_message.clone() };
+                                                let ret_msg = format!("[GetTriggerDetails] Trigger id {} stopped with Error: {}", &trigger_id, &error_message);
+                                                warn!("{}", ret_msg);
+                                                resp.send((false, status_msg.dump()));
+                                            }
+                                            None => {
+                                                // we dont have the trigger in error map and in status map
+                                                let error_msg: String = format!("Trigger not found");
+                                                let ret_msg = format!("[GetTriggerDetails] Ignoring attempt to get details of a non existent Trigger id {}", &trigger_id);
+                                                warn!("{}", ret_msg);
+                                                let status_msg: JsonValue = json::object! {"trigger_status" => "non_existent", "trigger_id" => trigger_id.clone(), "status_msg" => error_msg.clone() };
+                                                resp.send((false, status_msg.dump()));
                                             }
                                         }
                                     }
@@ -958,7 +1103,7 @@ async fn trigger_manager_actor_loop(
                 };
 
                 let serialized_update_message = serde_json::to_string(&update_message);
-                tokio::spawn(report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()));
+                report_status_to_management(manager_info.management_url.clone(), serialized_update_message.unwrap(), manager_info.management_request_host_header.clone()).await;
                 // we have reported it to management, so clear the error map
                 id_to_trigger_error_map.clear();
             }

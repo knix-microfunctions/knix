@@ -207,6 +207,10 @@ data:
     {{- end -}}
       "configmap": "{{ include "manager.fullname" .  }}-new-workflow-conf"
     }
+  management_workflow.conf: |-
+    {
+      "resources": {{ toJson .Values.manager.managementSandbox.resources }}
+    }
 ---
 apiVersion: batch/v1
 kind: Job

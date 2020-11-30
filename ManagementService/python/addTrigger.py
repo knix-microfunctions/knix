@@ -15,6 +15,8 @@
 import json
 import random
 import requests
+import traceback
+import sys
 
 MAP_AVAILABLE_FRONTENDS = "available_triggers_frontned_map"
 MAP_TRIGGERS_TO_INFO = "triggers_to_info_map"
@@ -29,6 +31,7 @@ def is_frontend_registered(context, frontend_ip_port):
 
 def get_frontend_info(context, frontend_ip_port):
     ret = context.getMapEntry(MAP_AVAILABLE_FRONTENDS, frontend_ip_port, True)
+    print("get_frontend_info: data: " + str(ret))
     if ret is "" or ret is None:
         return None
     else:
@@ -47,6 +50,7 @@ def is_trigger_registered(context, trigger_id):
 
 def get_trigger_info(context, trigger_id):
     ret = context.getMapEntry(MAP_TRIGGERS_TO_INFO, trigger_id, True)
+    print("get_trigger_info: data: " + str(ret))
     if ret is "" or ret is None:
         return None
     else:
@@ -139,9 +143,45 @@ def handle(value, context):
         user_triggers_list = get_user_trigger_list(context, email)
         print("Retrieved user_triggers_list: " + str(user_triggers_list))
 
+        if global_trigger_info is not None:
+            # we have the trigger info already. Make sure that the corresponding frontend is active
+            print("[AddTrigger] trigger_id: " + trigger_id + ", already exists")
+            trigger_tf_ip_port = global_trigger_info["frontend_ip_port"]
+            trigger_frontend_info = get_frontend_info(context, trigger_tf_ip_port)
+            print("[AddTrigger] Checking if the associated frontend is active: " + str(trigger_tf_ip_port))
+            print("[AddTrigger] trigger_frontend_info: " + str(trigger_frontend_info))
+            if not is_frontend_active(trigger_tf_ip_port) or trigger_frontend_info is None or trigger_id not in trigger_frontend_info:
+                # frontend is not active or the frontend info is not present or trigger_id is not in frontend info
+                if trigger_frontend_info is not None and trigger_id in trigger_frontend_info:
+                    print("[AddTrigger] Frontend " + trigger_tf_ip_port + ", not active. Removing trigger_id: " + trigger_id + ", from frontend_info")
+                    del trigger_frontend_info[trigger_id]
+                    add_frontend_info(context, trigger_tf_ip_port, json.dumps(trigger_frontend_info))
+
+                associated_workflows = global_trigger_info["associated_workflows"]
+                print("[AddTrigger] associated_workflows for the trigger: " + str(associated_workflows))
+                for associated_workflow_name in associated_workflows:
+                    removeTriggerFromWorkflowAndUpdateWorkflowMetadata(email, trigger_name, trigger_id, associated_workflow_name, context)
+
+                print("[AddTrigger] removing trigger_info for trigger_id: " + trigger_id)
+                remove_trigger_info(context, trigger_id)
+
+                # add the trigger_name to user's list of triggers
+                if user_triggers_list is not None and trigger_name in user_triggers_list:
+                    del user_triggers_list[trigger_name]
+                    update_user_trigger_list(context, email, json.dumps(user_triggers_list))
+
+                # check the global list for the trigger
+                global_trigger_info = None
+            else:
+                # trigger info is present and the associated frontend is also active
+                print("[AddTrigger] Frontend " + trigger_tf_ip_port + ", is active. Not re-creating trigger_id: " + trigger_id)
+                pass
+
         if global_trigger_info is None:
             # we dont know about the trigger. Create it
             # valid user provided trigger_info
+            print("[AddTrigger] Creating new trigger with trigger_id: " + trigger_id)
+
             status, msg, trigger_type, completed_trigger_info = validate_and_get_trigger_info(trigger_info)
             if status == False:
                 raise Exception("Invalid trigger_info object: " + msg)
@@ -153,7 +193,11 @@ def handle(value, context):
             if len(tf_hosts) == 0:
                 raise Exception("No available TriggersFrontend found")
             tf_hosts = list(tf_hosts)
-            tf_ip_port = tf_hosts[random.randint(0,len(tf_hosts)-1)]
+            
+            tf_ip_port = select_random_active_frontend(tf_hosts)
+            if tf_ip_port is None or tf_ip_port is "":
+                raise Exception("No active TriggersFrontend found")
+
             print("[AddTrigger] selected frontend: " + tf_ip_port)
             # create the global trigger info all the information, and status set of starting, and not workflow associated
             global_trigger_info = \
@@ -176,7 +220,7 @@ def handle(value, context):
 
             # add the global_trigger_info to global map
             add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
-            
+
             url = "http://" + tf_ip_port + "/create_trigger"
             # send the request and wait for response
             print("Contacting: " + url + ", with data: " + str(global_trigger_info["frontend_command_info"]))
@@ -227,6 +271,7 @@ def handle(value, context):
         response_data["message"] = "Couldn't create the trigger; " + str(e)
         response["data"] = response_data
         print("[AddTrigger] Error: " + str(response))
+        traceback.print_exc()
         return response
 
     # finish successfully
@@ -238,26 +283,171 @@ def handle(value, context):
     print("[AddTrigger] response: " + str(response))
     return response
 
+def select_random_active_frontend(tf_hosts):
+    selected_tf = ""
+    while len(tf_hosts) > 0:
+        tf_ip_port = tf_hosts[random.randint(0,len(tf_hosts)-1)]
+        if is_frontend_active(tf_ip_port):
+            selected_tf = tf_ip_port
+            break
+        else:
+            tf_hosts.remove(tf_ip_port)
+    return selected_tf
 
-    # Consider trigger_name similar to table name to be created to storage triggers
-    # get user suid, get a datalayer for it. 
-    # generate a globally unique trigger_id = storage_suid + "!" + trigger_name
-    # map of global triggers, which have all the info related to the trigger
-        # global info for trigger = key = trigger_id_global
-            #       value = status, frontend_ip_port, storage_suid, email, trigger_name_user, 
-            #               list of workflow names,
-            #               trigger_info - trigger_type, trigger_id, trigger_name_user, trigger_info =     
-            #                                   "amqp_addr": "amqp://rabbituser:rabbitpass@paarijaat-debian-vm:5672/%2frabbitvhost",
-            #                                   "routing_key": "rabbit.routing.key",
-            #                                   "exchange": "rabbitexchange",
-            #                                   "durable": true,
-            #                                   "exclusive": true,
-            #                                   "auto_ack": true
-    # list of triggers in this user storage area - just store trigger_name (and no additional info)
-    # if the trigger_id exists in the global list and trigger_name exists in the list of trigger for this user then return false
+def is_frontend_active(tf_ip_port):
+    if tf_ip_port is None or tf_ip_port is "":
+        return False
+    url = "http://" + tf_ip_port + "/"
+    print("[is_frontend_active] Contacting: " + url + ", to check if it is alive")
 
-    # if does not exist at both places then create a new trigger
-    # pick an available frontend, geneate the POST message, add the message to the global table with status starting
-        # send message, check for response. 
-            # If success then, update status of global trigger, add it to the list of triggers for this user
-            # If failure, then remove this trigger from global triggers
+    try:
+        res = requests.get(url)
+        if res.status_code != 200:
+            raise Exception("[is_frontend_active] status code: " + str(res.status_code) + " returned")
+        if res.text is None or res.text != 'ok':
+            raise Exception("[is_frontend_active] response body: " + str(res.text) + " returned")
+        if res.text == 'ok':
+            print("[is_frontend_active] " + url + " is alive")
+            return True
+    except Exception as e:
+        status_msg = "[is_frontend_active] Error: " + str(e)
+        print(status_msg)
+        return False
+
+def isWorkflowPresentAndDeployed(email, workflowname, sapi):
+    workflows = sapi.get(email + "_list_workflows", True)
+    if workflows is not None and workflows != "":
+        workflows = json.loads(workflows)
+    else:
+        workflows = {}
+
+    isWorkflowPresent = False
+    isWorkflowDeployed = False
+    details = {}
+    if workflowname in workflows:
+        wf_id = workflows[workflowname]
+        wf = sapi.get(email + "_workflow_" + wf_id, True)
+        if wf is not None and wf != "":
+            isWorkflowPresent = True
+            wf = json.loads(wf)
+            details["email"] = email
+            details["name"] = workflowname
+            details["id"] = wf_id
+            wf_status = sapi.get("workflow_status_" + wf_id, True)
+            details["status"] = wf_status
+            if "endpoints" in wf:
+                details["endpoints"] = wf["endpoints"]
+            if "modified" in wf:
+                details["modified"] = wf["modified"]
+            if "associatedTriggerableTables" in wf:
+                details["associatedTriggerableTables"] = wf["associatedTriggerableTables"]
+            if "associatedTriggers" in wf:
+                details["associatedTriggers"] = wf["associatedTriggers"]
+            if wf["status"] == "deployed" or wf["status"] == "deploying":
+                isWorkflowDeployed = True
+
+    return isWorkflowPresent, isWorkflowDeployed, details
+
+
+def deleteTriggerFromWorkflowMetadata(email, trigger_name, workflow_name, workflow_id, context):
+    print("[deleteTriggerFromWorkflowMetadata] called with: email: " + str(email) + ", trigger_name: " + str(trigger_name) + ", workflow_name: " + str(workflow_name) + ", workflow_id: " + str(workflow_id))
+    wf = context.get(email + "_workflow_" + workflow_id, True)
+    if wf is None or wf == "":
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Workflow: " +
+              workflow_name + ": couldn't retrieve workflow metadata.")
+        raise Exception("[deleteTriggerFromWorkflowMetadata] User: " + email +
+                        ", Workflow: " + workflow_name + ": couldn't retrieve workflow metadata.")
+
+    wf = json.loads(wf)
+    print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Workflow: " +
+          workflow_name + ": Current workflow metadata: " + str(wf))
+
+    if 'associatedTriggers' not in wf:
+        wf['associatedTriggers'] = {}
+    associatedTriggers = wf['associatedTriggers']
+    if trigger_name in associatedTriggers:
+        del associatedTriggers[trigger_name]
+        wf['associatedTriggers'] = associatedTriggers
+        wf = context.put(email + "_workflow_" + workflow_id, json.dumps(wf), True)
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email +
+              ", Trigger: " + trigger_name + " removed from Workflow: " + workflow_name)
+    else:
+        print("[deleteTriggerFromWorkflowMetadata] User: " + email + ", Trigger: " +
+              trigger_name + " not present in Workflow: " + workflow_name)
+
+
+def removeTriggerFromWorkflowAndUpdateWorkflowMetadata(email, trigger_name, trigger_id, workflow_name, context):
+    status_msg = ""
+    try:
+        removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context)
+    except Exception as e:
+        status_msg = status_msg + ", " + str(e)
+        print("[removeTriggerFromWorkflowAndUpdateWorkflowMetadata] " + str(status_msg))
+    finally:
+        isWorkflowPresent, isWorkflowDeployed, workflow_details = isWorkflowPresentAndDeployed(
+            email, workflow_name, context)
+        
+        try:
+            if isWorkflowPresent == True:
+                # add the trigger name in workflow's metadata
+                deleteTriggerFromWorkflowMetadata(
+                    email, trigger_name, workflow_name, workflow_details["id"], context)
+        except Exception as e:
+            status_msg = status_msg + ", " + str(e)
+            print("[removeTriggerFromWorkflowAndUpdateWorkflowMetadata] " + str(status_msg))
+
+    return status_msg
+
+
+def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
+    print("[removeTriggerFromWorkflow] called with, trigger_name: " + str(trigger_name) + ", trigger_id: " + str(trigger_id) + ", workflow_name: " + str(workflow_name))
+    status_msg = ""
+    global_trigger_info = get_trigger_info(context, trigger_id)
+    try:
+        workflow_to_remove = global_trigger_info["associated_workflows"][workflow_name]
+
+        # get the list of available frontends.
+        tf_hosts = get_available_frontends(context)
+        if len(tf_hosts) == 0:
+            raise Exception("No available TriggersFrontend found")
+
+        # if the frontend with the trigger is available
+        tf_ip_port = global_trigger_info["frontend_ip_port"]
+        if tf_ip_port not in tf_hosts:
+            raise Exception("Frontend: " + tf_ip_port + " not available")
+        
+        url = "http://" + tf_ip_port + "/remove_workflows"
+        # send the request and wait for response
+
+        req_obj = {"trigger_id": trigger_id, "workflows": [workflow_to_remove]}
+        print("Contacting: " + url + ", with data: " + str(req_obj))
+        res_obj = {}
+        try:
+            res = requests.post(url, json=req_obj)
+            if res.status_code != 200:
+                raise Exception("status code: " + str(res.status_code) + " returned")
+            res_obj = res.json()
+        except Exception as e:
+            status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
+        
+        if "status" in res_obj and res_obj["status"].lower() == "success":
+            # if success then update the global trigger table to add a new workflow.
+            print("Success response from " + url)
+            if workflow_name in global_trigger_info["associated_workflows"]:
+                del global_trigger_info["associated_workflows"][workflow_name]
+                add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+            status_msg = "Trigger " + trigger_name + " removed successfully from workflow:" + workflow_name + ". Message: " + res_obj["message"]
+            print("[removeTriggerFromWorkflow] " + status_msg)
+        else:
+            if "message" in res_obj:
+                status_msg = status_msg + ", message: " + res_obj["message"]
+            status_msg = "Error: " + status_msg + ", response: " + str(res_obj)
+            raise Exception(status_msg)
+
+    except Exception as e:
+        print("[removeTriggerFromWorkflow] Exception: " + str(e))
+        if workflow_name in global_trigger_info["associated_workflows"]:
+            print("[removeTriggerFromWorkflow] Removing: workflow_name: " + workflow_name + ", from associated_workflows of trigger")
+            del global_trigger_info["associated_workflows"][workflow_name]
+            add_trigger_info(context, trigger_id, json.dumps(global_trigger_info))
+        raise e
