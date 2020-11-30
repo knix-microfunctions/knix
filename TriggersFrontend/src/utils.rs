@@ -24,6 +24,19 @@ pub fn get_unique_id() -> String {
     format!("[{}]", u)
 }
 
+pub fn should_ignore_message(ignore_message_probability: f32) -> bool {
+    if ignore_message_probability == 0.00 {
+        return false;
+    }
+    let mut r: f32 = rand::thread_rng().gen();
+    r = r * 100.00;
+    if r >= 0.00 && r < 100.00 && r <= ignore_message_probability {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct WorkflowInfo {
     pub workflow_name: String,
