@@ -183,7 +183,7 @@ class SandboxAgent:
         # get the management endpoints
         if not has_error:
             if 'KUBERNETES_SERVICE_HOST' in os.environ and 'MFN_MANAGEMENT' in os.environ and str(os.getenv("MFN_MANAGEMENT", "")) != "":
-                self._management_endpoints = str(os.getenv("MFN_MANAGEMENT"))
+                self._management_endpoints = json.dumps([str(os.getenv("MFN_MANAGEMENT"))])
             else:
                 self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
                 num_trials = 0
