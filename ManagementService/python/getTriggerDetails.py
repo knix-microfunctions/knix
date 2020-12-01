@@ -67,6 +67,12 @@ def handle(value, context):
         email = data["email"]
         trigger_names = data["trigger_names"]
         storage_userid = data["storage_userid"]
+        if "custom_storage_userid" in data and "custom_email" in data:
+            if type(data["custom_storage_userid"]) is not type("") or data["custom_storage_userid"] == "" or len(data["custom_storage_userid"]) == 0 or type(data["custom_email"]) is not type("") or data["custom_email"] == "" or len(data["custom_email"]) == 0:
+                raise Exception("Couldn't get details of triggers; Invalid custom_storage_userid: " + str(data["custom_storage_userid"]) + ", or custom_email: " + str(data["custom_email"]))
+            else:
+                storage_userid = data["custom_storage_userid"]
+                email = data["custom_email"]
 
         if len(trigger_names) == 0:
             user_triggers_list = get_user_trigger_list(context, email)
