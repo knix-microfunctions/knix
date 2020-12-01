@@ -188,6 +188,68 @@ pub async fn send_post_json_message(url: String, json_body: String, host_header:
     }
 }
 
+pub async fn send_post_json_message_with_client(client: &reqwest::Client, url: String, json_body: String, host_header: String, workflow_state: String, async_exec: bool) -> bool {
+    let custom_headers: HeaderMap = generate_customer_headers(workflow_state);
+    let res;
+    if host_header.len() > 0 {
+        if async_exec == true {
+            res = client
+            .post(&url)
+            .header("Host", host_header.as_str())
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .query(&[("async", "true")])
+            .body(json_body)
+            .send()
+            .await;
+        } else {
+            res = client
+            .post(&url)
+            .header("Host", host_header.as_str())
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .body(json_body)
+            .send()
+            .await;
+        }
+    } else {
+        if async_exec == true {
+            res = client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .query(&[("async", "true")])
+            .body(json_body)
+            .send()
+            .await;
+        } else {
+            res = client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .body(json_body)
+            .send()
+            .await;
+        }
+    }
+    if res.is_ok() {
+        let ret_body = res.unwrap().text().await;
+        if ret_body.is_ok() {
+            debug!("Response: {}", ret_body.unwrap());
+            return true;
+        } else {
+            debug!(
+                "Unable to get reponse body for workflow invocation, {}",
+                url
+            );
+            return false;
+        }
+    } else {
+        debug!("Error response from workflow invocation, {}", url);
+        return false;
+    }
+}
+
 pub async fn send_get_message(url: String) -> bool {
     let client = reqwest::Client::new();
     let res = client.get(&url).send().await;

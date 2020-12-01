@@ -1,6 +1,7 @@
 #[allow(dead_code,unused,unused_must_use)]
 use crate::utils::create_delay;
 use crate::utils::send_post_json_message;
+use crate::utils::send_post_json_message_with_client;
 use crate::utils::WorkflowInfo;
 use crate::CommandResponseChannel;
 use crate::TriggerCommand;
@@ -109,6 +110,7 @@ pub async fn handle_create_timer_trigger(
 }
 
 async fn send_timer_data(
+    client: &reqwest::Client,
     workflows: Vec<WorkflowInfo>,
     timer_data: String,
     trigger_id: String,
@@ -131,7 +133,8 @@ async fn send_timer_data(
             trigger_id,
             serialized_workflow_msg.as_ref().unwrap()
         );
-        send_post_json_message(
+        send_post_json_message_with_client(
+            client,
             workflow_info.workflow_url,
             serialized_workflow_msg.unwrap(),
             "".into(),
@@ -208,6 +211,8 @@ pub async fn timer_actor_loop(
     )
     .await;
 
+    let client = reqwest::Client::new();
+
     loop {
         tokio::select! {
             cmd = cmd_channel_rx.recv() => {
@@ -269,7 +274,7 @@ pub async fn timer_actor_loop(
                 trigger_count += 1;
                 if workflows.len() > 0 {
                     //tokio::spawn(send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into())).await;
-                    send_timer_data(workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into()).await;
+                    send_timer_data(&client, workflows.clone(), "".into(), trigger_id.clone(), trigger_name.clone(), "".into()).await;
                 }
             }
         }

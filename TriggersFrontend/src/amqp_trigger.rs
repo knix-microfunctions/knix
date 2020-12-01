@@ -1,6 +1,7 @@
 #[allow(dead_code,unused,unused_must_use)]
 use crate::utils::create_delay;
 use crate::utils::send_post_json_message;
+use crate::utils::send_post_json_message_with_client;
 use crate::utils::should_ignore_message;
 use crate::utils::WorkflowInfo;
 use crate::CommandResponseChannel;
@@ -222,6 +223,7 @@ pub async fn handle_create_amqp_trigger(
 
 
 async fn send_amqp_data(
+    client: &reqwest::Client,
     workflows: Vec<WorkflowInfo>,
     amqp_data: std::vec::Vec<u8>,
     trigger_id: String,
@@ -248,7 +250,8 @@ async fn send_amqp_data(
                     trigger_id,
                     serialized_workflow_msg.as_ref().unwrap()
                 );
-                send_post_json_message(
+                send_post_json_message_with_client(
+                    client,
                     workflow_info.workflow_url,
                     serialized_workflow_msg.unwrap(),
                     "".into(),
@@ -410,6 +413,8 @@ pub async fn amqp_actor_loop(
     )
     .await;
 
+    let client = reqwest::Client::new();
+
     loop {
         tokio::select! {
             cmd = cmd_channel_rx.recv() => {
@@ -485,7 +490,7 @@ pub async fn amqp_actor_loop(
                                     if should_ignore_message(amqp_sub_info.ignore_message_probability) == false {
                                         let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
                                         //tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key)).await;
-                                        send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key).await;     
+                                        send_amqp_data(&client, workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key).await;     
                                     }
                                 }
                             }
