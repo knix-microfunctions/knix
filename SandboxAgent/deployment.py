@@ -713,6 +713,8 @@ class Deployment:
             usertoken = workflow_info["usertoken"]
         os.environ["USERTOKEN"] = usertoken
 
+        os.environ["PYTHONWARNINGS"] = "ignore:Unverified HTTPS request"
+
         # get workflow json, parse workflow json and init params
         workflow_json = self._global_data_layer_client.get(workflow_info["json_ref"])
         if workflow_json is None or workflow_json == "":
