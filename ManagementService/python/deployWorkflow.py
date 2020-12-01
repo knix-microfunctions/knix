@@ -459,7 +459,7 @@ def handle(value, sapi):
         #dlc.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info))
         # _XXX_: important!
         # put must not be queued as the function currently waits for the container to become ready
-        sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
+        sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True)
 
         status = "deploying"
 
@@ -523,7 +523,7 @@ def handle(value, sapi):
                     status = "failed"
                 else:
                     #sapi.log("deployed on hosts: " + json.dumps(deployed_hosts))
-                    sapi.put(email + "_workflow_hosts_" + workflow["id"], json.dumps(deployed_hosts), True, True)
+                    sapi.put(email + "_workflow_hosts_" + workflow["id"], json.dumps(deployed_hosts), True)
             else:
                 print("available_hosts is empty. Not deploying")
                 status = "failed"
@@ -537,7 +537,7 @@ def handle(value, sapi):
         # put the workflow's status to the user storage
         # so that the sandbox agent running on any host can update it
         #dlc.put("workflow_status_" + workflow["id"], wfmeta["status"])
-        sapi.put("workflow_status_" + workflow["id"], wfmeta["status"], True, True)
+        sapi.put("workflow_status_" + workflow["id"], wfmeta["status"], True)
 
         print("Current workflow metadata: " + str(wfmeta))
         if status is not "failed" and "associatedTriggerableTables" in wfmeta:
