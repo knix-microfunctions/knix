@@ -19,12 +19,13 @@
 #------------------------------------------------------------------------------
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
+imageRepo: "localhost:5000"
 #imageRepo: "registry.kube-system.svc.cluster.local"
-imageRepo: "localhost:5000" # kubespray deployment
 manager:
-  #httpProxy: "http://192.109.76.93:8080"
+  #httpProxy: "http://<host>:<port>"
   httpsProxy: "http://192.109.76.93:8080"
-  #httpGatewayPort: 31380 # kubespray deployment
+  #httpGatewayPort: 80
+  #httpsGatewayPort: 443
   nameOverride: "microfunctions"
   newWorkflow:
     hpa:
@@ -58,10 +59,10 @@ manager:
   managementSandbox:
     resources:
       limits:
-        cpu: 4
+        cpu: 1
         memory: 4Gi
       requests:
-        cpu: 2
+        cpu: 1
         memory: 2Gi
   createServiceAccounts: true
 
@@ -69,8 +70,7 @@ manager:
 # MicroFunction Datalayer
 #------------------------------------------------------------------------------
 datalayer:
-  replicas: 1 # kubespray deployment 
-  #replicas: 3
+  replicas: 1
   imagePath: "/microfn/datalayer"
   imageTag: "latest"
   imagePullPolicy: "Always"
@@ -79,18 +79,17 @@ datalayer:
   javaOpts: "-Xmx4096m"
   resources:
     limits:
-      cpu: 4
+      cpu: 1
       memory: 8Gi
     requests:
-      cpu: 4
+      cpu: 1
       memory: 8Gi
 
 #------------------------------------------------------------------------------
 # Riak global data storage
 #------------------------------------------------------------------------------
 riak:
-  replicas: 1 # kubespray deployment
-  #replicas: 3
+  replicas: 1
   imagePath: "/microfn/riak"
   imageTag: "latest"
   imagePullPolicy: "Always"
@@ -99,12 +98,12 @@ riak:
   ClientPortProtobuf: 8087
   resources:
     limits:
-      cpu: 2
-      memory: 8Gi
+      cpu: 1 
+      memory: 4Gi
     requests:
-      cpu: 2
-      memory: 8Gi
-  DataStorage: 8Gi
+      cpu: 1
+      memory: 4Gi
+  DataStorage: 4Gi
   #DataStorageClass: local-volume 
   ClusterName: "riak"
   WaitForErlang: 180
@@ -115,8 +114,8 @@ riak:
   LevelDbMaximumMemory: 4294967296
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
-  ErlangSchedulersTotal: 2
-  ErlangSchedulersOnline: 2
+  ErlangSchedulersTotal: 1
+  ErlangSchedulersOnline: 1
   ErlangSchedulersForceWakeupInterval: 500
   ErlangSchedulersCompactionOfLoad: "false"
 
@@ -147,9 +146,7 @@ nginx:
   # In most installations, it would be {ksvc}.{namespace}.example.com
   # Please use --set nginx.managementService to specify the FQDN that the service will get from your Knative setup
   # _helpers.tpl would default it to wf-mfn1-management.knix.example.com
-  #managementService: wf-mfn1-management.knix.example.com
-  managementService: wf-mfn-management.default.192.168.8.161.xip.io
-  #                  wf-mfn-management.default.192.168.8.161.xip.io
+  managementService: wf-mfn-management.default.192.168.8.151.xip.io
   imagePath: "/microfn/nginx"
   imageTag: "latest"
   httpPort: 32180
@@ -180,8 +177,8 @@ triggersFrontend:
   statusReportIntervalSec: 30
   resources:
     limits:
-      cpu: 4
+      cpu: 1
       memory: 8Gi
     requests:
-      cpu: 2
+      cpu: 1
       memory: 1Gi
