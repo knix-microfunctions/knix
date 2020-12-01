@@ -24,6 +24,19 @@ pub fn get_unique_id() -> String {
     format!("[{}]", u)
 }
 
+pub fn should_ignore_message(ignore_message_probability: f32) -> bool {
+    if ignore_message_probability == 0.00 {
+        return false;
+    }
+    let mut r: f32 = rand::thread_rng().gen();
+    r = r * 100.00;
+    if r >= 0.00 && r < 100.00 && r <= ignore_message_probability {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct WorkflowInfo {
     pub workflow_name: String,
@@ -171,6 +184,68 @@ pub async fn send_post_json_message(url: String, json_body: String, host_header:
         }
     } else {
         warn!("Error response from workflow invocation, {}", url);
+        return false;
+    }
+}
+
+pub async fn send_post_json_message_with_client(client: &reqwest::Client, url: String, json_body: String, host_header: String, workflow_state: String, async_exec: bool) -> bool {
+    let custom_headers: HeaderMap = generate_customer_headers(workflow_state);
+    let res;
+    if host_header.len() > 0 {
+        if async_exec == true {
+            res = client
+            .post(&url)
+            .header("Host", host_header.as_str())
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .query(&[("async", "true")])
+            .body(json_body)
+            .send()
+            .await;
+        } else {
+            res = client
+            .post(&url)
+            .header("Host", host_header.as_str())
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .body(json_body)
+            .send()
+            .await;
+        }
+    } else {
+        if async_exec == true {
+            res = client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .query(&[("async", "true")])
+            .body(json_body)
+            .send()
+            .await;
+        } else {
+            res = client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .headers(custom_headers)
+            .body(json_body)
+            .send()
+            .await;
+        }
+    }
+    if res.is_ok() {
+        let ret_body = res.unwrap().text().await;
+        if ret_body.is_ok() {
+            debug!("Response: {}", ret_body.unwrap());
+            return true;
+        } else {
+            debug!(
+                "Unable to get reponse body for workflow invocation, {}",
+                url
+            );
+            return false;
+        }
+    } else {
+        debug!("Error response from workflow invocation, {}", url);
         return false;
     }
 }

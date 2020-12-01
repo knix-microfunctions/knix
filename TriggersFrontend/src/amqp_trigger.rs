@@ -1,6 +1,8 @@
 #[allow(dead_code,unused,unused_must_use)]
 use crate::utils::create_delay;
 use crate::utils::send_post_json_message;
+use crate::utils::send_post_json_message_with_client;
+use crate::utils::should_ignore_message;
 use crate::utils::WorkflowInfo;
 use crate::CommandResponseChannel;
 use crate::TriggerCommand;
@@ -39,7 +41,7 @@ pub struct AMQPSubscriberInfo {
     with_ack: bool,     // False, by default
                         // False means no manual ack, hence means auto_ack
                         // This is converted to basic_consume option: no_ack = !with_ack
-                        
+    ignore_message_probability: f32,
 }
 
 pub struct AMQPTrigger {
@@ -157,6 +159,20 @@ pub async fn handle_create_amqp_trigger(
         return Err("One of the required fields, 'amqp_addr' or 'routing_key' is missing".into());
     }
 
+    let mut ignore_message_probability: f32 = 0.00;
+    if trigger_info.has_key("ignore_message_probability") {
+        match trigger_info["ignore_message_probability"].as_f32() {
+            Some(prob) => {
+                if prob >= 0.00 && prob < 100.0 {
+                    ignore_message_probability = prob;
+                } else {
+                    return Err("Unable to decode 'ignore_message_probability' as a float32 between [0.00, 100.0).".into());
+                }
+            }
+            None => return Err("Unable to decode 'ignore_message_probability' as a valid float32(between [0.00, 100.0).".into()),
+        }
+    }
+
     let amqp_sub_info = AMQPSubscriberInfo {
         amqp_addr: trigger_info["amqp_addr"].to_string(),
         routing_key: trigger_info["routing_key"].to_string(),
@@ -190,6 +206,7 @@ pub async fn handle_create_amqp_trigger(
         } else {
             false
         },
+        ignore_message_probability: ignore_message_probability,
     };
 
     let amqp_trigger = AMQPTrigger::spawn(
@@ -206,6 +223,7 @@ pub async fn handle_create_amqp_trigger(
 
 
 async fn send_amqp_data(
+    client: &reqwest::Client,
     workflows: Vec<WorkflowInfo>,
     amqp_data: std::vec::Vec<u8>,
     trigger_id: String,
@@ -232,7 +250,8 @@ async fn send_amqp_data(
                     trigger_id,
                     serialized_workflow_msg.as_ref().unwrap()
                 );
-                send_post_json_message(
+                send_post_json_message_with_client(
+                    client,
                     workflow_info.workflow_url,
                     serialized_workflow_msg.unwrap(),
                     "".into(),
@@ -394,6 +413,8 @@ pub async fn amqp_actor_loop(
     )
     .await;
 
+    let client = reqwest::Client::new();
+
     loop {
         tokio::select! {
             cmd = cmd_channel_rx.recv() => {
@@ -466,9 +487,11 @@ pub async fn amqp_actor_loop(
                             Ok((chan, amqp_msg)) => {
                                 trigger_count += 1;
                                 if workflows.len() > 0 {
-                                    let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
-                                    //tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key)).await;
-                                    send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key).await; 
+                                    if should_ignore_message(amqp_sub_info.ignore_message_probability) == false {
+                                        let actual_routing_key: String = amqp_msg.routing_key.as_str().to_string() ;
+                                        //tokio::spawn(send_amqp_data(workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key)).await;
+                                        send_amqp_data(&client, workflows.clone(), amqp_msg.data, trigger_id.clone(), trigger_name.clone(), actual_routing_key).await;     
+                                    }
                                 }
                             }
                             Err(e) => {

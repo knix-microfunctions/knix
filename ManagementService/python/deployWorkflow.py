@@ -281,13 +281,12 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
     except IOError as e:
         raise Exception("Unable to load "+ksvc_file+". Ensure that the configmap has been setup properly", e)
 
-    # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters
-    wfNameSanitized = 'wf-' + workflow_info["workflowId"].replace('@', '-').replace('_', '-').replace('/','-').lower() + '-wf'
-    #wfActualNameSanitized = 'wf-' + workflow_info["workflowName"].replace('@', '-').replace('_', '-').replace('/','-').lower() + '-wf'
-    if len(wfNameSanitized) > 63:
-       print("Error creating kubernetes deployment for "+email+" "+workflow_info["workflowId"] + ", workflow name too long")
- 
-    emailSanitized = 'u-' + email.replace('@', '-').replace('_', '-').lower() + '-u'
+    # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters (and not be greater than 63 chars)
+    workflowNameForLabel = workflow_info["workflowName"].replace('@', '-').replace('_', '-').replace('/', '-').lower()
+    wfNameSanitized = 'w-' + workflowNameForLabel[:59] + '-w'
+
+    emailForLabel = email.replace('@', '-').replace('_', '-').lower()
+    emailSanitized = 'u-' + emailForLabel[:59] + '-u'
     # Pod, Deployment and Hpa names for the new workflow will have a prefix containing the workflow name and user name
     app_fullname_prefix = ''
     if 'app.fullname.prefix' in new_workflow_conf:
@@ -327,19 +326,31 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
         # overwrite values from values.yaml for new workflows
         #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
         #kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
-        kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox_java" 
+        # only change the image name
+        imageName = kservice['spec']['template']['spec']['containers'][0]['image']
+        imageRepoName = imageName.split("/")[0]
+        #kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox_java" 
+
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_java" 
 
     if not management and use_gpus == 0. and runtime=="Python": # non gpu python function
         # overwrite values from values.yaml for new workflows
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
-        kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox" 
+        imageName = kservice['spec']['template']['spec']['containers'][0]['image']
+        imageRepoName = imageName.split("/")[0]
+        #kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox" 
+
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox" 
 
     if not management and use_gpus > 0. and runtime=="Python": # gpu using python function
         # overwrite values from values.yaml for new workflows
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
-        kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox_gpu" 
+        imageName = kservice['spec']['template']['spec']['containers'][0]['image']
+        imageRepoName = imageName.split("/")[0]
+        # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox_gpu" 
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_gpu" 
      
     # Special handling for the management container: never run on gpu
     if management:
@@ -360,7 +371,11 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
         if (labels['workflowid'] == "Management"):
             kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = "0"
             kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = "0"
-            kservice['spec']['template']['spec']['containers'][0]['image'] = "localhost:5000/microfn/sandbox"  
+            imageName = kservice['spec']['template']['spec']['containers'][0]['image']
+            imageRepoName = imageName.split("/")[0]
+            # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox"  
+
+            kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox"  
 
         if 'HTTP_GATEWAYPORT' in new_workflow_conf:
             env.append({'name': 'HTTP_GATEWAYPORT', 'value': new_workflow_conf['HTTP_GATEWAYPORT']})

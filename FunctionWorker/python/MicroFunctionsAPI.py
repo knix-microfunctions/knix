@@ -2026,7 +2026,8 @@ class MicroFunctionsAPI:
                     exchange (string), "egress_exchange" (default)
                     with_ack (boolean), False (default) - means automatic acks,
                     durable (boolean), False (default),
-                    exclusive (boolean), False (default)
+                    exclusive (boolean), False (default),
+                    ignore_message_probability (float, range = [0.0, 100.0)), 0.0 (default),
                 For 'timer', 
                     timer_interval_ms: specified in milli-seconds.
             }

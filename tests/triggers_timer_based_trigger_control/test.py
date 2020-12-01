@@ -35,7 +35,7 @@ print("Publisher is ready")
 
 class TriggersAmqpTest(unittest.TestCase):
     # @unittest.skip("")
-    def test_triggers_storage(self):
+    def test_triggers_timer_based_trigger_control(self):
         test = MFNTest(test_name='triggers_timer_based_trigger_control',
                        workflow_filename='wf_triggers_timer_based_trigger_control.json')
 

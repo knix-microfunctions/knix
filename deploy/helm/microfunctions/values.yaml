@@ -19,7 +19,7 @@
 #------------------------------------------------------------------------------
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
-imageRepo: "localhost:5000"
+imageRepo: "192.168.8.161:5000"
 #imageRepo: "registry.kube-system.svc.cluster.local"
 manager:
   #httpProxy: "http://<host>:<port>"
@@ -59,7 +59,7 @@ manager:
   managementSandbox:
     resources:
       limits:
-        cpu: 1
+        cpu: 4
         memory: 4Gi
       requests:
         cpu: 1
@@ -79,10 +79,10 @@ datalayer:
   javaOpts: "-Xmx4096m"
   resources:
     limits:
-      cpu: 1
+      cpu: 4
       memory: 8Gi
     requests:
-      cpu: 1
+      cpu: 4
       memory: 8Gi
 
 #------------------------------------------------------------------------------
@@ -98,12 +98,12 @@ riak:
   ClientPortProtobuf: 8087
   resources:
     limits:
-      cpu: 1 
-      memory: 4Gi
+      cpu: 2 
+      memory: 8Gi
     requests:
-      cpu: 1
-      memory: 4Gi
-  DataStorage: 4Gi
+      cpu: 2
+      memory: 8Gi
+  DataStorage: 8Gi
   #DataStorageClass: local-volume 
   ClusterName: "riak"
   WaitForErlang: 180
@@ -114,8 +114,8 @@ riak:
   LevelDbMaximumMemory: 4294967296
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
-  ErlangSchedulersTotal: 1
-  ErlangSchedulersOnline: 1
+  ErlangSchedulersTotal: 2
+  ErlangSchedulersOnline: 2
   ErlangSchedulersForceWakeupInterval: 500
   ErlangSchedulersCompactionOfLoad: "false"
 
@@ -177,8 +177,8 @@ triggersFrontend:
   statusReportIntervalSec: 30
   resources:
     limits:
-      cpu: 1
+      cpu: 2
       memory: 8Gi
     requests:
-      cpu: 1
+      cpu: 2
       memory: 1Gi

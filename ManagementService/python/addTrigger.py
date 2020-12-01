@@ -17,6 +17,7 @@ import random
 import requests
 import traceback
 import sys
+import time
 
 MAP_AVAILABLE_FRONTENDS = "available_triggers_frontned_map"
 MAP_TRIGGERS_TO_INFO = "triggers_to_info_map"
@@ -106,7 +107,15 @@ def validate_and_get_trigger_info(trigger_info):
         if "exclusive" in trigger_info and type(trigger_info["exclusive"]) is not type(True):
             return False, "exclusive is not a boolean", {}
         completed_trigger_info["exclusive"] = trigger_info["exclusive"] if "exclusive" in trigger_info else False
-        
+
+        if "ignore_message_probability" in trigger_info and type(trigger_info["ignore_message_probability"]) is not type(1.0):
+            return False, "ignore_message_probability is not a float in the range [0.0, 100.0)", {}
+        elif "ignore_message_probability" in trigger_info and (trigger_info["ignore_message_probability"] < 0.0 or trigger_info["ignore_message_probability"] >= 100.0):
+            return False, "ignore_message_probability is not a float in the range [0.0, 100.0)", {}
+        else:
+            pass
+        completed_trigger_info["ignore_message_probability"] = trigger_info["ignore_message_probability"] if "ignore_message_probability" in trigger_info else 0.0
+
         return True, "Valid amqp trigger info", "amqp", completed_trigger_info
 
     elif trigger_info["trigger_type"] == "timer":
@@ -284,6 +293,7 @@ def handle(value, context):
     return response
 
 def select_random_active_frontend(tf_hosts):
+    random.seed(time.time())
     selected_tf = ""
     while len(tf_hosts) > 0:
         tf_ip_port = tf_hosts[random.randint(0,len(tf_hosts)-1)]
