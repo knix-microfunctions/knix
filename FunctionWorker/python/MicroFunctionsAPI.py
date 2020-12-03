@@ -1993,6 +1993,11 @@ class MicroFunctionsAPI:
                   '<table-name-1>': '',
                   '<table-name-2>': '',
                   ...
+              },
+              'associatedTriggers': {
+                  '<trigger-name-1>': '' or '<local-queue-topic-name-of-a-state>',
+                  '<trigger-name-2>': '' or '<local-queue-topic-name-of-a-state>',
+                  ...
               }
           }
         }

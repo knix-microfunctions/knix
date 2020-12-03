@@ -148,11 +148,17 @@ def getWorkflowDetailsAndEndpointsWithRetry(email, wf_id, workflowname, sapi):
                         break
                     else:
                         print("[getWorkflowDetailsAndEndpointsWithRetry] No endpoint found for workflow: " + workflowname + "(" + email + ")")
+                else:
+                    print("[getWorkflowDetailsAndEndpointsWithRetry] Not waiting since workflow status is: " + wf["status"] + ", for workflow: " + workflowname + "(" + email + ")")
+                    break
             except Exception as e:
-                print("[getWorkflowDetailsAndEndpointsWithRetry] Exception: " + str(e) + ", for workflow: " + workflowname + "(" + email + ")")
-                pass
+                print("[getWorkflowDetailsAndEndpointsWithRetry] Not waiting, Exception: " + str(e) + ", for workflow: " + workflowname + "(" + email + ")")
+                break
+        else:
+            print("[getWorkflowDetailsAndEndpointsWithRetry] Not waiting since workflow info not found for workflow: " + workflowname + "(" + email + ")")
+            break
 
-        if c < 5:
+        if c < 10:
             print("[getWorkflowDetailsAndEndpointsWithRetry] Retrying after 1 sec for workflow: " + workflowname + "(" + email + ")")
             time.sleep(1.0)
         else:
