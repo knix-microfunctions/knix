@@ -143,7 +143,8 @@ def getWorkflowDetailsAndEndpointsWithRetry(email, wf_id, workflowname, sapi):
             try:
                 wf = json.loads(wf_str)
                 if wf["status"] == "deployed" or wf["status"] == "deploying":
-                    if "endpoints" in wf and type(wf["endpoints"]) == type([]) and len(wf["endpoints"]) > 0:
+                    endpoints = list(sapi.retrieveSet(wf_id + "_workflow_endpoints", is_private=True))
+                    if type(endpoints) == type([]) and len(endpoints) > 0:
                         print("[getWorkflowDetailsAndEndpointsWithRetry] Endpoint found for workflow: " + workflowname + "(" + email + ")")
                         break
                     else:
@@ -187,8 +188,7 @@ def isWorkflowPresentAndDeployed(email, workflowname, sapi):
             details["id"] = wf_id
             wf_status = sapi.get("workflow_status_" + wf_id, True)
             details["status"] = wf_status
-            if "endpoints" in wf:
-                details["endpoints"] = wf["endpoints"]
+            details["endpoints"] = list(sapi.retrieveSet(wf_id + "_workflow_endpoints", is_private=True))
             if "modified" in wf:
                 details["modified"] = wf["modified"]
             if "associatedTriggerableTables" in wf:
