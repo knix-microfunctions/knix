@@ -393,7 +393,7 @@ public class RiakAccess {
 			}
 			
 			Namespace bucket = new Namespace(tableType, keyspace + ";" + table);
-			StoreBucketProperties props = new StoreBucketProperties.Builder(bucket).withNVal(replicationFactor).withW(replicationFactor).build();
+			StoreBucketProperties props = new StoreBucketProperties.Builder(bucket).withNVal(replicationFactor).withW(replicationFactor).withR(replicationFactor).build();
 			client.execute(props);
 			LOGGER.info("createTableWithType() Keyspace: " + keyspace + "  Table: " + table + "  TableType: " + tableType);
 			boolean success = this.insertRow(keyspace, null, table, ByteBuffer.wrap(tableType.getBytes(StandardCharsets.UTF_8)));
