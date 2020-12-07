@@ -45,9 +45,6 @@
     var storageLoc = sharedProperties.getStorageLocation();
     var storage_data_types = ["kv", "map", "set", "counter"];
 
-
-    $scope.workflows = sharedData.getWorkflows();
-
     $scope.workflows = sharedData.getWorkflows();
 
     getBucketList();
@@ -660,40 +657,40 @@
         $http(req).then(function successCallback(response) {
           if (response.data.status=="success") {
             console.log('Storage object successfully created (background).');
-            $scope.reloadStorageObjects(data_type);
-          } else {
-            console.log("Failure status returned by action (background)");
-            console.log(response.data);
-          }
-        }, function errorCallback(response) {
-          console.log("Error occurred during action (background)");
-          console.log("Response:" + response);
-        });
+                // then, clear
+                param_storage["parameters"]["action"] = "clear" + data_type;
+                if (data_type == "map")
+                {
+                    delete param_storage["parameters"]["key"];
+                    delete param_storage["parameters"]["value"];
+                }
+                else if (data_type == "set")
+                {
+                    delete param_storage["parameters"]["item"];
+                }
 
-        // then, clear
-        param_storage["parameters"]["action"] = "clear" + data_type;
-        if (data_type == "map")
-        {
-            delete param_storage["parameters"]["key"];
-            delete param_storage["parameters"]["value"];
-        }
-        else if (data_type == "set")
-        {
-            delete param_storage["parameters"]["item"];
-        }
+                var req2 = {
+                 method: 'POST',
+                 url: urlPath,
+                 headers: {
+                   'Content-Type': 'application/json'
+                 },
+                 data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
+                }
 
-        var req2 = {
-         method: 'POST',
-         url: urlPath,
-         headers: {
-           'Content-Type': 'application/json'
-         },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
-        }
+                $http(req2).then(function successCallback(response) {
+                  if (response.data.status=="success") {
+                    console.log('Storage object successfully cleared (background).');
+                    $scope.reloadStorageObjects(data_type);
+                  } else {
+                    console.log("Failure status returned by action (background)");
+                    console.log(response.data);
+                  }
+                }, function errorCallback(response) {
+                  console.log("Error occurred during action (background)");
+                  console.log("Response:" + response);
+                });
 
-        $http(req2).then(function successCallback(response) {
-          if (response.data.status=="success") {
-            console.log('Storage object successfully cleared (background).');
             $scope.reloadStorageObjects(data_type);
           } else {
             console.log("Failure status returned by action (background)");

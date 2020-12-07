@@ -68,7 +68,7 @@
           console.log('Storage object successfully downloaded.');
           $scope.mapEntries = response.data.data["mapentries"];
 
-          console.log("map entries: " + $scope.mapEntries);
+          console.log("map entries: %o", $scope.mapEntries);
 
           }
        }, function errorCallback(response) {
@@ -79,7 +79,7 @@
            } else {
              $scope.errorMessage = response;
            }
-           if (viewSetModalVisible) {
+           if (viewMapModalVisible) {
              $uibModal.open({
                animation: true,
                scope: $scope,
@@ -105,12 +105,12 @@
      };
 
       $scope.containsMapKey = function() {
-       var objectDataStr = $scope.aceSession.getDocument().getValue().trim();
+       var objectDataStr = document.getElementById("map_key").value;
        if (objectDataStr == "")
        {
            return undefined;
        }
-       if ($scope.mapEntries.indexOf(objectDataStr) != -1)
+       if (objectDataStr in $scope.mapEntries)
        {
            return true;
        }
@@ -123,22 +123,21 @@
     $scope.modifyMapEntries = function(modtype) {
       var mapname = sharedProperties.getMapName();
 
-       var objectDataStr = $scope.aceSession.getDocument().getValue().trim();
-       if (objectDataStr == "")
-       {
-           return;
-       }
-
-       console.log('Updating map: ' + mapname + " " + modtype + " " + objectDataStr);
-
       var param_storage = {};
       param_storage["data_type"] = "map";
       param_storage["parameters"] = {};
       param_storage["parameters"]["action"] = modtype + "mapentry";
       param_storage["parameters"]["mapname"] = mapname;
-      param_storage["parameters"]["key"] = objectDataStr;
-      param_storage["parameters"]["value"] = objectDataStr;
+      var map_key = document.getElementById("map_key").value;
+      param_storage["parameters"]["key"] = map_key;
+      if (modtype == "put")
+      {
+          var map_value = document.getElementById("map_value").value;
+          param_storage["parameters"]["value"] = map_value;
+      }
       param_storage["workflowid"] = storageLoc.id;
+
+      console.log('Updating map: ' + mapname + " " + modtype + ", key: " + map_key + ", value: " + map_value);
 
       var req = {
          method: 'POST',
@@ -159,7 +158,7 @@
            } else {
              console.log("Failure status returned by: " + modtype + "mapentry");
              $scope.errorMessage = "An error occured while saving your object.";
-             if (viewSetModalVisible) {
+             if (viewMapModalVisible) {
                $uibModal.open({
                  animation: true,
                  scope: $scope,
@@ -176,7 +175,7 @@
            } else {
              $scope.errorMessage = response;
            }
-           if (viewSetModalVisible) {
+           if (viewMapModalVisible) {
              $uibModal.open({
                animation: true,
                scope: $scope,
