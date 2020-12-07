@@ -129,6 +129,10 @@
       param_storage["parameters"]["action"] = modtype + "mapentry";
       param_storage["parameters"]["mapname"] = mapname;
       var map_key = document.getElementById("map_key").value;
+      if (map_key == "")
+      {
+          return;
+      }
       param_storage["parameters"]["key"] = map_key;
       if (modtype == "put")
       {
