@@ -125,11 +125,7 @@ data:
               {{- /* Disable scale to zero with a minScale of 1. */ -}}
               "autoscaling.knative.dev/minScale": "1",
               {{- /* Limit scaling to 100 pods. */ -}}
-              "autoscaling.knative.dev/maxScale": "5",
-              {{- /* KubeShare GPU-related configurations */ -}}
-              "kubeshare/gpu_request": "0.4",
-              "kubeshare/gpu_limit": "1.0",
-              "kubeshare/gpu_mem": "3145728000"
+              "autoscaling.knative.dev/maxScale": "5"
             },
             "labels": {
               "app": "microfunctions-workflow",

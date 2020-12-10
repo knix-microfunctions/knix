@@ -345,8 +345,8 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
 
     if not management and use_gpus > 0. and runtime=="Python": # gpu using python function
         # overwrite values from values.yaml for new workflows
-        kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
-        kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
+        ###kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
+        ###kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
         imageName = kservice['spec']['template']['spec']['containers'][0]['image']
         imageRepoName = imageName.split("/")[0]
         # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox_gpu" 
@@ -369,8 +369,8 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
         
         # management container should not consume a CPU and use standard sandbox image
         if (labels['workflowid'] == "Management"):
-            kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = "0"
-            kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = "0"
+            ###kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = "0"
+            ###kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = "0"
             imageName = kservice['spec']['template']['spec']['containers'][0]['image']
             imageRepoName = imageName.split("/")[0]
             # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox"  

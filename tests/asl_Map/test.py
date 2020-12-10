@@ -49,7 +49,8 @@ class MapStateTest(unittest.TestCase):
             et = time.time()
             print ("test duration (s): %s" % str(et-st))
 
-        for mc in range(4): # set maxConcurrency parameter
+        
+        for mc in range(0): # set maxConcurrency parameter
             """ creates and executes the Map state test workflow from the ASL description """
 
             testtuplelist = []
