@@ -169,7 +169,8 @@ data:
                   {"name": "MFN_HOSTNAME", "valueFrom": { "fieldRef": { "fieldPath": "spec.nodeName" }}},
                 */}}
                   {"name": "MFN_DATALAYER", "value": "datalayer.{{ .Release.Namespace }}.svc:{{ .Values.datalayer.port }}" },
-                  {"name": "MFN_ELASTICSEARCH", "value": {{ include "esConnect.url" . | quote }} }
+                  {"name": "MFN_ELASTICSEARCH", "value": {{ include "esConnect.url" . | quote }} },
+                  {"name": "MFN_MANAGEMENT", "value": "http://{{ include "nginx.mgmtService" . | regexFind "^[^.]+" }}.{{ .Release.Namespace }}.svc" }
                 ],
                 {{/* not allowed in KNative
                 "lifecycle": {"preStop": {"exec":{"command":["python3","/sand/SandboxAgent/shutdown.py"]}}},

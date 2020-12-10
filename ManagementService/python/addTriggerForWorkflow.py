@@ -133,6 +133,37 @@ def handle(value, context):
     print("[addTriggerForWorkflow] response: " + str(response))
     return response
 
+def getWorkflowDetailsAndEndpointsWithRetry(email, wf_id, workflowname, sapi):
+    c = 0
+    wf_str = ""
+    while True:
+        c = c + 1
+        wf_str = sapi.get(email + "_workflow_" + wf_id, True)
+        if wf_str is not None and wf_str != "":
+            try:
+                wf = json.loads(wf_str)
+                if wf["status"] == "deployed" or wf["status"] == "deploying":
+                    if "endpoints" in wf and type(wf["endpoints"]) == type([]) and len(wf["endpoints"]) > 0:
+                        print("[getWorkflowDetailsAndEndpointsWithRetry] Endpoint found for workflow: " + workflowname + "(" + email + ")")
+                        break
+                    else:
+                        print("[getWorkflowDetailsAndEndpointsWithRetry] No endpoint found for workflow: " + workflowname + "(" + email + ")")
+                else:
+                    print("[getWorkflowDetailsAndEndpointsWithRetry] Not waiting since workflow status is: " + wf["status"] + ", for workflow: " + workflowname + "(" + email + ")")
+                    break
+            except Exception as e:
+                print("[getWorkflowDetailsAndEndpointsWithRetry] Not waiting, Exception: " + str(e) + ", for workflow: " + workflowname + "(" + email + ")")
+                break
+        else:
+            print("[getWorkflowDetailsAndEndpointsWithRetry] Not waiting since workflow info not found for workflow: " + workflowname + "(" + email + ")")
+            break
+
+        if c < 10:
+            print("[getWorkflowDetailsAndEndpointsWithRetry] Retrying after 1 sec for workflow: " + workflowname + "(" + email + ")")
+            time.sleep(1.0)
+        else:
+            break
+    return wf_str
 
 def isWorkflowPresentAndDeployed(email, workflowname, sapi):
     workflows = sapi.get(email + "_list_workflows", True)
@@ -146,7 +177,8 @@ def isWorkflowPresentAndDeployed(email, workflowname, sapi):
     details = {}
     if workflowname in workflows:
         wf_id = workflows[workflowname]
-        wf = sapi.get(email + "_workflow_" + wf_id, True)
+        wf = getWorkflowDetailsAndEndpointsWithRetry(email, wf_id, workflowname, sapi)
+        # wf = sapi.get(email + "_workflow_" + wf_id, True)
         if wf is not None and wf != "":
             isWorkflowPresent = True
             wf = json.loads(wf)

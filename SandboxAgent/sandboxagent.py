@@ -182,20 +182,23 @@ class SandboxAgent:
 
         # get the management endpoints
         if not has_error:
-            self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
-            num_trials = 0
-            sleep_time = 1.0
-            while num_trials < 5 and (self._management_endpoints is None or self._management_endpoints == ""):
-                time.sleep(sleep_time)
-                self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
-                num_trials = num_trials + 1
-                sleep_time = sleep_time * 2
-
-            if num_trials == 5:
-                has_error = True
-                errmsg = "Could not retrieve management endpoints"
+            if 'KUBERNETES_SERVICE_HOST' in os.environ and 'MFN_MANAGEMENT' in os.environ and str(os.getenv("MFN_MANAGEMENT", "")) != "":
+                self._management_endpoints = [str(os.getenv("MFN_MANAGEMENT"))]
             else:
-                self._management_endpoints = json.loads(self._management_endpoints)
+                self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
+                num_trials = 0
+                sleep_time = 1.0
+                while num_trials < 5 and (self._management_endpoints is None or self._management_endpoints == ""):
+                    time.sleep(sleep_time)
+                    self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
+                    num_trials = num_trials + 1
+                    sleep_time = sleep_time * 2
+
+                if num_trials == 5:
+                    has_error = True
+                    errmsg = "Could not retrieve management endpoints"
+                else:
+                    self._management_endpoints = json.loads(self._management_endpoints)
 
 
 
