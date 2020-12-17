@@ -66,17 +66,23 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         print("----------------")
         print("Checkpoints: False")
 
-        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False)
+        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         #test.plot_latency_breakdown(COUNT_EXECUTIONS)
+
+        test.undeploy_workflow()
+        test.cleanup()
 
         test = MFNTest(test_name='chain_checkpoints', workflow_filename='wf_chain_checkpoints.json')
         print("----------------")
         print("Checkpoints: True")
 
-        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False)
+        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         #test.plot_latency_breakdown(COUNT_EXECUTIONS)
+
+        test.undeploy_workflow()
+        test.cleanup()
 
     def _get_and_print_statistics(self, test, logs, checkpoints_on):
         log = logs["log"]

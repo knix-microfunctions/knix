@@ -550,10 +550,6 @@ class PublicationUtils():
 
             encoded_result = self.encode_output(result)
 
-            encapsulated_result = self.encapsulate_output(encoded_result, self._metadata)
-
-            dlc.putMapEntry(self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_result)
-
             # publish a message to the 'exit' topic
             trigger = {}
             trigger["next"] = self._wf_exit
@@ -572,11 +568,8 @@ class PublicationUtils():
 
             if self._should_checkpoint:
                 timestamp_map["t_start_dlcbackup"] = time.time() * 1000.0
-                dlc = self.get_backup_data_layer_client()
-
                 timestamp_map["t_start_resultmap"] = time.time() * 1000.0
-                dlc.putMapEntry(self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
-                #self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
+                self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
 
             timestamp_map["t_start_storeoutput"] = time.time() * 1000.0
             # store self._sapi.transient_output into the data layer
