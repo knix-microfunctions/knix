@@ -90,6 +90,8 @@ class MicroFunctionsAPI:
         self._management_endpoints = management_endpoints
         self._useremail = useremail
         self._usertoken = usertoken
+        self._sid = sid
+        self._wid = wid
 
         self._data_layer_operator = DataLayerOperator(
             uid, sid, wid, self._datalayer)
@@ -1114,6 +1116,37 @@ class MicroFunctionsAPI:
                 "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def getKeys(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Args:
+            start_index (int): the starting index of the keys to be retrieved; default: 0
+            end_index (int): the end index of the keys to be retrieved; default: 2147483647
+            is_private (boolean): whether the keys should be retrieved from the private data layer of the workflow; default: False
+
+        Returns:
+            List of keys (list)
+
+        Raises:
+            MicroFunctionsDataLayerException: when start_index < 0 and/or end_index > 2147483647.
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for CRDTs).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        if start_index >= 0 and end_index <= 2147483647 and isinstance(is_private, bool):
+            return self._data_layer_operator.getKeys(start_index, end_index, is_private)
+        else:
+            errmsg = "MicroFunctionsAPI.getKeys(start_index, end_index) accepts indices between 0 and 2147483647 (defaults)."
+            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            raise MicroFunctionsDataLayerException(errmsg)
+
+    def listKeys(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getKeys(start_index, end_index, is_private)
+        '''
+        return self.getKeys(start_index, end_index, is_private)
+
     # map operations sanity checking
     def createMap(self, mapname, is_private=False, is_queued=False):
         # _XXX_: the backend at the data layer does not create
@@ -1391,6 +1424,12 @@ class MicroFunctionsAPI:
                 "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def listMaps(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getMapNames(start_index, end_index, is_private)
+        '''
+        return self.getMapNames(start_index, end_index, is_private)
+
     # set operations sanity checking
     def createSet(self, setname, is_private=False, is_queued=False):
         # _XXX_: the backend at the data layer does not create
@@ -1616,6 +1655,12 @@ class MicroFunctionsAPI:
                 "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def listSets(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getSetNames(start_index, end_index, is_private)
+        '''
+        return self.getSetNames(start_index, end_index, is_private)
+
     # counter operations sanity checking
     def createCounter(self, countername, count, is_private=False, is_queued=False):
         '''
@@ -1780,6 +1825,12 @@ class MicroFunctionsAPI:
             errmsg = errmsg + \
                 "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
+
+    def listCounters(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getCounterNames(start_index, end_index, is_private)
+        '''
+        return self.getCounterNames(start_index, end_index, is_private)
 
     def get_transient_data_output(self, is_private=False):
         '''
@@ -1991,6 +2042,11 @@ class MicroFunctionsAPI:
                   '<table-name-1>': '',
                   '<table-name-2>': '',
                   ...
+              },
+              'associatedTriggers': {
+                  '<trigger-name-1>': '' or '<local-queue-topic-name-of-a-state>',
+                  '<trigger-name-2>': '' or '<local-queue-topic-name-of-a-state>',
+                  ...
               }
           }
         }
@@ -2010,6 +2066,161 @@ class MicroFunctionsAPI:
                   ", Error message: " + str(message) + ", response: " + str(response))
             return None
         return response
+
+
+    def addTrigger(self, trigger_name, trigger_info):
+        '''
+        Args:
+            trigger_name (string): User provided name for the trigger. Should be unique within this user's account.
+            trigger_info (dict): Trigger specific information. {
+                trigger_type (string): Type of trigger to associate with a workflow. Currently supported values: "amqp", "timer",
+                For "amqp",
+                    amqp_addr (string) 
+                    routing_key (string), 
+                    exchange (string), "egress_exchange" (default)
+                    with_ack (boolean), False (default) - means automatic acks,
+                    durable (boolean), False (default),
+                    exclusive (boolean), False (default),
+                    ignore_message_probability (float, range = [0.0, 100.0)), 0.0 (default),
+                For 'timer', 
+                    timer_interval_ms: specified in milli-seconds.
+            }
+        Returns:
+            (status, status_message)
+            status (boolean) - True, if the trigger was created successfully. False, otherwise 
+            status_message (string) - status message, depending on 'status'
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for message queue triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        request = \
+            {
+                "action": "addTrigger",
+                "data": {
+                    "trigger_name": trigger_name,
+                    "trigger_info": trigger_info
+                }
+            }
+
+        status, message, response = self._invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            error_msg = str(message) + ", response: " + str(response)
+            print("Error: Unable to create trigger " + trigger_name + " with information: " + str(trigger_info) + ", Error message: " + error_msg)
+            return False, error_msg
+        return True, response["data"]["message"]
+
+
+    def addTriggerForWorkflow(self, trigger_name, workflow_name, workflow_state = ""):
+        '''
+        Args:
+            trigger_name (string): Name of an existing trigger to a workflow to.
+            workflow_name (string): Name of the workflow to add to the trigger.
+            workflow_state (string): (Optional) Name of the state within the workflow to invoke from the trigger. If not specified then the entry state will be invoked by default.
+        Returns:
+            (status, status_message)
+            status (boolean) - True, if the workflow was added to the trigger successfully. False, otherwise 
+            status_message (string) - status message, depending on 'status'
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for message queue triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        workflow_state_topic = ""
+        if type(workflow_state) == type("") and workflow_state is not "" and len(workflow_state) > 0:
+            workflow_state_topic = self._sid + "-" + self._wid + "-" + workflow_state
+        
+        request = \
+            {
+                "action": "addTriggerForWorkflow",
+                "data": {
+                    "trigger_name": trigger_name,
+                    "workflow_name": workflow_name,
+                    "workflow_state": workflow_state_topic
+                }
+            }
+
+        status, message, response = self._invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            error_msg = str(message) + ", response: " + str(response)
+            print("Error: Unable to add trigger " + trigger_name + " for workflow " + workflow_name + ", Error message: " + error_msg)
+            return False, error_msg
+        return True, response["data"]["message"]
+
+
+    def deleteTriggerForWorkflow(self, trigger_name, workflow_name):
+        '''
+        Args:
+            trigger_name (string): Name of the trigger from which to remove a workflow.
+            workflow_name (string): Name of the workflow to remove from the trigger.
+        Returns:
+            (status, status_message)
+            status (boolean) - True, if the workflow was remove from this trigger successfully. False, otherwise 
+            status_message (string) - status message or error message, depending on 'status'
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for message queue triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+        '''
+        request = \
+            {
+                "action": "deleteTriggerForWorkflow",
+                "data": {
+                    "trigger_name": trigger_name,
+                    "workflow_name": workflow_name
+                    }
+            }
+
+        status, message, response = self._invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            error_msg = str(message) + ", response: " + str(response)
+            print("Error: Unable to remove workflow: " + workflow_name + " from the trigger: " + trigger_name + ", Error message: " + error_msg)
+            return False, error_msg
+        return True, response["data"]["message"]
+
+    def deleteTrigger(self, trigger_name):
+        '''
+        Args:
+            trigger_name (string): Name of an existing trigger to delete
+        Returns:
+            (status, status_message)
+            status (boolean) - True, if the trigger was deleted successfully. False, otherwise 
+            status_message (string) - status message, depending on 'status'
+        Raises:
+            None
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for message queue triggers).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        request = \
+            {
+                "action": "deleteTrigger",
+                "data": {
+                    "trigger_name": trigger_name
+                }
+            }
+
+        status, message, response = self._invoke_management_api(request)
+
+        if status == False or response["status"] != 'success':
+            error_msg = str(message) + ", response: " + str(response)
+            print("Error: Unable to delete trigger " + trigger_name + ", Error message: " + error_msg)
+            return False, error_msg
+        return True, response["data"]["message"]
+
 
     def _invoke_management_api(self, request):
         status = False

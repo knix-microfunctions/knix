@@ -60,6 +60,7 @@ service MicroFunctionsAPIService {
     void put(1: string key, 2: string value, 3: bool is_private, 4: bool is_queued),
     string get(1: string key, 2: bool is_private),
     void remove(1: string key, 2: bool is_private, 3: bool is_queued),
+    list<string> getKeys(1: i32 start_index, 2: i32 end_index, 3: bool is_private),
 
     void createMap(1: string mapname, 2: bool is_private, 3: bool is_queued),
     void putMapEntry(1: string mapname, 2: string key, 3: string value, 4: bool is_private, 5: bool is_queued),

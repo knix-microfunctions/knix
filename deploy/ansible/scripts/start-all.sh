@@ -55,4 +55,10 @@ then
     ./nginx/start.sh; sleep 2
 fi
 
-echo "MFN Started"
+if [ -e ./triggers_frontend/start.sh ]
+then
+    echo "Starting triggers frontend"
+    ./triggers_frontend/start.sh; sleep 2
+fi
+
+echo "KNIX Started"

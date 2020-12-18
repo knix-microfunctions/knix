@@ -40,10 +40,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.server.TServer;
-import org.apache.thrift.server.TThreadedSelectorServer;
+import org.apache.thrift.server.TThreadPoolServer;
+//import org.apache.thrift.server.TThreadedSelectorServer;
 import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TNonblockingServerSocket;
-import org.apache.thrift.transport.TNonblockingServerTransport;
+import org.apache.thrift.transport.TServerSocket;
+import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.microfunctions.data_layer.DataLayerService.Iface;
 
@@ -65,8 +66,9 @@ public class DataLayerServer implements Iface, Callable<Object> {
 	private static final List<AbstractMap.SimpleEntry<String, Integer>> NO_KEYSPACES = new ArrayList<AbstractMap.SimpleEntry<String, Integer>>(0);
 	private static final List<String> NO_KEYS = new ArrayList<String>(0);
 	
-	public static final int DEFAULT_SELECTOR_THREADS = 50; //Math.max(2, 2 * Runtime.getRuntime().availableProcessors());
-    public static final int DEFAULT_WORKER_THREADS = 100;  //Math.max(4, 4 * Runtime.getRuntime().availableProcessors());
+//	public static final int DEFAULT_SELECTOR_THREADS = 50; //Math.max(2, 2 * Runtime.getRuntime().availableProcessors());
+//    public static final int DEFAULT_WORKER_THREADS = 100;  //Math.max(4, 4 * Runtime.getRuntime().availableProcessors());
+	public static final int DEFAULT_MAX_WORKER_THREADS = Integer.MAX_VALUE;
 	public static final int DEFAULT_CLIENT_TIMEOUT = 0;
 	public static final int DEFAULT_MAX_FRAME_LENGTH = Integer.MAX_VALUE;
 	
@@ -1625,7 +1627,7 @@ public class DataLayerServer implements Iface, Callable<Object> {
 
 
 	public void start(InetSocketAddress bindAddr) throws TTransportException {
-	    TNonblockingServerTransport transport = new TNonblockingServerSocket(bindAddr, DEFAULT_CLIENT_TIMEOUT);
+/*	    TServerTransport transport = new TServerSocket(bindAddr, DEFAULT_CLIENT_TIMEOUT);
         TThreadedSelectorServer.Args args = new TThreadedSelectorServer.Args(transport)
                 .transportFactory(new TFramedTransport.Factory(DEFAULT_MAX_FRAME_LENGTH))
                 .protocolFactory(new TCompactProtocol.Factory())
@@ -1633,6 +1635,14 @@ public class DataLayerServer implements Iface, Callable<Object> {
                 .selectorThreads(DEFAULT_SELECTOR_THREADS)
                 .workerThreads(DEFAULT_WORKER_THREADS);
         server = new TThreadedSelectorServer(args);
+*/        
+        TServerTransport transport = new TServerSocket(bindAddr, DEFAULT_CLIENT_TIMEOUT);
+        TThreadPoolServer.Args args = new TThreadPoolServer.Args(transport)
+                .transportFactory(new TFramedTransport.Factory(DEFAULT_MAX_FRAME_LENGTH))
+                .protocolFactory(new TCompactProtocol.Factory())
+                .processor(new DataLayerService.Processor<Iface>(this))
+                .maxWorkerThreads(DEFAULT_MAX_WORKER_THREADS);
+        server = new TThreadPoolServer(args);
 
 		LOGGER.info("Listening on "+bindAddr);
 		server.serve();

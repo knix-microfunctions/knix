@@ -64,11 +64,12 @@ def getWorkflowDetails(email, workflowname, sapi):
     details["name"] = workflowname
     details["id"] = wf_id
     details["status"] = wf_status
-    if "endpoints" in wf:
-        details["endpoints"] = wf["endpoints"]
+    details["endpoints"] = list(sapi.retrieveSet(wf_id + "_workflow_endpoints", is_private=True))
     if "modified" in wf:
         details["modified"] = wf["modified"]
     if "associatedTriggerableTables" in wf:
         details["associatedTriggerableTables"] = wf["associatedTriggerableTables"]
+    if "associatedTriggers" in wf:
+        details["associatedTriggers"] = wf["associatedTriggers"]
 
     return details

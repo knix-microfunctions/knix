@@ -43,6 +43,9 @@ var app = angular.module('MfnWebConsole', [
     var workflowName = '';
     var workflowUrl = '';
     var objectKey = '';
+    var counterName = '';
+    var mapName = '';
+    var setName = '';
     var codeError = '';
     var storageLocation = { };
 
@@ -112,6 +115,25 @@ var app = angular.module('MfnWebConsole', [
         setObjectKey: function(key) {
           objectKey = key;
         },
+        getMapName: function() {
+          return mapName;
+        },
+        setMapName: function(name) {
+          mapName = name;
+        },
+        getSetName: function() {
+          return setName;
+        },
+        setSetName: function(name) {
+          setName = name;
+        },
+        getCounterName: function() {
+          return counterName;
+        },
+        setCounterName: function(name) {
+          counterName = name;
+        },
+
         getCodeError: function() {
           return codeError;
         },
@@ -131,7 +153,10 @@ var app = angular.module('MfnWebConsole', [
 app.factory('sharedData', function(){
   var functions = [ ];
   var workflows = [ ];
-  var storageObjects = [ ];
+  var storageObjects = [];
+  var storageObjectsMaps = [];
+  var storageObjectsSets = [];
+  var storageObjectsCounters = [];
   var workflowExecutionInputEditor = new Map();
   var workflowExecutionInput = new Map();
   return {
@@ -152,6 +177,24 @@ app.factory('sharedData', function(){
     },
     setStorageObjects: function(storageObjects) {
       this.storageObjects = storageObjects;
+    },
+    getStorageObjectsMaps: function () {
+        return this.storageObjectsMaps;
+    },
+    setStorageObjectsMaps: function(storageObjects) {
+      this.storageObjectsMaps = storageObjects;
+    },
+    getStorageObjectsSets: function () {
+        return this.storageObjectsSets;
+    },
+    setStorageObjectsSets: function(storageObjects) {
+      this.storageObjectsSets = storageObjects;
+    },
+    getStorageObjectsCounters: function () {
+        return this.storageObjectsCounters;
+    },
+    setStorageObjectsCounters: function(storageObjects) {
+      this.storageObjectsCounters = storageObjects;
     },
     getWorkflowExecutionInput: function (id) {
         if (workflowExecutionInput && workflowExecutionInput.has(id)) {
@@ -187,7 +230,7 @@ app.run(function ($rootScope, $window, $cookies) {
       $window.location.href="auth.html";
 
     }
-   
+
   });
 
 });

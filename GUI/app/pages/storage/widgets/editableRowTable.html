@@ -18,14 +18,14 @@
 
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-    <button class="btn btn-primary" ng-click="addStorageObject()">Add Object</button>&nbsp;&nbsp;<a href="#/bucketList"><button class="btn btn-primary" ng-click="" style="background-color: #969696; border-color: #969696;">Manage Buckets</button></a>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects()">Refresh</button>
+    <button class="btn btn-primary" ng-click="addStorageObject('kv')">Add Object</button>&nbsp;&nbsp;<a href="#/storage/bucketList"><button class="btn btn-primary" ng-click="" style="background-color: #969696; border-color: #969696;">Manage Triggerable Buckets</button></a>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('kv')">Refresh</button>
   </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
-  
+
   </td>
   </tr>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;">
     <div style="width:100%">
-      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item)" class="btn-group bootstrap-select form-control">
+      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item, 'kv')" class="btn-group bootstrap-select form-control">
         <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.type}}</ui-select-match>
         <ui-select-choices repeat="item in storageLocations | filter: $select.search">
           <div ng-bind-html="item.name | highlight: $select.search"></div>
@@ -51,28 +51,21 @@
           {{ storageObject.key || 'empty' }}
         </span>
     </td>
-
     <td>
-      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="createNewStorageObject(storageObject);" class="form-buttons form-inline"
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="createNewStorageObject(storageObject, 'kv');" class="form-buttons form-inline"
             shown="inserted == storageObject">
         <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
           Save
         </button>
 
-
-        <button type="button" ng-disabled="rowform.$waiting" ng-click="rowform.$cancel();reloadStorageObjects();" class="btn btn-default editable-table-button btn-xs">
+        <button type="button" ng-disabled="rowform.$waiting" ng-click="rowform.$cancel();reloadStorageObjects('kv');" class="btn btn-default editable-table-button btn-xs">
           Cancel
         </button>
       </form>
       <div class="buttons" ng-show="!rowform.$visible">
-
-
-
-        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObjects[getIndex(storageObject)].key)">Edit</button>
-        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px; background-color: #757a74; border-color: #757a74;" data-toggle="modal" ng-click="downloadStorageObject(storageObjects[getIndex(storageObject)].key)">Download</button>
-        <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject))">Delete</button>
-
-
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObjects[getIndex(storageObject, 'kv')].key)">Edit</button>
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px; background-color: #757a74; border-color: #757a74;" data-toggle="modal" ng-click="downloadStorageObject(storageObjects[getIndex(storageObject, 'kv')].key)">Download</button>
+        <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject, 'kv'), 'kv')">Delete</button>
       </div>
     </td>
   </tr>

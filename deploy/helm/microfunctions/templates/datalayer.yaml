@@ -81,6 +81,8 @@ spec:
           value: "0.0.0.0:{{ .Values.datalayer.port }}"
         - name: ALL_DATALAYER_BIND
           value: {{ include "dlConnect" . | quote }}
+        - name: JAVA_OPTS
+          value: "{{ .Values.datalayer.javaOpts }}"
         ports:
         - containerPort: {{ .Values.datalayer.port }}
           name: datalayer
@@ -88,6 +90,7 @@ spec:
           tcpSocket:
             port: {{ .Values.datalayer.port }}
           initialDelaySeconds: {{ .Values.datalayer.initialDelaySeconds }}
+          periodSeconds: 10
           timeoutSeconds: 30
           failureThreshold: 10
         resources:

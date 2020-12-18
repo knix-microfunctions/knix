@@ -67,7 +67,7 @@ counter_trigger(RiakObject) ->
 
         case ShouldTrigger of
           true -> 
-            HeaderAction = "Post-Parallel",
+            HeaderAction = "post-parallel",
             {HeaderActionData, Endpoint} = generate_header_action_data(CounterValue, Metadata),
             io:format(?LOG_PREFIX ++ "HeaderActionData:~p~n", [HeaderActionData]),
             Url = string:concat(binary_to_list(Endpoint), "?async=1"),
@@ -86,8 +86,8 @@ counter_trigger(RiakObject) ->
 publish_http_message(Url, HeaderAction, HeaderActionData) ->
     io:format(?LOG_PREFIX ++ "[publish_http_message] Url:~p~n", [Url]),
     
-    io:format(?LOG_PREFIX ++ "[publish_http_message] Request:~p~n", [{Url, [{"X-MFN-Action", HeaderAction}, {"X-MFN-Action-Data", binary_to_list(HeaderActionData)}], "application/json", ""}]),
-    {ErlangStatus, ReqResult} = httpc:request(post, {Url, [{"X-MFN-Action", HeaderAction}, {"X-MFN-Action-Data", binary_to_list(HeaderActionData)}], "application/json", ""}, [], []),
+    io:format(?LOG_PREFIX ++ "[publish_http_message] Request:~p~n", [{Url, [{"x-mfn-action", HeaderAction}, {"x-mfn-action-data", binary_to_list(HeaderActionData)}], "application/json", ""}]),
+    {ErlangStatus, ReqResult} = httpc:request(post, {Url, [{"x-mfn-action", HeaderAction}, {"x-mfn-action-data", binary_to_list(HeaderActionData)}], "application/json", ""}, [], []),
     case ErlangStatus of
         error -> 
             io:format(?LOG_PREFIX ++ "[publish_http_message] Could not publish. Error:~p~n", [ReqResult]),
@@ -204,7 +204,7 @@ test() ->
 
     case ShouldTrigger of
         true -> 
-            HeaderAction = "Post-Parallel",
+            HeaderAction = "post-parallel",
             {HeaderActionData, Endpoint} = generate_header_action_data(CounterValue, Metadata),
             io:format(?LOG_PREFIX ++ "HeaderActionData:~p~n", [HeaderActionData]),
             Url = string:concat(binary_to_list(Endpoint), "?async=1"),

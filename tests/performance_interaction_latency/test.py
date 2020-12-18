@@ -37,7 +37,7 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
     #@unittest.skip("")
     def test_function_interaction_latency(self):
         test = MFNTest(test_name='function_interaction_latency_checkpoints_off', workflow_filename='wf_function_interaction_latency_checkpoints_off.json')
-        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False)
+        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         logs = test.get_workflow_logs(num_lines=1000)
 
@@ -45,8 +45,11 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
 
         #test.plot_latency_breakdown(COUNT_EXECUTIONS)
 
+        test.undeploy_workflow()
+        test.cleanup()
+
         test = MFNTest(test_name='function_interaction_latency_checkpoints_on', workflow_filename='wf_function_interaction_latency_checkpoints_on.json')
-        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False)
+        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         logs = test.get_workflow_logs(num_lines=1000)
 
@@ -54,23 +57,32 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
 
         #test.plot_latency_breakdown(COUNT_EXECUTIONS)
 
+        test.undeploy_workflow()
+        test.cleanup()
+
     #@unittest.skip("")
     def test_chain_response_latency(self):
         test = MFNTest(test_name='chain_checkpoints_off', workflow_filename='wf_chain_checkpoints_off.json')
         print("----------------")
         print("Checkpoints: False")
 
-        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False)
+        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         #test.plot_latency_breakdown(COUNT_EXECUTIONS)
+
+        test.undeploy_workflow()
+        test.cleanup()
 
         test = MFNTest(test_name='chain_checkpoints', workflow_filename='wf_chain_checkpoints.json')
         print("----------------")
         print("Checkpoints: True")
 
-        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False)
+        test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         #test.plot_latency_breakdown(COUNT_EXECUTIONS)
+
+        test.undeploy_workflow()
+        test.cleanup()
 
     def _get_and_print_statistics(self, test, logs, checkpoints_on):
         log = logs["log"]

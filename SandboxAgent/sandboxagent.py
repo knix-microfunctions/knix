@@ -182,20 +182,23 @@ class SandboxAgent:
 
         # get the management endpoints
         if not has_error:
-            self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
-            num_trials = 0
-            sleep_time = 1.0
-            while num_trials < 5 and (self._management_endpoints is None or self._management_endpoints == ""):
-                time.sleep(sleep_time)
-                self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
-                num_trials = num_trials + 1
-                sleep_time = sleep_time * 2
-
-            if num_trials == 5:
-                has_error = True
-                errmsg = "Could not retrieve management endpoints"
+            if 'KUBERNETES_SERVICE_HOST' in os.environ and 'MFN_MANAGEMENT' in os.environ and str(os.getenv("MFN_MANAGEMENT", "")) != "":
+                self._management_endpoints = [str(os.getenv("MFN_MANAGEMENT"))]
             else:
-                self._management_endpoints = json.loads(self._management_endpoints)
+                self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
+                num_trials = 0
+                sleep_time = 1.0
+                while num_trials < 5 and (self._management_endpoints is None or self._management_endpoints == ""):
+                    time.sleep(sleep_time)
+                    self._management_endpoints = self._management_data_layer_client.get("management_endpoints")
+                    num_trials = num_trials + 1
+                    sleep_time = sleep_time * 2
+
+                if num_trials == 5:
+                    has_error = True
+                    errmsg = "Could not retrieve management endpoints"
+                else:
+                    self._management_endpoints = json.loads(self._management_endpoints)
 
 
 
@@ -221,10 +224,10 @@ class SandboxAgent:
 
     def sigchld(self, signum, _):
         if not self._shutting_down:
-            should_shutdown, pid, failed_process_name = self._deployment.check_child_process()
+            should_shutdown, pid, failed_process_name, log_filepath = self._deployment.check_child_process()
 
             if should_shutdown:
-                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name)
+                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name, log_filepath)
 
                 if pid == self._queue_service_process.pid:
                     self._queue_service_process = None
@@ -298,9 +301,13 @@ class SandboxAgent:
         self._management_data_layer_client.shutdown()
         os._exit(1)
 
-    def _update_deployment_status(self, has_error, errmsg):
+    def _update_deployment_status(self, has_error, errmsg, log_filepath=None):
         sbstatus = {}
         sbstatus["errmsg"] = errmsg
+        if log_filepath is not None:
+            with open(log_filepath, "r") as f:
+                data = f.read()
+                sbstatus["errmsg"] += "\rn" + data
         if has_error:
             sbstatus["status"] = "failed"
         else:
@@ -319,7 +326,7 @@ class SandboxAgent:
         ts_qs_launch = time.time()
         # 1. launch the QueueService here
         self._logger.info("Launching QueueService...")
-        cmdqs = "java -jar /opt/mfn/queueservice.jar"
+        cmdqs = "java -Xmx1024m -jar /opt/mfn/queueservice.jar"
         command_args_map_qs = {}
         command_args_map_qs["command"] = cmdqs
         command_args_map_qs["wait_until"] = "Starting local queue..."

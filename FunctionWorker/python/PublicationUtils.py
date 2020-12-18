@@ -316,8 +316,8 @@ class PublicationUtils():
             resp = requests.post(remote_address,
                                 params={"async": 1},
                                 json={},
-                                headers={"X-MFN-Action": "Session-Update",
-                                        "X-MFN-Action-Data": json.dumps(action_data)})
+                                headers={"x-mfn-action": "session-update",
+                                        "x-mfn-action-data": json.dumps(action_data)})
 
         elif message_type == "global_pub":
             # TODO: if global publishing, set headers appropriately (e.g., for load balancing)
@@ -453,14 +453,7 @@ class PublicationUtils():
     # and the backup will be overwritten
     # if one or more nexts were generated when publishing
     # at the end of execution, they will have been appended to our list
-    # in memory and we will store the backup once for the entire list
-    def _store_trigger_backups(self, dlc, input_backup_map, current_function_instance_id, store_next_backup_list=False):
-        if self._execution_info_map_name is not None:
-            for input_backup_key in input_backup_map:
-                dlc.putMapEntry(self._execution_info_map_name, input_backup_key, input_backup_map[input_backup_key])
-            if store_next_backup_list:
-                dlc.putMapEntry(self._execution_info_map_name, "next_" + current_function_instance_id, json.dumps(self._next_backup_list))
-
+    # in memory and we will log the backup once for the entire list
     def _log_trigger_backups(self, input_backup_map, current_function_instance_id, store_next_backup_list=False):
         if self._execution_info_map_name is not None:
             for input_backup_key in input_backup_map:
@@ -469,6 +462,7 @@ class PublicationUtils():
                 self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "next_" + current_function_instance_id, json.dumps(self._next_backup_list))
 
     def _send_message_to_recovery_manager(self, key, message_type, topic, func_exec_id, has_error, error_type, lqcpub):
+        # TODO
         return
         message_rec = {}
         message_rec["messageType"] = message_type
@@ -484,8 +478,8 @@ class PublicationUtils():
         # message via global publisher to pub manager's queue for backups
         self._send_local_queue_message(lqcpub, self._pub_topic_global, key, outputstr)
 
-    # need to store backups of inputs and send message to recovery manager
-    def send_to_function_now(self, key, trigger, lqcpub=None, dlc=None, backup_to_log=False):
+    # need to log backups of inputs and send message to recovery manager
+    def send_to_function_now(self, key, trigger, lqcpub=None):
         trigger["value"] = self.encode_output(trigger["value"])
 
         # get a local queue client
@@ -513,12 +507,7 @@ class PublicationUtils():
                 self._next_backup_list.append(next_function_instance_id)
                 any_next = True
 
-            if backup_to_log:
-                self._log_trigger_backups(input_backup_map, current_function_instance_id, store_next_backup_list=any_next)
-            else:
-                if dlc is None:
-                    dlc = self.get_backup_data_layer_client()
-                self._store_trigger_backups(dlc, input_backup_map, current_function_instance_id, store_next_backup_list=any_next)
+            self._log_trigger_backups(input_backup_map, current_function_instance_id, store_next_backup_list=any_next)
 
             for next_func_exec_id in starting_next:
                 next_func_topic = starting_next[next_func_exec_id]
@@ -561,10 +550,6 @@ class PublicationUtils():
 
             encoded_result = self.encode_output(result)
 
-            encapsulated_result = self.encapsulate_output(encoded_result, self._metadata)
-
-            dlc.putMapEntry(self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_result)
-
             # publish a message to the 'exit' topic
             trigger = {}
             trigger["next"] = self._wf_exit
@@ -583,11 +568,8 @@ class PublicationUtils():
 
             if self._should_checkpoint:
                 timestamp_map["t_start_dlcbackup"] = time.time() * 1000.0
-                dlc = self.get_backup_data_layer_client()
-
                 timestamp_map["t_start_resultmap"] = time.time() * 1000.0
-                dlc.putMapEntry(self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
-                #self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
+                self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
 
             timestamp_map["t_start_storeoutput"] = time.time() * 1000.0
             # store self._sapi.transient_output into the data layer
@@ -654,8 +636,7 @@ class PublicationUtils():
                 if self._should_checkpoint:
                     timestamp_map["t_start_backtrigger"] = time.time() * 1000.0
                     # backups for next of successfully completed function execution instances
-                    self._store_trigger_backups(dlc, input_backup_map, current_function_instance_id, store_next_backup_list=any_next)
-                    #self._log_trigger_backups(input_backup_map, current_function_instance_id, store_next_backup_list=any_next)
+                    self._log_trigger_backups(input_backup_map, current_function_instance_id, store_next_backup_list=any_next)
 
                     for next_func_exec_id in starting_next:
                         next_func_topic = starting_next[next_func_exec_id]

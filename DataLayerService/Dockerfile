@@ -25,4 +25,4 @@ RUN mkdir -p /opt/mfn/datalayer/logs
 COPY target/datalayerservice.jar /opt/mfn/datalayer/
 WORKDIR /opt/mfn/datalayer
 
-CMD ["java","-jar","datalayerservice.jar"]
+CMD java ${JAVA_OPTS} -jar datalayerservice.jar

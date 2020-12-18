@@ -26,9 +26,9 @@ import signal
 import re
 
 NGINX_INDEX= 'mfnnx'
-COMPONENT_INDEXES= 'mfnfe,mfnqs,mfnwf,mfnnx'
+COMPONENT_INDEXES= 'mfnfe,mfnqs,mfnnx'
 
-def get_metric_logs_from_all_components(eshost, esport=9200, uuids=None, proxies=None, debugReadFromFile=False):
+def get_metric_logs_from_all_components(workflow_id, eshost, esport=9200, uuids=None, proxies=None, debugReadFromFile=False):
     # Form elasticsearch query
     status, request = form_query(uuids)
     if status == False:
@@ -37,7 +37,7 @@ def get_metric_logs_from_all_components(eshost, esport=9200, uuids=None, proxies
 
     # Execute the query
     if debugReadFromFile == False:
-        status, output = query_elasticsearch(eshost, esport, request, proxies)
+        status, output = query_elasticsearch(workflow_id, eshost, esport, request, proxies)
         if status == False:
             logging.debug("query_elasticsearch error: " + output)
             return False, output
@@ -61,7 +61,7 @@ def get_metric_logs_from_all_components(eshost, esport=9200, uuids=None, proxies
             status, output = handleFrontendLogline(hit)
         elif index == 'mfnqs':
             status, output = handleQueueServiceLogline(hit)
-        elif index == 'mfnwf':
+        elif index == 'mfnwf-' + workflow_id:
             status, output = handleWorkflowTraceLogline(hit)
         elif index == 'mfnnx':
             status, output = handleNginxLogline(hit)
@@ -731,12 +731,12 @@ def handleNginxLogline(hit):
     },
     '''
 
-def query_elasticsearch(eshost, esport, request, proxies):
+def query_elasticsearch(wid, eshost, esport, request, proxies):
     url="http://"+eshost+":" + str(esport)
     logging.debug("Url: " + url)
 
     try:
-        r=requests.get(url+"/"+COMPONENT_INDEXES+'/_search', json=request, proxies=proxies)
+        r=requests.get(url+"/"+COMPONENT_INDEXES+ ",mfnwf-" + wid + '/_search', json=request, proxies=proxies)
 
         logging.debug('Http response code: ' + str(r.status_code))
         logging.debug('Http status reason: ' + r.reason)
@@ -778,6 +778,7 @@ def printlog(outlog):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate overhead metrics and timestamps for microfunctions workflow executions', prog='mfnmetrics.py')
+    parser.add_argument('-wid', '--wid', metavar='WORKFLOW_ID', help='Workflow id to determine the index.')
     parser.add_argument('-eid', '--eid', nargs='+', metavar='EXECUTION_UUIDS', help='Generate metric for specific execution id(s).')
     parser.add_argument('-eidfile', '--eidfile', type=str, help="Read execution ids from the given file (with 1 uuid per line); overrides -eid option")
     parser.add_argument('-eshost', '--eshost', type=str, metavar='ELASTICSEARCH_HOST', default=socket.gethostname(), help='Elasticsearch host. Defaults to ' + socket.gethostname() + ':9200.')
@@ -788,6 +789,8 @@ def main():
     parser.add_argument('-rf', '--readfile', action='store_true', help='Read json input from esresult.json, instead of contacting elasticsearch. DEV Debugging only.')
 
     args = parser.parse_args()
+
+    workflow_id = args.wid
 
     eidfilename = args.eidfile
     if eidfilename is None:
@@ -820,6 +823,7 @@ def main():
         "https": https_proxy,
     }
 
+    logging.debug("Workflow id: " + str(workflow_id))
     logging.debug("Execution uuid(s): " + str(uuids))
     logging.debug("Elasticsearch host: " + str(eshost)+ ':9200')
     logging.debug("Proxies: " + str(proxies))
@@ -828,7 +832,7 @@ def main():
     if proxy == False:
         proxies = None
 
-    status, result = get_metric_logs_from_all_components(eshost, esport=9200, uuids=uuids, proxies=proxies, debugReadFromFile=debugReadFromFile)
+    status, result = get_metric_logs_from_all_components(workflow_id, eshost, esport=9200, uuids=uuids, proxies=proxies, debugReadFromFile=debugReadFromFile)
     if status == True:
         printlog(result)
     else:
