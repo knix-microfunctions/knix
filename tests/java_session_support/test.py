@@ -410,6 +410,8 @@ class SessionSupportTest(unittest.TestCase):
                 continue
             if line.find("[__mfn_progress]") != -1:
                 continue
+            if line.find("[__mfn_backup]") != -1:
+                continue
             if line.find(contained_text) != -1:
                 lines.append(line)
 

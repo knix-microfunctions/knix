@@ -1,0 +1,84 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<table st-safe-src="storageObjectsSets" st-table="displayStorageObjectsSets" class="table table-bordered table-hover table-condensed" style="border:0;">
+
+  <thead>
+  <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
+    <button class="btn btn-primary" ng-click="addStorageObject('set')">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('set')">Refresh</button>
+  </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
+
+  </td>
+  </tr>
+  <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;">
+    <div style="width:100%">
+      <ui-select ng-model="storageLocations.selected" on-select="onSelected($item, 'set')" class="btn-group bootstrap-select form-control">
+        <ui-select-match placeholder="Select or search a storage location in the list...">{{$select.selected.name}} &mdash; {{$select.selected.type}}</ui-select-match>
+        <ui-select-choices repeat="item in storageLocations | filter: $select.search">
+          <div ng-bind-html="item.name | highlight: $select.search"></div>
+          <small ng-bind-html="item.type | highlight: $select.search"></small>
+        </ui-select-choices>
+      </ui-select>
+    </div>
+  </td></tr>
+
+    <th id="sortHeader" st-sort="['modified', 'key']" st-sort-default="default" style="text-align:left;border:0;"><b>Set name</b></th>
+    <!-- <th style="border:0;"><b>Endpoint</b></th> -->
+    <th style="border:0;"><b>Actions</b></th>
+  </tr>
+  </thead>
+  <tbody>
+
+  <tr ng-show="displayStorageObjectsSets.length==0"><td ng-show="displayStorageObjectsSets.length==0" colspan=4><hr ng-show="displayFunctions.StorageObjectsSets==0" style="display: inline;height: 1px;border: 0;border-top: 1px solid #ccc;margin: 1em 0; padding: 0;"></td></tr>
+
+  <tr ng-repeat="storageObject in displayStorageObjectsSets" class="editable-row">
+
+    <td style="text-align:left;">
+        <span editable-text="storageObject.key" e-name="name" e-form="rowform" e-required e-ng-keydown="navigate($event,rowform,storageObject)">
+          {{ storageObject.key || 'empty' }}
+        </span>
+    </td>
+    <td>
+      <form editable-form name="rowform" ng-show="rowform.$visible" onaftersave="createNewStorageObject(storageObject, 'set');" class="form-buttons form-inline"
+            shown="inserted == storageObject">
+        <button type="submit" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs">
+          Save
+        </button>
+
+        <button type="button" ng-disabled="rowform.$waiting" ng-click="rowform.$cancel();reloadStorageObjects('set');" class="btn btn-default editable-table-button btn-xs">
+          Cancel
+        </button>
+      </form>
+      <div class="buttons" ng-show="!rowform.$visible">
+        <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:75px;" data-toggle="modal" ng-click="open('app/pages/storage/modals/viewSetModal.html', 'lg', getStorageObjectKey(storageObject, 'set'), '', 'set')">View/Edit</button>
+        <button class="btn btn-danger editable-table-button btn-xs" ng-click="clearStorageObjectPrep(getIndex(storageObject, 'set'), 'set')">Clear</button>
+        <button class="btn btn-danger editable-table-button btn-xs" ng-click="removeStorageObject(getIndex(storageObject, 'set'), 'set')">Delete</button>
+      </div>
+    </td>
+  </tr>
+  </tbody>
+  <tfoot>
+            <tr style="border: 0;">
+                <td colspan="5" class="text-center" style="border: 0;">
+          <br>
+                    <div id="storageObjectPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
+          <br>
+                </td>
+
+            </tr>
+
+    </tfoot>
+</table>

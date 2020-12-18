@@ -47,6 +47,9 @@ public class TestDataLayerOperations
             boolean isPrivate,
             HashMap<String, Boolean> testResultMap)
     {
+        List<String> keys = context.getKeys(isPrivate);
+        int oldLength = keys.size();
+
         boolean success = false;
         String postfix = "";
         if (isPrivate)
@@ -66,6 +69,11 @@ public class TestDataLayerOperations
         // should be equal to 'value'
         String gotValue2 = context.get(key, isPrivate);
 
+        sleepALittle();
+
+        List<String> keys2 = context.getKeys(isPrivate);
+        int newLength = keys2.size();
+
         context.delete(key, isPrivate);
 
         // should be equal to empty string
@@ -77,6 +85,20 @@ public class TestDataLayerOperations
         testResultMap.put("testPut" + postfix, success);
         testResultMap.put("testGet" + postfix, success);
         testResultMap.put("testDelete" + postfix, success);
+
+        sleepALittle();
+        sleepALittle();
+
+        List<String> keys3 = context.getKeys(isPrivate);
+        int newLength2 = keys3.size();
+
+        success = false;
+        if ((oldLength + 1 == newLength) && (oldLength == newLength2))
+        {
+            success = true;
+        }
+        testResultMap.put("testGetKeys" + postfix, success);
+
     }
 
     private void testCounterOperations(MicroFunctionsAPI context,

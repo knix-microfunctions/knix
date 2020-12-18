@@ -76,7 +76,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "getdata", "key": sharedProperties.getObjectKey(), "tableName" : table, "workflowid" :  storageLoc.id } } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "getdata", "key": sharedProperties.getObjectKey(), "tableName" : table}, "workflowid" :  storageLoc.id} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -167,7 +167,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "tableName" : table, "workflowid" :  storageLoc.id } } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "tableName" : table}, "workflowid" :  storageLoc.id} } })
        }
 
        $http(req).then(function successCallback(response) {
@@ -246,7 +246,7 @@
          headers: {
            'Content-Type': 'application/json'
          },
-         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "tableName" : table, "workflowid" :  storageLoc.id } } })
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "putdata", "key": sharedProperties.getObjectKey(), "value": dataStr, "tableName" : table}, "workflowid" :  storageLoc.id} } })
        }
 
        $http(req).then(function successCallback(response) {

@@ -1,0 +1,57 @@
+<!--
+   Copyright 2020 The KNIX Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+
+<div class="modal-content" style="margin-top:50px;">
+  <div ng-app="MfnWebConsole" ng-controller="CounterCtrl">
+  <div class="modal-header">
+    <button type="button" class="close" ng-click="$dismiss()" aria-label="Close">
+      <em class="ion-ios-close-empty sn-link-close"></em>
+    </button>
+    <h4 class="modal-title">Edit Counter: {{ getCounterName() }}</h4>
+  </div>
+  <div style="margin-left:15px;margin-right:15px">
+    <div>
+    <span><h4><b>Current counter value:</b> {{ counterValue }}</h4> </span>
+    </div>
+    <br/>
+    <br/>
+            <div style="width:100%;height:40px;" ui-ace="{
+              require: ['ace/ext/language_tools'],
+              advanced: {
+                enableSnippets: true,
+                enableBasicAutocompletion: true,
+                enableLiveAutocompletion: true
+              },
+              useWrapMode : true,
+              showGutter: true,
+              theme:'tomorrow',
+              mode: 'json',
+              onLoad: aceLoaded,
+              onChange: aceChanged
+              }" >
+            </div>
+            <br>
+              <button type="button" class="btn btn-primary" ng-click="modifyCounterValue('increment');$dismiss()">Increment</button>
+          <button type="button" class="btn btn-primary" ng-click="modifyCounterValue('decrement');$dismiss()">Decrement</button>
+          <br/>
+    </div>
+  </div>
+  <div class="modal-footer">
+     <button type="button" class="btn btn-primary" ng-click="$dismiss()">Close</button>
+  </div>
+</div>
+</div>

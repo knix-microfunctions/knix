@@ -30,6 +30,7 @@ import (
   "sync"
   "syscall"
   "time"
+  "errors"
   "github.com/knix-microfunctions/knix/Sandbox/frontend/localqueueservice"
   "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
   "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
@@ -294,15 +295,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
   var (
       topic string
       msg MfnMessage
-      mid []byte
       id string
   )
-  actionhdr := r.Header.Get("X-MFN-Action")
-  actiondata := r.Header.Get("X-MFN-Action-Data")
+  actionhdr := r.Header.Get("x-mfn-action")
+  actiondata := r.Header.Get("x-mfn-action-data")
   if (actionhdr != "" && actiondata != "") {
       // handle different cases here
       log.Printf("Got a special message: [%s] [%s]", actionhdr, actiondata)
-      if (actionhdr == "Session-Update") {
+      if (actionhdr == "session-update") {
           log.Printf("New session update message...")
 
           type ActionMessage struct {
@@ -334,7 +334,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
           log.Printf("Session update message topic: [%s], id: [%s]", topic, id)
 
-      } else if (actionhdr == "Post-Parallel") {
+      } else if (actionhdr == "post-parallel") {
           log.Printf("New Post-Parallel update message...")
 
           type ActionMessage struct {
@@ -371,37 +371,46 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
           log.Printf("Post-Parallel message topic: [%s], id: [%s]", topic, id)
 
-      } else if (actionhdr == "Post-Map") {
+      } else if (actionhdr == "post-map") {
           // TODO
-      } else if (actionhdr == "Global-Pub") {
+      } else if (actionhdr == "global-pub") {
           // TODO
-      }
+      } else if (actionhdr == "trigger-event") {
+        // Treat this as normal workflow invocation, except for the topic name
+        // CREATE NEW MfnMessage with a new execution id
+        id, err = GenerateExecutionID()
+        if err != nil {
+          http.Error(w, err.Error(), http.StatusInternalServerError)
+          return
+        }
+
+        msg = MfnMessage{}
+        msg.Mfnmetadata = &Metadata{}
+        msg.Mfnmetadata.AsyncExecution = async
+        msg.Mfnmetadata.ExecutionId = id
+        msg.Mfnmetadata.FunctionExecutionId = id
+        msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
+        body, err := ioutil.ReadAll(r.Body)
+        if err != nil {
+          log.Println("handler: Error reading body", err)
+          http.Error(w, "can't read body", http.StatusBadRequest)
+          return
+        }
+        msg.Mfnuserdata = string(body)
+        topic = actiondata
+        log.Printf("Trigger-Event message topic: [%s], id: [%s]", topic, id)
+    }
   } else {
       // the headers are not special, so this must be a regular message to trigger a workflow
       // CREATE NEW MfnMessage
-      var msgid uuid.UUID
-      msgid,err = uuid.NewUUID()
+      id, err = GenerateExecutionID()
       if err != nil {
-        log.Println("handler: Couldn't generate UUID", err)
-        http.Error(w, "Can't generate UUID for event", http.StatusInternalServerError)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
         return
       }
+
       msg = MfnMessage{}
       msg.Mfnmetadata = &Metadata{}
-      mid,err = msgid.MarshalText()
-      if err != nil {
-        fmt.Println("handler: Couldn't marshal UUID", err)
-        log.Fatal(err)
-      }
-      sid := string(mid)
-      bid := make([]byte, 32)
-      // copy UUID without dashes (e.g. 1f115d4c-4d08-11ea-b6ed-68b5996bc19c)
-      copy(bid[ 0:8],sid[ 0: 8])
-      copy(bid[8:12],sid[ 9:13])
-      copy(bid[12:16],sid[14:18])
-      copy(bid[16:20],sid[19:23])
-      copy(bid[20:32],sid[24:36])
-      id = string(bid)
       msg.Mfnmetadata.AsyncExecution = async
       msg.Mfnmetadata.ExecutionId = id
       msg.Mfnmetadata.FunctionExecutionId = id
@@ -413,7 +422,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
         return
       }
       msg.Mfnuserdata = string(body)
-
       topic = entryTopic
   }
 
@@ -471,6 +479,36 @@ func handler(w http.ResponseWriter, r *http.Request) {
     delete(ExecutionResults, id)
     ExecutionCond.L.Unlock()
   }
+}
+
+// GenerateExecutionID generates an mfn exexution id
+func GenerateExecutionID() (string, error) {
+  var (
+    err error
+    mid []byte
+    id string
+  )
+  var msgid uuid.UUID
+  msgid,err = uuid.NewUUID()
+  if err != nil {
+    log.Println("handler: Couldn't generate UUID", err)
+    return "", errors.New("Can't generate UUID for event")
+  }
+  mid,err = msgid.MarshalText()
+  if err != nil {
+    fmt.Println("handler: Couldn't marshal UUID", err)
+    log.Fatal(err)
+  }
+  sid := string(mid)
+  bid := make([]byte, 32)
+  // copy UUID without dashes (e.g. 1f115d4c-4d08-11ea-b6ed-68b5996bc19c)
+  copy(bid[ 0:8],sid[ 0: 8])
+  copy(bid[8:12],sid[ 9:13])
+  copy(bid[12:16],sid[14:18])
+  copy(bid[16:20],sid[19:23])
+  copy(bid[20:32],sid[24:36])
+  id = string(bid)
+  return id, nil
 }
 
 // InitDatalayer initializes and connects the datalayer thrift client

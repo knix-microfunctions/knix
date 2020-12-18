@@ -42,9 +42,9 @@ class LocalQueueClient:
             try:
                 self.socket = TSocket.TSocket(host, int(port))
                 self.transport = TTransport.TFramedTransport(self.socket)
-                self.transport.open()
                 self.protocol = TCompactProtocol.TCompactProtocol(self.transport)
                 self.queue = LocalQueueService.Client(self.protocol)
+                self.transport.open()
                 break
             except Thrift.TException as exc:
                 if retry < 60:

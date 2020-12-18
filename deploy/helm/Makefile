@@ -38,6 +38,7 @@ push:
 	make -C ../../DataLayerService push
 	make -C ../../riak push
 	make -C ../../GUI push
+	make -C ../../TriggersFrontend push
 
 deploy: push
 	helm install --name mfn microfunctions/
