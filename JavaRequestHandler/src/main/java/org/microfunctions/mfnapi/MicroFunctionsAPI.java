@@ -1613,5 +1613,173 @@ public class MicroFunctionsAPI
 	public Logger getLogger() {
 		return logger;
 	}
+	
+	public boolean addTriggerableBucket(String bucketName)
+	{
+		boolean success = false;
+		try
+        {
+            success = this.mfnapiClient.addTriggerableBucket(bucketName);
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("Error in API call (addTriggerableBucket): " + e);
+        }
+        return success;
+	}
+	
+	public boolean deleteTriggerableBucket(String bucketName)
+	{
+		boolean success = false;
+		try
+        {
+            success = this.mfnapiClient.deleteTriggerableBucket(bucketName);
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("Error in API call (deleteTriggerableBucket): " + e);
+        }
+        return success;
+	}
+	
+	public boolean addStorageTriggerForWorkflow(String workflowName, String bucketName)
+	{
+		boolean success = false;
+		try
+        {
+            success = this.mfnapiClient.addStorageTriggerForWorkflow(workflowName, bucketName);
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("Error in API call (addStorageTriggerForWorkflow): " + e);
+        }
+        return success;
+	}
+	
+	public boolean deleteStorageTriggerForWorkflow(String workflowName, String bucketName)
+	{
+		boolean success = false;
+		try
+        {
+            success = this.mfnapiClient.deleteStorageTriggerForWorkflow(workflowName, bucketName);
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("Error in API call (deleteStorageTriggerForWorkflow): " + e);
+        }
+        return success;
+	}
+	
+	// some versions that call the main method with various default values
+	public TriggerAPIResult addTriggerAMQP(String triggerName, String AMQPAddress, String routingKey)
+	{
+		String exchange = "egress_exchange";
+		boolean withAck = false;
+		boolean isDurable = false;
+		boolean isExclusive = false;
+		double ignoreMessageProbability = 0.0;
+		
+		return this.addTriggerAMQP(triggerName, AMQPAddress, routingKey, exchange, withAck, isDurable, isExclusive, ignoreMessageProbability);
+	}
+	
+	public TriggerAPIResult addTriggerAMQP(String triggerName, String AMQPAddress, String routingKey, double ignoreMessageProbability)
+	{
+		String exchange = "egress_exchange";
+		boolean withAck = false;
+		boolean isDurable = false;
+		boolean isExclusive = false;
+		
+		return this.addTriggerAMQP(triggerName, AMQPAddress, routingKey, exchange, withAck, isDurable, isExclusive, ignoreMessageProbability);
+	}
+	
+	public TriggerAPIResult addTriggerAMQP(String triggerName, String AMQPAddress, String routingKey, String exchange, 
+			boolean withAck, boolean isDurable, boolean isExclusive, double ignoreMessageProbability)
+	{
+		TriggerAPIResult result = null;
+		
+		TriggerInfoAMQP triggerInfo = new TriggerInfoAMQP();
+		triggerInfo.setAmqp_addr(AMQPAddress);
+		triggerInfo.setRouting_key(routingKey);
+		triggerInfo.setExchange(exchange);
+		triggerInfo.setWith_ack(withAck);
+		triggerInfo.setDurable(isDurable);
+		triggerInfo.setExclusive(isExclusive);
+		triggerInfo.setIgnr_msg_prob(ignoreMessageProbability);
+		
+		try
+		{
+			result = this.mfnapiClient.addTriggerAMQP(triggerName, triggerInfo);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error in API call (addTriggerAMQP): " + e);
+		}
+		return result;
+	}
+	
+	public TriggerAPIResult addTriggerTimer(String triggerName, long timerIntervalMilliseconds)
+	{
+		TriggerAPIResult result = null;
+		
+		TriggerInfoTimer triggerInfo = new TriggerInfoTimer();
+		triggerInfo.setTimerIntervalMilliseconds(timerIntervalMilliseconds);
+
+		try
+		{
+			result = this.mfnapiClient.addTriggerTimer(triggerName, triggerInfo);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error in API call (addTriggerTimer): " + e);
+		}
+		return result;
+	}
+	
+	public TriggerAPIResult addTriggerForWorkflow(String triggerName, String workflowName)
+	{
+		return this.addTriggerForWorkflow(triggerName, workflowName, "");
+	}
+
+	public TriggerAPIResult addTriggerForWorkflow(String triggerName, String workflowName, String workflowState)
+	{
+		TriggerAPIResult result = null;
+		try
+		{
+			result = this.mfnapiClient.addTriggerForWorkflow(triggerName, workflowName, workflowState);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error in API call (addTriggerForWorkflow): " + e);
+		}
+		return result;
+	}
+	
+	public TriggerAPIResult deleteTriggerForWorkflow(String triggerName, String workflowName)
+	{
+		TriggerAPIResult result = null;
+		try
+		{
+			result = this.mfnapiClient.deleteTriggerForWorkflow(triggerName, workflowName);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error in API call (deleteTriggerForWorkflow): " + e);
+		}
+		return result;
+	}
+
+	public TriggerAPIResult deleteTrigger(String triggerName)
+	{
+		TriggerAPIResult result = null;
+		try
+		{
+			result = this.mfnapiClient.deleteTrigger(triggerName);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error in API call (deleteTrigger): " + e);
+		}
+		return result;
+	}
 
 }
