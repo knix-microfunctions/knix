@@ -350,8 +350,18 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
         imageName = kservice['spec']['template']['spec']['containers'][0]['image']
         imageRepoName = imageName.split("/")[0]
         # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox_gpu" 
+        # calculate requests resource parameters for gpu-manager
+
+        gpu_core_request = str(use_gpus*100) # derived from GUI float input parameter giving core percentage 
+        gpu_memory_request = "4" # hardoded to 4 x 245MB = 1GB
         kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_gpu" 
-     
+        kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
+        kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
+        # calculate limits resource parameters for gpu-manager, need to identical to requests parameter
+        kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
+        kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
+        kservice['spec']['template']['metadata']['annotations']['tencent.com/vcuda-core-limit'] = "20"
+         
     # Special handling for the management container: never run on gpu
     if management:
         management_workflow_conf = {}
