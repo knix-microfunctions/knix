@@ -95,6 +95,25 @@ class DataLayerOperator:
             data_layer_client = self._get_data_layer_client(is_private)
             data_layer_client.delete(key, tableName=table)
 
+    def getKeys(self, start_index, end_index, is_private=False):
+        keys = set()
+
+        # XXX: should follow "read your writes"
+        # the final result should include:
+        # 1. all created locally
+        # 2. all existing globally minus the ones deleted locally
+
+        # TODO: 1. check local data layer first: get locally created and deleted
+
+        # 2. retrieve all existing globally
+        dlc = self._get_data_layer_client(is_private)
+        m2 = dlc.listKeys(start_index, end_index)
+        if m2 is not None:
+            # TODO: 3. remove the ones deleted locally
+            keys = keys.union(m2)
+
+        return list(keys)
+
     # map operations
     def createMap(self, mapname, is_private=False, is_queued=False):
         if is_queued:

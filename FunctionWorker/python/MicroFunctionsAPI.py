@@ -1022,7 +1022,7 @@ class MicroFunctionsAPI:
             is_private (boolean): whether the item should be written to the private data layer of the workflow; default: False
             is_queued (boolean): whether the put operation should be reflected on the data layer after the execution finish; default: False
                 (i.e., the put operation will be reflected on the data layer immediately)
-            bucketName (string): name of the bucket where to put the key. By default, it will be put in the default bucket. If this method is 
+            bucketName (string): name of the bucket where to put the key. By default, it will be put in the default bucket. If this method is
                 called with is_private = True, then the bucketName parameter will be ignored.
 
         Returns:
@@ -1058,7 +1058,7 @@ class MicroFunctionsAPI:
         Args:
             key (string): the key of the data item
             is_private (boolean): whether the item should be read from the private data layer of the workflow; default: False
-            bucketName (string): name of the bucket where to get the key from. By default, it will be fetched from the default bucket. If this method is 
+            bucketName (string): name of the bucket where to get the key from. By default, it will be fetched from the default bucket. If this method is
                 called with is_private = True, then the bucketName parameter will be ignored.
 
         Returns:
@@ -1115,6 +1115,37 @@ class MicroFunctionsAPI:
             errmsg = errmsg + \
                 "\nOptionally, is_private (boolean) and is_queued (boolean) are also accepted; defaults are False."
             raise MicroFunctionsDataLayerException(errmsg)
+
+    def getKeys(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Args:
+            start_index (int): the starting index of the keys to be retrieved; default: 0
+            end_index (int): the end index of the keys to be retrieved; default: 2147483647
+            is_private (boolean): whether the keys should be retrieved from the private data layer of the workflow; default: False
+
+        Returns:
+            List of keys (list)
+
+        Raises:
+            MicroFunctionsDataLayerException: when start_index < 0 and/or end_index > 2147483647.
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., support for CRDTs).
+            Using a KNIX-specific feature might make the function incompatible with other platforms.
+
+        '''
+        if start_index >= 0 and end_index <= 2147483647 and isinstance(is_private, bool):
+            return self._data_layer_operator.getKeys(start_index, end_index, is_private)
+        else:
+            errmsg = "MicroFunctionsAPI.getKeys(start_index, end_index) accepts indices between 0 and 2147483647 (defaults)."
+            errmsg = errmsg + "\nOptionally, is_private (boolean) is also accepted; default is False."
+            raise MicroFunctionsDataLayerException(errmsg)
+
+    def listKeys(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getKeys(start_index, end_index, is_private)
+        '''
+        return self.getKeys(start_index, end_index, is_private)
 
     # map operations sanity checking
     def createMap(self, mapname, is_private=False, is_queued=False):
@@ -1393,6 +1424,12 @@ class MicroFunctionsAPI:
                 "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def listMaps(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getMapNames(start_index, end_index, is_private)
+        '''
+        return self.getMapNames(start_index, end_index, is_private)
+
     # set operations sanity checking
     def createSet(self, setname, is_private=False, is_queued=False):
         # _XXX_: the backend at the data layer does not create
@@ -1618,6 +1655,12 @@ class MicroFunctionsAPI:
                 "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def listSets(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getSetNames(start_index, end_index, is_private)
+        '''
+        return self.getSetNames(start_index, end_index, is_private)
+
     # counter operations sanity checking
     def createCounter(self, countername, count, is_private=False, is_queued=False):
         '''
@@ -1783,6 +1826,12 @@ class MicroFunctionsAPI:
                 "\nOptionally, is_private (boolean) is also accepted; default is False."
             raise MicroFunctionsDataLayerException(errmsg)
 
+    def listCounters(self, start_index=0, end_index=2147483647, is_private=False):
+        '''
+        Alias for getCounterNames(start_index, end_index, is_private)
+        '''
+        return self.getCounterNames(start_index, end_index, is_private)
+
     def get_transient_data_output(self, is_private=False):
         '''
         Returns:
@@ -1822,7 +1871,7 @@ class MicroFunctionsAPI:
             bucketName (string): the name of the bucket to be added
 
         Returns:
-            Boolean, indicating whether the bucket was created successfully 
+            Boolean, indicating whether the bucket was created successfully
 
         Raises:
             None
@@ -1854,7 +1903,7 @@ class MicroFunctionsAPI:
             bucketName (string): the name of the bucket with which to associate the workflow
 
         Returns:
-            Boolean, indicating whether the storage trigger was created successfully 
+            Boolean, indicating whether the storage trigger was created successfully
 
         Raises:
             None
@@ -1887,7 +1936,7 @@ class MicroFunctionsAPI:
             bucketName (string): the name of the bucket to delete
 
         Returns:
-            Boolean, indicating whether the bucket was deleted successfully 
+            Boolean, indicating whether the bucket was deleted successfully
 
         Raises:
             None
@@ -1920,7 +1969,7 @@ class MicroFunctionsAPI:
             bucketName (string): the name of the bucket currently associated with the workflow
 
         Returns:
-            Boolean, indicating whether the storage trigger was deleted successfully 
+            Boolean, indicating whether the storage trigger was deleted successfully
 
         Raises:
             None
@@ -2018,6 +2067,21 @@ class MicroFunctionsAPI:
             return None
         return response
 
+    def addTriggerTimer(self, trigger_name, trigger_info):
+        if "timer_interval_ms" not in trigger_info:
+            return False, "Missing parameter for timer trigger: timer_interval_ms"
+
+        return self.addTrigger(trigger_name, trigger_info)
+
+    def addTriggerAMQP(self, trigger_name, trigger_info):
+
+        if "amqp_addr" not in trigger_info:
+            return False, "Missing parameter for AMQP trigger: amqp_addr"
+
+        if "routing_key" not in trigger_info:
+            return False, "Missing parameter for AMQP trigger: routing_key"
+
+        return self.addTrigger(trigger_name, trigger_info)
 
     def addTrigger(self, trigger_name, trigger_info):
         '''
@@ -2026,19 +2090,19 @@ class MicroFunctionsAPI:
             trigger_info (dict): Trigger specific information. {
                 trigger_type (string): Type of trigger to associate with a workflow. Currently supported values: "amqp", "timer",
                 For "amqp",
-                    amqp_addr (string) 
-                    routing_key (string), 
+                    amqp_addr (string)
+                    routing_key (string),
                     exchange (string), "egress_exchange" (default)
                     with_ack (boolean), False (default) - means automatic acks,
                     durable (boolean), False (default),
                     exclusive (boolean), False (default),
                     ignore_message_probability (float, range = [0.0, 100.0)), 0.0 (default),
-                For 'timer', 
+                For 'timer',
                     timer_interval_ms: specified in milli-seconds.
             }
         Returns:
             (status, status_message)
-            status (boolean) - True, if the trigger was created successfully. False, otherwise 
+            status (boolean) - True, if the trigger was created successfully. False, otherwise
             status_message (string) - status message, depending on 'status'
         Raises:
             None
@@ -2066,7 +2130,7 @@ class MicroFunctionsAPI:
         return True, response["data"]["message"]
 
 
-    def addTriggerForWorkflow(self, trigger_name, workflow_name, workflow_state = ""):
+    def addTriggerForWorkflow(self, trigger_name, workflow_name, workflow_state=""):
         '''
         Args:
             trigger_name (string): Name of an existing trigger to a workflow to.
@@ -2074,7 +2138,7 @@ class MicroFunctionsAPI:
             workflow_state (string): (Optional) Name of the state within the workflow to invoke from the trigger. If not specified then the entry state will be invoked by default.
         Returns:
             (status, status_message)
-            status (boolean) - True, if the workflow was added to the trigger successfully. False, otherwise 
+            status (boolean) - True, if the workflow was added to the trigger successfully. False, otherwise
             status_message (string) - status message, depending on 'status'
         Raises:
             None
@@ -2087,7 +2151,7 @@ class MicroFunctionsAPI:
         workflow_state_topic = ""
         if type(workflow_state) == type("") and workflow_state is not "" and len(workflow_state) > 0:
             workflow_state_topic = self._sid + "-" + self._wid + "-" + workflow_state
-        
+
         request = \
             {
                 "action": "addTriggerForWorkflow",
@@ -2114,7 +2178,7 @@ class MicroFunctionsAPI:
             workflow_name (string): Name of the workflow to remove from the trigger.
         Returns:
             (status, status_message)
-            status (boolean) - True, if the workflow was remove from this trigger successfully. False, otherwise 
+            status (boolean) - True, if the workflow was remove from this trigger successfully. False, otherwise
             status_message (string) - status message or error message, depending on 'status'
         Raises:
             None
@@ -2146,7 +2210,7 @@ class MicroFunctionsAPI:
             trigger_name (string): Name of an existing trigger to delete
         Returns:
             (status, status_message)
-            status (boolean) - True, if the trigger was deleted successfully. False, otherwise 
+            status (boolean) - True, if the trigger was deleted successfully. False, otherwise
             status_message (string) - status message, depending on 'status'
         Raises:
             None

@@ -15,6 +15,25 @@
 */
 namespace java org.microfunctions.mfnapi
 
+struct TriggerAPIResult {
+    1: bool success
+    2: string message
+}
+
+struct TriggerInfoAMQP {
+    1: string amqp_addr
+    2: string routing_key
+    3: string exchange
+    4: bool with_ack
+    5: bool durable
+    6: bool exclusive
+    7: double ignr_msg_prob
+}
+
+struct TriggerInfoTimer {
+    1: i64 timerIntervalMilliseconds
+}
+
 service MicroFunctionsAPIService {
 
     string get_context_object_properties(),
@@ -23,10 +42,10 @@ service MicroFunctionsAPIService {
 
     void update_metadata(1: string metadata_name, 2: string metadata_value, 3: bool is_privileged_metadata),
 
-    void send_to_running_function_in_session(1: string rgid, 2: string message, 3: bool send_now),  // message?
-    void send_to_all_running_functions_in_session_with_function_name(1: string gname, 2: string message, 3: bool send_now),  // message
-    void send_to_all_running_functions_in_session(1: string message, 2: bool send_now),  //message
-    void send_to_running_function_in_session_with_alias(1: string als, 2: string message, 3: bool send_now),  // message
+    void send_to_running_function_in_session(1: string rgid, 2: string message, 3: bool send_now),
+    void send_to_all_running_functions_in_session_with_function_name(1: string gname, 2: string message, 3: bool send_now),
+    void send_to_all_running_functions_in_session(1: string message, 2: bool send_now),
+    void send_to_running_function_in_session_with_alias(1: string als, 2: string message, 3: bool send_now),
 
     list<string> get_session_update_messages(1: i32 count, 2: bool blck),
 
@@ -46,11 +65,11 @@ service MicroFunctionsAPIService {
 
     bool is_still_running(),
 
-    void add_workflow_next(1: string nxt, 2: string value),  // value
-    void add_dynamic_next(1: string nxt, 2: string value),  // value
-    void send_to_function_now(1: string destination, 2: string value),  // value
-    void add_dynamic_workflow(1: list<map<string, string>> dynamic_trigger),  // dynamic_trigger
-    list<map<string, string>> get_dynamic_workflow(),  // return value
+    void add_workflow_next(1: string nxt, 2: string value),
+    void add_dynamic_next(1: string nxt, 2: string value),
+    void send_to_function_now(1: string destination, 2: string value),
+    void add_dynamic_workflow(1: list<map<string, string>> dynamic_trigger),
+    list<map<string, string>> get_dynamic_workflow(),
 
     i64 get_remaining_time_in_millis(),
     void log(1: string text, 2: string level),
@@ -60,6 +79,7 @@ service MicroFunctionsAPIService {
     void put(1: string key, 2: string value, 3: bool is_private, 4: bool is_queued),
     string get(1: string key, 2: bool is_private),
     void remove(1: string key, 2: bool is_private, 3: bool is_queued),
+    list<string> getKeys(1: i32 start_index, 2: i32 end_index, 3: bool is_private),
 
     void createMap(1: string mapname, 2: bool is_private, 3: bool is_queued),
     void putMapEntry(1: string mapname, 2: string key, 3: string value, 4: bool is_private, 5: bool is_queued),
@@ -88,7 +108,19 @@ service MicroFunctionsAPIService {
     void deleteCounter(1: string countername, 2: bool is_private, 3: bool is_queued),
     list<string> getCounterNames(1: i32 start_index, 2: i32 end_index, 3: bool is_private),
 
+    bool addTriggerableBucket(1: string bucket_name),
+    bool addStorageTriggerForWorkflow(1: string workflow_name, 2: string bucket_name),
+    bool deleteTriggerableBucket(1: string bucket_name),
+    bool deleteStorageTriggerForWorkflow(1: string workflow_name, 2: string bucket_name),
+
+    TriggerAPIResult addTriggerAMQP(1: string trigger_name, 2: TriggerInfoAMQP trigger_info),
+    TriggerAPIResult addTriggerTimer(1: string trigger_name, 2: TriggerInfoTimer trigger_info),
+    TriggerAPIResult addTriggerForWorkflow(1: string trigger_name, 2: string workflow_name, 3: string workflow_state),
+    TriggerAPIResult deleteTriggerForWorkflow(1: string trigger_name, 2: string workflow_name),
+    TriggerAPIResult deleteTrigger(1: string trigger_name),
+
     map<string, string> get_transient_data_output(1: bool is_private),
     map<string, bool> get_data_to_be_deleted(1: bool is_private)
+
 }
 

@@ -46,13 +46,6 @@ class SessionHelperThread(threading.Thread):
         self._session_function_id = helper_params["session_function_id"]
         self._session_id = helper_params["session_id"]
 
-        # initialize only needed
-        # need a separate backup data layer client from the publication utils; otherwise, we run into concurrent modification
-        # problems from Thrift
-        # locality = -1 means that the writes happen to the local data layer first and then asynchronously to the global data layer
-        # will only initialize if heartbeats are enabled
-        self._backup_data_layer_client = None
-
         # set up heartbeat parameters
         self._heartbeat_enabled = False
         self._heartbeat_method = None
@@ -105,8 +98,6 @@ class SessionHelperThread(threading.Thread):
                 # enable function related heartbeat
                 self._heartbeat_function = heartbeat_params["heartbeat_function"]
                 #self._logger.debug("[SessionHelperThread] New heartbeat function: " + str(self._heartbeat_function))
-                if self._backup_data_layer_client is None:
-                    self._backup_data_layer_client = DataLayerClient(locality=-1, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
                 if self._local_queue_client_heartbeat is None:
                     self._local_queue_client_heartbeat = LocalQueueClient(connect=self._queue_service)
 
@@ -134,9 +125,6 @@ class SessionHelperThread(threading.Thread):
                 self._local_queue_client_heartbeat.shutdown()
                 self._local_queue_client_heartbeat = None
                 self._heartbeat_function = None
-            if self._backup_data_layer_client is not None:
-                self._backup_data_layer_client.shutdown()
-                self._backup_data_layer_client = None
 
 
         else:
@@ -310,7 +298,7 @@ class SessionHelperThread(threading.Thread):
         trigger_hb = {}
         trigger_hb["next"] = self._heartbeat_function
         trigger_hb["value"] = hb_message
-        self._publication_utils.send_to_function_now("-1l", trigger_hb, self._local_queue_client_heartbeat, self._backup_data_layer_client)
+        self._publication_utils.send_to_function_now("-1l", trigger_hb, self._local_queue_client_heartbeat)
 
     def _send_heartbeat_to_data_layer(self, hb_message):
         self._data_layer_client_heartbeat.put(self._heartbeat_data_layer_key, json.dumps(hb_message))
@@ -327,10 +315,6 @@ class SessionHelperThread(threading.Thread):
         if self._local_queue_client_heartbeat is not None:
             self._local_queue_client_heartbeat.shutdown()
             self._local_queue_client_heartbeat = None
-
-        if self._backup_data_layer_client is not None:
-            self._backup_data_layer_client.shutdown()
-            self._backup_data_layer_client = None
 
         # remove/unregister the topic
         self._local_queue_client.removeTopic(self._local_topic_communication)

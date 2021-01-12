@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import base64
 import requests
 import os
 import json
@@ -19,6 +20,7 @@ import time
 import urllib.request, urllib.parse, urllib.error
 from .function import Function
 from .workflow import Workflow
+from .storage import Storage
 import logging
 logging.basicConfig()
 #logging.basicConfig(level=logging.DEBUG)
@@ -235,6 +237,7 @@ class MfnClient(object):
         if resp['status'] == 'success':
             self.token = resp['data']['token']
             self.store = self.baseurl+resp['data']['storageEndpoint']
+            self._storage = Storage(self._s, self.token, self.mgmturl)
         else:
             raise Exception("Error logging in at "+self.mgmturl)
 
@@ -516,120 +519,125 @@ class MfnClient(object):
         self.action('deleteWorkflow',{'workflow':{'id':wf.id}})
 
 
-    def keys(self, all_at_once=False):
-        return self.list_keys(all_at_once=all_at_once)
+    # Storage operations
 
-    def keys(self):
+    def _list_stepwise(self, data_type, wid=None):
         start=0
         step=100
         while start >= 0:
-            data_to_send = {}
-            data_to_send["action"] = "performStorageAction"
-            data = {}
-            user = {}
-            user["token"] = self.token
-            data["user"] = user
-            storage = {}
-            storage["action"] = "listKeys"
-            storage["start"] = start
-            storage["count"] = step
-            data["storage"] = storage
-            data_to_send["data"] = data
-            r = self._s.post(self.mgmturl,
-                    params={},
-                    json=data_to_send)
-            r.raise_for_status()
-            if r.json()["status"] == "success":
-                keylist = r.json()["data"]["keylist"]
-                for key in keylist:
-                    yield key
-                if len(keylist) < step:
-                    break
-                start += step
-            else:
-                raise Exception("LISTKEYS failed: " + r.json()["data"]["message"])
+            if data_type == "keys":
+                resultlist = self.list_keys(start, step, wid)
+            elif data_type == "maps":
+                resultlist = self.list_maps(start, step, wid)
+            elif data_type == "sets":
+                resultlist = self.list_sets(start, step, wid)
+            elif data_type == "counters":
+                resultlist = self.list_counters(start, step, wid)
 
-    def list_keys(self, start=0, count=2000):
-        data_to_send = {}
-        data_to_send["action"] = "performStorageAction"
-        data = {}
-        user = {}
-        user["token"] = self.token
-        data["user"] = user
-        storage = {}
-        storage["action"] = "listKeys"
-        storage["start"] = start
-        storage["count"] = count
-        data["storage"] = storage
-        data_to_send["data"] = data
-        r = self._s.post(self.mgmturl,
-                params={},
-                json=data_to_send)
-        r.raise_for_status()
-        if r.json()["status"] != "success":
-            raise Exception("LISTKEYS failed: " + r.json()["data"]["message"])
-
-        return r.json()["data"]["keylist"]
-
-
-    def get(self, key):
-        data_to_send = {}
-        data_to_send["action"] = "performStorageAction"
-        data = {}
-        user = {}
-        user["token"] = self.token
-        data["user"] = user
-        storage = {}
-        storage["action"] = "getdata"
-        storage["key"] = key
-        data["storage"] = storage
-        data_to_send["data"] = data
-        r = self._s.post(self.mgmturl,
-                params={},
-                json=data_to_send)
-        r.raise_for_status()
-        if r.json()["status"] == "success":
-            return r.json()["data"]["value"]
+            for result in resultlist:
+                yield result
+            if len(resultlist) < step:
+                break
+            start += step
         else:
-            raise Exception("GET failed: " + r.json()["data"]["message"])
+            raise Exception("LIST" + data_type.upper() + " failed: " + r.json()["data"]["message"])
 
+    # kv operations
+    def get(self, key, wid=None):
+        return self._storage.get(key, wid)
 
-    def put(self, key, value):
-        data_to_send = {}
-        data_to_send["action"] = "performStorageAction"
-        data = {}
-        user = {}
-        user["token"] = self.token
-        data["user"] = user
-        storage = {}
-        storage["action"] = "putdata"
-        storage["key"] = key
-        storage["value"] = value
-        data["storage"] = storage
-        data_to_send["data"] = data
-        r = self._s.post(self.mgmturl,
-                params={},
-                json=data_to_send)
-        r.raise_for_status()
-        if r.json()["status"] != "success":
-            raise Exception("PUT failed: " + r.json()["data"]["message"])
+    def put(self, key, value, wid=None):
+        self._storage.put(key, value, wid)
 
+    def delete(self, key, wid=None):
+        self._storage.delete(key, wid)
 
-    def delete(self, key):
-        data_to_send = {}
-        data_to_send["action"] = "performStorageAction"
-        data = {}
-        user = {}
-        user["token"] = self.token
-        data["user"] = user
-        storage = {}
-        storage["action"] = "deletedata"
-        storage["key"] = key
-        data["storage"] = storage
-        data_to_send["data"] = data
-        r = self._s.post(self.mgmturl,
-                params={},
-                json=data_to_send)
-        r.raise_for_status()
-        if r.json()["status"] != "success":
-            raise Exception("DELETE failed: " + r.json()["data"]["message"])
+    def list_keys(self, start=0, count=2000, wid=None):
+        return self._storage.list_keys(start, count, wid)
+
+    def keys(self, wid=None):
+        self._list_stepwise("keys", wid)
+
+    # map operations
+    def create_map(self, mapname, wid=None):
+        self._storage.create_map(mapname, wid)
+
+    def put_map_entry(self, mapname, key, value, wid=None):
+        self._storage.put_map_entry(mapname, key, value, wid)
+
+    def get_map_entry(self, mapname, key, wid=None):
+        return self._storage.get_map_entry(mapname, key, wid)
+
+    def delete_map_entry(self, mapname, key, wid=None):
+        self._storage.delete_map_entry(mapname, key, wid)
+
+    def retrieve_map(self, mapname, wid=None):
+        return self._storage.retrieve_map(mapname, wid)
+
+    def contains_map_key(self, mapname, key, wid=None):
+        return self._storage.contains_map_key(mapname, key, wid)
+
+    def get_map_keys(self, mapname, wid=None):
+        return self._storage.get_map_keys(mapname, wid)
+
+    def clear_map(self, mapname, wid=None):
+        self._storage.clear_map(mapname, wid)
+
+    def delete_map(self, mapname, wid=None):
+        self._storage.delete_map(mapname)
+
+    def list_maps(self, start=0, count=2000, wid=None):
+        return self._storage.list_maps(start, count, wid)
+
+    def maps(self, wid=None):
+        self._list_stepwise("maps", wid)
+
+    # set operations
+    def create_set(self, setname, wid=None):
+        self._storage.create_set(setname, wid)
+
+    def add_set_entry(self, setname, item, wid=None):
+        self._storage.add_set_entry(setname, item, wid)
+
+    def remove_set_entry(self, setname, item, wid=None):
+        self._storage.remove_set_entry(setname, item, wid)
+
+    def contains_set_item(self, setname, item, wid=None):
+        return self._storage.contains_set_item(setname, item, wid)
+
+    def retrieve_set(self, setname, wid=None):
+        return self._storage.retrieve_set(setname, wid)
+
+    def clear_set(self, setname, wid=None):
+        self._storage.clear_set(setname, wid)
+
+    def delete_set(self, setname, wid=None):
+        self._storage.delete_set(setname)
+
+    def list_sets(self, start=0, count=2000, wid=None):
+        return self._storage.list_sets(start, count, wid)
+
+    def sets(self, wid=None):
+        self._list_stepwise("sets", wid)
+
+    # counter operations
+    def create_counter(self, countername, countervalue, wid=None):
+        self._storage.create_counter(countername, countervalue, wid)
+
+    def get_counter(self, countername, wid=None):
+        return self._storage.get_counter(countername, wid)
+
+    def increment_counter(self, countername, increment, wid=None):
+        self._storage.increment_counter(countername, increment, wid)
+
+    def decrement_counter(self, countername, decrement, wid=None):
+        self._storage.decrement_counter(countername, decrement, wid)
+
+    def delete_counter(self, countername, wid=None):
+        self._storage.delete_counter(countername, wid)
+
+    def list_counters(self, start=0, count=2000, wid=None):
+        return self._storage.list_counters(start, count, wid)
+
+    def counters(self, wid=None):
+        self._list_stepwise("counters", wid)

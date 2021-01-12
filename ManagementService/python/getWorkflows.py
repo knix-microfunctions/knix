@@ -113,9 +113,22 @@ def check_and_update_workflow_status(email, wf, sapi):
     if wf_status == "failed":
         errmsg = '\n'.join(errmsg_list).strip()
 
+    # get latest workflow info, as there is a known race condition between deployWorkflow and getWorkflows
+    # both try to modify workflow info data structure
+    wf = sapi.get(email + "_workflow_" + wf["id"], True)
+    wf = json.loads(wf)
+
+    if "modified" not in wf:
+        wf["modified"] = 0
+
+    if "ASL_type" not in wf:
+        wf["ASL_type"] = "unknown"
+
     if wf["status"] != wf_status:
         wf["status"] = wf_status
-        sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True, True)
+        if wf_status == "deployed":
+            wf["endpoints"] = list(sapi.retrieveSet(wf["id"] + "_workflow_endpoints", is_private=True))
+        sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True)
         sapi.put("workflow_status_" + wf["id"], wf_status, is_private=True)
 
         wf["deployment_error"] = errmsg
@@ -153,12 +166,6 @@ def handle(value, sapi):
 
             wf = json.loads(wf)
 
-            if "modified" not in wf:
-                wf["modified"] = 0
-
-            if "ASL_type" not in wf:
-                wf["ASL_type"] = "unknown"
-
             wf = check_and_update_workflow_status(email, wf, sapi)
 
             response_data["workflow"] = wf
@@ -174,12 +181,6 @@ def handle(value, sapi):
                     continue
 
                 wf = json.loads(wf)
-
-                if "modified" not in wf:
-                    wf["modified"] = 0
-
-                if "ASL_type" not in wf:
-                    wf["ASL_type"] = "unknown"
 
                 wf = check_and_update_workflow_status(email, wf, sapi)
 

@@ -604,8 +604,7 @@ def isWorkflowPresentAndDeployed(email, workflowname, sapi):
             details["id"] = wf_id
             wf_status = sapi.get("workflow_status_" + wf_id, True)
             details["status"] = wf_status
-            if "endpoints" in wf:
-                details["endpoints"] = wf["endpoints"]
+            details["endpoints"] = list(sapi.retrieveSet(wf_id + "_workflow_endpoints", is_private=True))
             if "modified" in wf:
                 details["modified"] = wf["modified"]
             if "associatedTriggerableTables" in wf:

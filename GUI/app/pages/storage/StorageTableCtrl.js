@@ -43,6 +43,7 @@
     var email = $cookies.get('email');
     var urlPath = sharedProperties.getUrlPath();
     var storageLoc = sharedProperties.getStorageLocation();
+    var storage_data_types = ["kv", "map", "set", "counter"];
 
     $scope.workflows = sharedData.getWorkflows();
 
@@ -100,16 +101,68 @@
       });
     }
 
-
-    //$scope.storageObjects = sharedData.getStorageObjects();
-    if (!$scope.storageObjects) {
-      $scope.storageObjects = [];
+    for (var i = 0; i < storage_data_types.length; i++)
+    {
+        resetScopeStorageObjects(storage_data_types[i]);
+        getStorageObjectsList(storage_data_types[i]);
     }
-    getStorageObjectsList();
-    //}
 
-    $scope.open = function (page, size, key, message) {
-      sharedProperties.setObjectKey(key);
+    function resetScopeStorageObjects(data_type)
+    {
+        if (data_type == "kv")
+        {
+            $scope.storageObjects = [];
+        }
+        else if (data_type == "map")
+        {
+            $scope.storageObjectsMaps = [];
+        }
+        else if (data_type == "set")
+        {
+            $scope.storageObjectsSets = [];
+        }
+        else if (data_type == "counter")
+        {
+            $scope.storageObjectsCounters = [];
+        }
+    }
+
+    function getScopeStorageObjects(data_type) {
+        if (data_type == "kv")
+        {
+            return $scope.storageObjects;
+        }
+        else if (data_type == "map")
+        {
+            return $scope.storageObjectsMaps;
+        }
+        else if (data_type == "set")
+        {
+            return $scope.storageObjectsSets;
+        }
+        else if (data_type == "counter")
+        {
+            return $scope.storageObjectsCounters;
+        }
+    }
+
+    $scope.open = function (page, size, key, message, data_type) {
+        if (data_type == "map")
+        {
+            sharedProperties.setMapName(key);
+        }
+        else if (data_type == "set")
+        {
+            sharedProperties.setSetName(key);
+        }
+        else if (data_type == "counter")
+        {
+            sharedProperties.setCounterName(key);
+        }
+        else
+        {
+            sharedProperties.setObjectKey(key);
+        }
       $scope.errorMessage = message;
       $uibModal.open({
         animation: true,
@@ -122,10 +175,10 @@
 
     };
 
-    $scope.onSelected = function (selectedItem) {
-      storageLoc = selectedItem;
-      sharedProperties.setStorageLocation(storageLoc);
-      getStorageObjectsList();
+    $scope.onSelected = function (selectedItem, data_type) {
+        storageLoc = selectedItem;
+        sharedProperties.setStorageLocation(storageLoc);
+        getStorageObjectsList(data_type);
     }
 
     function getBucketList() {
@@ -191,9 +244,8 @@
       });
     }
 
-
-    function getStorageObjectsList() {
-
+    function getStorageObjectsList(data_type) {
+        var storageLoc = sharedProperties.getStorageLocation();
       var table = "";
       if (storageLoc.type == "Bucket") {
         table = storageLoc.name;
@@ -201,28 +253,54 @@
         table = defaultTable;
       }
 
+      var param_storage = {};
+      param_storage["data_type"] = data_type;
+      param_storage["parameters"] = {};
+      if (data_type == "kv")
+      {
+          param_storage["parameters"]["action"] = "listkeys";
+          param_storage["parameters"]["tableName"] = table;
+      }
+      else
+      {
+          param_storage["parameters"]["action"] = "list" + data_type + "s";
+      }
+      param_storage["parameters"]["start"] = 0;
+      param_storage["parameters"]["count"] = 2000;
+      param_storage["workflowid"] = storageLoc.id;
 
       var req = {
-        method: 'POST',
-        url: urlPath,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        data: JSON.stringify({ "action": "performStorageAction", "data": { "user": { "token": token }, "storage": { "action": "listkeys", "start": 0, "count": 2000, "tableName": table, "workflowid": storageLoc.id } } })
-      }
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
+       }
 
-      $http(req).then(function successCallback(response) {
+     $http(req).then(function successCallback(response) {
         if (response.data.status == "success") {
-          $scope.storageObjects = [];
-          for (var i = 0; i < response.data.data.keylist.length; i++) {
-            if (!response.data.data.keylist[i].startsWith("grain_requirements_") && !response.data.data.keylist[i].startsWith("grain_source_") && !response.data.data.keylist[i].startsWith("workflow_json_") && !response.data.data.keylist[i].endsWith("_metadata")) {
-              $scope.storageObjects.push({ "key": response.data.data.keylist[i], "modified": "Z" });
-            }
-          }
+              resetScopeStorageObjects(data_type);
+              var storageObjects = getScopeStorageObjects(data_type);
+
+              if (data_type == "kv")
+              {
+                  for (var i=0;i<response.data.data.keylist.length;i++) {
+                      storageObjects.push({"key" : response.data.data.keylist[i], "modified" : "Z"});
+                  }
+              }
+              else
+              {
+                  var data_type_list = data_type + "list"
+                  for (var i=0;i<response.data.data[data_type_list].length;i++) {
+                      var so = {"key" : response.data.data[data_type_list][i], "modified" : "Z"};
+                      storageObjects.push(so);
+                  }
+              }
           //sharedData.setStorageObjects($scope.storageObjects);
 
         } else {
-          console.log("Failure status returned by performStorageAction / listKeys");
+          console.log("Failure status returned by performStorageAction / " + param_storage["parameters"]["action"]);
           console.log("Message:" + response.data.data.message);
           $scope.errorMessage = response.data.data.message;
           $uibModal.open({
@@ -233,7 +311,7 @@
           });
         }
       }, function errorCallback(response) {
-        console.log("Error occurred during listKeys action");
+        console.log("Error occurred during action: " + param_storage["parameters"]["action"]);
         console.log("Response:" + response);
         if (response.statusText) {
           $scope.errorMessage = response.statusText;
@@ -249,22 +327,22 @@
       });
     }
 
-    $scope.getIndex = function (storageObject) {
-      return $scope.storageObjects.indexOf(storageObject);
+    $scope.getStorageObjectKey = function(storageObject, data_type)
+    {
+        var idx = $scope.getIndex(storageObject, data_type);
+        var storageObjects = getScopeStorageObjects(data_type);
+        return storageObjects[idx].key;
     }
 
-
+    $scope.getIndex = function(storageObject, data_type) {
+        var storageObjects = getScopeStorageObjects(data_type);
+        return storageObjects.indexOf(storageObject);
+    }
 
     function dateFormat(d) {
       var format = "d-m-Y H:i:s";
       return format
 
-        .replace(/d/gm, ('0' + (d.getDate())).substr(-2))
-        .replace(/m/gm, monthNames[d.getMonth()])
-        .replace(/Y/gm, d.getFullYear().toString())
-        .replace(/H/gm, ('0' + (d.getHours() + 0)).substr(-2))
-        .replace(/i/gm, ('0' + (d.getMinutes() + 0)).substr(-2))
-        .replace(/s/gm, ('0' + (d.getSeconds() + 0)).substr(-2));
     }
 
 
@@ -280,21 +358,21 @@
         table = defaultTable;
       }
       var req = {
-        method: 'POST',
-        url: urlPath,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        data: JSON.stringify({ "action": "performStorageAction", "data": { "user": { "token": token }, "storage": { "action": "getdata", "key": key, "tableName": table, "workflowid": storageLoc.id } } })
-      }
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : { "data_type": "kv", "parameters": { "action": "getdata", "key": key, "tableName": table }, "workflowid" :  storageLoc.id} } })
+       }
 
-      $http(req).then(function successCallback(response) {
+       $http(req).then(function successCallback(response) {
 
         if (response.data.status == "success") {
           var objectData = response.data.data.value;
 
           if (objectData != "") {
-            console.log('Storage object sucessfully retrieved.');
+            console.log('Storage object successfully retrieved.');
 
             var binaryString = "";
             var blob = "";
@@ -366,8 +444,10 @@
     }
 
 
-    $scope.deleteStorageObject = function (index) {
-      console.log('deleting storage object ' + $scope.storageObjects[index].key);
+    $scope.deleteStorageObject = function(index, data_type) {
+        var storageLoc = sharedProperties.getStorageLocation();
+        var scopeStorageObjects = getScopeStorageObjects(data_type);
+      console.log('deleting storage object ' + scopeStorageObjects[index].key);
 
       var table = "";
       if (storageLoc.type == "Bucket") {
@@ -375,23 +455,41 @@
       } else {
         table = defaultTable;
       }
-      var req = {
-        method: 'POST',
-        url: urlPath,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        data: JSON.stringify({ "action": "performStorageAction", "data": { "user": { "token": token }, "storage": { "action": "deletedata", "key": $scope.storageObjects[index].key, "tableName": table, "workflowid": storageLoc.id } } })
-      }
 
-      $http(req).then(function successCallback(response) {
+      var param_storage = {};
+      param_storage["data_type"] = data_type;
+      param_storage["parameters"] = {};
+      if (data_type == "kv")
+      {
+          param_storage["parameters"]["action"] = "deletedata";
+          param_storage["parameters"]["key"] = scopeStorageObjects[index].key;
+          param_storage["parameters"]["tableName"] = table;
+      }
+      else
+      {
+          param_storage["parameters"]["action"] = "delete" + data_type;
+          param_storage["parameters"][data_type + "name"] = scopeStorageObjects[index].key;
+      }
+      param_storage["workflowid"] = storageLoc.id;
+
+      var req = {
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
+       }
+
+       $http(req).then(function successCallback(response) {
 
         if (response.data.status == "success") {
-          console.log('Storage object sucessfully deleted.');
+          console.log('Storage object successfully deleted.');
           toastr.success('Your object has been deleted successfully!');
-          $scope.storageObjects.splice(index, 1);
+          scopeStorageObjects.splice(index, 1);
+          //$scope.storageObjects.splice(index, 1);
         } else {
-          console.log("Failure status returned by deleteData action");
+          console.log("Failure status returned by performStorageAction / " + param_storage["parameters"]["action"]);
           console.log(response.data);
           $scope.errorMessage = "An error occurred while attempting to delete the object.";
           $uibModal.open({
@@ -420,8 +518,77 @@
 
     }
 
-    $scope.removeStorageObject = function (index) {
-      $scope.storageObjectToBeDeleted = $scope.storageObjects[index];
+    $scope.clearStorageObject = function(index, data_type) {
+      var scopeStorageObjects = getScopeStorageObjects(data_type);
+      var param_storage = {};
+      param_storage["data_type"] = data_type;
+      param_storage["parameters"] = {};
+      param_storage["parameters"]["action"] = "clear" + data_type;
+      param_storage["parameters"][data_type + "name"] = scopeStorageObjects[index].key;
+      param_storage["workflowid"] = storageLoc.id;
+
+      var req = {
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
+       }
+
+       $http(req).then(function successCallback(response) {
+
+          if (response.data.status=="success") {
+            console.log('Storage object successfully cleared.');
+            toastr.success('Your object has been cleared successfully!');
+          } else {
+            console.log("Failure status returned by clear action");
+            console.log(response.data);
+            $scope.errorMessage = "An error occurred while attempting to clear the object.";
+            $uibModal.open({
+              animation: true,
+              scope: $scope,
+              templateUrl: 'app/pages/workflows/modals/errorModal.html',
+              size: 'md',
+            });
+          }
+      }, function errorCallback(response) {
+          console.log("Error occurred during action: " + param_storage["parameters"]["action"]);
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+
+      });
+
+    }
+
+    $scope.clearStorageObjectPrep = function(index, data_type) {
+      var scopeStorageObjects = getScopeStorageObjects(data_type);
+      $scope.storageObjectToBeCleared = scopeStorageObjects[index];
+      $scope.storageObjectToBeCleared.data_type = data_type;
+      $uibModal.open({
+        animation: true,
+        scope: $scope,
+        templateUrl: 'app/pages/storage/modals/clearStorageObjectModal.html',
+        size: 'md',
+      });
+
+
+    };
+
+    $scope.removeStorageObject = function(index, data_type) {
+      var scopeStorageObjects = getScopeStorageObjects(data_type);
+      $scope.storageObjectToBeDeleted = scopeStorageObjects[index];
+      $scope.storageObjectToBeDeleted.data_type = data_type;
       $uibModal.open({
         animation: true,
         scope: $scope,
@@ -441,8 +608,8 @@
 
     }
 
-    $scope.reloadStorageObjects = function () {
-      getStorageObjectsList();
+    $scope.reloadStorageObjects = function(data_type) {
+        getStorageObjectsList(data_type);
     }
 
     $scope.navigate = function (event, rowform, storageObject) {
@@ -453,19 +620,171 @@
 
     }
 
+    function forceStorageObjectCreationInBackground(name, data_type)
+    {
+        if (data_type != "map" && data_type != "set")
+        {
+            return;
+        }
+
+        // first, create a dummy entry
+        var param_storage = {};
+        param_storage["data_type"] = data_type;
+        param_storage["parameters"] = {};
+        param_storage["parameters"][data_type + "name"] = name;
+        if (data_type == "map")
+        {
+            param_storage["parameters"]["action"] = "putmapentry";
+            param_storage["parameters"]["key"] = name;
+            param_storage["parameters"]["value"] = "";
+        }
+        else if (data_type == "set")
+        {
+            param_storage["parameters"]["action"] = "addsetentry";
+            param_storage["parameters"]["item"] = "";
+        }
+        param_storage["workflowid"] = storageLoc.id;
+
+        var req = {
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
+        }
+
+        $http(req).then(function successCallback(response) {
+          if (response.data.status=="success") {
+            console.log('Storage object successfully created (background).');
+                // then, clear
+                param_storage["parameters"]["action"] = "clear" + data_type;
+                if (data_type == "map")
+                {
+                    delete param_storage["parameters"]["key"];
+                    delete param_storage["parameters"]["value"];
+                }
+                else if (data_type == "set")
+                {
+                    delete param_storage["parameters"]["item"];
+                }
+
+                var req2 = {
+                 method: 'POST',
+                 url: urlPath,
+                 headers: {
+                   'Content-Type': 'application/json'
+                 },
+                 data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
+                }
+
+                $http(req2).then(function successCallback(response) {
+                  if (response.data.status=="success") {
+                    console.log('Storage object successfully cleared (background).');
+                    $scope.reloadStorageObjects(data_type);
+                  } else {
+                    console.log("Failure status returned by action (background)");
+                    console.log(response.data);
+                  }
+                }, function errorCallback(response) {
+                  console.log("Error occurred during action (background)");
+                  console.log("Response:" + response);
+                });
+
+            $scope.reloadStorageObjects(data_type);
+          } else {
+            console.log("Failure status returned by action (background)");
+            console.log(response.data);
+          }
+        }, function errorCallback(response) {
+          console.log("Error occurred during action (background)");
+          console.log("Response:" + response);
+        });
+
+    }
+
     // create new storage object
-    $scope.createNewStorageObject = function (storageObject) {
+    $scope.createNewStorageObject = function(storageObject, data_type) {
+        var storageLoc = sharedProperties.getStorageLocation();
 
-      $scope.open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObject.key);
+      if (storageObject.key!='')
+      {
+        console.log('creating new storage object ' + storageObject.key);
+      var param_storage = {};
+      param_storage["data_type"] = data_type;
+      param_storage["parameters"] = {};
+      if (data_type == "kv")
+      {
+          param_storage["parameters"]["action"] = "putdata";
+          param_storage["parameters"]["key"] = storageObject.key;
+          param_storage["parameters"]["value"] = "";
+      }
+      else
+      {
+          param_storage["parameters"]["action"] = "create" + data_type;
+          param_storage["parameters"][data_type + "name"] = storageObject.key;
+          if (data_type == "counter")
+          {
+              param_storage["parameters"][data_type + "value"] = 0;
+          }
+      }
+      param_storage["workflowid"] = storageLoc.id;
 
+      var req = {
+         method: 'POST',
+         url: urlPath,
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         data:  JSON.stringify({ "action" : "performStorageAction", "data" : { "user" : { "token" : token } , "storage" : param_storage } })
+       }
+
+       $http(req).then(function successCallback(response) {
+          if (response.data.status=="success") {
+            // add a dummy entry to force creation of the map/set and then clear it
+            forceStorageObjectCreationInBackground(storageObject.key, data_type);
+
+            console.log('Storage object successfully created.');
+            toastr.success('Your object has been created successfully!');
+            $scope.reloadStorageObjects(data_type);
+            //$scope.open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObject.key);
+
+          } else {
+            console.log("Failure status returned by save action");
+            console.log(response.data);
+            $scope.errorMessage = "An error occurred while attempting to create the object.";
+            $uibModal.open({
+              animation: true,
+              scope: $scope,
+              templateUrl: 'app/pages/workflows/modals/errorModal.html',
+              size: 'md',
+            });
+          }
+        }, function errorCallback(response) {
+          console.log("Error occurred during action: " + param_storage["parameters"]["action"]);
+          console.log("Response:" + response);
+          if (response.statusText) {
+            $scope.errorMessage = response.statusText;
+          } else {
+            $scope.errorMessage = response;
+          }
+          $uibModal.open({
+            animation: true,
+            scope: $scope,
+            templateUrl: 'app/pages/workflows/modals/errorModal.html',
+            size: 'md',
+          });
+        });
+      }
     };
 
-    $scope.addStorageObject = function () {
+    $scope.addStorageObject = function(data_type) {
+      var scopeStorageObjects = getScopeStorageObjects(data_type);
       $scope.inserted = {
         key: '',
         modified: 'A'
       };
-      $scope.storageObjects.push($scope.inserted);
+      scopeStorageObjects.push($scope.inserted);
       $scope.gotoPage(1);
     };
 

@@ -119,13 +119,17 @@
              if (response.data.data.workflow.log != prevLogEntry) {
 
                var logStr = atob(response.data.data.workflow.log);
+               var log_lines = logStr.split('\n');
 
-               logStr = logStr.replace(/\[1/g, "#@![1");
+               log_lines.sort();
 
-               var logArr = logStr.split('#@!');
-               logArr.sort();
+               for (var i = 0; i < log_lines.length; i++)
+               {
+                   var line = log_lines[i];
+                   log_lines[i] = line.substring(line.indexOf(" ") + 1);
+               }
 
-               $scope.aceLogSession.setValue(logArr.join(""));
+               $scope.aceLogSession.setValue(log_lines.join("\n"));
 
                var n = $scope.aceLog.getValue().split("\n").length;
                $scope.aceLog.gotoLine(n, 0, true);

@@ -509,7 +509,7 @@ class MFNTest():
         _, _ = run_command_return_output(cmd)
 
     def parse_metrics(self, eid_filename, timestamps_filename):
-        cmd = "python3 ../mfnmetrics.py -eidfile " + eid_filename
+        cmd = "python3 ../mfnmetrics.py -eidfile " + eid_filename + " -wid " + self._workflow.id
         output, error = run_command_return_output(cmd)
         log_lines = combine_output(output, error)
         with open(timestamps_filename, "w") as f:
