@@ -25,13 +25,17 @@
     mfn_riak_deployment_package_dir: "../../riak"
     riak_dist_url_ubuntu: "https://files.tiot.jp/riak/kv/2.9/2.9.0/ubuntu/xenial64/riak_2.9.0-1_amd64.deb"
     riak_dist_url_debian: "https://files.tiot.jp/riak/kv/2.9/2.9.0/debian/9/riak_2.9.0-1_amd64.deb"
-    riak_dist_url: "{{ riak_dist_url_ubuntu }}"
-    mfn_riak_dist_filename: "riak_2.9.0-1_amd64.deb"
+    riak_dist_url_rhel: "https://files.tiot.jp/riak/kv/2.9/2.9.8/rhel/8/riak-2.9.8-1.el8.x86_64.rpm"
+  
+
+    riak_dist_url: "{{ riak_dist_url_rhel }}"
+    erlang_dist_url: "https://github.com/rabbitmq/erlang-rpm/releases/download/v23.1.5/erlang-23.1.5-1.el8.x86_64.rpm"
+    mfn_riak_dist_filename: "riak-2.9.8-1.el8.x86_64.rpm"
     mfn_riak_deployment_package_archive_filename: knix_riak_deployment_package.tar.gz
     mfn_riak_deployment_package_fullpath: "{{ mfn_riak_deployment_package_dir }}/{{ mfn_riak_deployment_package_archive_filename }}"
 
     # apt-get installation path on target machine
-    riak_server_dir: /usr/lib/riak
+    riak_server_dir: /usr/lib64/riak
 
     # config file path on target machine
     riak_server_config_filepath: /etc/riak/riak.conf
@@ -61,16 +65,16 @@
 
   - name: Check if the target linux distribution is Ubuntu or Debian
     shell: |
-      lsb_release -i | awk '{print $3}'
+       cat /etc/centos-release | awk '{print $1}'
     register: distro_output
-    failed_when: not (distro_output.stdout == 'Ubuntu' or distro_output.stdout == 'Debian')
+    failed_when: not (distro_output.stdout == 'CentOS')
 
   - set_fact:
       target_linux_distribution: "{{ distro_output.stdout }}"
 
   - set_fact:
-      riak_dist_url: "{{ riak_dist_url_debian }}"
-    when: target_linux_distribution == 'Debian'
+      riak_dist_url: "{{ riak_dist_url_rhel }}"
+    when: target_linux_distribution == 'CentOS'
 
   - debug:
       msg:
@@ -127,15 +131,29 @@
       http_proxy: "{{ http_proxy }}"
       https_proxy: "{{ http_proxy }}"
 
+  - name: Download erlang for CentOS
+    #command: wget https://github.com/rabbitmq/erlang-rpm/releases/download/v23.1.5/erlang-23.1.5-1.el8.x86_64.rpm
+    get_url: 
+      url: "{{ erlang_dist_url }}"
+      dest: "{{ mfn_riak_server_dir }}"
+  
+  - name: Install erlang for CentOS
+    dnf: 
+      name: "{{ mfn_riak_server_dir }}/erlang-23.1.5-1.el8.x86_64.rpm" 
+      state: present 
+
   - name: check if riak is installed
-    command: dpkg-query -W riak
+    #command: dpkg-query -W riak
+    yum:
+      list=riak
     register: riak_package_exists
-    failed_when: riak_package_exists.rc > 1
-    changed_when: riak_package_exists.rc == 1
+    failed_when: riak_package_exists.results|length > 1
+    changed_when: riak_package_exists.results|length == 1
 
   - name: install riak if not present
-    apt: deb="{{ mfn_riak_server_dir }}/{{ mfn_riak_dist_filename }}"
-    when: riak_package_exists.rc == 1
+    #apt: deb="{{ mfn_riak_server_dir }}/{{ mfn_riak_dist_filename }}"
+    command: rpm -Uvh "{{ mfn_riak_server_dir }}/{{ mfn_riak_dist_filename }}"
+    when: riak_package_exists.results|length == 0
 
   - name: check if folder exists "{{ riak_server_dir }}/lib"
     stat:

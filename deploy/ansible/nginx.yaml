@@ -60,7 +60,7 @@
         - management_service_exposed_port = {{ management_service_exposed_port }}
 
   - name: ensure nginx is at the latest version
-    apt: name=nginx state=present
+    yum: name=nginx state=present
 
   - name: Stop Nginx
     systemd: name=nginx state=stopped
@@ -129,6 +129,16 @@
       privatekey_path: "{{ install_dir }}/cert/key.pem"
       csr_path: "{{ install_dir }}/cert/request.csr"
       provider: selfsigned
+
+  - name: Creates sites-enabled directory
+    file:
+      path: /etc/nginx/sites-enabled/default 
+      state: directory
+
+  - name: Creates sites-default directory
+    file:
+      path: /etc/nginx/sites-available/default 
+      state: directory
 
   - name: Disable default site
     file: path=/etc/nginx/sites-enabled/default state=absent
