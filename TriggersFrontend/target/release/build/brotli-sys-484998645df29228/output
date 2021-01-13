@@ -1,0 +1,69 @@
+cargo:include=/usr/local/cargo/registry/src/github.com-1ecc6299db9ec823/brotli-sys-0.3.2/brotli/include
+TARGET = Some("x86_64-unknown-linux-gnu")
+OPT_LEVEL = Some("3")
+HOST = Some("x86_64-unknown-linux-gnu")
+CC_x86_64-unknown-linux-gnu = None
+CC_x86_64_unknown_linux_gnu = None
+HOST_CC = None
+CC = None
+CFLAGS_x86_64-unknown-linux-gnu = None
+CFLAGS_x86_64_unknown_linux_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+CRATE_CC_NO_DEFAULTS = None
+DEBUG = Some("false")
+CARGO_CFG_TARGET_FEATURE = Some("fxsr,sse,sse2")
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/common/dictionary.o" "-c" "brotli/common/dictionary.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/dec/bit_reader.o" "-c" "brotli/dec/bit_reader.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/dec/decode.o" "-c" "brotli/dec/decode.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/dec/huffman.o" "-c" "brotli/dec/huffman.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/dec/state.o" "-c" "brotli/dec/state.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/backward_references.o" "-c" "brotli/enc/backward_references.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/backward_references_hq.o" "-c" "brotli/enc/backward_references_hq.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/bit_cost.o" "-c" "brotli/enc/bit_cost.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/block_splitter.o" "-c" "brotli/enc/block_splitter.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/brotli_bit_stream.o" "-c" "brotli/enc/brotli_bit_stream.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/cluster.o" "-c" "brotli/enc/cluster.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/compress_fragment.o" "-c" "brotli/enc/compress_fragment.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/compress_fragment_two_pass.o" "-c" "brotli/enc/compress_fragment_two_pass.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/dictionary_hash.o" "-c" "brotli/enc/dictionary_hash.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/encode.o" "-c" "brotli/enc/encode.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/entropy_encode.o" "-c" "brotli/enc/entropy_encode.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/histogram.o" "-c" "brotli/enc/histogram.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/literal_cost.o" "-c" "brotli/enc/literal_cost.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/memory.o" "-c" "brotli/enc/memory.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/metablock.o" "-c" "brotli/enc/metablock.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/static_dict.o" "-c" "brotli/enc/static_dict.c"
+exit code: 0
+running: "cc" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-I" "brotli/include" "-o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/utf8_util.o" "-c" "brotli/enc/utf8_util.c"
+exit code: 0
+AR_x86_64-unknown-linux-gnu = None
+AR_x86_64_unknown_linux_gnu = None
+HOST_AR = None
+AR = None
+running: "ar" "cq" "/code/target/release/build/brotli-sys-484998645df29228/out/libbrotli.a" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/common/dictionary.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/dec/bit_reader.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/dec/decode.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/dec/huffman.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/dec/state.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/backward_references.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/backward_references_hq.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/bit_cost.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/block_splitter.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/brotli_bit_stream.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/cluster.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/compress_fragment.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/compress_fragment_two_pass.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/dictionary_hash.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/encode.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/entropy_encode.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/histogram.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/literal_cost.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/memory.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/metablock.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/static_dict.o" "/code/target/release/build/brotli-sys-484998645df29228/out/brotli/enc/utf8_util.o"
+exit code: 0
+running: "ar" "s" "/code/target/release/build/brotli-sys-484998645df29228/out/libbrotli.a"
+exit code: 0
+cargo:rustc-link-lib=static=brotli
+cargo:rustc-link-search=native=/code/target/release/build/brotli-sys-484998645df29228/out

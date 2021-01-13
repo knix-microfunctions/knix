@@ -1,0 +1,1 @@
+{"rustc":66165631676752942,"features":"[\"default\", \"native-tls\"]","target":10429514197457385088,"profile":10803726696109476711,"path":10629883132989521471,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"release/.fingerprint/lapin-02db9aefb09426f0/dep-build-script-build-script-build"}}],"rustflags":[],"metadata":5130500223371869599,"config":0}

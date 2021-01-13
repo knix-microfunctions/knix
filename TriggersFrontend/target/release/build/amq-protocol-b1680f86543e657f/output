@@ -1,0 +1,2 @@
+cargo:rerun-if-env-changed=AMQ_PROTOCOL_CODEGEN_DIR
+cargo:rerun-if-env-changed=AMQ_PROTOCOL_CODEGEN_FILE

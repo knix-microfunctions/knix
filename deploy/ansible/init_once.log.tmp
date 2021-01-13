@@ -1,0 +1,35 @@
+
+PLAY [all] *********************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [centos-mfn-trial.novalocal]
+
+TASK [get http_proxy] **********************************************************
+changed: [centos-mfn-trial.novalocal]
+
+TASK [get https_proxy] *********************************************************
+changed: [centos-mfn-trial.novalocal]
+
+TASK [set_fact] ****************************************************************
+ok: [centos-mfn-trial.novalocal]
+
+TASK [debug] *******************************************************************
+ok: [centos-mfn-trial.novalocal] => {
+    "msg": [
+        "inventory_hostname = centos-mfn-trial.novalocal",
+        "ansible_default_ipv4.address = 192.168.0.13",
+        "mfn_server_installation_folder = /opt/knix",
+        "proxy settings files = ./proxy/",
+        "http_proxy = ",
+        "https_proxy = "
+    ]
+}
+
+TASK [ensure other prerequisite packages exist] ********************************
+fatal: [centos-mfn-trial.novalocal]: FAILED! => {"changed": false, "cmd": "apt-get update", "msg": "[Errno 2] No such file or directory: b'apt-get': b'apt-get'", "rc": 2}
+
+NO MORE HOSTS LEFT *************************************************************
+
+PLAY RECAP *********************************************************************
+centos-mfn-trial.novalocal : ok=5    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+
