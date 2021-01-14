@@ -132,12 +132,12 @@
 
   - name: Creates sites-enabled directory
     file:
-      path: /etc/nginx/sites-enabled/default 
+      path: /etc/nginx/sites-enabled 
       state: directory
 
   - name: Creates sites-default directory
     file:
-      path: /etc/nginx/sites-available/default 
+      path: /etc/nginx/sites-available 
       state: directory
 
   - name: Disable default site
@@ -160,9 +160,14 @@
       dest: "/etc/nginx/sites-enabled/knix-microfunctions"
       state: link
 
+  - name: Setup nginx conf
+    template:
+      src=nginx.conf.tpl
+      dest=/etc/nginx/nginx.conf
+
   - name: Start Nginx
     systemd: name=nginx enabled=true state=restarted
-
+    
   - name: create nginx systemctl start script
     copy:
       mode: '775'
@@ -178,3 +183,5 @@
       content: |
         #!/bin/sh
         sudo systemctl stop nginx
+
+
