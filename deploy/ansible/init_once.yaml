@@ -58,6 +58,11 @@
         - zlib-devel
       state: latest
 
+  - name: Install build tools
+    yum:
+      name: "@Development tools"
+      state: present
+
   - name: pip install pyOpenSSL
     pip:
       name: pyOpenSSL
