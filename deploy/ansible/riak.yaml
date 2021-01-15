@@ -144,7 +144,7 @@
 
   - name: check if riak is installed
     #command: dpkg-query -W riak
-    yum:
+    dnf:
       list=riak
     register: riak_package_exists
     failed_when: riak_package_exists.results|length > 1

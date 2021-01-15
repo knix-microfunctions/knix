@@ -42,7 +42,7 @@
       - https_proxy = {{ https_proxy }}
 
   - name: ensure other prerequisite packages exist
-    yum:
+    dnf:
       name:
         - ca-certificates
         - curl
@@ -59,7 +59,7 @@
       state: latest
 
   - name: Install build tools
-    yum:
+    dnf:
       name: "@Development tools"
       state: present
 
@@ -84,12 +84,12 @@
       line: "{{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ inventory_hostname }}"
 
   - name: ensure docker is at the latest version
-    yum: name=docker-ce update_cache=yes
+    dnf: name=docker-ce update_cache=yes
     register: dockerupdate
     ignore_errors: True
 
   - name: Remove old docker
-    yum:
+    dnf:
       name:
         - docker
         - docker-engine
@@ -182,7 +182,7 @@
       state: restarted
 
   - name: ensure java is at the latest version
-    yum:
+    dnf:
       name: java-1.8.0-openjdk-headless
       state: latest
       update_cache: yes

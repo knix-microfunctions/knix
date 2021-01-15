@@ -60,7 +60,7 @@
         - management_service_exposed_port = {{ management_service_exposed_port }}
 
   - name: ensure nginx is at the latest version
-    yum: name=nginx state=present
+    dnf: name=nginx state=present
 
   - name: Stop Nginx
     systemd: name=nginx state=stopped
