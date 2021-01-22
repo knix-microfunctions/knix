@@ -12,18 +12,29 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-FROM ubuntu:18.04
+#FROM ubuntu:18.04
+FROM centos:centos8
 
-RUN apt-get update
-RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo
-
+#RUN apt-get update
+#RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo
+RUN dnf -y update && dnf install -y  curl crontabs popt openssl logrotate sudo
 ENV RIAK_VERSION 2.9.0
 RUN groupadd -o -g 1000 -r riak && useradd -m -d /home/riak -u 1000 -c 'Riak user' -r -g riak riak
 
 # Download riak package
-RUN curl https://files.tiot.jp/riak/kv/2.9/2.9.0/ubuntu/bionic64/riak_2.9.0-1_amd64.deb -o /home/riak/riak_2.9.0-1_amd64.deb
+#RUN curl https://files.tiot.jp/riak/kv/2.9/2.9.0/ubuntu/bionic64/riak_2.9.0-1_amd64.deb -o /home/riak/riak_2.9.0-1_amd64.deb
+#
+#RUN curl https://github.com/rabbitmq/erlang-rpm/releases/download/v23.1.5/erlang-23.1.5-1.el8.x86_64.rpm -o /home/riak/erlang-23.1.5-1.el8.x86_64.rpm
+#RUN curl https://packagecloud.io/rabbitmq/erlang/packages/el/8/erlang-23.1.5-1.el8.x86_64.rpm -o  /home/riak/erlang-23.1.5-1.el8.x86_64.rpm
+#RUN rpm -Uvh /home/riak/erlang-23.1.5-1.el8.x86_64.rpm
+RUN curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | sudo bash
 
-RUN dpkg -i /home/riak/riak_2.9.0-1_amd64.deb
+RUN dnf install -y erlang-23.1.5-1.el8.x86_64
+
+
+RUN curl https://files.tiot.jp/riak/kv/2.9/2.9.8/rhel/8/riak-2.9.8-1.el8.x86_64.rpm -o  /home/riak/riak_2.9.8-1_amd64.rpm
+#RUN dpkg -i /home/riak/riak_2.9.0-1_amd64.deb
+RUN rpm -Uvh  /home/riak/riak_2.9.8-1_amd64.rpm
 
 # Clean up APT cache
 RUN rm -rf /var/lib/apt/lists/* /tmp/*

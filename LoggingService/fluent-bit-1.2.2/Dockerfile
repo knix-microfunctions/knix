@@ -12,7 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-FROM ubuntu:18.04 as builder
+#FROM ubuntu:18.04 as builder
+FROM centos:centos8 as builder
+
 
 # Fluent Bit version
 ENV FLB_MAJOR 1
@@ -20,24 +22,41 @@ ENV FLB_MINOR 2
 ENV FLB_PATCH 2
 ENV FLB_VERSION 1.2.2
 
-ENV DEBIAN_FRONTEND=noninteractive
+#ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      build-essential \
+ENV CENTOS_FRONTEND=noninteractive
+
+#RUN apt-get update && \
+#    apt-get install -y --no-install-recommends \
+#      build-essential \
+#      cmake \
+#      make \
+#      wget \
+#      unzip \
+#      libssl1.0-dev \
+#      libasl-dev \
+#      libsasl2-dev \
+#      pkg-config \
+#      libsystemd-dev \
+#      zlib1g-dev \
+#      flex \
+#      bison \
+#      tar
+
+RUN dnf update -y && dnf group install -y "Development Tools"
+
+RUN dnf install -y  \
       cmake \
       make \
       wget \
       unzip \
-      libssl1.0-dev \
-      libasl-dev \
-      libsasl2-dev \
-      pkg-config \
-      libsystemd-dev \
-      zlib1g-dev \
+      openssl-devel \
+      cyrus-sasl-lib \
+      zlib-devel \
       flex \
       bison \
       tar
+
 
 RUN mkdir -p /fluent-bit/bin /fluent-bit/conf /tmp/src/
 COPY ./fluent-bit-1.2.2.tar.gz /tmp/src/fluent-bit-1.2.2.tar.gz
@@ -68,19 +87,17 @@ RUN cd .. && cp conf/fluent-bit.conf \
      conf/plugins.conf \
      /fluent-bit/conf/
 
-
-
 # This is image is used for mfn sandboxes
-FROM ubuntu:18.04
+#FROM ubuntu:18.04
+FROM centos:centos8
+
+RUN dnf group install -y "Development Tools"
+
 
 # These are already included in mfn sandboxes
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      build-essential \
-      netbase \
+RUN dnf update -y && dnf install -y \
       unzip \
-      file \
-      libmagic1
+      file-libs 
 
 #COPY --from=builder /usr/lib/x86_64-linux-gnu/*sasl* /usr/lib/x86_64-linux-gnu/
 #COPY --from=builder /usr/lib/x86_64-linux-gnu/libz* /usr/lib/x86_64-linux-gnu/
@@ -97,7 +114,9 @@ RUN apt-get update && \
 #COPY --from=builder /lib/x86_64-linux-gnu/libgpg-error.so* /lib/x86_64-linux-gnu/
 
 # Install additional dependencies needed by fluent-bit
-RUN apt-get -y --no-install-recommends install zlib1g libssl1.0 libsasl2-2 ca-certificates
+#RUN apt-get -y --no-install-recommends install zlib1g libssl1.0 libsasl2-2 ca-certificates
+
+RUN dnf -y install zlib openssl cyrus-sasl-lib ca-certificates
 
 # copy fluent-bit from the builder container
 COPY --from=builder /fluent-bit /fluent-bit

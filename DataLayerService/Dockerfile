@@ -12,11 +12,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-FROM openjdk:8-jdk-stretch
+#FROM openjdk:8-jdk-stretch
+FROM centos
 
-RUN apt-get update --fix-missing
-RUN apt-get -y --no-install-recommends install apt-utils dstat vim \
-	telnet net-tools grep sudo bmon netcat python-thrift tcpdump file build-essential
+RUN yum install -y \
+       java-1.8.0-openjdk \
+       java-1.8.0-openjdk-devel
+
+ENV JAVA_HOME /etc/alternatives/jre
+RUN dnf install -y http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
+#RUN apt-get update --fix-missing
+#RUN apt-get -y --no-install-recommends install apt-utils dstat vim \
+#	telnet net-tools grep sudo bmon netcat python-thrift tcpdump file build-essential
+
+#RUN apt-get -y --no-install-recommends install apt-utils dstat vim \
+#	telnet net-tools grep sudo bmon netcat python-thrift tcpdump file build-essential
+
+RUN dnf -y install dstat vim telnet net-tools grep sudo bmon nc python3-thrift tcpdump file 
 
 RUN groupadd -o -g 1000 -r mfn && useradd -d /opt/mfn -u 1000 -m -r -g mfn mfn
 USER mfn

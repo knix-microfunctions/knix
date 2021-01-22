@@ -12,15 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-FROM docker.io/nginx
+#FROM docker.io/nginx
+FROM centos
 
-RUN apt-get update
-RUN apt-get -y --no-install-recommends install vim curl iputils-ping telnet unzip tcpdump
+#RUN apt-get update
+#RUN apt-get -y --no-install-recommends install vim curl iputils-ping telnet unzip tcpdump
+
+RUN dnf -y install vim curl iputils telnet unzip tcpdump nginx
 
 # Configure running container as user nginx
 RUN sed -i 's/\(^user.*\)/# \1 - container already runs as user nginx/' /etc/nginx/nginx.conf
 RUN sed -i 's/pid.*/pid        \/opt\/mfn\/nginx\/nginx.pid;/' /etc/nginx/nginx.conf
-RUN chown nginx:nginx /var/cache/nginx
+RUN mkdir -p /var/cache/nginx; chown nginx:nginx /var/cache/nginx
 
 RUN mkdir -p /opt/mfn/nginx; chown nginx:nginx /opt/mfn/nginx
 USER nginx

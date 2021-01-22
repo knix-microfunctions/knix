@@ -12,19 +12,28 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-FROM ubuntu:18.04
-
+#FROM ubuntu:18.04
+#FROM centos:8
+#FROM nvidia/cuda:10.1-cudnn7-devel-centos8
+FROM centos:centos8
 # Install (as root)
 # Base
-RUN apt-get update --fix-missing
-RUN apt-get -y --no-install-recommends install build-essential
-RUN apt-get -y --no-install-recommends install netbase unzip file libmagic1
+#RUN apt-get update --fix-missing
+RUN dnf -y update --nobest
+#RUN apt-get -y --no-install-recommends install build-essential
+RUN dnf -y group install "Development Tools"
+#RUN apt-get -y --no-install-recommends install netbase unzip file libmagic1
+RUN dnf -y install unzip file 
+RUN dnf -y install dnf-plugins-core
+RUN dnf -y config-manager --set-enabled powertools
+RUN dnf --enablerepo=powertools -y install file-devel
 
 # Python
-RUN apt-get -y --no-install-recommends install python3 python3-dev
-RUN apt-get -y --no-install-recommends install python3-pip
-RUN apt-get -y --no-install-recommends install zlib1g libssl1.0 libsasl2-2 ca-certificates
-
+#RUN apt-get -y --no-install-recommends install python3 python3-dev
+RUN dnf -y install python3 python3-devel python3-pip
+#RUN apt-get -y --no-install-recommends install python3-pip
+#RUN apt-get -y --no-install-recommends install zlib1g libssl1.0 libsasl2-2 ca-certificates
+RUN dnf -y install zlib-devel openssl openssl-devel cyrus-sasl ca-certificates
 RUN /usr/bin/python3 -m pip install --upgrade pip
 
 RUN /usr/bin/python3 -m pip install setuptools
@@ -39,8 +48,8 @@ RUN /usr/bin/python3 -m pip install fastcache
 RUN /usr/bin/python3 -m pip install thriftpy2
 
 # Java (for queue service)
-RUN apt-get -y --no-install-recommends install openjdk-8-jdk-headless
-
+#RUN apt-get -y --no-install-recommends install openjdk-8-jdk-headless
+RUN dnf install java-1.8.0-openjdk-headless
 # Add components (as mfn)
 RUN groupadd -o -g 1000 -r mfn && useradd -d /opt/mfn -u 1000 -m -r -g mfn mfn
 RUN mkdir /opt/mfn/logs
