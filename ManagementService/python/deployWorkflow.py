@@ -319,7 +319,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
     env.append({'name': 'WORKFLOWNAME', 'value': workflow_info["workflowName"]})
 
     # apply gpu_usage fraction to k8s deployment configuration
-    print("GPU sage in create_k8s_service: "+ str(gpu_usage))
+    print("GPU usage in create_k8s_service: "+ str(gpu_usage))
     use_gpus = gpu_usage
 
     if runtime=="Java": # non gpu python function
@@ -344,6 +344,38 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
         kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox" 
 
     if not management and use_gpus > 0. and runtime=="Python": # gpu using python function
+
+        
+        print('getting cluster node capacity info with token' + str(token))
+        new_token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IkZidDdPX0hyUVdRRDdob2VnU25fWkx4YWhaV1FtX29yREpUYV9iUTJhZlUifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRlZmF1bHQtdG9rZW4tYm16dnYiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZGVmYXVsdCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjI1MmFkNWNjLWQzNGYtNGQzMC1hZmE0LWJhODA4YzVlMGFlZiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OmRlZmF1bHQifQ.oMuC-xkaEcbf66B89F_fsBCV-2-5YebJffaFOPLi3_T59l7GpSD0155i_WFDKybgxxZO7uqpWA560lgdeBKfiEB9ugS66g-FKaglfqW-wHx9VIlxEwCYKhOWEORfBn3ArSe9CH2XkmC--NL12zx-2gveKHLH7pXNLzAYRywxoXMlSTsqpjE-mDa9jPrmhiyyk2nLdYWct5QwqSxSg94DRJ43FuaMwI7PXXqD1yLZLm8NEtEOSCrUgTCpOIyCis5qwjXdTAnEnu54pBd8wAV66kSez8ebXM-E-4e7K6gZQvJOITMxg-qMvA3EvuetgfADl5wTf_YLfUbv3cx2SASKMQ"
+
+        resp = requests.get(
+            "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/api/v1/nodes",
+            headers={"Authorization": "Bearer "+new_token, "Accept": "application/json"},
+            verify="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+            proxies={"https":""})
+        if resp.status_code == 200:
+            print('queried cluster node capacities, result: ' + json.dumps(resp.json()))
+            data = json.loads(resp.text)
+            vmemory = 0
+            vcore = 0
+            print("received JSON data items: " + str(data["items"]) + " " + str(type(data["items"])))
+            
+            #assert data["items"] is list # is list of dicts
+            for d in data["items"]: # iterate over the cluster nodes
+                print("item: " + str(d) + str(type(d)) )
+                #assert type(d) is dict
+                res_capacity = d["status"]["capacity"]
+                print("res_capacity: " + str(res_capacity))
+                if "tencent.com/vcuda-memory" in res_capacity.keys():
+                    vmemory += int(d["status"]["capacity"]["tencent.com/vcuda-memory"])
+                    vcore += int(d["status"]["capacity"]["tencent.com/vcuda-core"])
+                    print("found vcuda capability: " + str(vmemory) + " " + str(vcore))
+                else:
+                    print("this node has no vcuda capability!")
+
+            print('queried cluster node capacities:  vuda-memory: %s, vcuda-core: %s' % (str(vmemory), str(vcore)))
+                 
         # overwrite values from values.yaml for new workflows
         ###kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
         ###kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
@@ -355,15 +387,16 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
         # gpu_total_memory = 7800 # hardcoded info (gtx1070), should give free GPU memory
         gpu_core_request = str(int(use_gpus*100)) # derived from GUI float input parameter giving core percentage 
         gpu_memory_request = str(int(30 * use_gpus)) # adapted to gpu-manager memory parameter definition
-
-        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_gpu" 
         
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_gpu" 
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
         # calculate limits resource parameters for gpu-manager, need to identical to requests parameter
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
         kservice['spec']['template']['metadata']['annotations']['tencent.com/vcuda-core-limit'] = str(int(30 * use_gpus)) #gpu_core_request #ToDo: check value 
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['aliyun.com/gpu-mem'] = "2" #str(use_gpus)
+ 
          
     # Special handling for the management container: never run on gpu
     if management:

@@ -17,9 +17,7 @@ FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
 
 # Install (as root)
 # Base
-RUN apt-get update --fix-missing
-RUN apt-get -y --no-install-recommends install build-essential
-RUN apt-get -y --no-install-recommends install netbase unzip file libmagic1
+RUN apt-get update --fix-missing && apt-get -y --no-install-recommends install build-essential netbase unzip file libmagic1
 
 # CUDA 10.1 dependencies and tools to build dlib 
 RUN apt-get -y --no-install-recommends install libsm6 libxrender1 libxrender-dev libxext6 libglib2.0-0 git cmake

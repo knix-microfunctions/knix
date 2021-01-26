@@ -34,9 +34,9 @@ rules:
   - apiGroups: ["serving.knative.dev"]
     resources: ["configurations", "routes", "revisions"]
     verbs: ["get", "list"]
-  # Allow reading/writing "pods" 
+  # Allow reading/writing "pods" and "nodes"
   - apiGroups: [""]
-    resources: ["pods", "pods/status", "pods/log"]
+    resources: ["pods", "pods/status", "pods/log", "nodes"]
     verbs: ["*"]
 ---
 # Role binding for the management account
@@ -66,10 +66,10 @@ metadata:
   name: "wf-{{ .Release.Name }}-role"
   namespace: {{ .Release.Namespace }}
 rules:
-  # Allow reading "endpoints" 
+  # Allow reading "endpoints" and "nodes"
   - apiGroups: [""]
-    resources: ["endpoints","pods"]
-    verbs: ["get","list"]
+    resources: ["endpoints","pods","nodes"]
+    verbs: ["get", "watch", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
