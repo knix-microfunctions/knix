@@ -129,10 +129,10 @@ elastic:
   masterPort: 9300
   resources:
     limits:
-      cpu: 500m
-      memory: 2Gi
+      cpu: 4
+      memory: 4Gi
     requests:
-      cpu: 100m
+      cpu: 2
       memory: 2Gi
 
 #------------------------------------------------------------------------------
@@ -173,6 +173,7 @@ triggersFrontend:
   imagePullPolicy: "Always"
   nameOverride: "microfunctions-triggers-frontend"
   httpPort: 4997
+  replicas: 3
   statusReportIntervalSec: 30
   resources:
     limits:
