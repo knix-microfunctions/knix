@@ -21,6 +21,8 @@
 #------------------------------------------------------------------------------
 #imageRepo: "registry.kube-system.svc.cluster.local"
 imageRepo: "192.168.8.161:5000" # kubespray deployment
+apiKey: "abcdef"
+#imageRepo: "localhost:5000" # kubespray deployment
 manager:
   #httpProxy: "http://192.109.76.93:8080"
   httpsProxy: "http://192.109.76.93:8080"
@@ -48,6 +50,9 @@ manager:
     imagePathJava: "/microfn/sandbox_java"
     imageTag: "latest"
     imagePullPolicy: "Always"
+    env:
+      name: API_TOKEN
+      value: "123test" 
     resources:
       limits:
         cpu: 1
@@ -100,11 +105,11 @@ riak:
   resources:
     limits:
       cpu: 2
-      memory: 8Gi
+      memory: 4Gi
     requests:
       cpu: 2
-      memory: 8Gi
-  DataStorage: 8Gi
+      memory: 4Gi
+  DataStorage: 4Gi
   #DataStorageClass: local-volume 
   ClusterName: "riak"
   WaitForErlang: 180
@@ -115,8 +120,8 @@ riak:
   LevelDbMaximumMemory: 4294967296
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
-  ErlangSchedulersTotal: 2
-  ErlangSchedulersOnline: 2
+  ErlangSchedulersTotal: 4
+  ErlangSchedulersOnline: 4
   ErlangSchedulersForceWakeupInterval: 500
   ErlangSchedulersCompactionOfLoad: "false"
 
