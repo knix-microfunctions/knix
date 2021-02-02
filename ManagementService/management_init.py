@@ -416,7 +416,7 @@ if __name__ == "__main__":
         sys.path.append(workflowdir)
         if os.getenv("KUBERNETES_PORT", None) != None:
             import deployWorkflow
-            url, endpoint_key = deployWorkflow.create_k8s_deployment(email, workflow_info, "Python", 0, management=True)
+            url, endpoint_key = deployWorkflow.create_k8s_deployment(email, workflow_info, "Python", 0, 0, management=True)
             DLCLIENT_MANAGEMENT.putMapEntry("Management_workflow_endpoint_map", endpoint_key, url)
             # Kubernetes mode only has one url
             endpoint_list = [url]

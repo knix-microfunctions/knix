@@ -86,6 +86,8 @@ def handle(value, sapi):
         #wf["gpu_usage"] = None
         if "gpu_usage" in workflow:
             wf["gpu_usage"] = str(workflow["gpu_usage"])
+            #if "gpu_mem_usage" in workflow:
+            wf["gpu_mem_usage"] = str(workflow["gpu_mem_usage"])
         wf['associatedTriggerableTables'] = {}
         wf['associatedTriggers'] = {}
         wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest().lower()

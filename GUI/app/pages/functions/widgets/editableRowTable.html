@@ -24,7 +24,8 @@
 
     <th st-sort="name" style="text-align:left;border:0;"><b>Name</b></th>
     <th st-sort="runtime" style="border:0;"><b>Runtime</b></th>
-    <th st-sort="gpu_cores" style="border:0;"><b>Assigned GPU Cores</b></th>
+    <th st-sort="gpu_cores" style="border:0;"><b>GPU Cores (%)</b></th>
+    <th st-sort="gpu_memory" style="border:0;"><b>GPU Memory (GB)</b></th>
     <th id="sortHeader" style="border:0;" st-sort="modified" st-sort-default="reverse"><b>Last Modified</b></th>
     <th style="border:0;"><b>Actions</b></th>
   </tr>
@@ -49,6 +50,11 @@
     <td style="text-align:left;">
       <span editable-text="mFunction.gpu_usage" e-name="gpu_usage" e-form="rowform">
         {{ mFunction.gpu_usage || 'Not set' }}
+      </span>
+    </td>
+     <td style="text-align:left;">
+      <span editable-text="mFunction.gpu_mem_usage" e-name="gpu_mem_usage" e-form="rowform">
+        {{ mFunction.gpu_mem_usage || 'Not set' }}
       </span>
     </td>
     <td>

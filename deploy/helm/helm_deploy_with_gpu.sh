@@ -10,7 +10,7 @@ APISERVER=$(kubectl config view -o jsonpath="{.clusters[?(@.name==\"$CLUSTER_NAM
 
 # Gets the token value a access api/v1/nodes
 TOKEN=$(kubectl get secrets -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='default')].data.token}"|base64 --decode)
-
+echo "This is the found api access token:"
 echo $TOKEN
 
 helm install mfn $PWD/microfunctions  --set apikey=$TOKEN

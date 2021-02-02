@@ -155,6 +155,9 @@ def compile_resource_info_map(resource_names, uploaded_resources, email, sapi, d
                 if "gpu_usage" in resource_metadata:
                     resource_info["gpu_usage"] = resource_metadata["gpu_usage"]
 
+                if "gpu_mem_usage" in resource_metadata:
+                    resource_info["gpu_mem_usage"] = resource_metadata["gpu_mem_usage"]
+
             num_chunks_str = dlc.get("grain_source_zip_num_chunks_" + resource_id)
             try:
                 num_chunks = int(num_chunks_str)
@@ -265,7 +268,7 @@ def get_workflow_host_port(host_to_deploy, sid):
 
     return success, host_port
 
-def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=False):
+def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usage, management=False):
     # KUBERNETES MODE
     new_workflow_conf = {}
     conf_file = '/opt/mfn/SandboxAgent/conf/new_workflow.conf'
@@ -320,6 +323,8 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, management=F
 
     # apply gpu_usage fraction to k8s deployment configuration
     print("GPU usage in create_k8s_service: "+ str(gpu_usage))
+    print("GPU mem usage in create_k8s_service: "+ str(gpu_mem_usage))
+
     use_gpus = gpu_usage
 
     if runtime=="Java": # non gpu python function
@@ -589,7 +594,13 @@ def handle(value, sapi):
         else:
             gpu_usage = 0.
 
+        if "gpu_mem_usage" in wfmeta and wfmeta["gpu_mem_usage"] != "None":
+            gpu_mem_usage = float(wfmeta["gpu_mem_usage"])
+        else:
+            gpu_mem_usage = 0.
+
         print("deduced gpu_usage from workflow metadata: " + str(gpu_usage))
+        print("deduced gpu_mem_usage from workflow metadata: " + str(gpu_mem_usage))
         
         print("print deployment_info[resources] to evaluate: " + str(deployment_info["resources"]))
         # case 2: gpu_usage is set in deployment info
@@ -598,6 +609,11 @@ def handle(value, sapi):
                 result_gpu = float(deployment_info["resources"][res]["gpu_usage"]) 
                 if result_gpu > 0.:
                     gpu_usage = result_gpu
+
+            if "gpu_mem_usage" in deployment_info["resources"][res].keys():
+                result_mem_gpu = float(deployment_info["resources"][res]["gpu_mem_usage"]) 
+                if result_mem_gpu > 0.:
+                    gpu_mem_usage = result_mem_gpu
 
         sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
 
@@ -611,7 +627,7 @@ def handle(value, sapi):
             else:
                 runtime = "Python"
 
-            url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime, gpu_usage)
+            url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usage)
             if url is not None and len(url) > 0:
                 status = "deploying"
                 sapi.addSetEntry(workflow_info["workflowId"] + "_workflow_endpoints", str(url), is_private=True)
