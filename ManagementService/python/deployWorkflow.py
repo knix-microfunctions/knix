@@ -326,25 +326,22 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
     print("GPU mem usage in create_k8s_service: "+ str(gpu_mem_usage))
 
     use_gpus = gpu_usage
+    use_mem_gpus = gpu_mem_usage
 
     if runtime=="Java": # non gpu python function
         # overwrite values from values.yaml for new workflows
-        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
-        #kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
         # only change the image name
         imageName = kservice['spec']['template']['spec']['containers'][0]['image']
         imageRepoName = imageName.split("/")[0]
-        #kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox_java" 
 
         kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_java" 
 
     if not management and use_gpus == 0. and runtime=="Python": # non gpu python function
         # overwrite values from values.yaml for new workflows
-        kservice['spec']['template']['spec']['containers'][0]['resources']['limits'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
-        kservice['spec']['template']['spec']['containers'][0]['resources']['requests'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['requests'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
         imageName = kservice['spec']['template']['spec']['containers'][0]['image']
         imageRepoName = imageName.split("/")[0]
-        #kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox" 
 
         kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox" 
 
@@ -381,23 +378,26 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
                         print("found vcuda capability: " + str(vmemory) + " " + str(vcore))
                     else:
                         print("this node has no vcuda capability, skipping")
-            print('queried cluster node capacities:  vuda-memory: %s, vcuda-core: %s' % (str(vmemory), str(vcore)))
+            print('queried cluster node capacities:  vcuda-memory: %s, vcuda-core: %s' % (str(vmemory), str(vcore)))
         except requests.exceptions.HTTPError as e:
             print("Error: could not get cluster node vcuda capacities!")
             print(e)
             print(resp.text)
 
         # overwrite values from values.yaml for new workflows
-        ###kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = str(use_gpus)
-        ###kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = str(use_gpus)
         imageName = kservice['spec']['template']['spec']['containers'][0]['image']
         imageRepoName = imageName.split("/")[0]
-        # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox_gpu" 
-        # calculate requests resource parameters for gpu-manager
         
         # gpu_total_memory = 7800 # hardcoded info (gtx1070), should give free GPU memory
-        gpu_core_request = str(int(use_gpus*100)) # derived from GUI float input parameter giving core percentage 
-        gpu_memory_request = str(int(vmemory * use_gpus)) # adapted to gpu-manager memory parameter definition
+        gpu_core_request = str(int(use_gpus*100)) # derived from GUI float input parameter, yielding core percentage as required by gpu-manager
+        #gpu_memory_request = str(int(vmemory * use_gpus)) # adapted to gpu-manager memory parameter definition
+        gpu_memory_request = str(int(use_mem_gpus*4.0)) # gpu-manager requires gpu memory parameter in units of 256 MB
+        print ("memory request set to %s vcuda units " % gpu_memory_request)
+         
+        if int(gpu_memory_request) > int(vmemory):
+            print("only up to %s GB GPU memory available on the cluster nodes!" % str(int(vmemory)))
+            gpu_memory_request = str(int(vmemory)) # limit to max available memory
+            print ("memory set to %s GB " % gpu_memory_request)
         
         kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_gpu" 
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
@@ -405,7 +405,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
         # calculate limits resource parameters for gpu-manager, need to identical to requests parameter
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
-        kservice['spec']['template']['metadata']['annotations']['tencent.com/vcuda-core-limit'] = str(int(vmemory * use_gpus)) #gpu_core_request #ToDo: check value 
+        kservice['spec']['template']['metadata']['annotations']['tencent.com/vcuda-core-limit'] = str(int(vmemory)) #gpu_core_request #ToDo: check value 
         #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['aliyun.com/gpu-mem'] = "2" #str(use_gpus)
  
          
