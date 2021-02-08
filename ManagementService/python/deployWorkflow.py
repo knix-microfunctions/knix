@@ -389,7 +389,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
         imageRepoName = imageName.split("/")[0]
         
         # gpu_total_memory = 7800 # hardcoded info (gtx1070), should give free GPU memory
-        gpu_core_request = str(int(use_gpus*100)) # derived from GUI float input parameter, yielding core percentage as required by gpu-manager
+        gpu_core_request = str(int(use_gpus)) # derived from GUI float input parameter, yielding core percentage as required by gpu-manager
         #gpu_memory_request = str(int(vmemory * use_gpus)) # adapted to gpu-manager memory parameter definition
         gpu_memory_request = str(int(use_mem_gpus*4.0)) # gpu-manager requires gpu memory parameter in units of 256 MB
         print ("memory request set to %s vcuda units " % gpu_memory_request)
