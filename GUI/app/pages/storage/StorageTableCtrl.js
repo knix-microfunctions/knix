@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The KNIX Authors
+   Copyright 2021 The KNIX Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
     $scope.storageLocations.selected = { name: "General Storage", type: "Default Bucket", id: '' };
 
     $scope.itemsByPage = 10;
+    $scope.dataType = "kv";
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -245,14 +246,14 @@
     }
 
     function getStorageObjectsList(data_type) {
-        var storageLoc = sharedProperties.getStorageLocation();
+      var storageLoc = sharedProperties.getStorageLocation();
       var table = "";
       if (storageLoc.type == "Bucket") {
         table = storageLoc.name;
       } else {
         table = defaultTable;
       }
-
+            
       var param_storage = {};
       param_storage["data_type"] = data_type;
       param_storage["parameters"] = {};
@@ -268,7 +269,7 @@
       param_storage["parameters"]["start"] = 0;
       param_storage["parameters"]["count"] = 2000;
       param_storage["workflowid"] = storageLoc.id;
-
+      
       var req = {
          method: 'POST',
          url: urlPath,
@@ -286,7 +287,9 @@
               if (data_type == "kv")
               {
                   for (var i=0;i<response.data.data.keylist.length;i++) {
-                      storageObjects.push({"key" : response.data.data.keylist[i], "modified" : "Z"});
+                      if (!response.data.data.keylist[i].includes("_branch_")) {
+                        storageObjects.push({"key" : response.data.data.keylist[i], "modified" : "Z", "selected" : false});
+                      }
                   }
               }
               else
@@ -444,10 +447,10 @@
     }
 
 
-    $scope.deleteStorageObject = function(index, data_type) {
-        var storageLoc = sharedProperties.getStorageLocation();
-        var scopeStorageObjects = getScopeStorageObjects(data_type);
-      console.log('deleting storage object ' + scopeStorageObjects[index].key);
+    $scope.deleteStorageObject = function(key, dataType) {
+
+      var storageLoc = sharedProperties.getStorageLocation();
+      console.log('deleting storage object ' + key);
 
       var table = "";
       if (storageLoc.type == "Bucket") {
@@ -457,18 +460,19 @@
       }
 
       var param_storage = {};
-      param_storage["data_type"] = data_type;
+      
+      param_storage["data_type"] = dataType;
       param_storage["parameters"] = {};
-      if (data_type == "kv")
+      if (dataType == "kv")
       {
           param_storage["parameters"]["action"] = "deletedata";
-          param_storage["parameters"]["key"] = scopeStorageObjects[index].key;
+          param_storage["parameters"]["key"] = key;
           param_storage["parameters"]["tableName"] = table;
       }
       else
       {
-          param_storage["parameters"]["action"] = "delete" + data_type;
-          param_storage["parameters"][data_type + "name"] = scopeStorageObjects[index].key;
+          param_storage["parameters"]["action"] = "delete" + dataType;
+          param_storage["parameters"][dataType + "name"] = key;
       }
       param_storage["workflowid"] = storageLoc.id;
 
@@ -486,8 +490,7 @@
         if (response.data.status == "success") {
           console.log('Storage object successfully deleted.');
           toastr.success('Your object has been deleted successfully!');
-          scopeStorageObjects.splice(index, 1);
-          //$scope.storageObjects.splice(index, 1);
+          
         } else {
           console.log("Failure status returned by performStorageAction / " + param_storage["parameters"]["action"]);
           console.log(response.data);
@@ -595,8 +598,26 @@
         templateUrl: 'app/pages/storage/modals/deleteStorageObjectModal.html',
         size: 'md',
       });
+    };
 
-
+    $scope.removeMultipleStorageObjects = function(dataType) {
+      var storageObjects = getScopeStorageObjects(dataType);
+      $scope.storageObjectsToBeDeleted = "";
+      $scope.dataType = dataType
+      for (var i = 0; i < storageObjects.length; i++) {
+        if (storageObjects[i].selected) {
+          if ($scope.storageObjectsToBeDeleted!="") {
+            $scope.storageObjectsToBeDeleted += ", ";
+          }
+          $scope.storageObjectsToBeDeleted += storageObjects[i].key;
+        }
+      }
+      $uibModal.open({
+        animation: true,
+        scope: $scope,
+        templateUrl: 'app/pages/storage/modals/deleteMultipleStorageObjectsModal.html',
+        size: 'md',
+      });
     };
 
     $scope.gotoPage = function (page) {
@@ -703,31 +724,79 @@
 
     }
 
+    $scope.downloadSelected = function() {
+      
+      for (var i = 0; i < $scope.storageObjects.length; i++) {
+        if ($scope.storageObjects[i].selected) {
+           $scope.downloadStorageObject($scope.storageObjects[i].key);
+        }
+      }
+    }
+
+    $scope.selectAll = function(dataType) {
+      
+      var storageObjects = getScopeStorageObjects(dataType);
+      if (document.getElementById(dataType + "ObjectsSelectAll").checked) {
+        for (var i = 0; i < storageObjects.length; i++) {
+          storageObjects[i].selected = true;
+        }
+      } else {
+        for (var i = 0; i < storageObjects.length; i++) {
+          storageObjects[i].selected = false;
+        }
+      }
+    }
+
+    $scope.spliceStorageObject = function(storageObject, dataType) {
+
+      var storageObjects = getScopeStorageObjects(dataType);
+      storageObjects.splice($scope.getIndex(storageObject, dataType), 1);
+
+    };
+
+    $scope.deleteSelected = function() {
+
+      var storageObjects = getScopeStorageObjects($scope.dataType);
+      var objectsToBeDeleted = [];
+      for (var i = 0; i < storageObjects.length; i++) {
+        if (storageObjects[i].selected) {
+          objectsToBeDeleted.push({key: storageObjects[i].key});
+        }
+      }
+      for (var i = 0; i < objectsToBeDeleted.length; i++) {
+        for (var t = 0; t < storageObjects.length; t++) {
+          if (storageObjects[t].key==objectsToBeDeleted[i].key) {
+            storageObjects.splice(t, 1);
+          }
+        }
+        $scope.deleteStorageObject(objectsToBeDeleted[i].key, $scope.dataType);
+      }
+    }
+
+
     // create new storage object
     $scope.createNewStorageObject = function(storageObject, data_type) {
-        var storageLoc = sharedProperties.getStorageLocation();
+      var storageLoc = sharedProperties.getStorageLocation();
 
       if (storageObject.key!='')
       {
         console.log('creating new storage object ' + storageObject.key);
-      var param_storage = {};
-      param_storage["data_type"] = data_type;
-      param_storage["parameters"] = {};
-      if (data_type == "kv")
-      {
-          param_storage["parameters"]["action"] = "putdata";
-          param_storage["parameters"]["key"] = storageObject.key;
-          param_storage["parameters"]["value"] = "";
-      }
-      else
-      {
-          param_storage["parameters"]["action"] = "create" + data_type;
-          param_storage["parameters"][data_type + "name"] = storageObject.key;
-          if (data_type == "counter")
-          {
-              param_storage["parameters"][data_type + "value"] = 0;
-          }
-      }
+        if (data_type == "kv")
+        {
+            $scope.open('app/pages/storage/modals/uploadStorageObjectModal.html', 'lg', storageObject.key);
+            return;
+        }
+
+        var param_storage = {};
+        param_storage["data_type"] = data_type;
+        param_storage["parameters"] = {};
+        param_storage["parameters"]["action"] = "create" + data_type;
+        param_storage["parameters"][data_type + "name"] = storageObject.key;
+        if (data_type == "counter")
+        {
+            param_storage["parameters"][data_type + "value"] = 0;
+        }
+      
       param_storage["workflowid"] = storageLoc.id;
 
       var req = {
@@ -782,7 +851,8 @@
       var scopeStorageObjects = getScopeStorageObjects(data_type);
       $scope.inserted = {
         key: '',
-        modified: 'A'
+        modified: 'A',
+        selected: false
       };
       scopeStorageObjects.push($scope.inserted);
       $scope.gotoPage(1);

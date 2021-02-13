@@ -1,5 +1,5 @@
 <!--
-   Copyright 2020 The KNIX Authors
+   Copyright 2021 The KNIX Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 
 <div class="modal-content">
   <div class="modal-header bg-danger">
-    <i class="ion-flame modal-icon"></i><span>Delete Storage Object</span>
+    <i class="ion-flame modal-icon"></i><span>Delete Storage Objects</span>
   </div>
   <div class="modal-body text-center">
-    Delete <b>{{ storageObjectToBeDeleted.key }}</b> object?
+    Delete <b>{{ storageObjectsToBeDeleted }}</b> objects?
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-primary" ng-click="spliceStorageObject(storageObjectToBeDeleted, storageObjectToBeDeleted.data_type);deleteStorageObject(storageObjectToBeDeleted.key, storageObjectToBeDeleted.data_type);$dismiss();">Yes</button> <button type="button" class="btn btn-danger" ng-click="$dismiss()">No</button>
+    <button type="button" class="btn btn-primary" ng-click="deleteSelected();$dismiss();">Yes</button> <button type="button" class="btn btn-danger" ng-click="$dismiss()">No</button>
   </div>
 </div>
