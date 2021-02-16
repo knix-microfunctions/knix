@@ -13,6 +13,6 @@ TOKEN=$(kubectl get secrets -o jsonpath="{.items[?(@.metadata.annotations['kuber
 echo "This is the found api access token:"
 echo $TOKEN
 
-helm install mfn $PWD/microfunctions  --set apikey=$TOKEN
-helm upgrade mfn $PWD/microfunctions  --set apikey=$TOKEN
+helm install mfn $PWD/microfunctions  --set apiKey=$TOKEN --set persistence.storageClass=manual
+helm upgrade mfn $PWD/microfunctions  --set apiKey=$TOKEN --set persistence.storageClass=manual
 

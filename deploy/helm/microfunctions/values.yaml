@@ -56,10 +56,10 @@ manager:
     resources:
       limits:
         cpu: 1
-        memory: 2Gi
+        memory: 4Gi
       requests:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
   managementSandbox:
     resources:
       limits:
@@ -84,10 +84,10 @@ datalayer:
   javaOpts: "-Xmx4096m"
   resources:
     limits:
-      cpu: 4
+      cpu: 1 
       memory: 8Gi
     requests:
-      cpu: 4
+      cpu: 1
       memory: 8Gi
 
 #------------------------------------------------------------------------------
@@ -104,13 +104,13 @@ riak:
   ClientPortProtobuf: 8087
   resources:
     limits:
-      cpu: 2
-      memory: 4Gi
+      cpu: 1
+      memory: 8Gi
     requests:
-      cpu: 2
-      memory: 4Gi
-  DataStorage: 4Gi
-  #DataStorageClass: local-volume 
+      cpu: 1
+      memory: 8Gi
+  DataStorage: 8Gi
+  DataStorageClass: manual 
   ClusterName: "riak"
   WaitForErlang: 180
   ErlangDistributionPortRangeMinimum: 6000
@@ -120,8 +120,8 @@ riak:
   LevelDbMaximumMemory: 4294967296
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
-  ErlangSchedulersTotal: 4
-  ErlangSchedulersOnline: 4
+  ErlangSchedulersTotal: 2
+  ErlangSchedulersOnline: 2
   ErlangSchedulersForceWakeupInterval: 500
   ErlangSchedulersCompactionOfLoad: "false"
 
@@ -184,8 +184,8 @@ triggersFrontend:
   statusReportIntervalSec: 30
   resources:
     limits:
-      cpu: 2
+      cpu: 1
       memory: 8Gi
     requests:
-      cpu: 2
+      cpu: 1
       memory: 1Gi
