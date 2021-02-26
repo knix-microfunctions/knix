@@ -22,6 +22,7 @@ import sys
 import riak
 import socket
 import subprocess
+#import platform
 
 ### global variables set at runtime
 DLCLIENT=None
@@ -61,14 +62,13 @@ def dl_get(key):
 def add_host(hostname,hostip=None):
     if hostip is None:
         hostip = socket.gethostbyname(hostname)
-    has_gpu = False
-    try:
-        has_gpu = ("NVIDIA" in subprocess.check_output('nvcc --version.split(' ')).decode()'))
-    except Exception:
-        print("No suitable GPU available on this host!")
-        pass
+    print("Adding host: " + str(hostname))
 
-    print("Adding host: " + str(hostname) + ", has gpu: "+ str(has_gpu))
+    hasGPU = False
+    # get environment of current hostname
+    if os.environ['KNIX_node_hasGPU'] == "True":
+        print("found GPU Environent: " +str(os.environ['KNIX_node_hasGPU']) )
+        hasGPU = True
 
     v = dl_get("available_hosts")
     if v.encoded_data is not None and len(v.encoded_data) > 0:
@@ -76,13 +76,18 @@ def add_host(hostname,hostip=None):
         print("existing hosts: " + str(hosts))
         if isinstance(hosts,list):
             hosts = {host: socket.gethostbyname(host) for host in hosts}
+
+        hosts['has_GPU'] = hasGPU
+
     else:
         hosts = {}
     if hostname != None and hostname not in hosts:
         hosts[hostname] = hostip
-        hosts[hostname]["has_gpu"] = True
+        if hasGPU == True:
+           hosts[hostname]["has_gpu"] = hasGPU
         v.encoded_data = json.dumps(hosts).encode()
         v.store()
+    print("found hosts: " + str(hosts))
     return hosts
 
 
