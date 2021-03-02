@@ -650,32 +650,45 @@ def handle(value, sapi):
 
             # TODO: intelligence on how to pick hosts
             hosts = sapi.get("available_hosts", True)
-            print("available_hosts: " + str(hosts))
-            if hosts is not None and hosts != "":
-                hosts = json.loads(hosts)
+            # hostst is string representation of list or dict
+            print("available_hosts: " + hosts)
+            hosts = json.loads(hosts)
+ 
+            if hosts is not None and hosts != "" and isinstance(hosts,dict):
+                host_has_gpu = False
                 deployed_hosts = {}
                 gpu_hosts = {}
                 picked_hosts = {}
-
-                for hostname in hosts:
-                    print("current host: " + str(hosts[hostname]))
-                    #if hostname.endswith("_gpu"):
-                    if "has_gpu" in hosts[hostname]:
+                plain_hosts={}
+                hostname_t = ""
+                for hostname in hosts: # individual host dict
+                    nodeHasGPU = hosts["has_gpu"] # check if host has a GPU
+                    if hostname != "has_gpu": # skip this key
+                        hostname_t = hostname
+                        #print("current hostnae: " + str(hostname) + str(hosts[hostname]))
                         hostip = hosts[hostname]
-                        gpu_hosts[hostname] = hostip
-
+                        plain_hosts[hostname] = hostip # add to general hosts
+                        if nodeHasGPU:
+                          gpu_hosts[hostname] = hostip # add to GPU hosts
+                hostname = hostname_t
                 # instruct hosts to start the sandbox and deploy workflow
+                print("selected host:" + str(hostname) + " " + str(hostip))
+                #print("calulated host:" + str(gpu_hosts) + " " + str(plain_hosts))
                 if sandbox_image_name == "microfn/sandbox" or sandbox_image_name=="microfn/sandbox_java": # can use any host 
-                    picked_hosts = hosts
+                    picked_hosts = plain_hosts
+                    #hosts["has_gpu"] = False
+                    #print("picked_hosts: " + str(picked_hosts))
                 elif len(gpu_hosts) > 0:
                     picked_hosts = gpu_hosts 
                 else:
-                    picked_hosts = hosts # fallback as there are no gpu hosts available
+                    picked_hosts = plain_hosts # fallback as there are no gpu hosts available
                     print("available GPU hosts list is empty. Deploying on general purpose host")
 
                 for hostname in picked_hosts: # loop over all hosts, need to pich gpu hosts for python/gpu workflows
                     hostip = hosts[hostname]
                     host_to_deploy = (hostname, hostip)
+                    print("host_to_deploy: " + str(host_to_deploy) )
+                    #host_to_deploy = ("userslfu99", "192.168.8.99")
                     success, endpoint_key = start_docker_sandbox(host_to_deploy, email, workflow_info["sandboxId"], workflow_info["workflowId"], workflow_info["workflowName"], sandbox_image_name)
                     if success:
                         deployed_hosts[hostname] = hostip
@@ -697,7 +710,9 @@ def handle(value, sapi):
                         sapi.putMapEntry(workflow_info["workflowId"] + "_sandbox_status_map", endpoint_key, json.dumps(sbinfo), is_private=True)
                         #endpoints = sapi.retrieveMap(workflow_info["workflowId"] + "_workflow_endpoints", True)
                         #sapi.log(str(endpoints))
-
+            elif hosts is not None and hosts != "" and isinstance(hosts,list):
+                print("hosts is not dict type!")
+ 
                 if not bool(deployed_hosts):
                     status = "failed"
                 else:

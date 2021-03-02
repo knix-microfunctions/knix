@@ -77,14 +77,14 @@ def add_host(hostname,hostip=None):
         if isinstance(hosts,list):
             hosts = {host: socket.gethostbyname(host) for host in hosts}
 
-        hosts['has_GPU'] = hasGPU
+        hosts['has_gpu'] = hasGPU
 
     else:
         hosts = {}
     if hostname != None and hostname not in hosts:
         hosts[hostname] = hostip
         if hasGPU == True:
-           hosts[hostname]["has_gpu"] = hasGPU
+           hosts["has_gpu"] = hasGPU
         v.encoded_data = json.dumps(hosts).encode()
         v.store()
     print("found hosts: " + str(hosts))
