@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -158,14 +158,15 @@ def handle(value, sapi):
             raise Exception("Invalid data provided. " + message)
 
         storage = data['storage']
-        storage_userid = data["storage_userid"]
+        parameters = storage['parameters']
+        storage_userid = data['storage_userid']
 
         dlc = None
 
         if "workflowid" in storage and storage["workflowid"] is not None and storage["workflowid"] != "":
             dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=storage["workflowid"])
-        elif "tableName" in storage and storage["tableName"] is not None:
-            dlc = sapi.get_privileged_data_layer_client(storage_userid, tableName=storage["tableName"])
+        elif "tableName" in parameters and parameters["tableName"] is not None:
+            dlc = sapi.get_privileged_data_layer_client(storage_userid, tableName=parameters["tableName"])
         else:
             dlc = sapi.get_privileged_data_layer_client(storage_userid)
 
@@ -254,11 +255,6 @@ def handle_storage_action_kv(parameters, dlc):
 
     if storage_action == 'getdata':
         val = dlc.get(parameters['key'])
-        if val is not None:
-            # the GUI expects this to be base64-encoded
-            val = bytes(val, 'utf-8')
-            val = base64.b64encode(val).decode()
-
         response_data['value'] = val
         status = True
 

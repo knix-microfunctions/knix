@@ -348,3 +348,16 @@ class Workflow(object):
         if len(fnames) > 0:
             log.warn("Could not find all functions of workflow %s, missing %s"%(self.name,str(fnames)))
         return functions
+
+    def bind_trigger(self,trigger):
+        self.client.bind_trigger(trigger._name, self._name)
+
+    def unbind_trigger(self,trigger):
+        self.client.unbind_trigger(trigger._name, self._name)
+
+    def bind_bucket(self,bucket):
+        self.client.bind_bucket(bucket._name, self._name)
+
+    def unbind_bucket(self,trigger):
+        self.client.unbind_bucket(bucket._name, self._name)
+

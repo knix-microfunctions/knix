@@ -41,7 +41,7 @@ metadata:
     release: {{ .Release.Name | quote }}
     heritage: {{ .Release.Service | quote }}
 spec:
-  replicas: 1
+  replicas: {{ default 3 .Values.triggersFrontend.replicas }}
   selector:
     matchLabels:
       app: "microfunctions-triggers-frontend"
