@@ -73,14 +73,7 @@ public class LocalQueue {
     }
     
     public LocalQueueMessage getMessage (String topic, long timeout) {
-        LocalQueueMessage message = this.getAndRemoveMessage(topic, timeout);
-        long index = message.getIndex();
-        
-        if (index == NO_MESSAGE_INDEX) {
-            return NO_MESSAGE;
-        }
-        
-        return message;
+        return this.getAndRemoveMessage(topic, timeout);
     }
 }
 
