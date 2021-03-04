@@ -322,14 +322,14 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
             container['env'].append({'name': k, 'value': os.getenv(k)})
     print('Checking if kservice exists')
     resp = requests.get(
-        "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
+        "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
         headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
         verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
         proxies={"https":""})
     if resp.status_code == 200:
         print('Deleting existing kservice')
         resp = requests.delete(
-            "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
+            "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
             headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
             verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
             proxies={"https":""})
@@ -341,7 +341,7 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
 
     print('Creating new kservice')
     resp = requests.post(
-        "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
+        "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
         headers={"Authorization": "Bearer "+token, "Content-Type": "application/yaml", "Accept": "application/json"},
         verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
         data=json.dumps(kservice),
@@ -360,7 +360,7 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     while retry > 0:
         try:
             resp = requests.get(
-                "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
+                "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
                 headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
                 verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
                 proxies={"https":""})
