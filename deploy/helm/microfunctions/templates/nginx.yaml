@@ -89,7 +89,7 @@ data:
       }
       location /management {
         proxy_pass http://{{ include "nginx.mgmtService" . | regexFind "^[^.]+" }};
-        proxy_set_header Host {{ include "nginx.mgmtService" . }};
+        proxy_http_version 1.1;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
