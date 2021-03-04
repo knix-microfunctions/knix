@@ -110,6 +110,7 @@ riak:
   ErlangDistributionPortRangeMaximum: 6999
   LogConsoleLevel: "debug"
   StorageBackend: "leveldb"
+  # Has to fit in the memory configuration alongside Riak (default setting claims half the pod memory)
   LevelDbMaximumMemory: 4294967296
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
@@ -141,11 +142,6 @@ elastic:
 nginx:
   Replicas: 1
   nameOverride: "microfunctions-nginx"
-  # Knative Serving creates an FQDN for the management kservice "wf-{{ .Release.Name }}-management".
-  # In most installations, it would be {ksvc}.{namespace}.example.com
-  # Please use --set nginx.managementService to specify the FQDN that the service will get from your Knative setup
-  # _helpers.tpl would default it to wf-mfn1-management.knix.example.com
-  #managementService: wf-mfn1-management.knix.example.com
   imagePath: "/microfn/nginx"
   imageTag: "latest"
   httpPort: 32180
