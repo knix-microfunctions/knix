@@ -70,6 +70,14 @@ spec:
       #tolerations:
       #- key: node-role.kubernetes.io/master
       #  effect: NoSchedule
+      {{- with .Values.datalayer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.datalayer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: datalayer
         image: "{{ .Values.imageRepo }}{{ .Values.datalayer.imagePath }}:{{ .Values.datalayer.imageTag }}"

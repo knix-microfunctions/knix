@@ -19,7 +19,7 @@
 #------------------------------------------------------------------------------
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
-imageRepo: "registry.kube-system.svc.cluster.local"
+imageRepo: "440693621889.dkr.ecr.eu-central-1.amazonaws.com"
 manager:
   #httpProxy: "http://<host>:<port>"
   #httpsProxy: "http://<host>:<port>"
@@ -50,7 +50,7 @@ manager:
     imagePullPolicy: "Always"
     resources:
       limits:
-        cpu: 1
+        cpu: 2
         memory: 2Gi
       requests:
         cpu: 1
@@ -61,9 +61,16 @@ manager:
         cpu: 4
         memory: 4Gi
       requests:
-        cpu: 2
+        cpu: 1
         memory: 2Gi
   createServiceAccounts: true
+  nodeSelector:
+    type: knix
+  tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "knix"
+    effect: "NoSchedule"
 
 #------------------------------------------------------------------------------
 # MicroFunction Datalayer
@@ -81,8 +88,15 @@ datalayer:
       cpu: 4
       memory: 8Gi
     requests:
-      cpu: 4
+      cpu: 2
       memory: 8Gi
+  nodeSelector:
+    type: knix
+  tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "knix"
+    effect: "NoSchedule"
 
 #------------------------------------------------------------------------------
 # Riak global data storage
@@ -100,7 +114,7 @@ riak:
       cpu: 4
       memory: 8Gi
     requests:
-      cpu: 4
+      cpu: 2
       memory: 8Gi
   DataStorage: 8Gi
   #DataStorageClass: local-volume 
@@ -117,6 +131,13 @@ riak:
   ErlangSchedulersOnline: 4
   ErlangSchedulersForceWakeupInterval: 500
   ErlangSchedulersCompactionOfLoad: "false"
+  nodeSelector:
+    type: knix
+  tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "knix"
+    effect: "NoSchedule"
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs
@@ -132,8 +153,10 @@ elastic:
       cpu: 4
       memory: 4Gi
     requests:
-      cpu: 2
+      cpu: 1
       memory: 2Gi
+  nodeSelector:
+    type: management
 
 #------------------------------------------------------------------------------
 # Nginx with MicroFunctions web GUI and Storage API
@@ -161,8 +184,10 @@ nginx:
       cpu: 500m
       memory: 1Gi
     requests:
-      cpu: 100m
+      cpu: 200m
       memory: 1Gi
+  nodeSelector:
+    type: management
 
 #------------------------------------------------------------------------------
 # TriggersFrontend 
@@ -173,12 +198,14 @@ triggersFrontend:
   imagePullPolicy: "Always"
   nameOverride: "microfunctions-triggers-frontend"
   httpPort: 4997
-  replicas: 3
+  replicas: 2
   statusReportIntervalSec: 30
   resources:
     limits:
       cpu: 4
       memory: 8Gi
     requests:
-      cpu: 2
+      cpu: 1
       memory: 1Gi
+  nodeSelector:
+    type: management

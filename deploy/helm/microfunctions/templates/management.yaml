@@ -136,7 +136,11 @@ data:
               "workflowid": null
             }
           },
-          "spec": {
+          "spec": {            
+            {{/* not allowed in KNative
+            "nodeSelector": {{ toJson .Values.manager.nodeSelector }},                        
+            "tolerations": {{ toJson .Values.manager.tolerations  }},             
+            */}}
             {{/* not allowed in KNative
             "affinity": { 
               "podAffinity": { 
@@ -158,7 +162,7 @@ data:
             "serviceAccountName": "wf-{{ .Release.Name }}",
     {{- else -}}
             "serviceAccountName": "default",
-    {{- end -}}
+    {{- end -}}                                               
             "containers": [
               {
                 "securityContext": { "runAsUser": 1000 },
@@ -176,7 +180,7 @@ data:
                 {{/* not allowed in KNative
                 "lifecycle": {"preStop": {"exec":{"command":["python3","/sand/SandboxAgent/shutdown.py"]}}},
                 */}}
-                "resources": {{ toJson .Values.manager.sandbox.resources }},
+                "resources": {{ toJson .Values.manager.sandbox.resources }},                
                 "ports": [
                   {"containerPort":8080}
                 ]
@@ -233,6 +237,14 @@ spec:
 {{ else }}
       serviceAccountName: "default"
 {{ end }}
+      {{- with .Values.manager.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.manager.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: management
         image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag }}"

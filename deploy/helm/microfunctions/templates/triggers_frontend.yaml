@@ -74,3 +74,8 @@ spec:
           value: "info"
         - name: MANAGEMENT_UPDATE_INTERVAL_SEC
           value: "{{ .Values.triggersFrontend.statusReportIntervalSec }}"
+      {{- with .Values.triggersFrontend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+

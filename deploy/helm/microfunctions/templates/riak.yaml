@@ -39,7 +39,7 @@ metadata:
   name: {{ include "riak.fullname" . }}-config
   namespace: {{ .Release.Namespace }}
 data:
-  COORDINATOR_NODE: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc"
+  COORDINATOR_NODE: "{{ template "riak.fullname" . }}-0.{{ template "riak.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
   WAIT_FOR_ERLANG: "{{ .Values.riak.WaitForErlang }}"
   CLUSTER_NAME: "{{ .Values.riak.ClusterName }}"
   PB_PORT: "{{ .Values.riak.ClientPortProtobuf }}"
@@ -95,6 +95,14 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      {{- with .Values.riak.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.riak.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: riak
         image: "{{ .Values.imageRepo }}{{ .Values.riak.imagePath }}:{{ .Values.riak.imageTag }}"

@@ -25,7 +25,7 @@
 {{- define "rkConnect.url" }}
 {{- $port := index .Values "riak" "ClientPortProtobuf" | toString -}}
 {{- range $num, $e := until (.Values.riak.replicas|int) -}}
-    {{- printf "rk-%s-%d.rk-%s.%s.svc:%d" $.Release.Name $num $.Release.Name $.Release.Namespace ($.Values.riak.ClientPortProtobuf|int) -}}
+    {{- printf "rk-%s-%d.rk-%s.%s.svc.cluster.local:%d" $.Release.Name $num $.Release.Name $.Release.Namespace ($.Values.riak.ClientPortProtobuf|int) -}}
     {{- if lt $num  ( sub ($.Values.riak.replicas|int) 1 ) -}}
       {{- printf "," -}}
     {{- end -}}
@@ -34,7 +34,7 @@
 
 {{- define "dlConnect" }}
 {{- range $num, $e := until (.Values.datalayer.replicas|int) -}}
-    {{- printf "dl-%s-%d.datalayer.%s.svc:%d" $.Release.Name $num $.Release.Namespace ($.Values.datalayer.port|int) -}}
+    {{- printf "dl-%s-%d.datalayer.%s.svc.cluster.local:%d" $.Release.Name $num $.Release.Namespace ($.Values.datalayer.port|int) -}}
     {{- if lt $num  ( sub ($.Values.datalayer.replicas|int) 1 ) -}}
       {{- printf "," -}}
     {{- end -}}
