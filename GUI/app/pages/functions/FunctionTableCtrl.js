@@ -365,12 +365,12 @@
             if (response.data.data.workflow.status=='deployed') {
               $interval.cancel(promise);
               testWorkflow(functionIndex, workflowId, response.data.data.workflow.endpoints[0]);
-              //testWorkflow(functionIndex, workflowId, response.data.data.workflow.endpoint);
             }
             else if (response.data.data.workflow.status=='failed')
             {
                 $interval.cancel(promise);
-
+                $scope.functionDeploymentModal.dismiss();
+                setTimeout(function() { deleteTemporaryWorkflow(functionIndex, workflowId);}, 2000);
                 console.log("Error in deployment: " + response.data.data.workflow.deployment_error);
                 $scope.errorMessage = response.data.data.workflow.deployment_error;
                 $uibModal.open({

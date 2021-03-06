@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The KNIX Authors
+   Copyright 2021 The KNIX Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -313,6 +313,9 @@
             {
                 $interval.cancel(promise);
                 $scope.workflows[index].status="failed";
+                if ($scope.workflowDeploymentModal) {
+                  $scope.workflowDeploymentModal.dismiss();
+                }
                 console.log("Error in deployment: " + response.data.data.workflow.deployment_error);
                 $scope.errorMessage = response.data.data.workflow.deployment_error;
                 $uibModal.open({
@@ -607,7 +610,7 @@
         if ($scope.workflows[key].id==workflowId) {
           var index = key;
           if ($scope.workflows[index].status=='deployed') {
-            $scope.open('app/pages/workflows/modals/workflowExecutionModal.html', 'lg', $scope.workflows[index].id, $scope.workflows[index].name, $scope.workflows[index].status, $scope.workflows[index].endpoint);
+            $scope.open('app/pages/workflows/modals/workflowExecutionModal.html', 'lg', $scope.workflows[index].id, $scope.workflows[index].name, $scope.workflows[index].status, $scope.workflows[index].endpoints[0]);
           }
         }
       }
