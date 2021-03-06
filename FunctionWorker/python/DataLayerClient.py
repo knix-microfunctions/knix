@@ -447,9 +447,17 @@ class DataLayerClient:
 
     def getSetNames(self, start_index=0, end_index=2147483647):
         sets = []
+        set_response = []
         for retry in range(MAX_RETRIES):
             try:
                 sets = self.datalayer.selectSets(self.keyspace, self.settablename, start_index, end_index, self.locality)
+                if sets is not None or isinstance(sets, list):
+                    for name in sets:
+                        if name.endswith("_outputkeys_set"):
+                            continue
+                        else:
+                            set_response.append(name)
+                
                 break
             except TTransport.TTransportException as exc:
                 print("[DataLayerClient] Reconnecting because of failed getSetNames: " + str(exc))
@@ -457,7 +465,7 @@ class DataLayerClient:
             except Exception as exc:
                 print("[DataLayerClient] failed getSetNames: " + str(exc))
                 raise
-        return sets
+        return set_response
 
     # counter operations
     def createCounter(self, countername, count, tableName=None):
