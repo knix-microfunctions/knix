@@ -529,6 +529,7 @@
             } else {
               console.log("Failure status returned by addWorkflow");
               console.log("Message:" + response.data.data.message);
+              $scope.reloadWorkflows();
               $scope.errorMessage = response.data.data.message;
               $uibModal.open({
                 animation: true,
@@ -540,6 +541,7 @@
         }, function errorCallback(response) {
             console.log("Error occurred during addWorkflow");
             console.log("Response:" + response);
+            $scope.reloadWorkflows();
             if (response.statusText) {
               $scope.errorMessage = response.statusText;
             } else {
@@ -573,6 +575,7 @@
             } else {
               console.log("Failure status returned by modifyWorkflow");
               console.log("Message:" + response.data.data.message);
+              $scope.reloadWorkflows();
               $scope.errorMessage = response.data.data.message;
               $uibModal.open({
                 animation: true,
@@ -584,6 +587,7 @@
         }, function errorCallback(response) {
             console.log("Error occurred during modifyWorkflow");
             console.log("Response:" + response);
+            $scope.reloadWorkflows();
             if (response.statusText) {
               $scope.errorMessage = response.statusText;
             } else {
