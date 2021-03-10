@@ -24,6 +24,8 @@ def run_command(command, logger, custom_env=None, wait_output=False, process_log
         stdout = subprocess.PIPE
         stderr = subprocess.PIPE
 
+    process = None
+
     try:
         if custom_env is not None:
             process = subprocess.Popen(command, stdout=stdout, stderr=stderr, env=custom_env, close_fds=True, bufsize=1)
@@ -61,8 +63,11 @@ def run_command(command, logger, custom_env=None, wait_output=False, process_log
         logger.exception("[SandboxAgent] Could not execute command: %s", str(command))
         error = exc
 
-    if error is not None and not isinstance(error, str):
-        error = error.decode()
+    try:
+        if error is not None and not isinstance(error, str):
+            error = error.decode()
+    except Exception as exc:
+        pass
 
     return error, process
 
