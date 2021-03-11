@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -127,7 +127,7 @@ spec:
         fsGroup: 101
       containers:
       - name: nginx
-        image: "{{ .Values.imageRepo }}{{ .Values.nginx.imagePath }}:{{ .Values.nginx.imageTag }}"
+        image: "{{ .Values.imageRepo }}{{ .Values.nginx.imagePath }}:{{ .Values.nginx.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.nginx.imagePullPolicy }}"
         ports:
         - name: http

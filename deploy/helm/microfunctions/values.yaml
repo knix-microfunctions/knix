@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
 imageRepo: "registry.kube-system.svc.cluster.local"
+# imageTag: "latest" <- set all KNIX image tags to latest
 manager:
   #httpProxy: "http://<host>:<port>"
   #httpsProxy: "http://<host>:<port>"
@@ -33,7 +34,7 @@ manager:
       maxReplicas: 1
   setup:
     imagePath: "/microfn/management"
-    imageTag: "latest"
+    # imageTag: "latest" (default .Chart.AppVersion)
     imagePullPolicy: "Always"
     initialDelaySeconds: 60
     resources:
@@ -46,7 +47,7 @@ manager:
   sandbox:
     imagePathPython: "/microfn/sandbox"
     imagePathJava: "/microfn/sandbox_java"
-    imageTag: "latest"
+    # imageTag: "latest" (default .Chart.AppVersion)
     imagePullPolicy: "Always"
     resources:
       limits:
@@ -71,7 +72,7 @@ manager:
 datalayer:
   replicas: 3
   imagePath: "/microfn/datalayer"
-  imageTag: "latest"
+  # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
   port: 4998
   initialDelaySeconds: 0
@@ -79,10 +80,10 @@ datalayer:
   resources:
     limits:
       cpu: 4
-      memory: 8Gi
+      memory: 4Gi
     requests:
-      cpu: 4
-      memory: 8Gi
+      cpu: 1
+      memory: 2Gi
 
 #------------------------------------------------------------------------------
 # Riak global data storage
@@ -90,7 +91,7 @@ datalayer:
 riak:
   replicas: 3
   imagePath: "/microfn/riak"
-  imageTag: "latest"
+  # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
   nameOverride: "microfunctions-riak"
   ClientPortHttp: 8098
@@ -143,7 +144,7 @@ nginx:
   Replicas: 1
   nameOverride: "microfunctions-nginx"
   imagePath: "/microfn/nginx"
-  imageTag: "latest"
+  # imageTag: "latest" (default .Chart.AppVersion)
   httpPort: 32180
   location: "/"
 # If httpsPort is defined, the Base64 encoded certificate authority, certificate and key are required to serve securely from the Pod
@@ -165,7 +166,7 @@ nginx:
 #------------------------------------------------------------------------------
 triggersFrontend:
   imagePath: "/microfn/triggers_frontend"
-  imageTag: "latest"
+  # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
   nameOverride: "microfunctions-triggers-frontend"
   httpPort: 4997

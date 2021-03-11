@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: riak
-        image: "{{ .Values.imageRepo }}{{ .Values.riak.imagePath }}:{{ .Values.riak.imageTag }}"
+        image: "{{ .Values.imageRepo }}{{ .Values.riak.imagePath }}:{{ .Values.riak.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.riak.imagePullPolicy }}"    
         envFrom:
         - configMapRef:
