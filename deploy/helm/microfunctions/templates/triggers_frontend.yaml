@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: triggers-frontend
-        image: "{{ .Values.imageRepo }}{{ .Values.triggersFrontend.imagePath }}:{{ .Values.triggersFrontend.imageTag }}"
+        image: "{{ .Values.imageRepo }}{{ .Values.triggersFrontend.imagePath }}:{{ .Values.triggersFrontend.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.triggersFrontend.imagePullPolicy }}"
         ports:
         - containerPort: {{ .Values.triggersFrontend.httpPort }}

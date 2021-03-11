@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -163,7 +163,7 @@ data:
               {
                 "securityContext": { "runAsUser": 1000 },
                 "name": "sandbox",
-                "image": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag }}",
+                "image": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion }}",
                 "imagePullPolicy": "Always",
                 "env": [
                 {{/* not allowed in KNative
@@ -189,8 +189,8 @@ data:
   new_workflow.conf: |-
     {
       "app.fullname.prefix": "wf-{{ .Release.Name }}",
-      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag }}",
-      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}:{{ .Values.manager.sandbox.imageTag }}",
+      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion }}",
+      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion }}",
     {{- if (.Values.manager.createServiceAccounts) -}}
       "mgmtserviceaccount": "{{ template "manager.fullname" . }}",
     {{- else -}}
@@ -235,7 +235,7 @@ spec:
 {{ end }}
       containers:
       - name: management
-        image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag }}"
+        image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.manager.setup.imagePullPolicy }}"
         env:
         - name: MFN_HOSTNAME
