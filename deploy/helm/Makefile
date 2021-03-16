@@ -26,7 +26,7 @@ default: $(PKG)
 $(PKG): $(FILES)
 	rm -f $(PKG)
 	sed 's/^version:.*/version: $(VERSION)/' -i microfunctions/Chart.yaml
-	helm package microfunctions/
+	helm package --app-version latest microfunctions/
 
 -include ../../docker.mk
 

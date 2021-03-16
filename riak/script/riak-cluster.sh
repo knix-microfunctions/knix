@@ -47,7 +47,7 @@ export CLUSTER_NAME=${CLUSTER_NAME:-riak}
 # The COORDINATOR_NODE is the first node in a cluster to which other nodes will eventually join
 export COORDINATOR_NODE=${COORDINATOR_NODE:-$HOSTNAME}
 export COORDINATOR_NODE_HOST=$(host ${COORDINATOR_NODE}|grep "has address"|sed 's/.*has address //')
-COORDINATOR_NODE_REVERSE=$(host ${COORDINATOR_NODE_HOST}|grep "domain name pointer "|sed 's/.*domain name pointer //')
+COORDINATOR_NODE_REVERSE=$(host ${COORDINATOR_NODE_HOST}|grep "domain name pointer "|sed 's/.*domain name pointer //'|sed 's/.$//')
 export COORDINATOR_NODE=${COORDINATOR_NODE_REVERSE:-$COORDINATOR_NODE}
 
 export ERLANG_DISTRIBUTION_PORT_RANGE_MINIMUM=${ERLANG_DISTRIBUTION_PORT_RANGE_MINIMUM:-6000}
