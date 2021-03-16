@@ -162,13 +162,14 @@ data:
             "serviceAccountName": "wf-{{ .Release.Name }}",
     {{- else -}}
             "serviceAccountName": "default",
-    {{- end -}}                                               
+    {{- end -}}                             
+            "imagePullSecrets": {{ toJson .Values.manager.setup.imagePullSecrets }},                  
             "containers": [
               {
                 "securityContext": { "runAsUser": 1000 },
                 "name": "sandbox",
                 "image": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag }}",
-                "imagePullPolicy": "Always",
+                "imagePullPolicy": "Always",                
                 "env": [
                 {{/* not allowed in KNative
                   {"name": "MFN_HOSTNAME", "valueFrom": { "fieldRef": { "fieldPath": "spec.nodeName" }}},
@@ -245,10 +246,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      imagePullSecrets: 
+          {{- toYaml .Values.manager.setup.imagePullSecrets | nindent 8 }}
       containers:
       - name: management
         image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag }}"
         imagePullPolicy: "{{ .Values.manager.setup.imagePullPolicy }}"
+        
         env:
         - name: MFN_HOSTNAME
           valueFrom:

@@ -78,10 +78,12 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      imagePullSecrets: 
+          {{- toYaml .Values.datalayer.imagePullSecrets | nindent 8 }}
       containers:
       - name: datalayer
         image: "{{ .Values.imageRepo }}{{ .Values.datalayer.imagePath }}:{{ .Values.datalayer.imageTag }}"
-        imagePullPolicy: "{{ .Values.datalayer.imagePullPolicy }}"
+        imagePullPolicy: "{{ .Values.datalayer.imagePullPolicy }}"        
         env:
         - name: RIAK_CONNECT
           value: {{ include "rkConnect.url" . | quote }}

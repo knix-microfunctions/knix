@@ -103,10 +103,12 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      imagePullSecrets: 
+          {{- toYaml .Values.riak.imagePullSecrets | nindent 8 }} 
       containers:
       - name: riak
         image: "{{ .Values.imageRepo }}{{ .Values.riak.imagePath }}:{{ .Values.riak.imageTag }}"
-        imagePullPolicy: "{{ .Values.riak.imagePullPolicy }}"    
+        imagePullPolicy: "{{ .Values.riak.imagePullPolicy }}"           
         envFrom:
         - configMapRef:
             name: {{ include "riak.fullname" . }}-config

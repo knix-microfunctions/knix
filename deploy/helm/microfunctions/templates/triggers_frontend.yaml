@@ -56,10 +56,12 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      imagePullSecrets: 
+          {{- toYaml .Values.triggersFrontend.imagePullSecrets | nindent 8 }}
       containers:
       - name: triggers-frontend
         image: "{{ .Values.imageRepo }}{{ .Values.triggersFrontend.imagePath }}:{{ .Values.triggersFrontend.imageTag }}"
-        imagePullPolicy: "{{ .Values.triggersFrontend.imagePullPolicy }}"
+        imagePullPolicy: "{{ .Values.triggersFrontend.imagePullPolicy }}"        
         ports:
         - containerPort: {{ .Values.triggersFrontend.httpPort }}
           name: control

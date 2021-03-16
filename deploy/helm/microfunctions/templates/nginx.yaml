@@ -130,10 +130,13 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      imagePullSecrets: 
+          {{- toYaml .Values.nginx.imagePullSecrets | nindent 8 }}
       containers:
       - name: nginx
         image: "{{ .Values.imageRepo }}{{ .Values.nginx.imagePath }}:{{ .Values.nginx.imageTag }}"
         imagePullPolicy: "{{ .Values.nginx.imagePullPolicy }}"
+        
         ports:
         - name: http
           containerPort: 8080
