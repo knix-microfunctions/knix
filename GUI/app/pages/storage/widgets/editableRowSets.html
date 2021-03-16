@@ -1,5 +1,5 @@
 <!--
-   Copyright 2020 The KNIX Authors
+   Copyright 2021 The KNIX Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
   <thead>
   <tr style="padding: 0;border: 0;"><td colspan=4 style="padding: 0;border: 0; padding-bottom: 8px;"><div class="add-row-editable-table" style="display:inline;float:left;">
-    <button class="btn btn-primary" ng-click="addStorageObject('set')">Add Object</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('set')">Refresh</button>
+    <button class="btn btn-primary" ng-click="addStorageObject('set')">Add Object</button>&nbsp;&nbsp;<button class="btn btn-danger" ng-click="removeMultipleStorageObjects('set')">Delete Selected</button>&nbsp;&nbsp;<button class="btn btn-primary" style="background-color: #969696; border-color: #969696;" ng-click="reloadStorageObjects('set')">Refresh</button>
   </div><input style="margin-left:8px;display:inline;float:left;width:auto;" st-search class="form-control" placeholder="global search ..." type="text"/>
 
   </td>
@@ -34,6 +34,14 @@
       </ui-select>
     </div>
   </td></tr>
+  <th style="border:0;padding-left:11px;width:18px;">
+    <span>
+      <label class="checkbox-inline custom-checkbox nowrap">
+        <input type="checkbox" id="setObjectsSelectAll" ng-click="selectAll('set')">
+        <span></span>
+      </label>
+    </span>
+  </th>  
 
     <th id="sortHeader" st-sort="['modified', 'key']" st-sort-default="default" style="text-align:left;border:0;"><b>Set name</b></th>
     <!-- <th style="border:0;"><b>Endpoint</b></th> -->
@@ -45,6 +53,15 @@
   <tr ng-show="displayStorageObjectsSets.length==0"><td ng-show="displayStorageObjectsSets.length==0" colspan=4><hr ng-show="displayFunctions.StorageObjectsSets==0" style="display: inline;height: 1px;border: 0;border-top: 1px solid #ccc;margin: 1em 0; padding: 0;"></td></tr>
 
   <tr ng-repeat="storageObject in displayStorageObjectsSets" class="editable-row">
+
+    <td style="padding-left:14px;width:18px;">
+      <span>
+        <label class="checkbox-inline custom-checkbox nowrap">
+          <input type="checkbox" ng-model="storageObject.selected">
+          <span> </span>
+        </label>
+      </span>
+    </td>
 
     <td style="text-align:left;">
         <span editable-text="storageObject.key" e-name="name" e-form="rowform" e-required e-ng-keydown="navigate($event,rowform,storageObject)">

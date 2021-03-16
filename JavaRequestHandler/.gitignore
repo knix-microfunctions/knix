@@ -1,5 +1,8 @@
 /target/
 /mfnapi.jar
 /src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java
+/src/main/java/org/microfunctions/mfnapi/TriggerAPIResult.java
+/src/main/java/org/microfunctions/mfnapi/TriggerInfoAMQP.java
+/src/main/java/org/microfunctions/mfnapi/TriggerInfoTimer.java
 .settings/
 .m2/

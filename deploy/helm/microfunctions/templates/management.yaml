@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -168,15 +168,15 @@ data:
               {
                 "securityContext": { "runAsUser": 1000 },
                 "name": "sandbox",
-                "image": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag }}",
-                "imagePullPolicy": "Always",                
+                "image": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion }}",
+                "imagePullPolicy": "Always",
                 "env": [
                 {{/* not allowed in KNative
                   {"name": "MFN_HOSTNAME", "valueFrom": { "fieldRef": { "fieldPath": "spec.nodeName" }}},
                 */}}
                   {"name": "MFN_DATALAYER", "value": "datalayer.{{ .Release.Namespace }}.svc:{{ .Values.datalayer.port }}" },
                   {"name": "MFN_ELASTICSEARCH", "value": {{ include "esConnect.url" . | quote }} },
-                  {"name": "MFN_MANAGEMENT", "value": "http://{{ include "nginx.mgmtService" . | regexFind "^[^.]+" }}.{{ .Release.Namespace }}.svc" }
+                  {"name": "MFN_MANAGEMENT", "value": "http://wf-{{ .Release.Name }}-management.{{ .Release.Namespace }}.svc" }
                 ],
                 {{/* not allowed in KNative
                 "lifecycle": {"preStop": {"exec":{"command":["python3","/sand/SandboxAgent/shutdown.py"]}}},
@@ -194,8 +194,8 @@ data:
   new_workflow.conf: |-
     {
       "app.fullname.prefix": "wf-{{ .Release.Name }}",
-      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag }}",
-      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}:{{ .Values.manager.sandbox.imageTag }}",
+      "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion }}",
+      "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion }}",
     {{- if (.Values.manager.createServiceAccounts) -}}
       "mgmtserviceaccount": "{{ template "manager.fullname" . }}",
     {{- else -}}
@@ -250,7 +250,7 @@ spec:
           {{- toYaml .Values.manager.setup.imagePullSecrets | nindent 8 }}
       containers:
       - name: management
-        image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag }}"
+        image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.manager.setup.imagePullPolicy }}"
         
         env:
