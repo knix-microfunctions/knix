@@ -136,10 +136,10 @@ data:
               "workflowid": null
             }
           },
-          "spec": {            
+          "spec": {                        
             {{/* not allowed in KNative
             "nodeSelector": {{ toJson .Values.manager.nodeSelector }},                        
-            "tolerations": {{ toJson .Values.manager.tolerations  }},             
+            "tolerations": {{ toJson .Values.manager.tolerations  }},                         
             */}}
             {{/* not allowed in KNative
             "affinity": { 
