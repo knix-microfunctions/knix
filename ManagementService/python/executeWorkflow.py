@@ -15,9 +15,16 @@
 import json
 
 import requests
+import re
 
 def execute_workflow(wfurl, wfinput):
     result = None
+    if 'KUBERNETES_SERVICE_HOST' in os.environ:
+        namespace = ""
+        with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
+            namespace = f.read()
+        # on k8s replace the wfurl with the local service url
+        wfurl = re.sub(r'^.*://([^.+]).*', r'http://\1', wfurl)+"."+namespace+".svc"
     try:
         result = requests.post(wfurl, params={}, json=wfinput)
     except Exception as exc:
