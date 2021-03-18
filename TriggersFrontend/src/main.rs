@@ -33,7 +33,7 @@ mod mqtt_triggers;
 use mqtt_triggers::handle_create_mqtt_trigger;
 
 mod utils;
-use utils::{create_delay, get_unique_id, send_post_json_message, WorkflowInfo};
+use utils::{create_delay, get_unique_id, send_post_json_message, WorkflowInfo, get_modified_url_for_k8s};
 
 /*
 struct TriggerInfo {
@@ -209,8 +209,10 @@ async fn add_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder {
                 message: "workflow_url or workflow_name or workflow_state missing in workflows list".into(),
             });
         }
+	    let modified_workflow_url: String = get_modified_url_for_k8s(&workflow_info["workflow_url"].to_string());
+
         workflows_vec.push(WorkflowInfo {
-            workflow_url: workflow_info["workflow_url"].to_string(),
+            workflow_url: modified_workflow_url.clone(),
             workflow_name: workflow_info["workflow_name"].to_string(),
             workflow_state: workflow_info["workflow_state"].to_string()
         });
@@ -300,8 +302,9 @@ async fn remove_workflows(req: HttpRequest, body: web::Bytes) -> impl Responder 
                 message: "workflow_url or workflow_name missing in workflows list".into(),
             });
         }
+        let modified_workflow_url: String = get_modified_url_for_k8s(&workflow_info["workflow_url"].to_string());
         workflows_vec.push(WorkflowInfo {
-            workflow_url: workflow_info["workflow_url"].to_string(),
+            workflow_url: modified_workflow_url.clone(),
             workflow_name: workflow_info["workflow_name"].to_string(),
             workflow_state: "".into(),
         });
