@@ -1728,7 +1728,7 @@ public class DataLayerServer implements Iface, Callable<Object> {
 							InetAddress la = InetAddress.getByName(addr[0]);
 							Socket s = new Socket(la, port);
 							s.close();
-							riakNodes.put(la.getHostAddress(), port);
+							riakNodes.put(addr[0], port);
 							System.out.println("Using riak node: "+la.getHostAddress()+":"+port.toString());
 							break;
 						} catch (UnknownHostException e) {
