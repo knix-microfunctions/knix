@@ -25,7 +25,7 @@ default: $(PKG)
 
 $(PKG): $(FILES)
 	rm -f $(PKG)
-	helm package --version $(VERSION) microfunctions/
+	helm package --app-version $(VERSION) --version $(VERSION) microfunctions/
 
 -include ../../docker.mk
 
