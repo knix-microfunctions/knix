@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import time
+import threading
 
 import process_utils
 import state_utils
@@ -547,31 +548,64 @@ class Deployment:
 
         return (error, gextractedpath)
 
+    def _init_storage_dlc(self, locality, for_mfn, is_wf_private):
+        t_start_thread = time.time()
+        self._logger.info("Starting thread for storage init: %s, %s, %s", str(locality), str(for_mfn), str(is_wf_private))
+        if for_mfn:
+            dlc = DataLayerClient(locality=locality, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        elif is_wf_private:
+            dlc = DataLayerClient(locality=locality, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        else:
+            dlc = DataLayerClient(locality=locality, suid=self._storage_userid, connect=self._datalayer, init_tables=True)
+
+        dlc.shutdown()
+        t_total = (time.time() - t_start_thread) * 1000.0
+        self._logger.info("Thread to init storage finished: %s (ms), %s, %s, %s", str(t_total), str(locality), str(for_mfn), str(is_wf_private))
+
     def _initialize_data_layer_storage(self):
         # each data layer client will automatically create the local keyspace and tables
         # upon instantiation
 
+        threads = []
+
         # mfn internal tables
-        local_dlc = DataLayerClient(locality=0, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        local_dlc.shutdown()
+        #local_dlc = DataLayerClient(locality=0, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        #local_dlc.shutdown()
+        t_local_mfn = threading.Thread(target=self._init_storage_dlc, args=(0, True, False, ))
+        t_local_mfn.start()
+        threads.append(t_local_mfn)
 
         # user storage tables
-        local_dlc = DataLayerClient(locality=0, suid=self._storage_userid, connect=self._datalayer, init_tables=True)
-        local_dlc.shutdown()
+        #local_dlc = DataLayerClient(locality=0, suid=self._storage_userid, connect=self._datalayer, init_tables=True)
+        #local_dlc.shutdown()
+        t_local_user = threading.Thread(target=self._init_storage_dlc, args=(0, False, False, ))
+        t_local_user.start()
+        threads.append(t_local_user)
 
         # workflow private tables
-        local_dlc = DataLayerClient(locality=0, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        local_dlc.shutdown()
+        #local_dlc = DataLayerClient(locality=0, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        #local_dlc.shutdown()
+        t_local_private = threading.Thread(target=self._init_storage_dlc, args=(0, False, True, ))
+        t_local_private.start()
+        threads.append(t_local_private)
 
         # for global access, (re)create; it's okay because the operations are idempotent
         # user storage is created by management service
         # mfn internal tables
-        global_dlc = DataLayerClient(locality=1, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        global_dlc.shutdown()
+        #global_dlc = DataLayerClient(locality=1, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        #global_dlc.shutdown()
+        t_global_mfn = threading.Thread(target=self._init_storage_dlc, args=(1, True, False, ))
+        t_global_mfn.start()
+        threads.append(t_global_mfn)
 
         # workflow private tables
-        global_dlc = DataLayerClient(locality=1, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        global_dlc.shutdown()
+        #global_dlc = DataLayerClient(locality=1, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        #global_dlc.shutdown()
+        t_global_private = threading.Thread(target=self._init_storage_dlc, args=(1, False, True, ))
+        t_global_private.start()
+        threads.append(t_global_private)
+
+        return threads
 
     def _populate_worker_params(self, function_topic, wf_node, state):
         worker_params = {}
@@ -675,6 +709,14 @@ class Deployment:
     def process_deployment_info(self):
         has_error = False
         errmsg = ""
+
+        t_start_storage = time.time()
+        # initialize local data layer space for user and workflow
+        # do so in separate threads
+        # join these threads just before returning
+        init_storage_threads = self._initialize_data_layer_storage()
+        total_time_threads_storage = (time.time() - t_start_storage) * 1000.0
+        self._logger.info("Storage thread initialization time: %s (ms)", str(total_time_threads_storage))
 
         if self._deployment_info is not None and self._deployment_info != "":
             try:
@@ -843,12 +885,6 @@ class Deployment:
         total_time_requirements = (time.time() - t_start_requirements) * 1000.0
         self._logger.info("Requirements install time: %s (ms)", str(total_time_requirements))
 
-        t_start_storage = time.time()
-        # initialize local data layer space for user and workflow
-        self._initialize_data_layer_storage()
-        total_time_storage = (time.time() - t_start_storage) * 1000.0
-        self._logger.info("Storage initialization time: %s (ms)", str(total_time_storage))
-
         self._local_queue_client = LocalQueueClient(connect=self._queue)
 
         self._local_queue_client.addTopic(self._workflow.getWorkflowExitTopic())
@@ -987,5 +1023,9 @@ class Deployment:
                         errmsg += state_name + "\n"
 
         self._global_data_layer_client.shutdown()
+
+        for t in init_storage_threads:
+            t.join()
+        self._logger.info("Joined init storage threads.")
 
         return has_error, errmsg

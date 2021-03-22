@@ -27,6 +27,7 @@ define build_image
 			--build-arg VERSION=$(VERSION) \
 			-f $(1) \
 			-t $(2):$(VERSION) . || exit $$!; \
+	    docker tag $(2):$(VERSION) $(2):latest; \
 	    NEWID=$$(docker images $(2):$(VERSION) --format '{{.ID}}'|grep -v "$$OLDID"); \
 	    if [[ ! -z "$$OLDID" && ! -z "$$NEWID" ]]; then echo "Removing image $$OLDID"; docker rmi $$OLDID; fi; \
 	    break; \

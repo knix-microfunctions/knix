@@ -401,7 +401,8 @@ class SandboxAgent:
 
         self._is_running = True
 
-        self._logger.info("Successfully deployed.")
+        total_time = (time.time() - self._start) * 1000.0
+        self._logger.info("Successfully deployed. Total startup time: %s (ms)", str(total_time))
 
         while self._is_running:
             try:
