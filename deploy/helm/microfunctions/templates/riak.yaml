@@ -95,10 +95,20 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      {{- with .Values.riak.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.riak.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      imagePullSecrets: 
+          {{- toYaml .Values.riak.imagePullSecrets | nindent 8 }} 
       containers:
       - name: riak
         image: "{{ .Values.imageRepo }}{{ .Values.riak.imagePath }}:{{ .Values.riak.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
-        imagePullPolicy: "{{ .Values.riak.imagePullPolicy }}"    
+        imagePullPolicy: "{{ .Values.riak.imagePullPolicy }}"
         envFrom:
         - configMapRef:
             name: {{ include "riak.fullname" . }}-config

@@ -125,10 +125,17 @@ spec:
         runAsNonRoot: true
         runAsUser: 101
         fsGroup: 101
+      {{- with .Values.nginx.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      imagePullSecrets: 
+          {{- toYaml .Values.nginx.imagePullSecrets | nindent 8 }}
       containers:
       - name: nginx
         image: "{{ .Values.imageRepo }}{{ .Values.nginx.imagePath }}:{{ .Values.nginx.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.nginx.imagePullPolicy }}"
+        
         ports:
         - name: http
           containerPort: 8080

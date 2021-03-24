@@ -36,6 +36,7 @@ manager:
     imagePath: "/microfn/management"
     # imageTag: "latest" (default .Chart.AppVersion)
     imagePullPolicy: "Always"
+    imagePullSecrets: []
     initialDelaySeconds: 60
     resources:
       limits:
@@ -49,6 +50,7 @@ manager:
     imagePathJava: "/microfn/sandbox_java"
     # imageTag: "latest" (default .Chart.AppVersion)
     imagePullPolicy: "Always"
+    imagePullSecrets: []
     resources:
       limits:
         cpu: 1
@@ -65,6 +67,8 @@ manager:
         cpu: 2
         memory: 2Gi
   createServiceAccounts: true
+  nodeSelector: {}
+  tolerations: {}
 
 #------------------------------------------------------------------------------
 # MicroFunction Datalayer
@@ -74,6 +78,7 @@ datalayer:
   imagePath: "/microfn/datalayer"
   # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
+  imagePullSecrets: []
   port: 4998
   initialDelaySeconds: 0
   javaOpts: "-Xmx4096m"
@@ -84,6 +89,9 @@ datalayer:
     requests:
       cpu: 1
       memory: 2Gi
+  nodeSelector: {}
+  tolerations: {}
+  
 
 #------------------------------------------------------------------------------
 # Riak global data storage
@@ -93,6 +101,7 @@ riak:
   imagePath: "/microfn/riak"
   # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
+  imagePullSecrets: []
   nameOverride: "microfunctions-riak"
   ClientPortHttp: 8098
   ClientPortProtobuf: 8087
@@ -119,6 +128,8 @@ riak:
   ErlangSchedulersOnline: 4
   ErlangSchedulersForceWakeupInterval: 500
   ErlangSchedulersCompactionOfLoad: "false"
+  nodeSelector: {}
+  tolerations: {}
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs
@@ -127,6 +138,7 @@ elastic:
   imageRepo: "docker.elastic.co"
   imagePath: "/elasticsearch/elasticsearch-oss"
   imageTag: "7.3.2"
+  imagePullSecrets: []
   clientPort: 9200
   masterPort: 9300
   resources:
@@ -136,6 +148,8 @@ elastic:
     requests:
       cpu: 2
       memory: 2Gi
+  nodeSelector: {}
+  tolerations: {}
 
 #------------------------------------------------------------------------------
 # Nginx with MicroFunctions web GUI and Storage API
@@ -153,6 +167,7 @@ nginx:
 #  httpsCert: <base64-encoded cert>
 #  httpsKey: <base64-encoded key>
   imagePullPolicy: "Always"
+  imagePullSecrets: []
   resources:
     limits:
       cpu: 500m
@@ -160,6 +175,8 @@ nginx:
     requests:
       cpu: 100m
       memory: 1Gi
+  nodeSelector: {}
+  tolerations: {}
 
 #------------------------------------------------------------------------------
 # TriggersFrontend 
@@ -168,6 +185,7 @@ triggersFrontend:
   imagePath: "/microfn/triggers_frontend"
   # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
+  imagePullSecrets: []
   nameOverride: "microfunctions-triggers-frontend"
   httpPort: 4997
   replicas: 3
@@ -179,3 +197,5 @@ triggersFrontend:
     requests:
       cpu: 2
       memory: 1Gi
+  nodeSelector: {}
+  tolerations: {}

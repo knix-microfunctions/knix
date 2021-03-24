@@ -185,6 +185,10 @@ spec:
       #  - ulimit -n 65536
       #  securityContext:
       #    privileged: true
+      {{- with .Values.elastic.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: elasticsearch
         image: "{{ .Values.elastic.imageRepo }}{{ .Values.elastic.imagePath }}:{{ .Values.elastic.imageTag }}"

@@ -43,6 +43,8 @@ spec:
         runAsUser: 1000
         fsGroup: 1000
       restartPolicy: Never
+      imagePullSecrets: 
+          {{- toYaml .Values.manager.setup.imagePullSecrets | nindent 8 }}
       containers:
       - name: {{ .Release.Name }}-postdelete
         image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
