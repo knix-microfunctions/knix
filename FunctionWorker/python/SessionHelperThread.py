@@ -179,7 +179,7 @@ class SessionHelperThread(threading.Thread):
                 # if we sent a heartbeat recently, last_heartbeat and t_cur will cancel each other out
                 poll_timeout = py3utils.ensure_long(last_heartbeat_time + self._local_poll_timeout - t_cur)
                 #self._logger.debug("updated poll timeout: " + str(poll_timeout))
-                if poll_timeout < 0:
+                if poll_timeout <= 0:
                     # we just missed a deadline; send a heartbeat right away
                     t_cur = time.time() * 1000.0
                     self._send_heartbeat()
