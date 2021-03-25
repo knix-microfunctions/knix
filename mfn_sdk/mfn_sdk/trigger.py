@@ -32,9 +32,9 @@ class Trigger(object):
     def __init__(self,client,tname,bdetails):
         self.client=client
         self._name=tname
-        self._update(bdetails)
+        self.update(bdetails)
 
-    def _update(self,bdetails):
+    def update(self,bdetails):
         self._id=bdetails["trigger_id"]
         self._status=bdetails["trigger_status"]
         self._type=bdetails["trigger_type"]
@@ -73,6 +73,10 @@ class Trigger(object):
         return self._type
 
     @property
+    def info(self):
+        return self._info
+
+    @property
     def count(self):
         # TODO: decide whether to auto-fetch details when count is accessed 
         return self._count
@@ -91,27 +95,3 @@ class Trigger(object):
 
     def disassociate_workflow(self, wf):
         self.client.unbind_trigger(self._name,wf._name)
-
-class TriggerableBucket(object):
-    """ TriggerableBucket is a user-defined storage bucket that can also be used to trigger workflows upon data changes
-    """
-
-    def __init__(self,client,bname,bassociated_workflows=[],bmetadatalist=[]):
-        self.client=client
-        self._name=bname
-        self._update(bassociated_workflows,bmetadatalist)
-
-    def _update(self,bassociated_workflows,bmetadatalist):
-        self._associated_workflows=bassociated_workflows
-        self._metadata=bmetadatalist
-
-    @property
-    def associated_workflows(self):
-        # TODO: decide whether to auto-fetch details when associated_workflows is accessed 
-        return self._associated_workflows
-
-    def associate_workflow(self, wf):
-        self.client.bind_bucket(self._name,wf._name)
-
-    def disassociate_workflow(self, wf):
-        self.client.unbind_bucket(self._name,wf._name)
