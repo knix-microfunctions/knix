@@ -35,12 +35,12 @@ build_thrift:
 frontend/frontend: $(shell find frontend/ -type f -not -wholename frontend/frontend)
 	make -C frontend
 
+FWSOURCE = $(shell find ../FunctionWorker)
 SBASOURCE = $(shell find ../SandboxAgent)
-build/SandboxAgent.tar.gz: $(SBASOURCE)
+build/SandboxAgent.tar.gz: $(SBASOURCE) $(FWSOURCE)
 	mkdir -p build
 	tar -czf $@ ../SandboxAgent
 
-FWSOURCE = $(shell find ../FunctionWorker)
 build/FunctionWorker.tar.gz: \
 		$(FWSOURCE) \
 		../build_env.mk \

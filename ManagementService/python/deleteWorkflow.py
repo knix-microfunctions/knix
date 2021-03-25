@@ -28,6 +28,7 @@ except:
 ELASTICSEARCH_URL = "http://" + ELASTICSEARCH_HOST + ":" + str(ELASTICSEARCH_PORT)
 
 def delete_workflow_index(index_name):
+    print("Deleting workflow index: " + index_name)
     try:
         r = requests.delete(ELASTICSEARCH_URL + "/" + index_name, proxies={"http":None})
     except Exception as e:
@@ -87,8 +88,8 @@ def handle(value, sapi):
                                             removeTriggerFromWorkflow(trigger_name, trigger_id, wf["name"], sapi)
                                         except Exception as e:
                                             print("Removing associated triggers error: " + str(e))
-                            
-                            
+
+
                             sapi.delete(email + "_workflow_" + workflow["id"], True, True)
 
                             dlc.shutdown()
@@ -211,7 +212,7 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
         tf_ip_port = global_trigger_info["frontend_ip_port"]
         if tf_ip_port not in tf_hosts:
             raise Exception("Frontend: " + tf_ip_port + " not available")
-        
+
         url = "http://" + tf_ip_port + "/remove_workflows"
         # send the request and wait for response
 
@@ -225,7 +226,7 @@ def removeTriggerFromWorkflow(trigger_name, trigger_id, workflow_name, context):
             res_obj = res.json()
         except Exception as e:
             status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
-        
+
         if "status" in res_obj and res_obj["status"].lower() == "success":
             # if success then update the global trigger table to add a new workflow.
             print("Success response from " + url)
