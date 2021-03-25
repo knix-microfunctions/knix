@@ -1,0 +1,8 @@
+{
+    "trigger_type": "amqp", 
+    "amqp_addr": "amqp://<user>:<pass>@<host>:5672//test", 
+    "routing_key": "my_topic",
+    "exchange": "my_exchange",
+    "with_ack": false,
+    "durable": false
+}
