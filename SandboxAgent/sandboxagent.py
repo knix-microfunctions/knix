@@ -325,15 +325,15 @@ class SandboxAgent:
 
         ts_qs_launch = time.time()
         # 1. launch the QueueService here
-        self._logger.info("Launching QueueService...")
-        cmdqs = "java -Xmx1024m -jar /opt/mfn/queueservice.jar"
+        self._logger.info("Launching local queue with redis...")
+        cmdqs = "/opt/mfn/redis-server/./redis-server /opt/mfn/redis-server/redis_4999.conf"
         command_args_map_qs = {}
         command_args_map_qs["command"] = cmdqs
-        command_args_map_qs["wait_until"] = "Starting local queue..."
-        error, self._queue_service_process = process_utils.run_command(cmdqs, self._logger, wait_until="Starting local queue...")
+        command_args_map_qs["wait_until"] = "Ready to accept connections"
+        error, self._queue_service_process = process_utils.run_command(cmdqs, self._logger, wait_until="Ready to accept connections")
         if error is not None:
             has_error = True
-            errmsg = "Could not start the sandbox queue service: " + str(error)
+            errmsg = "Could not start the sandbox local queue: " + str(error)
 
         if has_error:
             self._stop_deployment("queue service", errmsg)

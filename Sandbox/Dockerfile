@@ -38,14 +38,12 @@ RUN /usr/bin/python3 -m pip install fastcache
 # Needed for multi-language support (currently just Java)
 RUN /usr/bin/python3 -m pip install thriftpy2
 
-# Java (for queue service)
-RUN apt-get -y --no-install-recommends install openjdk-8-jdk-headless
-
 # Add components (as mfn)
 RUN groupadd -o -g 1000 -r mfn && useradd -d /opt/mfn -u 1000 -m -r -g mfn mfn
 RUN mkdir /opt/mfn/logs
 
-COPY build/queueservice.jar /opt/mfn/
+RUN /usr/bin/python3 -m pip install redis
+ADD build/redis-server.tar.gz /opt/mfn/
 ADD frontend/frontend /opt/mfn/frontend
 ADD build/SandboxAgent.tar.gz /opt/mfn/
 ADD build/FunctionWorker.tar.gz /opt/mfn/
