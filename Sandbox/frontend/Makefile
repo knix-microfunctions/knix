@@ -44,15 +44,6 @@ datalayerservice: ../../DataLayerService/thrift/DataLayerService.thrift ../../bu
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/datalayer/thrift/DataLayerService.thrift'
 
-localqueueservice: ../../QueueService/thrift/LocalQueueService.thrift ../../build_env.mk ../../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
-	cd ../../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
-	docker run --rm -i --name sandbox-thrift \
-		--user $(UID):$(GID) \
-		-v $(CURDIR)/../../QueueService:/usr/src/queue \
-		-v $(CURDIR):/usr/src/sandbox -w /usr/src/sandbox \
-		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
-		bash -c 'thrift --gen go:package_prefix=github.com/knix-microfunctions/knix/Sandbox/frontend/ -out ./ /usr/src/queue/thrift/LocalQueueService.thrift'
-
 mfnmessage.go: ../schema/mfnmessage-schema.json
 	docker run --rm -i --name mfn-event-schema \
 		--user $(UID):$(GID) \
@@ -74,7 +65,7 @@ mfnmessage.go: ../schema/mfnmessage-schema.json
 #		golang:1.13 \
 #		bash -c 'go get github.com/a-h/generate/...; schema-generate $^ > $@'
 
-frontend: mfnmessage.go localqueueservice datalayermessage datalayerservice $(SOURCES)
+frontend: mfnmessage.go datalayermessage datalayerservice $(SOURCES)
 	-rm -f frontend
 	docker run --rm -i --name build-$@ \
 		--user $(UID):$(GID) \
@@ -83,8 +74,8 @@ frontend: mfnmessage.go localqueueservice datalayermessage datalayerservice $(SO
 		--env XDG_CACHE_HOME=/tmp/.cache \
 		-v $(CURDIR):/app \
 		-w /app \
-		golang:1.13 \
+		golang:1.14 \
 		bash -c 'go mod download; CGO_ENABLED=0 GOOS=linux go build -v -o $@'
 
 clean:
-	rm -rf frontend mfnmessage.go mfnworkflow.go localqueueservice datalayermessage datalayerservice
+	rm -rf frontend mfnmessage.go mfnworkflow.go datalayermessage datalayerservice

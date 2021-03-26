@@ -28,6 +28,7 @@ except:
 ELASTICSEARCH_URL = "http://" + ELASTICSEARCH_HOST + ":" + str(ELASTICSEARCH_PORT)
 
 def delete_workflow_index(index_name):
+    print("Deleting workflow index: " + index_name)
     try:
         r = requests.delete(ELASTICSEARCH_URL + "/" + index_name, proxies={"http":None})
     except Exception as e:

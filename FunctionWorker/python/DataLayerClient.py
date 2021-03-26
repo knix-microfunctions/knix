@@ -23,7 +23,7 @@ from data_layer.message.ttypes import KeyValuePair
 from data_layer.message.ttypes import Metadata
 from data_layer.service import DataLayerService
 
-MAX_RETRIES=3
+MAX_RETRIES = 3
 
 class DataLayerClient:
 

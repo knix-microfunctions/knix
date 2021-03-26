@@ -15,13 +15,7 @@
 import time
 import socket
 
-from thrift import Thrift
-from thrift.transport import TSocket
-from thrift.transport import TTransport
-from thrift.protocol import TCompactProtocol
-
-from local_queue.service import LocalQueueService
-from local_queue.service.ttypes import LocalQueueMessage
+import redis
 
 class LocalQueueClient:
     '''
@@ -32,93 +26,73 @@ class LocalQueueClient:
 
     '''
     def __init__(self, connect="127.0.0.1:4999"):
-        self.qaddress = connect
+        self._qaddress = connect
         self.connect()
 
     def connect(self):
-        host, port = self.qaddress.split(':')
-        retry = 0.5 #s
         while True:
             try:
-                self.socket = TSocket.TSocket(host, int(port))
-                self.transport = TTransport.TFramedTransport(self.socket)
-                self.protocol = TCompactProtocol.TCompactProtocol(self.transport)
-                self.queue = LocalQueueService.Client(self.protocol)
-                self.transport.open()
+                self._queue = redis.Redis.from_url("redis://" + self._qaddress, decode_responses=True)
                 break
-            except Thrift.TException as exc:
+            except Exception as exc:
                 if retry < 60:
-                    print("[LocalQueueClient] Could not connect due to "+str(exc)+", retrying in "+str(retry)+"s")
+                    print("[LocalQueueClient] Could not connect due to " + str(exc) + ", retrying in " + str(retry) + "s")
                     time.sleep(retry)
                     retry = retry * 2
                 else:
                     raise
 
-    def addMessage(self, topic, lqcm, ack):
+    def addMessage(self, topic, message, ack):
         status = True
-        message = LocalQueueMessage()
-        message.payload = lqcm.get_serialized().encode()
         try:
             if ack:
-                status = self.queue.addMessage(topic, message)
+                status = bool(self._queue.xadd(topic, message.get_message()))
             else:
-                self.queue.addMessageNoack(topic, message)
-        except TTransport.TTransportException as exc:
+                self._queue.xadd(topic, message.get_message())
+        except Exception as exc:
             print("[LocalQueueClient] Reconnecting because of failed addMessage: " + str(exc))
             status = False
             self.connect()
-        except Exception as exc:
-            print("[LocalQueueClient] failed addMessage: " + str(exc))
-            raise
 
         return status
 
     def getMessage(self, topic, timeout):
+        message = None
         try:
-            lqm = self.queue.getAndRemoveMessage(topic, timeout)
-            if lqm.index != 0:
-                return lqm
-        except TTransport.TTransportException as exc:
+            message_list = self._queue.xread({topic: 0}, block=timeout, count=1)
+            if message_list:
+                message = message_list[0][1][0][1]
+                # remove the message from the topic
+                msg_id = message_list[0][1][0][0]
+                self._queue.xdel(topic, msg_id)
+        except Exception as exc:
             print("[LocalQueueClient] Reconnecting because of failed getMessage: " + str(exc))
             self.connect()
-        except Exception as exc:
-            print("[LocalQueueClient] failed getMessage: " + str(exc))
-            raise
 
-        return None
+        return message
 
     def getMultipleMessages(self, topic, max_count, timeout):
+        message_list = []
         try:
-            lqm_list = self.queue.getAndRemoveMultiMessages(topic, max_count, timeout)
-        except TTransport.TTransportException as exc:
-            print("[LocalQueueClient] Reconnecting because of failed getMultipleMessages: " + str(exc))
-            lqm_list = []
-            self.connect()
+            message_list = self._queue.xread({topic: "0"}, block=timeout, count=max_count)
         except Exception as exc:
-            print("[LocalQueueClient] failed getMultipleMessages: " + str(exc))
-            raise
+            print("[LocalQueueClient] Reconnecting because of failed getMultipleMessages: " + str(exc))
+            self.connect()
 
-        return lqm_list
+        msg_list = []
+        for msg in message_list[0][1]:
+            msg_list.append(msg[1])
+            # remove the message from the topic
+            self._queue.xdel(topic, msg[0])
+
+        return msg_list
 
     def shutdown(self):
-        if self.transport.isOpen():
-            #self.socket.handle.shutdown(socket.SHUT_RDWR)
-            self.transport.close()
+        self._queue.close()
 
     def addTopic(self, topic):
-        try:
-            self.queue.addTopic(topic)
-        except Thrift.TException as exc:
-            print("[LocalQueueClient] failed addTopic: " + str(exc))
-        except Exception as exc:
-            print("[LocalQueueClient] failed addTopic: " + str(exc))
-            raise
+        # no op with regular streams
+        return
 
     def removeTopic(self, topic):
-        try:
-            self.queue.removeTopic(topic)
-        except Thrift.TException as exc:
-            print("[LocalQueueClient] failed removeTopic: " + str(exc))
-        except Exception as exc:
-            print("[LocalQueueClient] failed removeTopic: " + str(exc))
-            raise
+        self._queue.xtrim(topic, "0", approximate=False)

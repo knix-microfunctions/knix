@@ -50,10 +50,11 @@ def create_workflow_index(index_name):
         }
     }
 
+    print("Creating workflow index: " + index_name)
     try:
         r = requests.put(ELASTICSEARCH_URL + "/" + index_name, json=index_data, proxies={"http":None})
-        #response = r.json()
-        #print(str(response))
+        response = r.json()
+        print(str(response))
     except Exception as e:
         if type(e).__name__ == 'ConnectionError':
             print('Could not connect to: ' + ELASTICSEARCH_URL)
