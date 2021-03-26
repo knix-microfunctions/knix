@@ -589,21 +589,9 @@ class Deployment:
         t_local_private.start()
         threads.append(t_local_private)
 
-        # for global access, (re)create; it's okay because the operations are idempotent
-        # user storage is created by management service
-        # mfn internal tables
-        #global_dlc = DataLayerClient(locality=1, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        #global_dlc.shutdown()
-        t_global_mfn = threading.Thread(target=self._init_storage_dlc, args=(1, True, False, ))
-        t_global_mfn.start()
-        threads.append(t_global_mfn)
-
-        # workflow private tables
-        #global_dlc = DataLayerClient(locality=1, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        #global_dlc.shutdown()
-        t_global_private = threading.Thread(target=self._init_storage_dlc, args=(1, False, True, ))
-        t_global_private.start()
-        threads.append(t_global_private)
+        # for global access:
+        # user storage is created by management service at login
+        # mfn internal storage and workflow-private storage is created by management service at workflow addition
 
         return threads
 

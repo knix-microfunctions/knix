@@ -50,7 +50,7 @@ class DataLayerClient:
                 self.countertriggerstable = "counterTriggersTable"
                 self.countertriggersinfotable = "counterTriggersInfoTable"
 
-            else:
+            elif suid is not None:
                 self.keyspace = "storage_" + suid
                 if tableName is not None:
                     self.tablename = tableName
@@ -62,6 +62,9 @@ class DataLayerClient:
                 self.triggersinfotablename = "triggersInfoTable"
                 self.countertriggerstable = "counterTriggersTable"
                 self.countertriggersinfotable = "counterTriggersInfoTable"
+            else:
+                print("[DataLayerClient]: Error in initializing; no required values given.")
+                return
 
         #print("Creating datalayer client in keyspace=%s, tablename=%s, maptablename=%s, settablename=%s, countertablename=%s" % (self.keyspace,self.tablename, self.maptablename, self.settablename, self.countertablename))
         self.locality = locality
@@ -457,7 +460,7 @@ class DataLayerClient:
                             continue
                         else:
                             set_response.append(name)
-                
+
                 break
             except TTransport.TTransportException as exc:
                 print("[DataLayerClient] Reconnecting because of failed getSetNames: " + str(exc))

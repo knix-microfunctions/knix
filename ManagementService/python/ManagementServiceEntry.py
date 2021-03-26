@@ -104,9 +104,10 @@ def actionLogin(user, sapi):
                 sapi.addSetEntry(email + "_session_tokens",
                                  token, is_private=True)
 
+                # for global access, (re)create; it's okay because the operations are idempotent
+                # user storage, so that we can store the function and workflow data
                 storage_userid = cur_user["storage_userid"]
-                global_dlc = sapi.get_privileged_data_layer_client(
-                    storage_userid, init_tables=True)
+                global_dlc = sapi.get_privileged_data_layer_client(suid=storage_userid, init_tables=True)
                 global_dlc.shutdown()
 
                 response["status"] = "success"

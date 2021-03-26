@@ -60,6 +60,20 @@ def create_workflow_index(index_name):
         else:
             raise e
 
+def initialize_storage(sapi, wid):
+    #sapi.get_privileged_data_layer_client(storage_userid, init_tables=True)
+    # mfn internal tables
+    #global_dlc = DataLayerClient(locality=1, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+    print("Initializing global mfn internal storage for workflow: " + wid)
+    global_dlc = sapi.get_privileged_data_layer_client(for_mfn=True, sid=wid, init_tables=True)
+    global_dlc.shutdown()
+
+    # workflow private tables
+    print("Initializing global workflow-private storage: " + wid)
+    #global_dlc = DataLayerClient(locality=1, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+    global_dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=wid, init_tables=True)
+    global_dlc.shutdown()
+
 
 def handle(value, sapi):
     assert isinstance(value, dict)
@@ -88,6 +102,9 @@ def handle(value, sapi):
 
         # make a request to elasticsearch to create the workflow index
         create_workflow_index("mfnwf-" + wf["id"])
+
+        # initialize global workflow related storage (workflow-private and mfn internal tables)
+        initialize_storage(sapi, wf["id"])
 
         sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True, True)
         #sapi.put(email + "_workflow_json_" + wf["id"], "", True, True)

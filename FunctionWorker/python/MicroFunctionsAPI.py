@@ -194,9 +194,9 @@ class MicroFunctionsAPI:
         output = num
         return 'pong ' + str(output)
 
-    def get_privileged_data_layer_client(self, suid=None, sid=None, is_wf_private=False, init_tables=False, drop_keyspace=False, tableName=None):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, for_mfn=False, is_wf_private=False, init_tables=False, drop_keyspace=False, tableName=None):
         '''
-        Obtain a privileged data layer client to access a user's storage or a workflow-private storage.
+        Obtain a privileged data layer client to access a user's storage, a workflow-private storage or mfn internal tables of a workflow.
         Only can be usable by the management service.
 
         Args:
@@ -205,6 +205,7 @@ class MicroFunctionsAPI:
 
             init_tables (boolean): whether relevant data layer tables should be initialized; default: False.
             drop_keyspace (boolean): whether the relevant keyspace for the user's storage should be dropped; default: False.
+            for_mfn: whether it is about the mfn internal table of a workflow; default: False.
             tableName (string): name of the table to be used for subsequent storage operations. By default, the default table will be used.
                  If this method is called with is_wf_private = True, then the tableName parameter will be ignored.
 
@@ -218,9 +219,11 @@ class MicroFunctionsAPI:
                     return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace, tableName=tableName)
                 else:
                     return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
+            elif for_mfn:
+                return DataLayerClient(locality=1, sid=sid, for_mfn=True, init_tables=init_tables, connect=self._datalayer, drop_keyspace=drop_keyspace)
             elif is_wf_private:
-                # we'll never try to access the metadata stored for mfn
-                return DataLayerClient(locality=1, sid=sid, wid=sid, for_mfn=False, is_wf_private=is_wf_private, connect=self._datalayer, drop_keyspace=drop_keyspace)
+                return DataLayerClient(locality=1, sid=sid, wid=sid, is_wf_private=True, init_tables=init_tables, connect=self._datalayer, drop_keyspace=drop_keyspace)
+
         return None
 
     def update_metadata(self, metadata_name, metadata_value, is_privileged_metadata=False):
