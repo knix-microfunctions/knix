@@ -83,7 +83,7 @@ class LocalQueueClient:
         for msg in message_list[0][1]:
             msg_list.append(msg[1])
             # remove the message from the topic
-            self._queue.xdel(msg[0])
+            self._queue.xdel(topic, msg[0])
 
         return msg_list
 
