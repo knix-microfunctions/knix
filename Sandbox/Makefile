@@ -50,8 +50,7 @@ build/FunctionWorker.tar.gz: \
 	mkdir -p build
 	docker run --user $$(id -u):$$(id -g) --rm -v $$(pwd)/../:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \
-		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift; \
-		thrift --gen py -out FunctionWorker/python/ QueueService/thrift/LocalQueueService.thrift;'
+		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift;'
 	tar -czf $@ ../FunctionWorker
 
 RSOURCE = $(shell find ../redis/src)
