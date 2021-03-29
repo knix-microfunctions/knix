@@ -158,8 +158,8 @@ def handle(value, sapi):
             ksvcname = app_fullname_prefix + '-' + wf["id"].lower()
             # DELETE KNative Service
             resp = requests.delete(
-                "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1alpha1/namespaces/"+namespace+"/services/"+ksvcname,
-                #"https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apps/v1/namespaces/"+namespace+"/deployments/"+wf["id"],
+                "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
+                #"https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apps/v1/namespaces/"+namespace+"/deployments/"+wf["id"],
                 headers={"Authorization": "Bearer "+token},
                 json={"propagationPolicy": "Background"},
                 verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',

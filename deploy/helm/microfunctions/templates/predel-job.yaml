@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -43,9 +43,11 @@ spec:
         runAsUser: 1000
         fsGroup: 1000
       restartPolicy: Never
+      imagePullSecrets: 
+          {{- toYaml .Values.manager.setup.imagePullSecrets | nindent 8 }}
       containers:
       - name: {{ .Release.Name }}-postdelete
-        image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag }}"
+        image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         resources:
 {{ toYaml .Values.manager.setup.resources | indent 10}}
         command:

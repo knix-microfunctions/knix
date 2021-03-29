@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The KNIX Authors
+   Copyright 2021 The KNIX Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -92,14 +92,13 @@
     var token = $cookies.get('token');
 
     var mfnAPI = [{ "word": "log(\"\")", "score": 1008 },
-    { "word": "get(\"\")", "score": 1007 }, { "word": "put()", "score": 1006 }, { "word": "delete(\"\")", "score": 1005 }];
-    var mfnAPITooltip = [{ "command": "log()", "ttip": "<b>log(text)</b><br><br>Log text. Uses the instance id to indicate which function instance logged the text.<br><br><b>Args:</b><br>text (string): text to be logged.<br><br><b>Returns:</b><br>None.<br><br><b>Raises:</b><br>MicroFunctionsUserLogException: if there are any errors in the logging function." },
-    { "command": "put()", "ttip": "<b>put(key, value, is_private=False, is_queued=False)</b><br><br>Access to data layer to store a data item in the form of a (key, value) pair.<br>By default, the put operation is reflected on the data layer immediately.<br>If the put operation is queued (i.e., is_queued = True), the data item is put into the transient data table.<br>If the key was previously deleted by the function instance, it is removed from the list of items to be deleted.<br>When the function instance finishes, the transient data items are committed to the data layer.<br><br><b>Args:</b><br>key (string): the key of the data item<br>value (string): the value of the data item<br>is_private (boolean): whether the item should be written to the private data layer of the workflow; default: False<br>is_queued (boolean): whether the put operation should be reflected on the data layer after the execution finish; default: False<br><br><b>Returns:</b><br>None<br><br><b>Raises:</b><br>MicroFunctionsDataLayerException: when the key and/or value are not a strings." },
-    { "command": "get(\"\")", "ttip": "<b>get(key, is_private=False)</b><br><br>Access to data layer to load the value of a given key. The key is first checked in the transient deleted items.<br>If it is not deleted, the key is then checked in the transient data table. If it is not there,<br>it is retrieved from the global data layer. As a result, the value returned is consistent with what this function<br>instance does with the data item. If the data item is not present in either the transient data table<br>nor in the global data layer, an empty string (i.e., \"\") will be returned.<br>If the function used put() and delete() operations with is_queued = False (default), then the checks<br>of the transient table will result in empty values, so that the item will be retrieved<br>from the global data layer.<br><br><b>Args:</b><br>key (string): the key of the data item<br>is_private (boolean): whether the item should be read from the private data layer of the workflow; default: False<br><br><b>Returns:</b><br>value (string): the value of the data item; empty string if the data item is not present.<br><br><b>Raises:</b><br>MicroFunctionsDataLayerException: when the key is not a string." },
-    { "command": "delete(\"\")", "ttip": "<b>delete(key, is_private=False, is_queued=False)</b><br><br>Access to data layer to delete data item associated with a given key.<br>By default, the delete operation is reflected on the data layer immediately.<br>If the delete operation is queued (i.e., is_queued = True), the key is removed from the transient data table.<br>It is also added to the list of items to be deleted from the global data layer when the function instance finishes.<br><br><b>Args:</b><br>key (string): the key of the data item<br>is_private (boolean): whether the item should be deleted from the private data layer of the workflow; default: False<br>is_queued (boolean): whether the delete operation should be reflected on the data layer after the execution finish; default: False<br><br><b>Returns:</b><br>None<br><br><b>Raises:</b><br>MicroFunctionsDataLayerException: when the key is not a string." }
+    { "word": "get(\"\")", "score": 1007 }, { "word": "put(\"\")", "score": 1006 }, { "word": "remove(\"\")", "score": 1005 }];
+    var mfnAPITooltip = [{ "command": "log(\"\")", "ttip": "<b>log(text, level='INFO')</b><br><br>Log text. Uses the instance id to indicate which function instance logged the text.<br><br><b>Args:</b><br>text (string): text to be logged.<br>level (string): log level to be used.<br><br><b>Returns:</b><br>None.<br><br><b>Raises:</b><br>MicroFunctionsUserLogException: if there are any errors in the logging function." },
+    { "command": "put(\"\")", "ttip": "<b>put(key, value, is_private=False, is_queued=False, bucketName=None)</b><br><br>Access to data layer to store a data item in the form of a (key, value) pair.<br>By default, the put operation is reflected on the data layer immediately.<br>If the put operation is queued (i.e., is_queued = True), the data item<br>is put into the transient data bucket.<br>If the key was previously deleted by the function instance,<br>it is removed from the list of items to be deleted.<br>When the function instance finishes, the transient data items are committed to the data layer.<br><br><b>Args</b><br>key (string): the key of the data item<br>value (string): the value of the data item<br>is_private (boolean): whether the item should be written to the private data layer of the workflow; default: False<br>is_queued (boolean): whether the put operation should be reflected on the data layer after the execution finish; default: False<br>(i.e., the put operation will be reflected on the data layer immediately)<br>bucketName (string): name of the bucket where to put the key. By default, it will be put in the default bucket.<br>If this method is called with is_private = True, then<br>the bucketName parameter will be ignored.<br><br><b>Returns:</b><br>None<br><br><b>Raises:</b><br>MicroFunctionsDataLayerException: when the key and/or value are not a strings."},
+    { "command": "get(\"\")", "ttip": "<b>get(key, is_private=False, bucketName=None)</b><br><br>Access to data layer to load the value of a given key. The key is first checked in the transient deleted items.<br>If it is not deleted, the key is then checked in the transient data bucket.<br>If it is not there, it is retrieved from the global data layer.<br>As a result, the value returned is consistent with what this function instance does with the data item.<br>If the data item is not present in either the transient data bucket nor in the global data layer, an empty string (i.e., \"\") will be returned.<br> If the function used put() and delete() operations with is_queued=False (default), then the checks of the transient bucket<br>will result in empty values, so that the item will be retrieved from the global data layer.<br><br><b>Args:</b><br>key (string): the key of the data item<br>value (string): the value of the data item<br>is_private (boolean): whether the item should be written to the private data layer of the workflow; default: False<br>is_queued (boolean): whether the put operation should be reflected on the data layer after the execution finish; default: False<br>bucketName (string): name of the bucket where to get the key from. By default, it will be fetched from the default bucket.<br>If this method is called with is_private = True, then the bucketName parameter will be ignored.<br><br><b>Returns:</b><br>value (string): the value of the data item; empty string if the data item is not present.<br><br><b>Raises:</b><br>MicroFunctionsDataLayerException: when the key is not a string." },
+    { "command": "remove(\"\")", "ttip": "<b>remove(key, is_private=False, is_queued=False, bucketName=None)</b><br><br>Access to data layer to remove data item associated with a given key.<br>By default, the remove operation is reflected on the data layer immediately.<br>If the remove operation is queued (i.e., is_queued = True), the key is removed from the transient data table.<br>It is also added to the list of items to be removed from the global data layer when the function instance finishes.<br><br><b>Args:</b><br>key (string): the key of the data item<br>is_private (boolean): whether the item should be removed from the private data layer of the workflow; default: False<br>is_queued (boolean): whether the delete operation should be reflected on the data layer after the execution finish; default: False<br>bucketName (string): name of the bucket where to remove the key from. By default, it will be removed from the default bucket.<br><br><b>Returns:</b><br>None<br><br><b>Raises:</b><br>MicroFunctionsDataLayerException: when the key is not a string." }
     ];
-
-    //var workflowBlueprint = '{\r\n\t"name": "' + sharedProperties.getWorkflowName() + '",\r\n\t"entry": "",\r\n\t"functions": [\r\n\t\t{\r\n\t\t\t"name": "",\r\n\t\t\t"next": ["end"]\r\n\t\t}\r\n\t]\r\n}';
+    
     var workflowBlueprint = '{\r\n\t"Comment": "' + sharedProperties.getWorkflowName() + ' Workflow",\r\n\t"StartAt": "",\r\n\t"States": {\r\n\t\t"": {\r\n\t\t\t"Type": "Task",\r\n\t\t\t"Resource": "",\r\n\t\t\t"End": true\r\n\t\t}\r\n\t}\r\n}';
 
     $scope.showFunctionCodeTab = new Array(10);
@@ -489,23 +488,30 @@
       var urlPath = sharedProperties.getUrlPath();
       var token = $cookies.get('token');
 
+      var param_storage = {};
+      param_storage["data_type"] = "kv";
+      param_storage["parameters"] = {};
+      param_storage["parameters"]["action"] = "listkeys";
+      param_storage["parameters"]["tableName"] = "defaultTable";
+      param_storage["parameters"]["start"] = 0;
+      param_storage["parameters"]["count"] = 2000;
+
       var req = {
         method: 'POST',
         url: urlPath,
         headers: {
           'Content-Type': 'application/json'
         },
-        data: JSON.stringify({ "action": "performStorageAction", "data": { "user": { "token": token }, "storage": { "table": "defaultTable", "action": "listkeys", "start": 0, "count": 2000 } } })
+        data: JSON.stringify({ "action": "performStorageAction", "data": { "user": { "token": token }, "storage": param_storage } })
       }
 
       $http(req).then(function successCallback(response) {
 
         $scope.sObjects = [];
         var score = 2000;
-
-        for (var i = 0; i < response.data.length; i++) {
-          if (!response.data[i].startsWith("grain_requirements_") && !response.data[i].startsWith("grain_source_") && !response.data[i].startsWith("workflow_json_")) {
-            $scope.sObjects.push({ "word": response.data[i], "score": score });
+        for (var i=0;i<response.data.data.keylist.length;i++) {
+          if (!response.data.data.keylist[i].includes("_branch_")) {
+            $scope.sObjects.push({ "word": response.data.data.keylist[i], "score": score });
             score--;
           }
         }
@@ -1086,8 +1092,7 @@
 
               Object.keys(workflowJson.States[e].Branches[f].States).map(g => {
                 if (workflowJson.States[e].Branches[f].States[g].Resource) {
-                  console.log(workflowJson.States[e].Branches[f].States[g].Resource);
-
+                  
                   for (var key in $scope.functions) {
                     var n = workflowJson.States[e].Branches[f].States[g].Resource.indexOf(':');
                     var resource = workflowJson.States[e].Branches[f].States[g].Resource.substring(0, n != -1 ? n : workflowJson.States[e].Branches[f].States[g].Resource.length);

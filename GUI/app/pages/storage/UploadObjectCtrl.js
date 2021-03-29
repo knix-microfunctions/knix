@@ -83,26 +83,16 @@
 
           if (response.data.status == "success")
           {
-
-          console.log('Storage object successfully downloaded.');
-          var objectData = response.data.data.value;
-
-          if (objectData.length<10000) {
-            try {
-                var objectDataStr = atob(objectData);
-              if (objectDataStr.match(/[^\u0000-\u007f]/)) {
-                _editor.getSession().setValue('Storage object contains binary data. Please download the object instead.');
+            console.log('Storage object successfully downloaded.');
+            var objectData = response.data.data.value;
+            if (objectData) {
+              if (objectData.length<10000) {
+                _editor.getSession().setValue(objectData);
               } else {
-                _editor.getSession().setValue(objectDataStr);
+                _editor.getSession().setValue('Storage object data is too large to display inline. Please download the object instead.');
               }
-            } catch(e) {
-             _editor.getSession().setValue(objectData);
             }
-          } else {
-            _editor.getSession().setValue('Storage object data is too large to display inline. Please download the object instead.');
-          }
-
-          _editor.focus();
+            _editor.focus();
           }
        }, function errorCallback(response) {
            console.log("Error occurred during getData");
@@ -124,6 +114,10 @@
        });
      };
 
+     function isASCII(str) {
+      return /^[\x00-\x7F]*$/.test(str);
+     }
+
 
      $scope.setFocus = function() {
        $timeout(function() {
@@ -141,17 +135,17 @@
        var objectData = $scope.aceSession.getDocument().getValue();
        var dataStr = "";
        if (objectData=="Storage object data is too large to display inline. Please download the object instead."
-       || objectData=="Storage object contains binary data. Please download the object instead.") {
+       || objectData=="Storage object contains non-ASCII characters. Please download the object instead.") {
          return;
        }
 
-       if (objectData.match(/[^\u0000-\u007f]/))
+       if (!isASCII(objectData))
        {
            dataStr = btoa(objectData);
        }
        else
        {
-           dataStr = objectData;
+          dataStr = objectData;
        }
 
        var table = "";
@@ -216,8 +210,8 @@
        var dataStr = "";
 
        try {
-                var objectDataStr = atob(encodedFile);
-              if (objectDataStr.match(/[^\u0000-\u007f]/)) {
+              var objectDataStr = atob(encodedFile);
+              if (!isASCII(objectDataStr)) {
                 dataStr = encodedFile;
               } else {
                 dataStr = objectDataStr;
@@ -225,7 +219,7 @@
             } catch(e) {
                 dataStr = encodedFile;
             }
-
+            
             var table = "";
             if (storageLoc.type=="Bucket") {
              table = storageLoc.name;
@@ -264,8 +258,8 @@
 
              if (encodedFile.length<10000) {
               try {
-                if (atob(encodedFile).match(/[^\u0000-\u007f]/)) {
-                  $scope.aceSession.setValue('Storage object contains binary data. Please download the object instead.');
+                if (!isASCII(atob(encodedFile))) {
+                  $scope.aceSession.setValue('Storage object contains non-ASCII characters. Please download the object instead.');
                 } else {
                   $scope.aceSession.setValue(atob(encodedFile));
                 }

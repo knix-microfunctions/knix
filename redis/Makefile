@@ -16,22 +16,19 @@
 SHELL := /bin/bash
 -include ../proxy.mk
 
-default: image
+default: redis-server
 
 include ../docker.mk
 
-lib/jiffy.tgz: Dockerfile
-	mkdir -p lib
-	echo "Building jiffy"
-	$(call build_image,Dockerfile,riak_libs_build)
-	docker run -i --rm -u $$(id -u):$$(id -g) -v $(CURDIR):/temp -w /temp --ulimit nofile=262144:262144 riak_libs_build:$(VERSION) cp /build/jiffy.tgz ./lib/.
+redis-server: Dockerfile_redis_build
+	echo "Building redis server"
+	mkdir -p redis-server
+	$(call build_image,Dockerfile_redis_build,redis_local_queue)
+	docker run -i --rm -u $$(id -u):$$(id -g) -v $(CURDIR):/temp -w /temp --ulimit nofile=262144:262144 redis_local_queue:$(VERSION) cp /build/redis-6.2.1/src/redis-server redis-server/.
+	touch redis-server/redis_4999.conf
+	echo "port 4999" >> redis-server/redis_4999.conf
+	echo "appendonly no" >> redis-server/redis_4999.conf
+	echo "save \"\"" >> redis-server/redis_4999.conf
 
-image: Dockerfile-riak \
-		lib/jiffy.tgz \
-		src/mfn_counter_triggers.erl \
-		src/workflow_triggers.erl \
-		$(shell find script/ -type f)
-	$(call build_image,Dockerfile-riak,microfn/riak)
-
-push: image
-	$(call push_image,microfn/riak)
+clean:
+	rm -rf redis-server

@@ -15,7 +15,7 @@
 FROM ubuntu:18.04
 
 RUN apt-get update
-RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo
+RUN apt-get install -y curl cron libpopt0 libssl1.0.0 logrotate sudo dnsutils
 
 ENV RIAK_VERSION 2.9.0
 RUN groupadd -o -g 1000 -r riak && useradd -m -d /home/riak -u 1000 -c 'Riak user' -r -g riak riak

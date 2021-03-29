@@ -6,6 +6,34 @@ use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime};
 use tokio::time::delay_for;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use regex::Regex;
+
+fn get_domain_suffix(url: &str) -> &str {
+    let re = Regex::new(r"^.+://([^\.]+)\.(.*)").unwrap();
+    match re.captures(url) {
+        Some(caps) =>  caps.get(2).unwrap().as_str().clone(),
+        None => ""
+    }
+}
+
+fn get_internal_workflow_url<'a>(workflow_url: &'a str, management_url: &'a str) -> String {
+    let re = Regex::new(r"^.+://([^\.]+)\.(.*)").unwrap();
+    let suffix = get_domain_suffix(management_url);
+    match re.captures(workflow_url) {
+        Some(caps) => format!("http://{}.{}", &caps[1], suffix).as_str().to_string().clone(),
+        None => "".to_string()
+    }
+}
+
+pub fn get_modified_url_for_k8s<'a>(workflow_url: &'a str) -> String {
+    match std::env::var("KUBERNETES_SERVICE_HOST") {
+        Ok(_) => { 
+            let management_url = std::env::var("MANAGEMENT_URL").expect("MANAGEMENT_URL env variable not specified");
+            get_internal_workflow_url(workflow_url, &management_url).clone()
+        }
+        Err(_) => workflow_url.to_string().clone()
+    }
+}
 
 pub async fn create_delay(delay_duration_ms: u64, log_prefix: String) {
     let now = SystemTime::now();

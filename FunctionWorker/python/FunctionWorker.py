@@ -338,18 +338,18 @@ class FunctionWorker:
                 if not has_error:
                     try:
                         if "__state_action" not in metadata or (metadata["__state_action"] != "post_map_processing" and metadata["__state_action"] != "post_parallel_processing"):
-                             #self._logger.debug("[FunctionWorker] User code input(Before InputPath processing):" + str(type(raw_state_input)) + ":" + str(raw_state_input))
-                             function_input = self._state_utils.applyInputPath(raw_state_input)
-                             #self._logger.debug("[FunctionWorker] User code input(Before applyParameter processing):" + str(type(function_input)) + ":" + str(function_input))
-                             function_input = self._state_utils.applyParameters(function_input)
-                             #self._logger.debug("[FunctionWorker] User code input(Before ItemsPath processing):" + str(type(function_input)) + ":" + str(function_input))
-                             function_input = self._state_utils.applyItemsPath(function_input) # process map items path
+                            #self._logger.debug("[FunctionWorker] User code input(Before InputPath processing):" + str(type(raw_state_input)) + ":" + str(raw_state_input))
+                            function_input = self._state_utils.applyInputPath(raw_state_input)
+                            #self._logger.debug("[FunctionWorker] User code input(Before applyParameter processing):" + str(type(function_input)) + ":" + str(function_input))
+                            function_input = self._state_utils.applyParameters(function_input)
+                            #self._logger.debug("[FunctionWorker] User code input(Before ItemsPath processing):" + str(type(function_input)) + ":" + str(function_input))
+                            function_input = self._state_utils.applyItemsPath(function_input) # process map items path
 
                         #elif "Action" not in metadata or metadata["Action"] != "post_parallel_processing":
                         #     function_input = self._state_utils.applyInputPath(raw_state_input)
 
                         else:
-                             function_input = raw_state_input
+                            function_input = raw_state_input
                     except Exception as exc:
                         self._logger.exception("InputPath processing exception: %s\n%s", str(instance_pid), str(exc))
                         error_type = "InputPath processing exception"
@@ -728,4 +728,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

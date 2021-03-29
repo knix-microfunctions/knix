@@ -21,7 +21,7 @@ import time
 sys.path.append("../")
 from mfn_test_utils import MFNTest
 
-COUNT_EXECUTIONS = 20
+COUNT_EXECUTIONS = 10
 
 class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
 

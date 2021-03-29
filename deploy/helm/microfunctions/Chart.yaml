@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 apiVersion: v1
-appVersion: "1.0"
+appVersion: "latest"
 description: High Performance Serverless system
 name: MicroFunctions
-version: auto
+version: 0.0.1

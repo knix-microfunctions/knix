@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The KNIX Authors
+   Copyright 2021 The KNIX Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -365,12 +365,12 @@
             if (response.data.data.workflow.status=='deployed') {
               $interval.cancel(promise);
               testWorkflow(functionIndex, workflowId, response.data.data.workflow.endpoints[0]);
-              //testWorkflow(functionIndex, workflowId, response.data.data.workflow.endpoint);
             }
             else if (response.data.data.workflow.status=='failed')
             {
                 $interval.cancel(promise);
-
+                $scope.functionDeploymentModal.dismiss();
+                setTimeout(function() { deleteTemporaryWorkflow(functionIndex, workflowId);}, 2000);
                 console.log("Error in deployment: " + response.data.data.workflow.deployment_error);
                 $scope.errorMessage = response.data.data.workflow.deployment_error;
                 $uibModal.open({
@@ -651,6 +651,7 @@
             } else {
               console.log("Failure status returned by addFunction");
               console.log("Message:" + response.data.data.message);
+              $scope.reloadFunctions();
               $scope.errorMessage = response.data.data.message;
               $uibModal.open({
                 animation: true,
@@ -662,6 +663,7 @@
         }, function errorCallback(response) {
             console.log("Error occurred during addFunction");
             console.log("Response:" + response);
+            $scope.reloadFunctions();
             if (response.statusText) {
               $scope.errorMessage = response.statusText;
             } else {

@@ -375,9 +375,12 @@ if __name__ == "__main__":
             time.sleep(5)
 
     # client for bucket "storage_" + get_storage_userid(email) + ";defaultTable"
-    DLCLIENT = DataLayerClient(1,suid="adminATmanagement",is_wf_private=False,for_mfn=False, connect=connect, init_tables=True)
+    DLCLIENT = DataLayerClient(locality=1, suid="adminATmanagement", connect=connect, init_tables=True)
     # client for bucket "sbox_Management;wf_Management"
-    DLCLIENT_MANAGEMENT = DataLayerClient(1,sid="Management",wid="Management",is_wf_private=True,for_mfn=False, connect=connect, init_tables=True)
+    DLCLIENT_MANAGEMENT = DataLayerClient(locality=1, sid="Management", wid="Management", is_wf_private=True, connect=connect, init_tables=True)
+    # client for mfn internal storage (for completeness)
+    DLCLIENT_MFN = DataLayerClient(locality=1, sid="Management", for_mfn=True, connect=connect, init_tables=True)
+    DLCLIENT_MFN.shutdown()
 
     '''
     keyspace = "storage_" + get_storage_userid(email)

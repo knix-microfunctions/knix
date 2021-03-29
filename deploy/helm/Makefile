@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -12,7 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-VERSION?=$(shell git describe --long --tags --dirty --always)
+SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+VERSION ?= $(shell git -C $(SELF_DIR) describe --tags --dirty)
 PKG=MicroFunctions-$(VERSION).tgz
 FILES=$(shell find microfunctions/)
 
@@ -23,11 +24,8 @@ default: $(PKG)
 .PHONY: push deploy undeploy
 
 $(PKG): $(FILES)
-	sed 's/^version:.*/version: $(VERSION)/' -i microfunctions/Chart.yaml
 	rm -f $(PKG)
-	helm dependency update microfunctions/
-	helm package microfunctions/
-	sed 's/^version:.*/version: auto/' -i microfunctions/Chart.yaml
+	helm package --app-version $(VERSION) --version $(VERSION) microfunctions/
 
 -include ../../docker.mk
 

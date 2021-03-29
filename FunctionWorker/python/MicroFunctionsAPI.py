@@ -194,9 +194,9 @@ class MicroFunctionsAPI:
         output = num
         return 'pong ' + str(output)
 
-    def get_privileged_data_layer_client(self, suid=None, sid=None, is_wf_private=False, init_tables=False, drop_keyspace=False, tableName=None):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, for_mfn=False, is_wf_private=False, init_tables=False, drop_keyspace=False, tableName=None):
         '''
-        Obtain a privileged data layer client to access a user's storage or a workflow-private storage.
+        Obtain a privileged data layer client to access a user's storage, a workflow-private storage or mfn internal tables of a workflow.
         Only can be usable by the management service.
 
         Args:
@@ -205,6 +205,7 @@ class MicroFunctionsAPI:
 
             init_tables (boolean): whether relevant data layer tables should be initialized; default: False.
             drop_keyspace (boolean): whether the relevant keyspace for the user's storage should be dropped; default: False.
+            for_mfn: whether it is about the mfn internal table of a workflow; default: False.
             tableName (string): name of the table to be used for subsequent storage operations. By default, the default table will be used.
                  If this method is called with is_wf_private = True, then the tableName parameter will be ignored.
 
@@ -218,9 +219,11 @@ class MicroFunctionsAPI:
                     return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace, tableName=tableName)
                 else:
                     return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
+            elif for_mfn:
+                return DataLayerClient(locality=1, sid=sid, for_mfn=True, init_tables=init_tables, connect=self._datalayer, drop_keyspace=drop_keyspace)
             elif is_wf_private:
-                # we'll never try to access the metadata stored for mfn
-                return DataLayerClient(locality=1, sid=sid, wid=sid, for_mfn=False, is_wf_private=is_wf_private, connect=self._datalayer, drop_keyspace=drop_keyspace)
+                return DataLayerClient(locality=1, sid=sid, wid=sid, is_wf_private=True, init_tables=init_tables, connect=self._datalayer, drop_keyspace=drop_keyspace)
+
         return None
 
     def update_metadata(self, metadata_name, metadata_value, is_privileged_metadata=False):
@@ -1022,7 +1025,7 @@ class MicroFunctionsAPI:
             is_private (boolean): whether the item should be written to the private data layer of the workflow; default: False
             is_queued (boolean): whether the put operation should be reflected on the data layer after the execution finish; default: False
                 (i.e., the put operation will be reflected on the data layer immediately)
-            bucketName (string): name of the bucket where to put the key. By default, it will be put in the default bucket. If this method is 
+            bucketName (string): name of the bucket where to put the key. By default, it will be put in the default bucket. If this method is
                 called with is_private = True, then the bucketName parameter will be ignored.
 
         Returns:
@@ -1058,7 +1061,7 @@ class MicroFunctionsAPI:
         Args:
             key (string): the key of the data item
             is_private (boolean): whether the item should be read from the private data layer of the workflow; default: False
-            bucketName (string): name of the bucket where to get the key from. By default, it will be fetched from the default bucket. If this method is 
+            bucketName (string): name of the bucket where to get the key from. By default, it will be fetched from the default bucket. If this method is
                 called with is_private = True, then the bucketName parameter will be ignored.
 
         Returns:
@@ -1871,7 +1874,7 @@ class MicroFunctionsAPI:
             bucketName (string): the name of the bucket to be added
 
         Returns:
-            Boolean, indicating whether the bucket was created successfully 
+            Boolean, indicating whether the bucket was created successfully
 
         Raises:
             None
@@ -1903,7 +1906,7 @@ class MicroFunctionsAPI:
             bucketName (string): the name of the bucket with which to associate the workflow
 
         Returns:
-            Boolean, indicating whether the storage trigger was created successfully 
+            Boolean, indicating whether the storage trigger was created successfully
 
         Raises:
             None
@@ -1936,7 +1939,7 @@ class MicroFunctionsAPI:
             bucketName (string): the name of the bucket to delete
 
         Returns:
-            Boolean, indicating whether the bucket was deleted successfully 
+            Boolean, indicating whether the bucket was deleted successfully
 
         Raises:
             None
@@ -1969,7 +1972,7 @@ class MicroFunctionsAPI:
             bucketName (string): the name of the bucket currently associated with the workflow
 
         Returns:
-            Boolean, indicating whether the storage trigger was deleted successfully 
+            Boolean, indicating whether the storage trigger was deleted successfully
 
         Raises:
             None
@@ -2067,6 +2070,21 @@ class MicroFunctionsAPI:
             return None
         return response
 
+    def addTriggerTimer(self, trigger_name, trigger_info):
+        if "timer_interval_ms" not in trigger_info:
+            return False, "Missing parameter for timer trigger: timer_interval_ms"
+
+        return self.addTrigger(trigger_name, trigger_info)
+
+    def addTriggerAMQP(self, trigger_name, trigger_info):
+
+        if "amqp_addr" not in trigger_info:
+            return False, "Missing parameter for AMQP trigger: amqp_addr"
+
+        if "routing_key" not in trigger_info:
+            return False, "Missing parameter for AMQP trigger: routing_key"
+
+        return self.addTrigger(trigger_name, trigger_info)
 
     def addTrigger(self, trigger_name, trigger_info):
         '''
@@ -2075,19 +2093,19 @@ class MicroFunctionsAPI:
             trigger_info (dict): Trigger specific information. {
                 trigger_type (string): Type of trigger to associate with a workflow. Currently supported values: "amqp", "timer",
                 For "amqp",
-                    amqp_addr (string) 
-                    routing_key (string), 
+                    amqp_addr (string)
+                    routing_key (string),
                     exchange (string), "egress_exchange" (default)
                     with_ack (boolean), False (default) - means automatic acks,
                     durable (boolean), False (default),
                     exclusive (boolean), False (default),
                     ignore_message_probability (float, range = [0.0, 100.0)), 0.0 (default),
-                For 'timer', 
+                For 'timer',
                     timer_interval_ms: specified in milli-seconds.
             }
         Returns:
             (status, status_message)
-            status (boolean) - True, if the trigger was created successfully. False, otherwise 
+            status (boolean) - True, if the trigger was created successfully. False, otherwise
             status_message (string) - status message, depending on 'status'
         Raises:
             None
@@ -2115,7 +2133,7 @@ class MicroFunctionsAPI:
         return True, response["data"]["message"]
 
 
-    def addTriggerForWorkflow(self, trigger_name, workflow_name, workflow_state = ""):
+    def addTriggerForWorkflow(self, trigger_name, workflow_name, workflow_state=""):
         '''
         Args:
             trigger_name (string): Name of an existing trigger to a workflow to.
@@ -2123,7 +2141,7 @@ class MicroFunctionsAPI:
             workflow_state (string): (Optional) Name of the state within the workflow to invoke from the trigger. If not specified then the entry state will be invoked by default.
         Returns:
             (status, status_message)
-            status (boolean) - True, if the workflow was added to the trigger successfully. False, otherwise 
+            status (boolean) - True, if the workflow was added to the trigger successfully. False, otherwise
             status_message (string) - status message, depending on 'status'
         Raises:
             None
@@ -2136,7 +2154,7 @@ class MicroFunctionsAPI:
         workflow_state_topic = ""
         if type(workflow_state) == type("") and workflow_state is not "" and len(workflow_state) > 0:
             workflow_state_topic = self._sid + "-" + self._wid + "-" + workflow_state
-        
+
         request = \
             {
                 "action": "addTriggerForWorkflow",
@@ -2163,7 +2181,7 @@ class MicroFunctionsAPI:
             workflow_name (string): Name of the workflow to remove from the trigger.
         Returns:
             (status, status_message)
-            status (boolean) - True, if the workflow was remove from this trigger successfully. False, otherwise 
+            status (boolean) - True, if the workflow was remove from this trigger successfully. False, otherwise
             status_message (string) - status message or error message, depending on 'status'
         Raises:
             None
@@ -2195,7 +2213,7 @@ class MicroFunctionsAPI:
             trigger_name (string): Name of an existing trigger to delete
         Returns:
             (status, status_message)
-            status (boolean) - True, if the trigger was deleted successfully. False, otherwise 
+            status (boolean) - True, if the trigger was deleted successfully. False, otherwise
             status_message (string) - status message, depending on 'status'
         Raises:
             None

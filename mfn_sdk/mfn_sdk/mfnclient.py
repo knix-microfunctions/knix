@@ -20,7 +20,8 @@ import time
 import urllib.request, urllib.parse, urllib.error
 from .function import Function
 from .workflow import Workflow
-from .storage import Storage
+from .storage import Storage,TriggerableBucket
+from .trigger import Trigger
 import logging
 logging.basicConfig()
 #logging.basicConfig(level=logging.DEBUG)
@@ -104,16 +105,21 @@ class MfnClient(object):
 
     @classmethod
     def load_json(cls, config=dict(), filename=None):
-        files = ['../settings.json','~/settings.json','./settings.json']
+        files = ['../settings.json','~/settings.json','~/.mfn/config.json','./settings.json']
         if filename is not None:
             files.append(filename)
         for filename in files:
             """ get the json file """
+            if filename.startswith("~"):
+                filename = os.path.expanduser(filename)
             if os.path.isfile(filename):
                 json_data = {}
-                with open(filename) as json_file:
+                with open(filename,"r") as json_file:
                     try:
-                        json_data = json.load(json_file)
+                        filecontent = json_file.read()
+                        if len(filecontent) == 0:
+                            continue
+                        json_data = json.loads(filecontent)
                         log.info("Using settings file", filename)
                         config.update(json_data)
                     except Exception:
@@ -136,6 +142,10 @@ class MfnClient(object):
         config = MfnClient.load_json()
         config = MfnClient.load_env(config)
         url = mfn_url or config.get('mfn_url')
+        if url is None:
+            print("No valid configuration found")
+            log.warn("Known configuration data:" + str(config))
+            exit(2)
         user = mfn_user or config.get('mfn_user')
         password = mfn_password or config.get('mfn_password')
         name = mfn_name or config.get('mfn_name',None)
@@ -154,6 +164,7 @@ class MfnClient(object):
         self._s = requests.Session()
         if proxies:
             self._s.proxies.update(proxies)
+        self._s.verify=False
         self._s.max_redirects = 10
 
         self.baseurl = str(url)
@@ -165,6 +176,8 @@ class MfnClient(object):
         self.password=password
         self._functions=[]
         self._workflows=[]
+        self._triggers={}
+        self._buckets={}
         try:
             self.login()
         except requests.exceptions.HTTPError as e:
@@ -642,3 +655,190 @@ class MfnClient(object):
 
     def counters(self, wid=None):
         self._list_stepwise("counters", wid)
+
+    ### Triggers
+    @property
+    def triggers(self):
+        data = self.action('getTriggerDetails',{'trigger_names':[]})
+        unseen = list(self._triggers.keys())
+        for tname,tdetails in data['trigger_details'].items():
+            if tname in self._triggers:
+                self._triggers[tname].update(tdetails)
+                unseen.remove(tname)
+            else:
+                self._triggers[tname] = Trigger(self,tname,tdetails)
+        for tname in unseen:
+            del self._triggers[tname]
+        return self._triggers
+
+    def add_trigger(self,name,config):
+        """ add a trigger
+
+        requires a name and a trigger configuration, raises an error if it already exists, creates a new trigger if it doesn't exist and returns the new Trigger object
+
+        :name: name of the trigger
+        :config: trigger configuration (trigger_info)
+        """
+        if name in self.triggers.keys():
+            return self.triggers[name]
+        try:
+            data = self.action('addTrigger',{'trigger_name':name,'trigger_info':config})
+            ts = self.get_triggers([name])
+            if len(ts) == 0:
+                raise Exception("Trigger '"+name+"' was just created but not found")
+            self.triggers[name] = ts[0]
+        except Exception as e:
+            raise e
+
+    def get_triggers(self,names):
+        """ fetch trigger details for specific triggers
+
+        requires a non-empty list of trigger names to fetch, returns an array of triggers found for the given names
+        :names: list of names to fetch
+        """
+        try:
+            data = self.action('getTriggerDetails',{'trigger_names':names})
+            for tname, tdata in data["trigger_details"].items():
+                self._triggers[tname] = Trigger(self, tname, tdata)
+        except Exception as e:
+            raise e
+
+    def find_trigger(self,name):
+        res = []
+        for n,t in self.triggers.items():
+            if n == name:
+                return t
+            elif n.startswith(name):
+                res.append(t)
+        if len(res) == 0:
+            raise Exception("Could not find trigger matching "+name)
+        else:
+            if(len(res) > 1):
+                log.warning("Found multiple triggers for search word "+name+", returning first result")
+            return res[0]
+
+    def bind_trigger(self,trigger_name,workflow_name):
+        """ binds a workflow to a trigger
+
+        Bind a workflow to a trigger (aka 'associate' a workflow with a trigger)
+        raises Exception if not successful 
+        :trigger_name: name of the trigger (immutable)
+        :workflow_name: name of the workflow as which it has been bound
+        """
+        try:
+            self.action('addTriggerForWorkflow',{'trigger_name':trigger_name,'workflow_name':workflow_name})
+        except requests.exceptions.HTTPError as e:
+            e.strerror += "while trying to bind workflow '"+workflow_name+"' to trigger '"+trigger_name+"'"
+            raise e
+    
+    def unbind_trigger(self,trigger_name,workflow_name):
+        """ unbinds a workflow from a trigger
+        Unbind a workflow from a trigger (aka 'disassociate' a workflow from a trigger)
+        raises Exception if not successful 
+        :trigger_name: name of the trigger (immutable)
+        :workflow_name: name of the workflow as which it has been bound
+        """
+        try:
+            self.action('deleteTriggerForWorkflow',{'trigger_name':trigger_name,'workflow_name':workflow_name})
+        except requests.exceptions.HTTPError as e:
+            e.strerror += "while trying to unbind workflow '"+workflow_name+"' from trigger '"+trigger_name+"'"
+            raise e
+
+    def delete_trigger(self,trigger_name):
+        """ deletes a trigger
+
+        Delete a trigger (automatically diassociates all bound workflows)
+        :trigger_name: name of the trigger (immutable)
+        """
+        try:
+            self.action('deleteTrigger',{'trigger_name':trigger_name})
+        except requests.exceptions.HTTPError as e:
+            e.strerror += "while trying to delete trigger '"+trigger_name+"'"
+            raise e
+
+
+    ### Buckets
+    @property
+    def buckets(self):
+        data = self.action('getTriggerableBuckets')
+        unseen = list(self._buckets.keys())
+        for bname,bworkflows in data['buckets'].items():
+            bmetadatalist = data['buckets_details'].get(bname,[])
+            if bname in self._buckets:
+                self._buckets[bname]._update(bworkflows, bmetadatalist)
+                unseen.remove(bname)
+            else:
+                self._buckets[bname] = TriggerableBucket(self,bname,bworkflows,bmetadatalist)
+        for bname in unseen:
+            del self._buckets[name]
+        return self._buckets
+
+    def find_bucket(self,name):
+        res = []
+        for n,b in self.buckets.items():
+            if n == name:
+                return b
+            elif n.startswith(name):
+                res.append(b)
+        if len(res) == 0:
+            raise Exception("Could not find bucket matching "+name)
+        else:
+            if(len(res) > 1):
+                log.warning("Found multiple buckets for search word "+name+", returning first result")
+            return res[0]
+
+    def add_bucket(self,bname):
+        """ add a bucket
+
+        requires a name, creates a new bucket if it doesn't exist and returns the new Trigger object
+
+        :name: name of the trigger
+        :config: trigger configuration (trigger_info)
+        """
+        if bname in self._buckets:
+            return self._buckets[bname] 
+        try:
+            data = self.action('addTriggerableBucket',{'bucketname':bname})
+            self._buckets[bname] = TriggerableBucket(self, bname)
+            return self._buckets[bname] 
+        except Exception as e:
+            raise e
+
+    def bind_bucket(self,bucket_name,workflow_name):
+        """ binds a workflow to a bucket
+
+        Bind a workflow to a bucket (aka 'associate' a workflow with a bucket)
+        raises Exception if not successful 
+        :bucket_name: name of the bucket
+        :workflow_name: name of the workflow as which it has been bound
+        """
+        try:
+            self.action('addStorageTriggerForWorkflow',{'bucketname':bucket_name,'workflowname':workflow_name})
+        except requests.exceptions.HTTPError as e:
+            e.strerror += "while trying to bind workflow '"+workflow_name+"' to bucket '"+bucket_name+"'"
+            raise e
+    
+    def unbind_bucket(self,bucket_name,workflow_name):
+        """ unbinds a workflow from a bucket
+        Unbind a workflow from a bucket (aka 'disassociate' a workflow from a bucket)
+        raises Exception if not successful 
+        :bucket_name: name of the bucket
+        :workflow_name: name of the workflow as which it has been bound
+        """
+        try:
+            self.action('deleteStorageTriggerForWorkflow',{'tablename':bucket_name,'workflowname':workflow_name})
+        except requests.exceptions.HTTPError as e:
+            e.strerror += "while trying to unbind workflow '"+workflow_name+"' from bucket '"+bucket_name+"'"
+            raise e
+
+    def delete_bucket(self,bucket_name):
+        """ deletes a bucket
+
+        Delete a bucket (automatically diassociates all bound workflows)
+        :bucket_name: name of the bucket
+        """
+        try:
+            self.action('deleteTriggerableBucket',{'bucketname':bucket_name})
+        except requests.exceptions.HTTPError as e:
+            e.strerror += "while trying to delete bucket '"+bucket_name+"'"
+            raise e

@@ -56,6 +56,7 @@ def create_workflow_index(index_name):
         }
     }
 
+    print("Deleting workflow index: " + index_name)
     try:
         r = requests.put(ELASTICSEARCH_URL + "/" + index_name, json=index_data, proxies={"http":None})
         #response = r.json()

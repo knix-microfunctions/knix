@@ -77,7 +77,6 @@ for doc in docs:
 
     repl = next(find(doc,"replicas"),1)
     comp['replicas'] = repl
-    total['pods']+=comp['replicas']
 
     comp['containers'] = []
     for ctrs in find(doc,"containers"):
@@ -92,9 +91,16 @@ for doc in docs:
                     if not t in r[l]: continue
                     res = repl * convert(r[l][t])
                     comp[l][t] += res
-                    total[l][t] += res
+
     if len(comp['containers']) > 0:
         components.append(comp)
+        total['pods']+=comp['replicas']
+        for l in ('requests','limits'):
+            if not l in comp: continue
+            for t in ('cpu','memory','storage'):
+                if not t in comp[l]: continue
+                total[l][t] += comp[l][t]
+
 print("| Component          | Pods | Containers        | CPU<br>request / limit | RAM<br>request / limit | PersistentVolume       |")
 print("| ------------------ | ---- | ----------------- |:----------------------:|:----------------------:| ----------------------:|")
 for comp in components:

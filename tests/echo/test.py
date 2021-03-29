@@ -19,12 +19,14 @@ import sys
 sys.path.append("../")
 from mfn_test_utils import MFNTest
 
+COUNT = 5
+
 class EchoTest(unittest.TestCase):
 
     #@unittest.skip("")
     def test_echo_wfd(self):
         test_tuple_list=[]
-        for i in range(10):
+        for i in range(COUNT):
             # 1MB
             #inp0 = "echo" * 1024 * 256
             #res0 = "echo" * 1024 * 256
