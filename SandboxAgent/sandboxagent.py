@@ -269,7 +269,6 @@ class SandboxAgent:
 
         # we can't do this here, because there may be other sandboxes running the same workflow
         #self._management_data_layer_client.put("workflow_status_" + self._workflowid, "undeployed")
-        self._management_data_layer_client.shutdown()
 
         self._logger.info("Shutting down fluent-bit...")
         time.sleep(2) # flush interval of fluent-bit
@@ -284,14 +283,18 @@ class SandboxAgent:
                 self._frontend_process.kill()
                 _, _ = self._frontend_process.communicate()
 
-        self._logger.info("Shutdown complete.")
         if reason is not None:
             self._update_deployment_status(True, errmsg)
-            self._management_data_layer_client.shutdown()
-            os._exit(1)
         else:
             self._update_deployment_status(False, errmsg)
-            self._management_data_layer_client.shutdown()
+
+        self._management_data_layer_client.shutdown()
+
+        self._logger.info("Shutdown complete.")
+
+        if reason is not None:
+            os._exit(1)
+        else:
             os._exit(0)
 
     def _stop_deployment(self, reason, errmsg):
