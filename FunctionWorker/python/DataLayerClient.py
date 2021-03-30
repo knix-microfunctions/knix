@@ -69,6 +69,8 @@ class DataLayerClient:
         #print("Creating datalayer client in keyspace=%s, tablename=%s, maptablename=%s, settablename=%s, countertablename=%s" % (self.keyspace,self.tablename, self.maptablename, self.settablename, self.countertablename))
         self.locality = locality
 
+        self._is_running = True
+
         self.connect()
 
         if init_tables:
@@ -105,7 +107,7 @@ class DataLayerClient:
 
     def connect(self):
         retry = 0.5 #s
-        while True:
+        while self._is_running:
             try:
                 host, port = self.dladdress.split(':')
                 self.socket = TSocket.TSocket(host, int(port))
@@ -607,6 +609,7 @@ class DataLayerClient:
         return keys_response
 
     def shutdown(self):
+        self._is_running = False
         try:
             self.transport.close()
         except Thrift.TException as exc:

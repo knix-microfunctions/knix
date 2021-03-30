@@ -27,10 +27,13 @@ class LocalQueueClient:
     '''
     def __init__(self, connect="127.0.0.1:4999"):
         self._qaddress = connect
+
+        self._is_running = True
+
         self.connect()
 
     def connect(self):
-        while True:
+        while self._is_running:
             try:
                 self._queue = redis.Redis.from_url("redis://" + self._qaddress, decode_responses=True)
                 break
@@ -88,6 +91,7 @@ class LocalQueueClient:
         return msg_list
 
     def shutdown(self):
+        self._is_running = False
         self._queue.close()
 
     def addTopic(self, topic):
