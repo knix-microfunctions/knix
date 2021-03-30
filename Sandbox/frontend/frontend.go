@@ -151,6 +151,12 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
                 Block:   0,
             }).Result()
       rt_rcvdlq = time.Now().UnixNano()
+      if len(res) == 0 {
+          continue
+      } else if len(res[0].Messages) == 0 {
+          continue
+      }
+
       lqcm := res[0].Messages[0].Values
       lqcm_id := res[0].Messages[0].ID
 
