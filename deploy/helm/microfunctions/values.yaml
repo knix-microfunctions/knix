@@ -20,7 +20,7 @@
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
 #imageRepo: "registry.kube-system.svc.cluster.local"
-imageRepo: "192.168.8.161:5000" # kubespray deployment
+imageRepo: "localhost:5000" # kubespray deployment
 apiKey: "abcdef"
 #imageRepo: "localhost:5000" # kubespray deployment
 manager:

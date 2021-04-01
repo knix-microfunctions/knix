@@ -13,6 +13,8 @@ TOKEN=$(kubectl get secrets -o jsonpath="{.items[?(@.metadata.annotations['kuber
 echo "This is the found api access token:"
 echo $TOKEN
 
+#REGISTRY=192.168.8.181:5000
+
 helm install mfn $PWD/microfunctions  --set apiKey=$TOKEN --set persistence.storageClass=manual
 helm upgrade mfn $PWD/microfunctions  --set apiKey=$TOKEN --set persistence.storageClass=manual
 
