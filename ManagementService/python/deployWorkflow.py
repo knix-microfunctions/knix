@@ -607,14 +607,17 @@ def handle(value, sapi):
         for res in deployment_info["resources"]:
             if "gpu_usage" in deployment_info["resources"][res].keys():
                 result_gpu = float(deployment_info["resources"][res]["gpu_usage"]) 
+                print("gpu_usage in loop: " + str(result_gpu))
                 if result_gpu > 0.:
-                    gpu_usage = result_gpu
+                    gpu_usage += result_gpu
 
             if "gpu_mem_usage" in deployment_info["resources"][res].keys():
                 result_mem_gpu = float(deployment_info["resources"][res]["gpu_mem_usage"]) 
                 if result_mem_gpu > 0.:
-                    gpu_mem_usage = result_mem_gpu
-
+                    gpu_mem_usage += result_mem_gpu
+                print("gpu_mem_usage in loop: " + str(result_mem_gpu))
+ 
+        print("GPUINFO" + str(gpu_usage)+ " " + str(gpu_mem_usage))
         sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
 
         status = "deploying"
