@@ -46,7 +46,8 @@ class StateUtils:
 
     mapFunctionOutput = {}
 
-    def __init__(self, functionstatetype=defaultStateType, functionstatename='', functionstateinfo='{}', functionruntime="", logger=None, workflowid=None, sandboxid=None, functiontopic=None, datalayer=None, storage_userid=None, internal_endpoint=None):
+    def __init__(self, worker_params, logger=None):
+    #def __init__(self, functionstatetype=defaultStateType, functionstatename='', functionstateinfo='{}', functionruntime="", logger=None, workflowid=None, sandboxid=None, functiontopic=None, datalayer=None, storage_userid=None, internal_endpoint=None):
         self.operators = ['And', 'BooleanEquals', 'Not', 'NumericEquals', 'NumericGreaterThan', 'NumericGreaterThanEquals',\
              'NumericLessThan', 'NumericLessThanEquals', 'Or', 'StringEquals', 'StringGreaterThan',\
              'StringGreaterThanEquals', 'StringLessThan', 'StringLessThanEquals', 'TimestampEquals', 'TimestampGreaterThan',\
@@ -67,21 +68,34 @@ class StateUtils:
         self.result_path_dict = {}
         self.output_path_dict = {}
         self.parameters_dict = {}
-        self.functionstatetype = functionstatetype
-        self.functionstatename = functionstatename
-        self.functionstateinfo = functionstateinfo
-        self.functiontopic = functiontopic
-        self._datalayer = datalayer
-        self._storage_userid = storage_userid
-        self._internal_endpoint = internal_endpoint
-        self._function_runtime = functionruntime
+
+        if "function_state_type" in worker_params:
+            self.functionstatetype = worker_params["function_state_type"]
+        else:
+            self.functionstatetype = defaultStateType
+
+        if "function_state_name" in worker_params:
+            self.functionstatename = worker_params["function_state_name"]
+        else:
+            self.functionstatename = ""
+
+        if "function_state_info" in worker_params:
+            self.functionstateinfo = worker_params["function_state_info"]
+        else:
+            self.functionstateinfo = "{}"
+
+        self.functiontopic = worker_params["function_topic"]
+        self._datalayer = worker_params["datalayer"]
+        self._storage_userid = worker_params["storage_userid"]
+        self._internal_endpoint = worker_params["internal_endpoint"]
+        self._function_runtime = worker_params["function_runtime"]
         if self._function_runtime == "java":
             # if java, this is the address we'll send requests to be handled
             self._java_handler_address = "/tmp/java_handler_" + self.functionstatename + ".uds"
 
         self.parsedfunctionstateinfo = {}
-        self.workflowid = workflowid
-        self.sandboxid = sandboxid
+        self.workflowid = worker_params["workflowid"]
+        self.sandboxid = worker_params["sandboxid"]
         self.choiceNext = ''
 
         self.mapStateCounter = 0

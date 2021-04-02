@@ -22,28 +22,28 @@ import random
 import json
 
 from DataLayerClient import DataLayerClient
-from LocalQueueClient import LocalQueueClient
 from SessionHelperThread import SessionHelperThread
 
 class SessionUtils:
 
-    def __init__(self, hostname, uid, sid, wid, logger, funcstatename, functopic, key, session_id, publication_utils, queue, datalayer, internal_endpoint):
+    def __init__(self, worker_params, key, session_id, publication_utils, logger):
+    #def __init__(self, hostname, uid, sid, wid, logger, funcstatename, functopic, key, session_id, publication_utils, queue, datalayer, internal_endpoint):
 
         self._logger = logger
 
-        self._queue = queue
-        self._datalayer = datalayer
+        self._queue = worker_params["queue"]
+        self._datalayer = worker_params["datalayer"]
 
         self._session_id = session_id
         self._session_function_id = None
 
-        self._hostname = hostname
-        self._userid = uid
-        self._sandboxid = sid
-        self._workflowid = wid
-        self._function_state_name = funcstatename
-        self._function_topic = functopic
-        self._internal_endpoint = internal_endpoint
+        self._hostname = worker_params["hostname"]
+        self._userid = worker_params["userid"]
+        self._sandboxid = worker_params["sandboxid"]
+        self._workflowid = worker_params["workflowid"]
+        self._function_state_name = worker_params["function_state_name"]
+        self._function_topic = worker_params["function_topic"]
+        self._internal_endpoint = worker_params["internal_endpoint"]
         self._key = key
 
         self._publication_utils = publication_utils
@@ -52,7 +52,7 @@ class SessionUtils:
 
         self._helper_thread = None
 
-        self._global_data_layer_client = DataLayerClient(locality=1, sid=sid, for_mfn=True, connect=self._datalayer)
+        self._global_data_layer_client = DataLayerClient(locality=1, sid=self._sandboxid, for_mfn=True, connect=self._datalayer)
 
         # only valid if this is a session function (i.e., session_function_id is not None)
         self._local_topic_communication = None

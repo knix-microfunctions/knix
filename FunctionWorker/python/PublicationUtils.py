@@ -26,25 +26,26 @@ from MicroFunctionsExceptions import MicroFunctionsException
 import py3utils
 
 class PublicationUtils():
-    def __init__(self, sandboxid, workflowid, functopic, funcruntime, wfnext, wfpotnext, wflocal, wflist, wfexit, cpon, stateutils, logger, queue, datalayer):
+    def __init__(self, worker_params, wf_local, state_utils, logger):
+    #def __init__(self, sandboxid, workflowid, functopic, funcruntime, wfnext, wfpotnext, wflocal, wflist, wfexit, cpon, stateutils, logger, queue, datalayer):
         self._logger = logger
 
-        self._function_topic = functopic
-        self._sandboxid = sandboxid
-        self._workflowid = workflowid
+        self._function_topic = worker_params["function_topic"]
+        self._sandboxid = worker_params["sandboxid"]
+        self._workflowid = worker_params["workflowid"]
 
-        self._function_runtime = funcruntime
+        self._function_runtime = worker_params["function_runtime"]
 
         self._prefix = self._sandboxid + "-" + self._workflowid + "-"
 
-        self._wf_next = wfnext
-        self._wf_pot_next = wfpotnext
-        self._wf_local = wflocal
-        self._wf_function_list = wflist
-        self._wf_exit = wfexit
+        self._wf_next = worker_params["wf_next"]
+        self._wf_pot_next = worker_params["wf_pot_next"]
+        self._wf_local = wf_local
+        self._wf_function_list = worker_params["wf_function_list"]
+        self._wf_exit = worker_params["wf_exit"]
 
         # whether we should store backups of triggers before publishing the output
-        self._should_checkpoint = cpon
+        self._should_checkpoint = worker_params["should_checkpoint"]
 
         # the topic to send out messages to remote functions
         # TODO: pub_topic_global becomes a new request to another sandbox?
@@ -53,12 +54,12 @@ class PublicationUtils():
 
         self._recovery_manager_topic = "RecoveryManager"
 
-        self._state_utils = stateutils
+        self._state_utils = state_utils
         self._metadata = None
 
-        self._queue = queue
+        self._queue = worker_params["queue"]
         self._local_queue_client = None
-        self._datalayer = datalayer
+        self._datalayer = worker_params["datalayer"]
 
         self._sapi = None
 

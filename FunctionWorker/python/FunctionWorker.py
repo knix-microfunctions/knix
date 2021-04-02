@@ -75,13 +75,16 @@ class FunctionWorker:
         self._POLL_TIMEOUT = py3utils.ensure_long(10000)
 
         self._set_args(args_dict)
+        # instead of passing individual fields, pass a bigger object to improve readibility
+        self._worker_params = args_dict
 
         self._prefix = self._sandboxid + "-" + self._workflowid + "-"
         self._wf_local = {}
 
         self._setup_loggers()
 
-        self._state_utils = StateUtils(self._function_state_type, self._function_state_name, self._function_state_info, self._function_runtime, self._logger, self._workflowid, self._sandboxid, self._function_topic, self._datalayer, self._storage_userid, self._internal_endpoint)
+        self._state_utils = StateUtils(self._worker_params, self._logger)
+        #self._state_utils = StateUtils(self._function_state_type, self._function_state_name, self._function_state_info, self._function_runtime, self._logger, self._workflowid, self._sandboxid, self._function_topic, self._datalayer, self._storage_userid, self._internal_endpoint)
 
         # check the runtime
         if self._function_runtime == "java":
@@ -126,42 +129,46 @@ class FunctionWorker:
 
     def _set_args(self, args):
         self._userid = args["userid"]
-        self._storage_userid = args["storageuserid"]
+        self._storage_userid = args["storage_userid"]
         self._sandboxid = args["sandboxid"]
         self._workflowid = args["workflowid"]
         self._workflowname = args["workflowname"]
-        self._function_path = args["fpath"]
-        self._function_name = args["fname"]
-        self._function_folder = args["ffolder"]
-        self._function_state_type = args["functionstatetype"]
-        self._function_state_name = args["functionstatename"]
-        self._function_state_info = args["functionstateinfo"]
-        self._function_topic = args["ftopic"]
+
+        self._function_topic = args["function_topic"]
+        self._function_path = args["function_path"]
+        self._function_name = args["function_name"]
+        self._function_runtime = args["function_runtime"]
+        self._function_folder = args["function_folder"]
+
+        self._function_state_type = args["function_state_type"]
+        self._function_state_name = args["function_state_name"]
+        self._function_state_info = args["function_state_info"]
+
         self._hostname = args["hostname"]
         self._queue = args["queue"]
         self._datalayer = args["datalayer"]
-        self._external_endpoint = args["externalendpoint"]
-        self._internal_endpoint = args["internalendpoint"]
-        self._management_endpoints = args["managementendpoints"]
-        self._wf_next = args["fnext"]
-        self._wf_pot_next = args["fpotnext"]
-        self._function_runtime = args["fruntime"]
+        self._external_endpoint = args["external_endpoint"]
+        self._internal_endpoint = args["internal_endpoint"]
+        self._management_endpoints = args["management_endpoints"]
+
+        self._wf_next = args["wf_next"]
+        self._wf_pot_next = args["wf_pot_next"]
 
         # _XXX_: also includes the workflow end point (even though it is not an actual function)
-        self._wf_function_list = args["workflowfunctionlist"]
-        self._wf_exit = args["workflowexit"]
+        self._wf_function_list = args["wf_function_list"]
+        self._wf_exit = args["wf_exit"]
 
         self._is_session_workflow = False
-        if args["sessionworkflow"]:
+        if args["is_session_workflow"]:
             self._is_session_workflow = True
 
         self._is_session_function = False
-        if args["sessionfunction"]:
+        if args["is_session_function"]:
             self._is_session_function = True
-        self._session_function_parameters = args["sessionfunctionparameters"]
+        self._session_function_parameters = args["session_function_parameters"]
         self._usertoken = os.environ["USERTOKEN"]
 
-        self._should_checkpoint = args["shouldcheckpoint"]
+        self._should_checkpoint = args["should_checkpoint"]
 
     def _setup_loggers(self):
         global LOGGER_HOSTNAME
@@ -250,7 +257,8 @@ class FunctionWorker:
                 # 0. Setup publication utils
                 if not has_error:
                     try:
-                        publication_utils = PublicationUtils(self._sandboxid, self._workflowid, self._function_topic, self._function_runtime, self._wf_next, self._wf_pot_next, self._wf_local, self._wf_function_list, self._wf_exit, self._should_checkpoint, self._state_utils, self._logger, self._queue, self._datalayer)
+                        publication_utils = PublicationUtils(self._worker_params, self._wf_local, self._state_utils, self._logger)
+                        #publication_utils = PublicationUtils(self._sandboxid, self._workflowid, self._function_topic, self._function_runtime, self._wf_next, self._wf_pot_next, self._wf_local, self._wf_function_list, self._wf_exit, self._should_checkpoint, self._state_utils, self._logger, self._queue, self._datalayer)
                     except Exception as exc:
                         self._logger.exception("PublicationUtils exception: %s\n%s", str(instance_pid), str(exc))
                         publication_utils = None
@@ -378,8 +386,8 @@ class FunctionWorker:
                         elif "session_id" in function_input and function_input["session_id"] != "" and function_input["session_id"] is not None:
                             session_id = function_input["session_id"]
 
-                        session_utils = SessionUtils(self._hostname, self._userid, self._sandboxid, self._workflowid, self._logger, self._function_state_name, self._function_topic, key, session_id, publication_utils, self._queue, self._datalayer, self._internal_endpoint)
-
+                        #session_utils = SessionUtils(self._hostname, self._userid, self._sandboxid, self._workflowid, self._logger, self._function_state_name, self._function_topic, key, session_id, publication_utils, self._queue, self._datalayer, self._internal_endpoint)
+                        session_utils = SessionUtils(self._worker_params, key, session_id, publication_utils, self._logger)
                         if self._is_session_function:
                             try:
                                 session_utils.setup_session_function(self._session_function_parameters)
@@ -397,7 +405,8 @@ class FunctionWorker:
                         # Maybe allow only if the destination is a session function? Requires a list of session functions and passing them to the MicroFunctionsAPI and SessionUtils
                         # Nonetheless, currently, MicroFunctionsAPI and SessionUtils write warning messages to the workflow log to indicate such problems
                         # (e.g., when this is not a workflow session or session function, when the destination running function instance does not exist)
-                        sapi = MicroFunctionsAPI(self._storage_userid, self._sandboxid, self._workflowid, self._function_state_name, key, publication_utils, self._is_session_workflow, self._is_session_function, session_utils, self._logger, self._datalayer, self._external_endpoint, self._internal_endpoint, self._userid, self._usertoken, self._management_endpoints)
+                        sapi = MicroFunctionsAPI(self._worker_params, key, publication_utils, session_utils, self._usertoken, self._logger)
+                        #sapi = MicroFunctionsAPI(self._storage_userid, self._sandboxid, self._workflowid, self._function_state_name, key, publication_utils, self._is_session_workflow, self._is_session_function, session_utils, self._logger, self._datalayer, self._external_endpoint, self._internal_endpoint, self._userid, self._usertoken, self._management_endpoints)
                         # need this to retrieve and publish the in-memory, transient data (i.e., stored/deleted via is_queued = True)
                         publication_utils.set_sapi(sapi)
                     except Exception as exc:
