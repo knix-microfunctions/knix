@@ -43,12 +43,12 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
 
         self._get_and_print_statistics(test, logs, False)
 
-        test.plot_latency_breakdown(COUNT_EXECUTIONS)
+        #test.plot_latency_breakdown(COUNT_EXECUTIONS)
 
         test.undeploy_workflow()
         test.cleanup()
 
-    @unittest.skip("")
+    #@unittest.skip("")
     def test_function_interaction_latency_checkpoints_on(self):
         test = MFNTest(test_name='function_interaction_latency_checkpoints_on', workflow_filename='wf_function_interaction_latency_checkpoints_on.json')
         test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
@@ -57,12 +57,12 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
 
         self._get_and_print_statistics(test, logs, True)
 
-        test.plot_latency_breakdown(COUNT_EXECUTIONS)
+        #test.plot_latency_breakdown(COUNT_EXECUTIONS)
 
         test.undeploy_workflow()
         test.cleanup()
 
-    @unittest.skip("")
+    #@unittest.skip("")
     def test_chain_response_latency_checkpoints_off(self):
         test = MFNTest(test_name='chain_checkpoints_off', workflow_filename='wf_chain_checkpoints_off.json')
         print("----------------")
@@ -75,7 +75,7 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         test.undeploy_workflow()
         test.cleanup()
 
-    @unittest.skip("")
+    #@unittest.skip("")
     def test_chain_response_latency_checkpoints_on(self):
         test = MFNTest(test_name='chain_checkpoints', workflow_filename='wf_chain_checkpoints.json')
         print("----------------")

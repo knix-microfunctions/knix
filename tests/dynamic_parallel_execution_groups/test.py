@@ -64,8 +64,8 @@ class DynamicParallelExecutionGroupsTest(unittest.TestCase):
 
         print(job["type"])
         print("Simple time total (ms): " + str(total_time_simple))
-        print("MFN time total (get_session_update_messages(block=False) (ms): " + str(total_time))
-        print("MFN time total (get_session_update_messages(block=True) (ms): " + str(total_time_blocking))
+        print("MFN time total (get_session_update_messages(block=False)) (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=True)) (ms): " + str(total_time_blocking))
 
     #@unittest.skip("")
     def test_wordcount_nested(self):
@@ -115,8 +115,8 @@ class DynamicParallelExecutionGroupsTest(unittest.TestCase):
 
         print(job["type"])
         print("Simple time total (ms): " + str(total_time_simple))
-        print("MFN time total (get_session_update_messages(block=False) (ms): " + str(total_time))
-        print("MFN time total (get_session_update_messages(block=True) (ms): " + str(total_time_blocking))
+        print("MFN time total (get_session_update_messages(block=False)) (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=True)) (ms): " + str(total_time_blocking))
 
     #@unittest.skip("")
     def test_mergesort(self):
@@ -166,8 +166,8 @@ class DynamicParallelExecutionGroupsTest(unittest.TestCase):
 
         print(job["type"])
         print("Simple time total (ms): " + str(total_time_simple))
-        print("MFN time total (get_session_update_messages(block=False) (ms): " + str(total_time))
-        print("MFN time total (get_session_update_messages(block=True) (ms): " + str(total_time_blocking))
+        print("MFN time total (get_session_update_messages(block=False)) (ms): " + str(total_time))
+        print("MFN time total (get_session_update_messages(block=True)) (ms): " + str(total_time_blocking))
 
     ####################
     # internal functions

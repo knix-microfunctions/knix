@@ -26,7 +26,7 @@ from MicroFunctionsExceptions import MicroFunctionsException
 import py3utils
 
 class PublicationUtils():
-    def __init__(self, worker_params, wf_local, state_utils, logger):
+    def __init__(self, worker_params, state_utils, logger):
     #def __init__(self, sandboxid, workflowid, functopic, funcruntime, wfnext, wfpotnext, wflocal, wflist, wfexit, cpon, stateutils, logger, queue, datalayer):
         self._logger = logger
 
@@ -40,7 +40,7 @@ class PublicationUtils():
 
         self._wf_next = worker_params["wf_next"]
         self._wf_pot_next = worker_params["wf_pot_next"]
-        self._wf_local = wf_local
+        self._wf_local = {}
         self._wf_function_list = worker_params["wf_function_list"]
         self._wf_exit = worker_params["wf_exit"]
 
@@ -73,6 +73,9 @@ class PublicationUtils():
 
         #self._logger.debug("[PublicationUtils] init done.")
 
+    def set_workflow_local_functions(self, wf_local):
+        self._wf_local = wf_local
+
     # only to be called from the function worker
     def set_sapi(self, sapi):
         self._sapi = sapi
@@ -100,8 +103,7 @@ class PublicationUtils():
 
     def get_backup_data_layer_client(self):
         if self._backup_data_layer_client is None:
-            # locality = -1 means that the writes happen to the local data layer first and then asynchronously to the global data layer
-            self._backup_data_layer_client = DataLayerClient(locality=-1, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
+            self._backup_data_layer_client = DataLayerClient(locality=0, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
         return self._backup_data_layer_client
 
     def shutdown_backup_data_layer_client(self):
@@ -418,8 +420,17 @@ class PublicationUtils():
                     timestamp_map['t_pub_localqueue'] = time.time() * 1000.0
                 self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
             else:
+                # TODO: need to also ensure that a message to a non-local topic gets properly handled
+                # for multi-host deployments for load redirection
+                # currently, we don't have such cases
+                self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
+
                 # check if 'next' is exit topic
                 if next == self._wf_exit:
+                    if timestamp_map is not None:
+                        timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
+                        timestamp_map['exitsize'] = len(output["value"])
+
                     key = self._metadata["__execution_id"]
 
                     dlc = self.get_backup_data_layer_client()
@@ -433,15 +444,6 @@ class PublicationUtils():
                     # just send an empty message to the frontend to signal end of execution
                     #if "__async_execution" in self._metadata and self._metadata["__async_execution"]:
                     #    output["value"] = ""
-
-                    if timestamp_map is not None:
-                        timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
-                        timestamp_map['exitsize'] = len(output["value"])
-
-                # TODO: need to also ensure that a message to a non-local topic gets properly handled
-                # for multi-host deployments for load redirection
-                # currently, we don't have such cases
-                self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
 
             return (next_function_execution_id, output)
 
@@ -590,6 +592,7 @@ class PublicationUtils():
             if len(converted_function_output) == 1 and converted_function_output[0]["next"] == self._wf_exit:
                 check_error_flag = False
 
+
             if check_error_flag:
                 timestamp_map["t_start_dlcbackup_err"] = time.time() * 1000.0
                 dlc = self.get_backup_data_layer_client()
@@ -598,10 +601,11 @@ class PublicationUtils():
                 # simultaneously triggered, we can finish but don't need to publish
                 # to the next function in the workflow, so we can stop execution of the workflow
                 timestamp_map["t_start_dlcbackup_err_flag"] = time.time() * 1000.0
-                workflow_exec_stop = dlc.get("workflow_execution_stop_" + key, locality=0)
-                if workflow_exec_stop is not None and workflow_exec_stop != "":
+                workflow_exec_stop = dlc.get("workflow_execution_stop_" + key)
+                if workflow_exec_stop == "1":
                     self._logger.info("Not continuing because workflow execution has been stopped... %s", key)
                     continue_publish_flag = False
+
 
             # if we didn't have to check the error, or we checked it, but there was not one, then continue publishing the output
             # to the next functions

@@ -624,6 +624,7 @@ class Deployment:
         worker_params["wf_pot_next"] = wf_node.getPotentialNextMap()
         worker_params["wf_function_list"] = self._workflow.getWorkflowFunctionMap()
         worker_params["wf_exit"] = self._workflow.getWorkflowExitPoint()
+        worker_params["wf_entry"] = self._workflow.getWorkflowEntryTopic()
 
         worker_params["is_session_workflow"] = self._workflow.is_session_workflow()
         worker_params["is_session_function"] = wf_node.is_session_function()

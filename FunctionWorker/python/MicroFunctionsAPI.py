@@ -63,7 +63,7 @@ class MicroFunctionsAPI:
     '''
 
     #def __init__(self, uid, sid, wid, funcstatename, key, publication_utils, is_session_workflow, is_session_function, session_utils, logger, datalayer, external_endpoint, internal_endpoint, useremail, usertoken, management_endpoints):
-    def __init__(self, worker_params, key, publication_utils, session_utils, usertoken, logger):
+    def __init__(self, worker_params, publication_utils, session_utils, usertoken, logger):
         '''
         Initialize data structures for MicroFunctionsAPI object created for a function instance.
 
@@ -106,7 +106,7 @@ class MicroFunctionsAPI:
         self._function_state_name = worker_params["function_state_name"]
         self._function_version = 1  # Currently hardcoded to 1
 
-        self._instanceid = key
+        self._instanceid = None
 
         self._is_privileged = False
         if self._sid == "Management" and self._wid == "Management":
@@ -160,6 +160,11 @@ class MicroFunctionsAPI:
         self.client_context.env = {'knix_env': 'test'}
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
+
+    def set_key(self, key):
+        self._instanceid = key
+        # The AWS identifier of the invocation request. Return the KNIX message key instead
+        self.aws_request_id = self._instanceid
 
     def get_context_object_properties(self):
         context_properties = {}

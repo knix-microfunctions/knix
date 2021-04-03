@@ -26,7 +26,7 @@ from SessionHelperThread import SessionHelperThread
 
 class SessionUtils:
 
-    def __init__(self, worker_params, key, session_id, publication_utils, logger):
+    def __init__(self, worker_params, publication_utils, logger):
     #def __init__(self, hostname, uid, sid, wid, logger, funcstatename, functopic, key, session_id, publication_utils, queue, datalayer, internal_endpoint):
 
         self._logger = logger
@@ -34,7 +34,6 @@ class SessionUtils:
         self._queue = worker_params["queue"]
         self._datalayer = worker_params["datalayer"]
 
-        self._session_id = session_id
         self._session_function_id = None
 
         self._hostname = worker_params["hostname"]
@@ -44,7 +43,6 @@ class SessionUtils:
         self._function_state_name = worker_params["function_state_name"]
         self._function_topic = worker_params["function_topic"]
         self._internal_endpoint = worker_params["internal_endpoint"]
-        self._key = key
 
         self._publication_utils = publication_utils
 
@@ -52,17 +50,16 @@ class SessionUtils:
 
         self._helper_thread = None
 
-        self._global_data_layer_client = DataLayerClient(locality=1, sid=self._sandboxid, for_mfn=True, connect=self._datalayer)
+        self._global_data_layer_client = None
 
         # only valid if this is a session function (i.e., session_function_id is not None)
         self._local_topic_communication = None
 
         self._session_function_parameters = None
 
-        if self._session_id is None:
-            self._generate_session_id()
-
-        self._setup_metadata_tablenames()
+        # to be set later
+        self._key = None
+        self._session_id = None
 
         # _XXX_: the following does not have any effect and makes unnecessary calls
         # to the data layer
@@ -73,6 +70,19 @@ class SessionUtils:
         #self._create_metadata_tables()
 
         #self._logger.debug("[SessionUtils] init done.")
+
+    def set_key(self, key):
+        self._key = key
+
+    def set_session_id(self, session_id=None):
+        if session_id is None:
+            self._generate_session_id()
+        else:
+            self._session_id = session_id
+
+        self._setup_metadata_tablenames()
+
+        self._global_data_layer_client = DataLayerClient(locality=1, sid=self._sandboxid, for_mfn=True, connect=self._datalayer)
 
 
     ###########################
@@ -378,7 +388,8 @@ class SessionUtils:
         self._helper_thread.start()
 
     def shutdown_helper_thread(self):
-        self._helper_thread.shutdown()
+        if self._helper_thread is not None:
+            self._helper_thread.shutdown()
 
     def cleanup(self):
         self._remove_metadata()
@@ -483,4 +494,3 @@ class SessionUtils:
             messages = self._helper_thread.get_messages(count=count, block=block)
             return messages
         return None
-
