@@ -27,8 +27,6 @@ from SessionHelperThread import SessionHelperThread
 class SessionUtils:
 
     def __init__(self, worker_params, publication_utils, logger):
-    #def __init__(self, hostname, uid, sid, wid, logger, funcstatename, functopic, key, session_id, publication_utils, queue, datalayer, internal_endpoint):
-
         self._logger = logger
 
         self._queue = worker_params["queue"]
@@ -256,7 +254,7 @@ class SessionUtils:
             # due to key being different for each request to the workflow
             plain_session_id_bytes = (self._userid + "_" + self._sandboxid + "_" + self._workflowid + "_" + self._key).encode()
             self._session_id = hashlib.sha256(plain_session_id_bytes).hexdigest()
-            self._logger.debug("[SessionUtils] Session id: " + self._session_id)
+            #self._logger.debug("[SessionUtils] Session id: " + self._session_id)
 
     def _generate_session_function_id(self):
         if self._session_function_id is None:
@@ -267,7 +265,7 @@ class SessionUtils:
             random.seed()
             plain_session_function_id_bytes = (self._function_state_name + "_" + self._key + "_" + str(random.uniform(0, 100000))).encode()
             self._session_function_id = hashlib.sha256(plain_session_function_id_bytes).hexdigest()
-            self._logger.debug("[SessionUtils] Session function id: " + self._session_function_id)
+            #self._logger.debug("[SessionUtils] Session function id: " + self._session_function_id)
 
     # these calls don't have an effect until an entry is added
     # and the entries still succeed even without calling to createSet or createMap

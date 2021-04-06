@@ -62,7 +62,6 @@ class MicroFunctionsAPI:
     - session customization
     '''
 
-    #def __init__(self, uid, sid, wid, funcstatename, key, publication_utils, is_session_workflow, is_session_function, session_utils, logger, datalayer, external_endpoint, internal_endpoint, useremail, usertoken, management_endpoints):
     def __init__(self, worker_params, publication_utils, session_utils, usertoken, logger):
         '''
         Initialize data structures for MicroFunctionsAPI object created for a function instance.

@@ -47,7 +47,6 @@ class StateUtils:
     mapFunctionOutput = {}
 
     def __init__(self, worker_params, logger=None):
-    #def __init__(self, functionstatetype=defaultStateType, functionstatename='', functionstateinfo='{}', functionruntime="", logger=None, workflowid=None, sandboxid=None, functiontopic=None, datalayer=None, storage_userid=None, internal_endpoint=None):
         self.operators = ['And', 'BooleanEquals', 'Not', 'NumericEquals', 'NumericGreaterThan', 'NumericGreaterThanEquals',\
              'NumericLessThan', 'NumericLessThanEquals', 'Or', 'StringEquals', 'StringGreaterThan',\
              'StringGreaterThanEquals', 'StringLessThan', 'StringLessThanEquals', 'TimestampEquals', 'TimestampGreaterThan',\
@@ -680,16 +679,16 @@ class StateUtils:
         if "WaitForNumBranches" in self.parsedfunctionstateinfo:
             klist = self.parsedfunctionstateinfo["WaitForNumBranches"]
             if not isinstance(klist, list):
-                self._logger.info("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
-                raise Exception("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
+                self._logger.info("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
+                raise Exception("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
             klist.sort()
             for k in klist:
                 if not isinstance(k, int):
-                    self._logger.info("(StateUtils) Values inside WaitForNumBranches must be integers")
-                    raise Exception("(StateUtils) Values inside WaitForNumBranches must be integers")
+                    self._logger.info("[StateUtils] Values inside WaitForNumBranches must be integers")
+                    raise Exception("[StateUtils] Values inside WaitForNumBranches must be integers")
                 if k > total_branch_count:
-                    self._logger.info("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
-                    raise Exception("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
+                    self._logger.info("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
+                    raise Exception("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
         else:
             klist.append(total_branch_count)
 

@@ -272,31 +272,6 @@ class FunctionWorker:
 
                 timestamp_map["t_start_pubutils"] = time.time() * 1000.0
 
-                # _XXX_: move the following check at the end of execution
-                # there we have to have the output backups, so the initialization of data layer client
-                # happens anyway.
-                # if there was an error, we'll simply not publish the output to the next function
-                # and stop the workflow execution there
-                '''
-                # check the workflow stop flag
-                # if some other function execution had an error and we had been
-                # simultaneously triggered, we don't need to continue execution
-                timestamp_map["t_start_backdatalayer"] = time.time() * 1000.0
-                if not has_error:
-                    try:
-                        dlc_backup = publication_utils.get_backup_data_layer_client()
-                        timestamp_map["t_start_backdatalayer_r"] = time.time() * 1000.0
-                        workflow_exec_stop = dlc_backup.get("workflow_execution_stop_" + key)
-                        if workflow_exec_stop is not None and workflow_exec_stop != "":
-                            self._logger.info("Not continuing because workflow execution has been stopped... %s", key)
-                            publication_utils.shutdown_backup_data_layer_client()
-                            os._exit(0)
-                    except Exception as exc:
-                        self._logger.exception("PublicationUtils data layer client exception: %s\n%s", str(instance_pid), str(exc))
-                        publication_utils = None
-                        error_type = "PublicationUtils data layer client exception"
-                        has_error = True
-                '''
                 # Start of pre-processing
 
                 # 1. Decapsulate the input.
@@ -442,7 +417,7 @@ class FunctionWorker:
                         else:
                             # Processing for Non 'Task' states
                             try:
-                                self._logger.debug("[FunctionWorker] Before evaluateNonTaskState, input: " + str(function_input) + str(metadata))
+                                #self._logger.debug("[FunctionWorker] Before evaluateNonTaskState, input: " + str(function_input) + str(metadata))
                                 #TODO: catch-retry for non-task functions?
                                 function_output, metadata_updated = self._state_utils.evaluateNonTaskState(function_input, key, metadata, self._sapi)
                                 # update metadata in the publication utils
