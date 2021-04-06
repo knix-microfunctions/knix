@@ -51,7 +51,7 @@ class PublicationUtils():
         # via header?
         self._pub_topic_global = "pub_global"
 
-        #self._recovery_manager_topic = "RecoveryManager"
+        self._recovery_manager_topic = "RecoveryManager"
 
         self._state_utils = state_utils
         self._metadata = None
