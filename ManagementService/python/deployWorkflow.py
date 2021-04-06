@@ -260,7 +260,7 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
         raise Exception("Unable to load "+ksvc_file+". Ensure that the configmap has been setup properly", e)
 
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters (and not be greater than 63 chars)
-    workflowNameForLabel = workflow_info["workflowName"].replace('@', '-').replace('_', '-').lower()
+    workflowNameForLabel = workflow_info["workflowName"].replace('@', '-').replace('/', '-').replace('_', '-').lower()
     wfNameSanitized = 'w-' + workflowNameForLabel[:59] + '-w'
 
     emailForLabel = email.replace('@', '-').replace('_', '-').lower()
