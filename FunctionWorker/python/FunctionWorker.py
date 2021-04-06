@@ -368,6 +368,7 @@ class FunctionWorker:
                             session_id = function_input["session_id"]
 
                         self._session_utils.set_key(key)
+                        # even if session_id is None, this will initialize it and set up the necessary objects
                         self._session_utils.set_session_id(session_id)
 
                         if self._is_session_function:

@@ -15,7 +15,6 @@
 import copy
 import json
 import time
-import threading
 
 import requests
 
@@ -30,15 +29,9 @@ class PublicationUtils():
     def __init__(self, worker_params, state_utils, logger):
         self._logger = logger
 
-        self._queue = worker_params["queue"]
-        self._datalayer = worker_params["datalayer"]
-        self._sandboxid = worker_params["sandboxid"]
-
-        self._local_queue_client = None
-        self._backup_data_layer_client = None
-
         self._function_topic = worker_params["function_topic"]
         self._workflowid = worker_params["workflowid"]
+        self._sandboxid = worker_params["sandboxid"]
 
         self._function_runtime = worker_params["function_runtime"]
 
@@ -58,10 +51,16 @@ class PublicationUtils():
         # via header?
         self._pub_topic_global = "pub_global"
 
-        self._recovery_manager_topic = "RecoveryManager"
+        #self._recovery_manager_topic = "RecoveryManager"
 
         self._state_utils = state_utils
         self._metadata = None
+
+        self._queue = worker_params["queue"]
+        self._datalayer = worker_params["datalayer"]
+
+        self._local_queue_client = None
+        self._backup_data_layer_client = None
 
         self._sapi = None
 
