@@ -167,7 +167,7 @@ def start_docker_sandbox(host_to_deploy, uid, sid, wid, wname, sandbox_image_nam
     env_vars = {}
     env_vars["MFN_HOSTNAME"] = host_to_deploy[0]
     env_vars["MFN_ELASTICSEARCH"] = os.getenv("MFN_ELASTICSEARCH")
-    env_vars["MFN_QUEUE"] = "127.0.0.1:"+os.getenv("MFN_QUEUE").split(':')[1]
+    env_vars["MFN_QUEUE"] = "/opt/mfn/redis-server/redis.sock"
     env_vars["MFN_DATALAYER"] = host_to_deploy[0]+":"+os.getenv("MFN_DATALAYER").split(':')[1]
     env_vars["USERID"] = uid
     env_vars["SANDBOXID"] = sid
@@ -698,7 +698,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
         tf_ip_port = global_trigger_info["frontend_ip_port"]
         if tf_ip_port not in tf_hosts:
             raise Exception("Frontend: " + tf_ip_port + " not available")
-        
+
         url = "http://" + tf_ip_port + "/add_workflows"
         # send the request and wait for response
 
@@ -712,7 +712,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             res_obj = res.json()
         except Exception as e:
             status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
-        
+
         if "status" in res_obj and res_obj["status"].lower() == "success":
             # if success then update the global trigger table to add a new workflow.
             print("[addTriggerForWorkflow] Success response from " + url)
@@ -728,7 +728,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
     except Exception as e:
         print("[addTriggerForWorkflow] exception: " + str(e))
         # TODO: why remove this?
-        #if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:            
+        #if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:
         #    associatedTriggers = workflow_details['associatedTriggers']
         #    del associatedTriggers[trigger_name]
         #    workflow_details['associatedTriggers'] = associatedTriggers

@@ -26,9 +26,10 @@ redis-server: Dockerfile_redis_build
 	$(call build_image,Dockerfile_redis_build,redis_local_queue)
 	docker run -i --rm -u $$(id -u):$$(id -g) -v $(CURDIR):/temp -w /temp --ulimit nofile=262144:262144 redis_local_queue:$(VERSION) cp /build/redis-6.2.1/src/redis-server redis-server/.
 	touch redis-server/redis_4999.conf
-	echo "port 4999" >> redis-server/redis_4999.conf
-	echo "appendonly no" >> redis-server/redis_4999.conf
-	echo "save \"\"" >> redis-server/redis_4999.conf
+	echo "appendonly no" >> redis-server/redis_sock.conf
+	echo "save \"\"" >> redis-server/redis_sock.conf
+	echo "unixsocket /opt/mfn/redis-server/redis.sock" >> redis-server/redis_sock.conf
+	echo "unixsocketperm 700" >> redis-server/redis_sock.conf
 
 clean:
 	rm -rf redis-server
