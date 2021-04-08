@@ -26,25 +26,25 @@ from MicroFunctionsExceptions import MicroFunctionsException
 import py3utils
 
 class PublicationUtils():
-    def __init__(self, sandboxid, workflowid, functopic, funcruntime, wfnext, wfpotnext, wflocal, wflist, wfexit, cpon, stateutils, logger, queue, datalayer):
+    def __init__(self, worker_params, state_utils, logger):
         self._logger = logger
 
-        self._function_topic = functopic
-        self._sandboxid = sandboxid
-        self._workflowid = workflowid
+        self._function_topic = worker_params["function_topic"]
+        self._workflowid = worker_params["workflowid"]
+        self._sandboxid = worker_params["sandboxid"]
 
-        self._function_runtime = funcruntime
+        self._function_runtime = worker_params["function_runtime"]
 
         self._prefix = self._sandboxid + "-" + self._workflowid + "-"
 
-        self._wf_next = wfnext
-        self._wf_pot_next = wfpotnext
-        self._wf_local = wflocal
-        self._wf_function_list = wflist
-        self._wf_exit = wfexit
+        self._wf_next = worker_params["wf_next"]
+        self._wf_pot_next = worker_params["wf_pot_next"]
+        self._wf_local = {}
+        self._wf_function_list = worker_params["wf_function_list"]
+        self._wf_exit = worker_params["wf_exit"]
 
         # whether we should store backups of triggers before publishing the output
-        self._should_checkpoint = cpon
+        self._should_checkpoint = worker_params["should_checkpoint"]
 
         # the topic to send out messages to remote functions
         # TODO: pub_topic_global becomes a new request to another sandbox?
@@ -53,12 +53,14 @@ class PublicationUtils():
 
         self._recovery_manager_topic = "RecoveryManager"
 
-        self._state_utils = stateutils
+        self._state_utils = state_utils
         self._metadata = None
 
-        self._queue = queue
+        self._queue = worker_params["queue"]
+        self._datalayer = worker_params["datalayer"]
+
         self._local_queue_client = None
-        self._datalayer = datalayer
+        self._backup_data_layer_client = None
 
         self._sapi = None
 
@@ -66,11 +68,13 @@ class PublicationUtils():
 
         self._dynamic_workflow = []
 
-        self._backup_data_layer_client = None
         self._execution_info_map_name = None
         self._next_backup_list = []
 
         #self._logger.debug("[PublicationUtils] init done.")
+
+    def set_workflow_local_functions(self, wf_local):
+        self._wf_local = wf_local
 
     # only to be called from the function worker
     def set_sapi(self, sapi):
@@ -97,13 +101,12 @@ class PublicationUtils():
         if self._local_queue_client is not None:
             self._local_queue_client.shutdown()
 
-    def get_backup_data_layer_client(self):
+    def _get_backup_data_layer_client(self):
         if self._backup_data_layer_client is None:
-            # locality = -1 means that the writes happen to the local data layer first and then asynchronously to the global data layer
-            self._backup_data_layer_client = DataLayerClient(locality=-1, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
+            self._backup_data_layer_client = DataLayerClient(locality=0, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
         return self._backup_data_layer_client
 
-    def shutdown_backup_data_layer_client(self):
+    def _shutdown_backup_data_layer_client(self):
         if self._backup_data_layer_client is not None:
             self._backup_data_layer_client.shutdown()
 
@@ -364,7 +367,7 @@ class PublicationUtils():
 
         # get current state type. if map state add marker to execution Id
         state_type = self._state_utils.functionstatetype
-        self._logger.debug("self._state_utils.functionstatetype: " + str(state_type))
+        #self._logger.debug("self._state_utils.functionstatetype: " + str(state_type))
 
         if state_type == 'Map':
             next_function_execution_id = self._metadata["__function_execution_id"] + "_" + str(output_instance_id)+"-M"
@@ -417,30 +420,24 @@ class PublicationUtils():
                     timestamp_map['t_pub_localqueue'] = time.time() * 1000.0
                 self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
             else:
-                # check if 'next' is exit topic
-                if next == self._wf_exit:
-                    key = self._metadata["__execution_id"]
-
-                    dlc = self.get_backup_data_layer_client()
-
-                    # store the workflow's final result
-                    dlc.put("result_" + key, output["value"])
-                    #self._logger.debug("[__mfn_backup] [exitresult] [%s] %s", "result_" + key, output["value"])
-
-                    # _XXX_: this is not handled properly by the frontend
-                    # this was an async execution
-                    # just send an empty message to the frontend to signal end of execution
-                    #if "__async_execution" in self._metadata and self._metadata["__async_execution"]:
-                    #    output["value"] = ""
-
-                    if timestamp_map is not None:
-                        timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
-                        timestamp_map['exitsize'] = len(output["value"])
-
                 # TODO: need to also ensure that a message to a non-local topic gets properly handled
                 # for multi-host deployments for load redirection
                 # currently, we don't have such cases
                 self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
+
+                # check if 'next' is exit topic
+                if next == self._wf_exit:
+                    if timestamp_map is not None:
+                        timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
+                        timestamp_map['exitsize'] = len(output["value"])
+
+                    key = self._metadata["__execution_id"]
+
+                    dlc = self._get_backup_data_layer_client()
+
+                    # store the workflow's final result
+                    dlc.put("result_" + key, output["value"])
+                    #self._logger.debug("[__mfn_backup] [exitresult] [%s] %s", "result_" + key, output["value"])
 
             return (next_function_execution_id, output)
 
@@ -509,11 +506,12 @@ class PublicationUtils():
 
             self._log_trigger_backups(input_backup_map, current_function_instance_id, store_next_backup_list=any_next)
 
-            for next_func_exec_id in starting_next:
-                next_func_topic = starting_next[next_func_exec_id]
-                self._send_message_to_recovery_manager(key, "start", next_func_topic, next_func_exec_id, False, "", lqcpub)
+            # TODO: recovery manager; not used at this time
+            #for next_func_exec_id in starting_next:
+            #    next_func_topic = starting_next[next_func_exec_id]
+            #    self._send_message_to_recovery_manager(key, "start", next_func_topic, next_func_exec_id, False, "", lqcpub)
 
-            self._send_message_to_recovery_manager(key, "running", self._function_topic, self._metadata["__function_execution_id"], False, "", lqcpub)
+            #self._send_message_to_recovery_manager(key, "running", self._function_topic, self._metadata["__function_execution_id"], False, "", lqcpub)
 
     # utilize the workflow to publish directly to the next function's topic
     # publish directly to the next function's topic, accumulate backups
@@ -537,7 +535,7 @@ class PublicationUtils():
 
         if has_error:
             timestamp_map["t_start_dlcbackup"] = time.time() * 1000.0
-            dlc = self.get_backup_data_layer_client()
+            dlc = self._get_backup_data_layer_client()
 
             # set data layer flag to stop further execution of function instances
             # that may have been triggered concurrently via a new message
@@ -571,10 +569,6 @@ class PublicationUtils():
                 timestamp_map["t_start_resultmap"] = time.time() * 1000.0
                 self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
 
-            timestamp_map["t_start_storeoutput"] = time.time() * 1000.0
-            # store self._sapi.transient_output into the data layer
-            self._store_output_data()
-
             # get the combined (next, value) tuple list for the output
             # use here the original output:
             # we'll update the metadata separately for each trigger and encapsulate the output with it
@@ -589,16 +583,20 @@ class PublicationUtils():
             if len(converted_function_output) == 1 and converted_function_output[0]["next"] == self._wf_exit:
                 check_error_flag = False
 
+            timestamp_map["t_start_storeoutput"] = time.time() * 1000.0
+            # store self._sapi.transient_output into the data layer
+            self._store_output_data()
+
             if check_error_flag:
                 timestamp_map["t_start_dlcbackup_err"] = time.time() * 1000.0
-                dlc = self.get_backup_data_layer_client()
+                dlc = self._get_backup_data_layer_client()
                 # check the workflow stop flag
                 # if some other function execution had an error and we had been
                 # simultaneously triggered, we can finish but don't need to publish
                 # to the next function in the workflow, so we can stop execution of the workflow
                 timestamp_map["t_start_dlcbackup_err_flag"] = time.time() * 1000.0
-                workflow_exec_stop = dlc.get("workflow_execution_stop_" + key, locality=0)
-                if workflow_exec_stop is not None and workflow_exec_stop != "":
+                workflow_exec_stop = dlc.get("workflow_execution_stop_" + key)
+                if workflow_exec_stop == "1":
                     self._logger.info("Not continuing because workflow execution has been stopped... %s", key)
                     continue_publish_flag = False
 
@@ -638,13 +636,15 @@ class PublicationUtils():
                     # backups for next of successfully completed function execution instances
                     self._log_trigger_backups(input_backup_map, current_function_instance_id, store_next_backup_list=any_next)
 
-                    for next_func_exec_id in starting_next:
-                        next_func_topic = starting_next[next_func_exec_id]
-                        self._send_message_to_recovery_manager(key, "start", next_func_topic, next_func_exec_id, False, "", lqcpub)
+                    # TODO: recovery manager; not used at this time
+                    #for next_func_exec_id in starting_next:
+                    #    next_func_topic = starting_next[next_func_exec_id]
+                    #    self._send_message_to_recovery_manager(key, "start", next_func_topic, next_func_exec_id, False, "", lqcpub)
 
-        if self._should_checkpoint:
+        # TODO: recovery manager; not used at this time
+        #if self._should_checkpoint:
             # regardless whether this function execution had an error or not, we are finished and need to let the recovery manager know
-            self._send_message_to_recovery_manager(key, "finish", self._function_topic, self._metadata["__function_execution_id"], has_error, error_type, lqcpub)
+            #self._send_message_to_recovery_manager(key, "finish", self._function_topic, self._metadata["__function_execution_id"], has_error, error_type, lqcpub)
 
         # log the timestamps
         timestamp_map["t_pub_end"] = timestamp_map["t_end_pub"] = timestamp_map["t_end_fork"] = time.time() * 1000.0
@@ -658,5 +658,5 @@ class PublicationUtils():
 
         # shut down the local queue client
         self._shutdown_local_queue_client()
-        self.shutdown_backup_data_layer_client()
+        self._shutdown_backup_data_layer_client()
 

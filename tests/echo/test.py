@@ -36,6 +36,9 @@ class EchoTest(unittest.TestCase):
             test_tuple_list.append((json.dumps(inp0), json.dumps(res0)))
 
         test = MFNTest(test_name='echo', workflow_filename='echo.json')
-        test.exec_tests(test_tuple_list, check_duration=True)
+        test.exec_tests(test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
-        #test.plot_latency_breakdown(20)
+        #test.plot_latency_breakdown(COUNT)
+
+        test.undeploy_workflow()
+        test.cleanup()

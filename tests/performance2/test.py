@@ -39,12 +39,12 @@ class PerformanceLatencyTestSingle(unittest.TestCase):
 
             test_tuple_list.append((json.dumps(inp0), json.dumps(res0)))
 
-        self._test.exec_tests(test_tuple_list, check_duration=True, should_undeploy=False)
+        self._test.exec_tests(test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         #test.plot_latency_breakdown(20)
         time.sleep(5)
 
-        self._test_checkpoints_off.exec_tests(test_tuple_list, check_duration=True, should_undeploy=False)
+        self._test_checkpoints_off.exec_tests(test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
     #@unittest.skip("")
     def test_echo_4_bytes(self):
@@ -56,12 +56,12 @@ class PerformanceLatencyTestSingle(unittest.TestCase):
 
             test_tuple_list.append((json.dumps(inp0), json.dumps(res0)))
 
-        self._test.exec_tests(test_tuple_list, check_duration=True, should_undeploy=False)
+        self._test.exec_tests(test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         #test.plot_latency_breakdown(20)
         time.sleep(5)
 
-        self._test_checkpoints_off.exec_tests(test_tuple_list, check_duration=True, should_undeploy=False)
+        self._test_checkpoints_off.exec_tests(test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
     #@unittest.skip("")
     def test_echo_1_MByte(self):
@@ -73,12 +73,12 @@ class PerformanceLatencyTestSingle(unittest.TestCase):
 
             test_tuple_list.append((json.dumps(inp0), json.dumps(res0)))
 
-        self._test.exec_tests(test_tuple_list, check_duration=True, should_undeploy=False)
+        self._test.exec_tests(test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
         #test.plot_latency_breakdown(20)
         time.sleep(5)
 
-        self._test_checkpoints_off.exec_tests(test_tuple_list, check_duration=True, should_undeploy=False)
+        self._test_checkpoints_off.exec_tests(test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
     @classmethod
     def tearDownClass(self):

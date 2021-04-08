@@ -62,7 +62,7 @@ class MicroFunctionsAPI:
     - session customization
     '''
 
-    def __init__(self, uid, sid, wid, funcstatename, key, publication_utils, is_session_workflow, is_session_function, session_utils, logger, datalayer, external_endpoint, internal_endpoint, useremail, usertoken, management_endpoints):
+    def __init__(self, worker_params, publication_utils, session_utils, usertoken, logger):
         '''
         Initialize data structures for MicroFunctionsAPI object created for a function instance.
 
@@ -84,32 +84,31 @@ class MicroFunctionsAPI:
         '''
 
         self._logger = logger
-        self._datalayer = datalayer
-        self._external_endpoint = external_endpoint
-        self._internal_endpoint = internal_endpoint
-        self._management_endpoints = management_endpoints
-        self._useremail = useremail
+        self._datalayer = worker_params["datalayer"]
+        self._external_endpoint = worker_params["external_endpoint"]
+        self._internal_endpoint = worker_params["internal_endpoint"]
+        self._management_endpoints = worker_params["management_endpoints"]
         self._usertoken = usertoken
-        self._sid = sid
-        self._wid = wid
+        self._sid = worker_params["sandboxid"]
+        self._wid = worker_params["workflowid"]
+        self._suid = worker_params["storage_userid"]
 
-        self._data_layer_operator = DataLayerOperator(
-            uid, sid, wid, self._datalayer)
+        self._data_layer_operator = DataLayerOperator(self._suid, self._sid, self._wid, self._datalayer)
 
         # for sending immediate triggers to other functions
         self._publication_utils = publication_utils
 
-        self._is_session_workflow = is_session_workflow
-        self._is_session_function = is_session_function
+        self._is_session_workflow = worker_params["is_session_workflow"]
+        self._is_session_function = worker_params["is_session_function"]
         self._session_utils = session_utils
 
-        self._function_state_name = funcstatename
+        self._function_state_name = worker_params["function_state_name"]
         self._function_version = 1  # Currently hardcoded to 1
 
-        self._instanceid = key
+        self._instanceid = None
 
         self._is_privileged = False
-        if sid == "Management" and wid == "Management":
+        if self._sid == "Management" and self._wid == "Management":
             self._is_privileged = True
 
         '''
@@ -160,6 +159,11 @@ class MicroFunctionsAPI:
         self.client_context.env = {'knix_env': 'test'}
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
+
+    def set_key(self, key):
+        self._instanceid = key
+        # The AWS identifier of the invocation request. Return the KNIX message key instead
+        self.aws_request_id = self._instanceid
 
     def get_context_object_properties(self):
         context_properties = {}

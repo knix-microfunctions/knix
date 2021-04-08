@@ -41,7 +41,7 @@ class WorkflowErrorHandlingTest(unittest.TestCase):
 
         test_tuple_list.append((json.dumps(event), json.dumps(expected_output)))
 
-        test = MFNTest(test_name="Workflow Error Propogation", workflow_filename="workflow_error_handling.json")
+        test = MFNTest(test_name="Workflow Error Propagation", workflow_filename="workflow_error_handling.json")
         test.exec_tests(test_tuple_list)
 
     #@unittest.skip("")
@@ -91,6 +91,8 @@ class WorkflowErrorHandlingTest(unittest.TestCase):
         print(log)
         if log:
             test.report(True, "workflow_stop_with_error", True, True)
+        else:
+            test.report(False, "workflow_stop_with_error", True, True)
 
         test.undeploy_workflow()
         test.cleanup()

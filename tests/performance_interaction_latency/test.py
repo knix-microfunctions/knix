@@ -35,7 +35,7 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
             self._test_tuple_list.append((json.dumps(inp0), json.dumps(res0)))
 
     #@unittest.skip("")
-    def test_function_interaction_latency_off(self):
+    def test_function_interaction_latency_checkpoints_off(self):
         test = MFNTest(test_name='function_interaction_latency_checkpoints_off', workflow_filename='wf_function_interaction_latency_checkpoints_off.json')
         test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
@@ -49,7 +49,7 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         test.cleanup()
 
     #@unittest.skip("")
-    def test_function_interaction_latency_on(self):
+    def test_function_interaction_latency_checkpoints_on(self):
         test = MFNTest(test_name='function_interaction_latency_checkpoints_on', workflow_filename='wf_function_interaction_latency_checkpoints_on.json')
         test.exec_tests(self._test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
@@ -63,7 +63,7 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         test.cleanup()
 
     #@unittest.skip("")
-    def test_chain_response_latency_off(self):
+    def test_chain_response_latency_checkpoints_off(self):
         test = MFNTest(test_name='chain_checkpoints_off', workflow_filename='wf_chain_checkpoints_off.json')
         print("----------------")
         print("Checkpoints: False")
@@ -76,7 +76,7 @@ class PerformanceFunctionInteractionLatencyTest(unittest.TestCase):
         test.cleanup()
 
     #@unittest.skip("")
-    def test_chain_response_latency_on(self):
+    def test_chain_response_latency_checkpoints_on(self):
         test = MFNTest(test_name='chain_checkpoints', workflow_filename='wf_chain_checkpoints.json')
         print("----------------")
         print("Checkpoints: True")
