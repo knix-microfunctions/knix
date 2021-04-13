@@ -34,7 +34,7 @@ class TensorFlowTest(unittest.TestCase):
         res1 = '"GPU available: True"'
 
         testtuplelist =[(inp1, res1)]
-        test = MFNTest(test_name = "Tensorflow__Test", gpu_usage = "1")
+        test = MFNTest(test_name = "Tensorflow__Test", gpu_usage = "50", gpu_mem_usage="10")
 
         #time.sleep(10) # wait for deployment
         test.exec_tests(testtuplelist)

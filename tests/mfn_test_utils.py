@@ -43,7 +43,7 @@ mfntestpassed = MfnAppTextFormat.STYLE_BOLD + MfnAppTextFormat.COLOR_GREEN + 'PA
 mfntestfailed = MfnAppTextFormat.STYLE_BOLD + MfnAppTextFormat.COLOR_RED + 'FAILED' + MfnAppTextFormat.END + MfnAppTextFormat.END
 
 class MFNTest():
-    def __init__(self, test_name=None, timeout=None, workflow_filename=None, new_user=False, delete_user=False, gpu_usage=None):
+    def __init__(self, test_name=None, timeout=None, workflow_filename=None, new_user=False, delete_user=False, gpu_usage=None, gpu_mem_usage=None):
 
         self._settings = self._get_settings()
 
@@ -86,6 +86,9 @@ class MFNTest():
         if gpu_usage is not None:
             self._settings["gpu_usage"] = gpu_usage
 
+        if gpu_mem_usage is not None:
+            self._settings["gpu_mem_usage"] = gpu_mem_usage
+
         self._log_clear_timestamp = int(time.time() * 1000.0 * 1000.0)
 
         # will be the deployed workflow object in self._client
@@ -119,6 +122,8 @@ class MFNTest():
         # Defaults
         settings.setdefault("timeout", 60)
         settings.setdefault("gpu_usage", "None")
+
+        settings.setdefault("gpu_mem_usage", "None")
 
         return settings
 
@@ -303,7 +308,8 @@ class MFNTest():
     def deploy_workflow(self):
         try:
             gpu_usage=self._settings["gpu_usage"]
-            wf = self._client.add_workflow(self._workflow_name, None, gpu_usage)
+            gpu_mem_usage=self._settings["gpu_mem_usage"]
+            wf = self._client.add_workflow(self._workflow_name, None, gpu_usage, gpu_mem_usage)
             wf.json = json.dumps(self._workflow_description)
             wf.deploy(self._settings["timeout"]) 
             self._workflow = wf
