@@ -32,12 +32,12 @@ def get_kv_pairs(testdict, keys, dicts=None):
     # find and return kv pairs with particular keys in testdict
     if not dicts:
         dicts = [testdict]
-        testdict = [testdict]  
+        testdict = [testdict]
     data = testdict.pop(0)
     if isinstance(data, dict):
         data = data.values()
-    for d in data:        
-        if isinstance(d, dict) or isinstance(d, list): # check d for type        
+    for d in data:
+        if isinstance(d, dict) or isinstance(d, list): # check d for type
             testdict.append(d)
             if isinstance(d, dict):
                 dicts.append(d)
@@ -190,7 +190,7 @@ def start_docker_sandbox(host_to_deploy, uid, sid, wid, wname, sandbox_image_nam
     env_vars = {}
     env_vars["MFN_HOSTNAME"] = host_to_deploy[0]
     env_vars["MFN_ELASTICSEARCH"] = os.getenv("MFN_ELASTICSEARCH")
-    env_vars["MFN_QUEUE"] = "127.0.0.1:"+os.getenv("MFN_QUEUE").split(':')[1]
+    env_vars["MFN_QUEUE"] = "/opt/mfn/redis-server/redis.sock"
     env_vars["MFN_DATALAYER"] = host_to_deploy[0]+":"+os.getenv("MFN_DATALAYER").split(':')[1]
     env_vars["USERID"] = uid
     env_vars["SANDBOXID"] = sid
@@ -229,7 +229,7 @@ def start_docker_sandbox(host_to_deploy, uid, sid, wid, wname, sandbox_image_nam
             print("Docker daemon: " + "tcp://" + host_to_deploy[1] + ":2375" + ", environment variables: " + str(env_vars))
             if sandbox_image_name.endswith("gpu"):
                 client.containers.run(sandbox_image_name, init=True, detach=True, ports={"8080/tcp": None}, ulimits=ulimit_list, auto_remove=True, name=sid, environment=env_vars, extra_hosts={host_to_deploy[0]:host_to_deploy[1]}, log_config=lc, runtime="nvidia")
-            else: 
+            else:
                 client.containers.run(sandbox_image_name, init=True, detach=True, ports={"8080/tcp": None}, ulimits=ulimit_list, auto_remove=True, name=sid, environment=env_vars, extra_hosts={host_to_deploy[0]:host_to_deploy[1]}, log_config=lc)
             # TEST/DEVELOPMENT: no auto_remove to access sandbox logs
         except Exception as exc:
@@ -285,7 +285,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
         raise Exception("Unable to load "+ksvc_file+". Ensure that the configmap has been setup properly", e)
 
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters (and not be greater than 63 chars)
-    workflowNameForLabel = workflow_info["workflowName"].replace('@', '-').replace('_', '-').replace('/', '-').lower()
+    workflowNameForLabel = workflow_info["workflowName"].replace('@', '-').replace('/', '-').replace('_', '-').lower()
     wfNameSanitized = 'w-' + workflowNameForLabel[:59] + '-w'
 
     emailForLabel = email.replace('@', '-').replace('_', '-').lower()
@@ -334,7 +334,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
         imageName = kservice['spec']['template']['spec']['containers'][0]['image']
         imageRepoName = imageName.split("/")[0]
 
-        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_java" 
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_java"
 
     if not management and use_gpus == 0. and runtime=="Python": # non gpu python function
         # overwrite values from values.yaml for new workflows
@@ -343,22 +343,22 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
         imageName = kservice['spec']['template']['spec']['containers'][0]['image']
         imageRepoName = imageName.split("/")[0]
 
-        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox" 
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox"
 
     if not management and use_gpus > 0. and runtime=="Python": # gpu using python function
-        
-        # first set default values 
+
+        # first set default values
         vcore = 100
         vmemory = 31
         # use token obtained from kubernetes master to update cluster node properties
- 
+
         if os.getenv("API_TOKEN") is not None:
             new_token=os.getenv("API_TOKEN")
             print('getting cluster node capacity info with token' + str(new_token))
         else:
             new_token="default"
 
-        try: 
+        try:
             resp = requests.get(
                 "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/api/v1/nodes",
                 headers={"Authorization": "Bearer "+new_token, "Accept": "application/json"},
@@ -368,7 +368,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
                 data = json.loads(resp.text)
                 vmemory = 0
                 vcore = 0
-            
+
                 for d in data["items"]: # iterate over the cluster nodes
                     res_capacity = d["status"]["capacity"]
                     #print("res_capacity: " + str(res_capacity))
@@ -387,28 +387,28 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
         # overwrite values from values.yaml for new workflows
         imageName = kservice['spec']['template']['spec']['containers'][0]['image']
         imageRepoName = imageName.split("/")[0]
-        
+
         # gpu_total_memory = 7800 # hardcoded info (gtx1070), should give free GPU memory
         gpu_core_request = str(int(use_gpus)) # derived from GUI float input parameter, yielding core percentage as required by gpu-manager
         #gpu_memory_request = str(int(vmemory * use_gpus)) # adapted to gpu-manager memory parameter definition
         gpu_memory_request = str(int(use_mem_gpus*4.0)) # gpu-manager requires gpu memory parameter in units of 256 MB
         print ("memory request set to %s vcuda units " % gpu_memory_request)
-         
+
         if int(gpu_memory_request) > int(vmemory):
             print("only up to %s GB GPU memory available on the cluster nodes!" % str(int(vmemory)))
             gpu_memory_request = str(int(vmemory)) # limit to max available memory
             print ("memory set to %s GB " % gpu_memory_request)
-        
-        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_gpu" 
+
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_gpu"
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
         # calculate limits resource parameters for gpu-manager, need to identical to requests parameter
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
         kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
-        kservice['spec']['template']['metadata']['annotations']['tencent.com/vcuda-core-limit'] = str(int(vmemory)) #gpu_core_request #ToDo: check value 
+        kservice['spec']['template']['metadata']['annotations']['tencent.com/vcuda-core-limit'] = str(int(vmemory)) #gpu_core_request #ToDo: check value
         #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['aliyun.com/gpu-mem'] = "2" #str(use_gpus)
- 
-         
+
+
     # Special handling for the management container: never run on gpu
     if management:
         management_workflow_conf = {}
@@ -423,16 +423,16 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
         kservice['spec']['template']['spec']['containers'][0]['resources'] = management_workflow_conf['resources']
         kservice['spec']['template']['spec']['serviceAccountName'] = new_workflow_conf['mgmtserviceaccount']
-        
+
         # management container should not consume a CPU and use standard sandbox image
         if (labels['workflowid'] == "Management"):
             ###kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = "0"
             ###kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = "0"
             imageName = kservice['spec']['template']['spec']['containers'][0]['image']
             imageRepoName = imageName.split("/")[0]
-            # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox"  
+            # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox"
 
-            kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox"  
+            kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox"
 
         if 'HTTP_GATEWAYPORT' in new_workflow_conf:
             env.append({'name': 'HTTP_GATEWAYPORT', 'value': new_workflow_conf['HTTP_GATEWAYPORT']})
@@ -446,14 +446,14 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
             container['env'].append({'name': k, 'value': os.getenv(k)})
     print('Checking if kservice exists')
     resp = requests.get(
-        "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
+        "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
         headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
         verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
         proxies={"https":""})
     if resp.status_code == 200:
         print('Deleting existing kservice')
         resp = requests.delete(
-            "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
+            "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
             headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
             verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
             proxies={"https":""})
@@ -466,7 +466,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
     # no change for Java function
     print('Creating new kservice')
     resp = requests.post(
-        "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
+        "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
         headers={"Authorization": "Bearer "+token, "Content-Type": "application/yaml", "Accept": "application/json"},
         verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
         data=json.dumps(kservice),
@@ -485,7 +485,7 @@ def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usag
     while retry > 0:
         try:
             resp = requests.get(
-                "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
+                "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
                 headers={"Authorization": "Bearer "+token, "Accept": "application/json"},
                 verify='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
                 proxies={"https":""})
@@ -525,7 +525,7 @@ def handle(value, sapi):
         sapi.log(json.dumps(workflow))
         wfmeta = sapi.get(email + "_workflow_" + workflow["id"], True)
         print("WFMETA in deployWorkflow: "+ str(wfmeta))
-        
+
         if wfmeta is None or wfmeta == "":
             raise Exception("workflow metadata is not valid.")
         try:
@@ -601,22 +601,22 @@ def handle(value, sapi):
 
         print("deduced gpu_usage from workflow metadata: " + str(gpu_usage))
         print("deduced gpu_mem_usage from workflow metadata: " + str(gpu_mem_usage))
-        
+
         print("print deployment_info[resources] to evaluate: " + str(deployment_info["resources"]))
         # case 2: gpu_usage is set in deployment info
         for res in deployment_info["resources"]:
             if "gpu_usage" in deployment_info["resources"][res].keys():
-                result_gpu = float(deployment_info["resources"][res]["gpu_usage"]) 
+                result_gpu = float(deployment_info["resources"][res]["gpu_usage"])
                 print("gpu_usage in loop: " + str(result_gpu))
                 if result_gpu > 0.:
                     gpu_usage += result_gpu
 
             if "gpu_mem_usage" in deployment_info["resources"][res].keys():
-                result_mem_gpu = float(deployment_info["resources"][res]["gpu_mem_usage"]) 
+                result_mem_gpu = float(deployment_info["resources"][res]["gpu_mem_usage"])
                 if result_mem_gpu > 0.:
                     gpu_mem_usage += result_mem_gpu
                 print("gpu_mem_usage in loop: " + str(result_mem_gpu))
- 
+
         print("GPUINFO" + str(gpu_usage)+ " " + str(gpu_mem_usage))
         sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
 
@@ -656,7 +656,7 @@ def handle(value, sapi):
             # hostst is string representation of list or dict
             print("available_hosts: " + hosts)
             hosts = json.loads(hosts)
- 
+
             if hosts is not None and hosts != "" and isinstance(hosts,dict):
                 host_has_gpu = False
                 deployed_hosts = {}
@@ -677,12 +677,12 @@ def handle(value, sapi):
                 # instruct hosts to start the sandbox and deploy workflow
                 print("selected host:" + str(hostname) + " " + str(hostip))
                 #print("calulated host:" + str(gpu_hosts) + " " + str(plain_hosts))
-                if sandbox_image_name == "microfn/sandbox" or sandbox_image_name=="microfn/sandbox_java": # can use any host 
+                if sandbox_image_name == "microfn/sandbox" or sandbox_image_name=="microfn/sandbox_java": # can use any host
                     picked_hosts = plain_hosts
                     #hosts["has_gpu"] = False
                     #print("picked_hosts: " + str(picked_hosts))
                 elif len(gpu_hosts) > 0:
-                    picked_hosts = gpu_hosts 
+                    picked_hosts = gpu_hosts
                 else:
                     picked_hosts = plain_hosts # fallback as there are no gpu hosts available
                     print("available GPU hosts list is empty. Deploying on general purpose host")
@@ -715,7 +715,7 @@ def handle(value, sapi):
                         #sapi.log(str(endpoints))
             elif hosts is not None and hosts != "" and isinstance(hosts,list):
                 print("hosts is not dict type!")
- 
+
                 if not bool(deployed_hosts):
                     status = "failed"
                 else:
@@ -895,7 +895,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
         tf_ip_port = global_trigger_info["frontend_ip_port"]
         if tf_ip_port not in tf_hosts:
             raise Exception("Frontend: " + tf_ip_port + " not available")
-        
+
         url = "http://" + tf_ip_port + "/add_workflows"
         # send the request and wait for response
 
@@ -909,7 +909,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             res_obj = res.json()
         except Exception as e:
             status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
-        
+
         if "status" in res_obj and res_obj["status"].lower() == "success":
             # if success then update the global trigger table to add a new workflow.
             print("[addTriggerForWorkflow] Success response from " + url)
@@ -925,7 +925,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
     except Exception as e:
         print("[addTriggerForWorkflow] exception: " + str(e))
         # TODO: why remove this?
-        #if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:            
+        #if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:
         #    associatedTriggers = workflow_details['associatedTriggers']
         #    del associatedTriggers[trigger_name]
         #    workflow_details['associatedTriggers'] = associatedTriggers

@@ -18,7 +18,6 @@ package main
 import (
   "bufio"
   "context"
-  "encoding/binary"
   "encoding/json"
   "fmt"
   "io/ioutil"
@@ -31,11 +30,11 @@ import (
   "syscall"
   "time"
   "errors"
-  "github.com/knix-microfunctions/knix/Sandbox/frontend/localqueueservice"
   "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
   "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
   "github.com/apache/thrift/lib/go/thrift"
   "github.com/google/uuid"
+  "github.com/go-redis/redis/v8"
 )
 
 // custom log writer to overwrite the default log format
@@ -76,9 +75,8 @@ var (
 // The producer thrift client requires its own transport and context not to interfere with other clients
 var (
   entryTopic string
-  producer *localqueueservice.LocalQueueServiceClient
+  producer *redis.Client
   producerCtx = context.Background()
-  producerTransport thrift.TTransport
   producerMutex = sync.Mutex{}
 )
 
@@ -111,27 +109,16 @@ var (
 // After graceful shutdown (respecting 10s pull timeout), it sends a boolean to the done channel
 func ConsumeResults(quit <-chan bool, done chan<- bool) {
   var (
-    err error
-    consumer *localqueueservice.LocalQueueServiceClient
+    consumer *redis.Client
     consumerCtx = context.Background()
-    consumerTransport thrift.TTransport
   )
   fmt.Println("consumer: Starting client")
-  consumerTransport, err = thrift.NewTSocket(os.Getenv("MFN_QUEUE"))
-  if err != nil {
-      fmt.Println("consumer: Error opening socket:", err)
-      log.Fatal(err)
-  }
-  consumerTransport, err = transportFactory.GetTransport(consumerTransport)
-  if err != nil {
-    log.Fatal(err)
-  }
-  if err := consumerTransport.Open(); err != nil {
-    log.Fatal(err)
-  }
-  iprot := protocolFactory.GetProtocol(consumerTransport)
-  oprot := protocolFactory.GetProtocol(consumerTransport)
-  consumer = localqueueservice.NewLocalQueueServiceClient(thrift.NewTStandardClient(iprot, oprot))
+
+  consumer = redis.NewClient(&redis.Options {
+          Addr: os.Getenv("MFN_QUEUE"),
+          Password: "",
+          DB: 0,
+  })
 
   // _XXX_: entry and exit topics are handled by the sandbox agent before
   // launching the frontend, so no need
@@ -149,7 +136,7 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
     //  log.Fatal(err)
     //}
     //log.Println("consumer: Removed result topic", resultTopic)
-    consumerTransport.Close()
+    consumer.Close()
     close(done)
   }()
   var rt_rcvdlq int64
@@ -158,23 +145,45 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
     case <-quit:
         return
     default:
-      lqm, err := consumer.GetAndRemoveMessage(consumerCtx, resultTopic, 10000)
+      res, err := consumer.XRead(consumerCtx, &redis.XReadArgs{
+                Streams: []string{resultTopic, "0"},
+                Count:   1,
+                Block:   0,
+            }).Result()
       rt_rcvdlq = time.Now().UnixNano()
+      if len(res) == 0 {
+          continue
+      } else if len(res[0].Messages) == 0 {
+          continue
+      }
+
+      lqcm := res[0].Messages[0].Values
+      lqcm_id := res[0].Messages[0].ID
+
+      //n, err := client.XDel(ctx, "stream", "1-0", "2-0", "3-0").Result()
+      n, err := consumer.XDel(consumerCtx, resultTopic, lqcm_id).Result()
+
+      if n != 1 {
+        log.Println("consumer: Couldn't receive message", err)
+        continue
+      }
+
       if err != nil {
         log.Println("consumer: Couldn't receive message", err)
         continue
       }
-      if len(lqm.Payload) == 0 {
-        continue
-      }
+
+      value := lqcm["value"].(string)
+      valueb := []byte(value)
+
       msg := MfnMessage{}
-      // 4 byte unsigned integer length that defaults to 36, followed by 32 bytes UUID
-      len := binary.BigEndian.Uint32(lqm.Payload[0:])
-      err = msg.UnmarshalJSON(lqm.Payload[len:])
+      err = msg.UnmarshalJSON(valueb)
+
       if err != nil {
         log.Println("consumer: Couldn't unmarshal message", err)
         continue
       }
+
       ExecutionCond.L.Lock()
       e, ok := ExecutionResults[msg.Mfnmetadata.ExecutionId]
       ExecutionCond.L.Unlock()
@@ -557,27 +566,11 @@ func FetchResult(id string) (*MfnMessage, error) {
 // InitProducer initialized the producer thrift client and connects it to the local queue service
 func InitProducer() {
   fmt.Print("producer: Starting client")
-  var err error
-  var protocolFactory thrift.TProtocolFactory
-  protocolFactory = thrift.NewTCompactProtocolFactory()
-  var transportFactory thrift.TTransportFactory
-  transportFactory = thrift.NewTTransportFactory()
-  transportFactory = thrift.NewTFramedTransportFactory(transportFactory)
-  producerTransport, err = thrift.NewTSocket(os.Getenv("MFN_QUEUE"))
-  if err != nil {
-      log.Println("producer: Error opening socket:", err)
-      log.Fatal(err)
-  }
-  producerTransport, err = transportFactory.GetTransport(producerTransport)
-  if err != nil {
-    log.Fatal(err)
-  }
-  if err := producerTransport.Open(); err != nil {
-    log.Fatal(err)
-  }
-  iprot := protocolFactory.GetProtocol(producerTransport)
-  oprot := protocolFactory.GetProtocol(producerTransport)
-  producer = localqueueservice.NewLocalQueueServiceClient(thrift.NewTStandardClient(iprot, oprot))
+  producer = redis.NewClient(&redis.Options {
+          Addr: os.Getenv("MFN_QUEUE"),
+          Password: "",
+          DB: 0,
+  })
 
   // _XXX_: entry and exit topics are handled by the sandbox agent before
   // launching the frontend, so no need
@@ -643,25 +636,18 @@ func SendMessage(msg MfnMessage, topic string) (error, int64) {
     log.Println("handler: Couldn't marshal message to JSON", err)
     return err, 0
   }
+
   log.Printf("New execution (id=%s)\n", msg.Mfnmetadata.ExecutionId)
 
-  lqcm := make([]byte, 36+len(msgb))
-  binary.BigEndian.PutUint32(lqcm[0:], 36)
-  // copy UUID without dashes (e.g. 1f115d4c-4d08-11ea-b6ed-68b5996bc19c)
-  copy(lqcm[ 4:36],msg.Mfnmetadata.ExecutionId[ 0: 32])
-  copy(lqcm[36:],msgb)
-
-  // Assemble local queue message
-  lqm := localqueueservice.NewLocalQueueMessage()
-  lqm.Payload = lqcm
   // Send the local queue message
   producerMutex.Lock()
   rt_sendlq := time.Now().UnixNano()
-  res, err := producer.AddMessage(producerCtx, topic, lqm) // acknowledged
+  _, err = producer.XAdd(producerCtx, &redis.XAddArgs{
+                Stream: topic,
+                ID:     "*",
+                Values: map[string]interface{}{"key": msg.Mfnmetadata.ExecutionId, "value": string(msgb)},
+            }).Result()
   producerMutex.Unlock()
-  if res == false {
-    return fmt.Errorf("producer: Something undefined happened sending the message, check LocalQueueService for more details"), rt_sendlq
-  }
   if err != nil {
     return err, rt_sendlq
   }
@@ -669,6 +655,7 @@ func SendMessage(msg MfnMessage, topic string) (error, int64) {
   go StoreData(msg, msgb)
   return nil, rt_sendlq
 }
+
 
 func Fakeit(msg *MfnMessage) (error) {
   time.Sleep(time.Second * 1)
@@ -698,19 +685,19 @@ func Fakeit(msg *MfnMessage) (error) {
 
   // CHEAT: send message to result queue
   // Assemble local queue message
-  lqm := localqueueservice.NewLocalQueueMessage()
-  lqm.Payload = msgb
   // Send the local queue message
-  res, err = producer.AddMessage(producerCtx, resultTopic, lqm) // acknowledged
-  if res == false {
-    return fmt.Errorf("producer: Something undefined happened sending the message, check LocalQueueService for more details")
-  }
+  _, err = producer.XAdd(producerCtx, &redis.XAddArgs{
+                Stream: resultTopic,
+                ID:     "*",
+                Values: map[string]interface{}{"key": msg.Mfnmetadata.ExecutionId, "value": string(msgb)},
+            }).Result()
   if err != nil {
     return err
   }
 
   return nil
 }
+
 
 // The frontend initializes datalayer and producer thrift clients, starts consumer as a go routine, registers a signal handler for graceful shutdowns and blocks at starting the http server
 func main() {
@@ -779,7 +766,7 @@ func main() {
     //  log.Fatal(err)
     //}
     //fmt.Println("producer: Removed entry topic", entryTopic)
-    producerTransport.Close()
+    producer.Close()
     log.Println("producer: stopped")
     // shutdown consumer
     consumerQuit <- true

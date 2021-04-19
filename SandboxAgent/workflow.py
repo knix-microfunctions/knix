@@ -251,11 +251,19 @@ class Workflow:
         self.workflowEntryPoint = wfobj["StartAt"]
         self.workflowEntryTopic = self.topicPrefix + self.workflowEntryPoint
 
+        # always set an exit point and topic; otherwise, sandbox frontend crashes
+        self.workflowExitPoint = "end"
+        self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
+
         if "EnableCheckpoints" in wfobj.keys():
             self._enable_checkpoints = wfobj["EnableCheckpoints"]
 
         if "AllowImmediateMessages" in wfobj.keys():
             self._allow_immediate_messages = wfobj["AllowImmediateMessages"]
+
+        if self._allow_immediate_messages:
+            # also include the exit as a potential destination for sending immediate trigger messages
+            self.workflowFunctionMap[self.workflowExitPoint] = True
 
         self._logger.info("parseASL: workflowName: " + self.workflowName)
         self._logger.info("parseASL: workflowEntryPoint: " + self.workflowEntryTopic)
@@ -331,11 +339,7 @@ class Workflow:
             value = taskstateinfo["End"]
 
             if bool(value) and not (self.insideParallelBranchAlready() or self.insideMapBranchAlready()):
-                self.workflowExitPoint = "end"
-                if self._allow_immediate_messages:
-                    self.workflowFunctionMap[self.workflowExitPoint] = True
                 nextNodes.append(self.workflowExitPoint)
-                self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
             #else:
                 # This is a branch end, so don't add this as a workflow exit point
         else:
@@ -425,9 +429,7 @@ class Workflow:
         if "End" in passstateinfo.keys():
             value = passstateinfo["End"]
             if bool(value) and not (self.insideParallelBranchAlready() or self.insideMapBranchAlready()):
-                self.workflowExitPoint = "end"
                 nextNodes.append(self.workflowExitPoint)
-                self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
             #else:
                 # This is a branch end state and not a workflow exit point
         else:
@@ -458,9 +460,7 @@ class Workflow:
         if "InputPath" in succeedstateinfo.keys():
         if "OutputPath" in succeedstateinfo.keys():
         """
-        self.workflowExitPoint = "end"
         nextNodes.append(self.workflowExitPoint)
-        self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
         succeedstateinfo["End"] = True
 
         if self.insideParallelBranchAlready():
@@ -483,9 +483,7 @@ class Workflow:
         if "Error" in failstateinfo.keys():
         """
 
-        self.workflowExitPoint = "end"
         nextNodes.append(self.workflowExitPoint)
-        self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
         failstateinfo["End"] = True
 
         if self.insideParallelBranchAlready():
@@ -505,9 +503,7 @@ class Workflow:
         if "End" in waitstateinfo.keys():
             value = waitstateinfo["End"]
             if bool(value) and not self.insideParallelBranchAlready():
-                self.workflowExitPoint = "end"
                 nextNodes.append(self.workflowExitPoint)
-                self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
             #else:
                 # This is branch terminal state and not a workflow exit point
         else:
@@ -542,9 +538,7 @@ class Workflow:
         if "End" in parallelstateinfo.keys():
             value = parallelstateinfo["End"]
             if bool(value) and not self.insideParallelBranchAlready():
-                self.workflowExitPoint = "end"
                 potNext.append(self.workflowExitPoint)
-                self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
             #else:
                 # This is a branch end and not a workflow exit point
         else:
@@ -602,9 +596,7 @@ class Workflow:
         if "End" in mapstateinfo.keys() and mapstateinfo["End"] == True:
             value = mapstateinfo["End"]
             if bool(value) and not self.insideMapBranchAlready():
-                self.workflowExitPoint = "end"
                 potNext.append(self.workflowExitPoint)
-                self.workflowExitTopic = self.topicPrefix + self.workflowExitPoint
             #else:
                 # This is a branch end and not a workflow exit point
         else:

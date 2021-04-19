@@ -494,3 +494,38 @@ class Storage(object):
             raise Exception("LISTCOUNTERS failed: " + r.json()["data"]["message"])
 
         return r.json()["data"]["counterlist"]
+
+class TriggerableBucket(Storage):
+    """ TriggerableBucket is a user-defined storage bucket that can also be used to trigger workflows upon data changes
+    """
+
+    def __init__(self,client,bname,bassociated_workflows=[],bmetadatalist=[]):
+        super().__init__(client._s, client.token, client.mgmturl)
+        self.client=client
+        self._name=bname
+        self._update(bassociated_workflows,bmetadatalist)
+
+    def _fill_storage_parameters(self, data_type, parameters, wid):
+        storage = {}
+        storage["data_type"] = data_type
+        parameters["tableName"] = self._name
+        storage["parameters"] = parameters
+        if wid is not None:
+            storage["workflowid"] = wid
+
+        return storage
+
+    def _update(self,bassociated_workflows,bmetadatalist):
+        self._associated_workflows=bassociated_workflows
+        self._metadata=bmetadatalist
+
+    @property
+    def associated_workflows(self):
+        # TODO: decide whether to auto-fetch details when associated_workflows is accessed 
+        return self._associated_workflows
+
+    def associate_workflow(self, wf):
+        self.client.bind_bucket(self._name,wf._name)
+
+    def disassociate_workflow(self, wf):
+        self.client.unbind_bucket(self._name,wf._name)

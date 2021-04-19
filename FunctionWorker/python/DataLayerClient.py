@@ -23,7 +23,7 @@ from data_layer.message.ttypes import KeyValuePair
 from data_layer.message.ttypes import Metadata
 from data_layer.service import DataLayerService
 
-MAX_RETRIES=3
+MAX_RETRIES = 3
 
 class DataLayerClient:
 
@@ -50,7 +50,7 @@ class DataLayerClient:
                 self.countertriggerstable = "counterTriggersTable"
                 self.countertriggersinfotable = "counterTriggersInfoTable"
 
-            else:
+            elif suid is not None:
                 self.keyspace = "storage_" + suid
                 if tableName is not None:
                     self.tablename = tableName
@@ -62,9 +62,14 @@ class DataLayerClient:
                 self.triggersinfotablename = "triggersInfoTable"
                 self.countertriggerstable = "counterTriggersTable"
                 self.countertriggersinfotable = "counterTriggersInfoTable"
+            else:
+                print("[DataLayerClient]: Error in initializing; no required values given.")
+                return
 
         #print("Creating datalayer client in keyspace=%s, tablename=%s, maptablename=%s, settablename=%s, countertablename=%s" % (self.keyspace,self.tablename, self.maptablename, self.settablename, self.countertablename))
         self.locality = locality
+
+        self._is_running = True
 
         self.connect()
 
@@ -102,7 +107,7 @@ class DataLayerClient:
 
     def connect(self):
         retry = 0.5 #s
-        while True:
+        while self._is_running:
             try:
                 host, port = self.dladdress.split(':')
                 self.socket = TSocket.TSocket(host, int(port))
@@ -447,9 +452,17 @@ class DataLayerClient:
 
     def getSetNames(self, start_index=0, end_index=2147483647):
         sets = []
+        set_response = []
         for retry in range(MAX_RETRIES):
             try:
                 sets = self.datalayer.selectSets(self.keyspace, self.settablename, start_index, end_index, self.locality)
+                if sets is not None or isinstance(sets, list):
+                    for name in sets:
+                        if name.endswith("_outputkeys_set"):
+                            continue
+                        else:
+                            set_response.append(name)
+
                 break
             except TTransport.TTransportException as exc:
                 print("[DataLayerClient] Reconnecting because of failed getSetNames: " + str(exc))
@@ -457,7 +470,7 @@ class DataLayerClient:
             except Exception as exc:
                 print("[DataLayerClient] failed getSetNames: " + str(exc))
                 raise
-        return sets
+        return set_response
 
     # counter operations
     def createCounter(self, countername, count, tableName=None):
@@ -596,6 +609,7 @@ class DataLayerClient:
         return keys_response
 
     def shutdown(self):
+        self._is_running = False
         try:
             self.transport.close()
         except Thrift.TException as exc:

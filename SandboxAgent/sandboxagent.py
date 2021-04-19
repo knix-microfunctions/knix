@@ -269,7 +269,6 @@ class SandboxAgent:
 
         # we can't do this here, because there may be other sandboxes running the same workflow
         #self._management_data_layer_client.put("workflow_status_" + self._workflowid, "undeployed")
-        self._management_data_layer_client.shutdown()
 
         self._logger.info("Shutting down fluent-bit...")
         time.sleep(2) # flush interval of fluent-bit
@@ -284,14 +283,18 @@ class SandboxAgent:
                 self._frontend_process.kill()
                 _, _ = self._frontend_process.communicate()
 
-        self._logger.info("Shutdown complete.")
         if reason is not None:
             self._update_deployment_status(True, errmsg)
-            self._management_data_layer_client.shutdown()
-            os._exit(1)
         else:
             self._update_deployment_status(False, errmsg)
-            self._management_data_layer_client.shutdown()
+
+        self._management_data_layer_client.shutdown()
+
+        self._logger.info("Shutdown complete.")
+
+        if reason is not None:
+            os._exit(1)
+        else:
             os._exit(0)
 
     def _stop_deployment(self, reason, errmsg):
@@ -325,15 +328,16 @@ class SandboxAgent:
 
         ts_qs_launch = time.time()
         # 1. launch the QueueService here
-        self._logger.info("Launching QueueService...")
-        cmdqs = "java -Xmx1024m -jar /opt/mfn/queueservice.jar"
+        self._logger.info("Launching local queue with redis...")
+        #cmdqs = "/opt/mfn/redis-server/./redis-server /opt/mfn/redis-server/redis_4999.conf"
+        cmdqs = "/opt/mfn/redis-server/./redis-server /opt/mfn/redis-server/redis_sock.conf"
         command_args_map_qs = {}
         command_args_map_qs["command"] = cmdqs
-        command_args_map_qs["wait_until"] = "Starting local queue..."
-        error, self._queue_service_process = process_utils.run_command(cmdqs, self._logger, wait_until="Starting local queue...")
+        command_args_map_qs["wait_until"] = "The server is now ready to accept connections at /opt/mfn/redis-server/redis.sock"
+        error, self._queue_service_process = process_utils.run_command(cmdqs, self._logger, wait_until=command_args_map_qs["wait_until"])
         if error is not None:
             has_error = True
-            errmsg = "Could not start the sandbox queue service: " + str(error)
+            errmsg = "Could not start the sandbox local queue: " + str(error)
 
         if has_error:
             self._stop_deployment("queue service", errmsg)
@@ -401,7 +405,8 @@ class SandboxAgent:
 
         self._is_running = True
 
-        self._logger.info("Successfully deployed.")
+        total_time = (time.time() - self._start) * 1000.0
+        self._logger.info("Successfully deployed. Total startup time: %s (ms)", str(total_time))
 
         while self._is_running:
             try:
@@ -493,7 +498,7 @@ if __name__ == "__main__":
         userid = sys.argv[3]
         sandboxid = sys.argv[4]
         workflowid = sys.argv[5]
-        queue = "127.0.0.1:4999"
+        queue = "/opt/mfn/redis-server/redis.sock"
         datalayer = hostname + ":4998"
         elasticsearch = sys.argv[6]
         endpoint_key = sys.argv[7]
@@ -501,7 +506,7 @@ if __name__ == "__main__":
     else:
         logger.info("Getting parameters from environment variables...")
         hostname = os.getenv("MFN_HOSTNAME", os.getenv("HOSTNAME", socket.gethostname()))
-        queue = os.getenv("MFN_QUEUE", "127.0.0.1:4999")
+        queue = os.getenv("MFN_QUEUE", "/opt/mfn/redis-server/redis.sock")
         datalayer = os.getenv("MFN_DATALAYER", hostname+":4998")
         userid = os.getenv("USERID")
         sandboxid = os.getenv("SANDBOXID")

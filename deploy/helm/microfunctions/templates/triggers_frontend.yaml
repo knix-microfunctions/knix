@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ metadata:
     release: {{ .Release.Name | quote }}
     heritage: {{ .Release.Service | quote }}
 spec:
-  replicas: 1
+  replicas: {{ default 3 .Values.triggersFrontend.replicas }}
   selector:
     matchLabels:
       app: "microfunctions-triggers-frontend"
@@ -56,9 +56,11 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      imagePullSecrets: 
+          {{- toYaml .Values.triggersFrontend.imagePullSecrets | nindent 8 }}
       containers:
       - name: triggers-frontend
-        image: "{{ .Values.imageRepo }}{{ .Values.triggersFrontend.imagePath }}:{{ .Values.triggersFrontend.imageTag }}"
+        image: "{{ .Values.imageRepo }}{{ .Values.triggersFrontend.imagePath }}:{{ .Values.triggersFrontend.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.triggersFrontend.imagePullPolicy }}"
         ports:
         - containerPort: {{ .Values.triggersFrontend.httpPort }}
@@ -67,10 +69,15 @@ spec:
 {{ toYaml .Values.triggersFrontend.resources | indent 10}}
         env:
         - name: MANAGEMENT_URL
-          value: "http://{{ include "nginx.mgmtService" . | regexFind "^[^.]+" }}.{{ .Release.Namespace }}.svc"
+          value: "http://wf-{{ .Release.Name }}-management.{{ .Release.Namespace }}.svc"
         - name: TRIGGERS_FRONTEND_PORT
           value: "{{ .Values.triggersFrontend.httpPort }}"
         - name: TRIGGERS_FRONTEND_LOG_LEVEL
           value: "info"
         - name: MANAGEMENT_UPDATE_INTERVAL_SEC
           value: "{{ .Values.triggersFrontend.statusReportIntervalSec }}"
+      {{- with .Values.triggersFrontend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+

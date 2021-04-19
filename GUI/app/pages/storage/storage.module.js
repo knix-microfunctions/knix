@@ -37,7 +37,7 @@
       .state('storage.kv', {
          url: '/kv',
          templateUrl: 'app/pages/storage/smart/tables.html',
-         title: 'Keys-Values',
+         title: 'Keys/Values',
          controller: 'StorageTableCtrl',
          sidebarMeta: {
            order: 0,
@@ -73,7 +73,7 @@
        .state('storage.bucketList', {
           url: '/bucketList',
           templateUrl: 'app/pages/storage/smart/buckets.html',
-          title: 'Triggerable Buckets',
+          title: 'Buckets',
           controller: 'BucketListCtrl',
           sidebarMeta: {
               order: 400,

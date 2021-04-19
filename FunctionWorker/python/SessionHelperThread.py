@@ -86,7 +86,7 @@ class SessionHelperThread(threading.Thread):
 
     def _init_heartbeat_parameters(self, heartbeat_params):
         if "heartbeat_method" not in heartbeat_params:
-            self._logger.debug("No heartbeat method is specified; disabling heartbeat.")
+            #self._logger.debug("No heartbeat method is specified; disabling heartbeat.")
             return
         else:
             self._heartbeat_enabled = True
@@ -170,17 +170,6 @@ class SessionHelperThread(threading.Thread):
 
             if self._heartbeat_enabled:
                 # send heartbeat
-                # this is part of the message loop, such that we can have a more precise heartbeat
-                # if it was only after the message loop, then there is a corner case, where the
-                # processing of the messages would take more than the heartbeat interval,
-                # meaning we would miss our deadline
-                t_cur = time.time() * 1000.0
-                if (t_cur - last_heartbeat_time) >= self._heartbeat_interval:
-                    self._send_heartbeat()
-                    last_heartbeat_time = t_cur
-
-            if self._heartbeat_enabled:
-                # send heartbeat
                 # even if there are no messages, we might need to send a heartbeat
                 t_cur = time.time() * 1000.0
                 if (t_cur - last_heartbeat_time) >= self._heartbeat_interval:
@@ -190,6 +179,14 @@ class SessionHelperThread(threading.Thread):
                 # if we sent a heartbeat recently, last_heartbeat and t_cur will cancel each other out
                 poll_timeout = py3utils.ensure_long(last_heartbeat_time + self._local_poll_timeout - t_cur)
                 #self._logger.debug("updated poll timeout: " + str(poll_timeout))
+                if poll_timeout <= 0:
+                    # we just missed a deadline; send a heartbeat right away
+                    t_cur = time.time() * 1000.0
+                    self._send_heartbeat()
+                    last_heartbeat_time = t_cur
+                    # reset the poll timeout accordingly
+                    poll_timeout = self._local_poll_timeout
+                    #self._logger.debug("updated poll timeout (after missing deadline): " + str(poll_timeout))
 
         self._cleanup()
 
@@ -217,7 +214,7 @@ class SessionHelperThread(threading.Thread):
         except Exception as exc:
             is_json = False
             msg = value
-            self._logger.debug("[SessionHelperThread] non-JSON value: " + str(msg))
+            #self._logger.debug("[SessionHelperThread] non-JSON value: " + str(msg))
 
         # cannot be a special message; queue whatever it is
         # _XXX_: we are encoding/decoding the delivered message; should not actually execute this code

@@ -44,9 +44,9 @@ class StateUtils:
     parallelStateType = 'Parallel'
     mapStateType = 'Map'
 
-    mapFunctionOutput =  {}
+    mapFunctionOutput = {}
 
-    def __init__(self, functionstatetype=defaultStateType, functionstatename='', functionstateinfo='{}', functionruntime="", logger=None, workflowid=None, sandboxid=None, functiontopic=None, datalayer=None, storage_userid=None, internal_endpoint=None):
+    def __init__(self, worker_params, logger=None):
         self.operators = ['And', 'BooleanEquals', 'Not', 'NumericEquals', 'NumericGreaterThan', 'NumericGreaterThanEquals',\
              'NumericLessThan', 'NumericLessThanEquals', 'Or', 'StringEquals', 'StringGreaterThan',\
              'StringGreaterThanEquals', 'StringLessThan', 'StringLessThanEquals', 'TimestampEquals', 'TimestampGreaterThan',\
@@ -67,21 +67,34 @@ class StateUtils:
         self.result_path_dict = {}
         self.output_path_dict = {}
         self.parameters_dict = {}
-        self.functionstatetype = functionstatetype
-        self.functionstatename = functionstatename
-        self.functionstateinfo = functionstateinfo
-        self.functiontopic = functiontopic
-        self._datalayer = datalayer
-        self._storage_userid = storage_userid
-        self._internal_endpoint = internal_endpoint
-        self._function_runtime = functionruntime
+
+        if "function_state_type" in worker_params:
+            self.functionstatetype = worker_params["function_state_type"]
+        else:
+            self.functionstatetype = defaultStateType
+
+        if "function_state_name" in worker_params:
+            self.functionstatename = worker_params["function_state_name"]
+        else:
+            self.functionstatename = ""
+
+        if "function_state_info" in worker_params:
+            self.functionstateinfo = worker_params["function_state_info"]
+        else:
+            self.functionstateinfo = "{}"
+
+        self.functiontopic = worker_params["function_topic"]
+        self._datalayer = worker_params["datalayer"]
+        self._storage_userid = worker_params["storage_userid"]
+        self._internal_endpoint = worker_params["internal_endpoint"]
+        self._function_runtime = worker_params["function_runtime"]
         if self._function_runtime == "java":
             # if java, this is the address we'll send requests to be handled
             self._java_handler_address = "/tmp/java_handler_" + self.functionstatename + ".uds"
 
         self.parsedfunctionstateinfo = {}
-        self.workflowid = workflowid
-        self.sandboxid = sandboxid
+        self.workflowid = worker_params["workflowid"]
+        self.sandboxid = worker_params["sandboxid"]
         self.choiceNext = ''
 
         self.mapStateCounter = 0
@@ -102,7 +115,7 @@ class StateUtils:
             helper.calls += 1
             return func(*args, **kwargs)
         helper.calls = 0
-        helper.__name__= func.__name__
+        helper.__name__ = func.__name__
         return helper
 
     # find target next for error in catcher list
@@ -644,7 +657,7 @@ class StateUtils:
             function_input_post_output = self.applyResultPath(function_input_post_result, function_input_post_result)
             if "Next" in self.parsedfunctionstateinfo:
                 if self.parsedfunctionstateinfo["Next"]:
-                    sapi.add_dynamic_next(self.parsedfunctionstateinfo["Next"], function_input_post_output )
+                    sapi.add_dynamic_next(self.parsedfunctionstateinfo["Next"], function_input_post_output)
 
             if "End" in self.parsedfunctionstateinfo:
                 if self.parsedfunctionstateinfo["End"]:
@@ -666,20 +679,20 @@ class StateUtils:
         if "WaitForNumBranches" in self.parsedfunctionstateinfo:
             klist = self.parsedfunctionstateinfo["WaitForNumBranches"]
             if not isinstance(klist, list):
-                self._logger.info("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
-                raise Exception("(StateUtils) WaitForNumBranches must be a sorted list with 1 or more integers")
+                self._logger.info("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
+                raise Exception("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
             klist.sort()
             for k in klist:
                 if not isinstance(k, int):
-                    self._logger.info("(StateUtils) Values inside WaitForNumBranches must be integers")
-                    raise Exception("(StateUtils) Values inside WaitForNumBranches must be integers")
+                    self._logger.info("[StateUtils] Values inside WaitForNumBranches must be integers")
+                    raise Exception("[StateUtils] Values inside WaitForNumBranches must be integers")
                 if k > total_branch_count:
-                    self._logger.info("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
-                    raise Exception("(StateUtils) Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
+                    self._logger.info("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
+                    raise Exception("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
         else:
             klist.append(total_branch_count)
 
-        counter_name_topic = self.functionstatename + "-" + self.sandboxid 
+        counter_name_topic = self.functionstatename + "-" + self.sandboxid
         counter_name_trigger_metadata = {"k-list": klist, "total-branches": total_branch_count}
         counter_name_key = key
 
@@ -1093,18 +1106,18 @@ class StateUtils:
                 function_output, metadata = self.evaluateMapState(tobeProcessednow, key, metadata, sapi)
 
             elif metadata["__state_action"] == "post_map_processing":
-                        tobeProcessedlater = ast.literal_eval(sapi.get(name_prefix + "_" + "tobeProcessedlater")) # get all elements that have not yet been processed
-                        self._logger.debug("[StateUtils] Map state post_map processing input:" + str(tobeProcessedlater))
-                        # we need to decide at this point if there is a need for more batches. if so:
+                tobeProcessedlater = ast.literal_eval(sapi.get(name_prefix + "_" + "tobeProcessedlater")) # get all elements that have not yet been processed
+                self._logger.debug("[StateUtils] Map state post_map processing input:" + str(tobeProcessedlater))
+                # we need to decide at this point if there is a need for more batches. if so:
 
-                        if len(tobeProcessedlater) > 0: # we need to start another batch
-                            function_output, metadata2 = self.evaluatePostMap(function_input, key, metadata, sapi) # take care not to overwrite metadata
-                            function_output, metadata = self.evaluateMapState(tobeProcessedlater[:maxConcurrency], key, metadata, sapi) # start a new batch
-                            sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
+                if len(tobeProcessedlater) > 0: # we need to start another batch
+                    function_output, metadata2 = self.evaluatePostMap(function_input, key, metadata, sapi) # take care not to overwrite metadata
+                    function_output, metadata = self.evaluateMapState(tobeProcessedlater[:maxConcurrency], key, metadata, sapi) # start a new batch
+                    sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
 
-                        else:# no more batches required. we are at the iteration end, publish the final result
-                            self._logger.debug("[StateUtils] Map state input final stage: " + str(function_input))
-                            function_output, metadata = self.evaluatePostMap(function_input, key, metadata, sapi)
+                else:# no more batches required. we are at the iteration end, publish the final result
+                    self._logger.debug("[StateUtils] Map state input final stage: " + str(function_input))
+                    function_output, metadata = self.evaluatePostMap(function_input, key, metadata, sapi)
 
             else:
                 raise Exception("Unknow action type in map state")
@@ -1421,58 +1434,58 @@ class StateUtils:
         if parameters == "$": # return unfiltered input data
             ret_value = state_data
         elif parameters is None: #return empty json
-            ret_value =  {}
+            ret_value = {}
         else: # contains a parameter filter, get it and return selected kv pairs
             ret_value = {}
             ret_index = {}
 
         for key in parameters.keys(): # process parameters keys
-                if key.casefold() == "comment".casefold(): # ignore
-                    ret_value[key] = parameters[key]
-                elif parameters[key] == "$$.Map.Item.Value": # get Items key
-                       value_key = key.split(".$")[0]
-                       ret_value = value_key
-                       ret_item_value = value_key
-                elif parameters[key] == "$$.Map.Item.Index": # get Index key
-                       index_key = key.split(".$")[0]
-                       ret_index = index_key
-                else: # processing more complex Parameters values
-                     if isinstance(parameters[key], dict): # parameters key refers to dict value
-                        ret_value[key] = {}
-                        for k in parameters[key]: # get nested keys
-                           if not k.split(".")[-1] == "$": # parse static value
-                               print (parameters[key][k])
-                               ret_value[key][k] = parameters[key][k]
-                           else:
-                               new_key = k.split(".$")[0] # use the json paths in paramters to match
-                               ret_value[key][new_key] = [match.value for match in parse(parameters[key][k]).find(state_data)][0]
-                        return ret_value
+            if key.casefold() == "comment".casefold(): # ignore
+                ret_value[key] = parameters[key]
+            elif parameters[key] == "$$.Map.Item.Value": # get Items key
+                value_key = key.split(".$")[0]
+                ret_value = value_key
+                ret_item_value = value_key
+            elif parameters[key] == "$$.Map.Item.Index": # get Index key
+                index_key = key.split(".$")[0]
+                ret_index = index_key
+            else: # processing more complex Parameters values
+                if isinstance(parameters[key], dict): # parameters key refers to dict value
+                    ret_value[key] = {}
+                    for k in parameters[key]: # get nested keys
+                        if not k.split(".")[-1] == "$": # parse static value
+                            print(parameters[key][k])
+                            ret_value[key][k] = parameters[key][k]
+                        else:
+                            new_key = k.split(".$")[0] # use the json paths in paramters to match
+                            ret_value[key][new_key] = [match.value for match in parse(parameters[key][k]).find(state_data)][0]
+                    return ret_value
 
-                     if isinstance(parameters[key], str): # parameters key refers to string value
-                        ret_value = {}
-                        new_key = key.split(".$")[0] # get the parameters key
-                        query_key = parameters[key].split("$.")[1] # correct the correspondig value
-                        new_value = state_data[query_key] # save the actual value before replacing the key
-                        for kk in state_data.keys():
-                         if isinstance(state_data[kk], dict): # value encapsulates dict
+                if isinstance(parameters[key], str): # parameters key refers to string value
+                    ret_value = {}
+                    new_key = key.split(".$")[0] # get the parameters key
+                    query_key = parameters[key].split("$.")[1] # correct the correspondig value
+                    new_value = state_data[query_key] # save the actual value before replacing the key
+                    for kk in state_data.keys():
+                        if isinstance(state_data[kk], dict): # value encapsulates dict
                             ret_value[new_key] = new_value
-                            if ret_item_value != None:
-                                 ret_value[ret_item_value] = state_data[kk]
+                            if ret_item_value is not None:
+                                ret_value[ret_item_value] = state_data[kk]
                             else:
-                                 raise Exception("Error: item value is not set!")
+                                raise Exception("Error: item value is not set!")
                             ret_value_dict = {}
                             ret_value_dict[kk] = ret_value
                             return ret_value_dict
 
-                         if isinstance(state_data[kk], list):  # value encapsulates list
+                        if isinstance(state_data[kk], list):  # value encapsulates list
                             ret_value_list = []
                             for data in state_data[kk]:
                                 ret_value_list.append({new_key: new_value, ret_item_value: data})
                             ret_value_dict = {}
                             ret_value_dict[kk] = ret_value_list
                             return ret_value_dict
-                     else:
-                        raise Exception("Error: invaldid Parmeters format: " + str(parameters[key]))
+                else:
+                    raise Exception("Error: invaldid Parmeters format: " + str(parameters[key]))
 
         # calculate transformed state output provided to Iterator
         ret_total = []
@@ -1484,9 +1497,9 @@ class StateUtils:
                     if ret_value != {} and ret_index == {}:
                         ret_total.append({ret_value: key})
                     elif ret_value == {} and ret_index != {}:
-                        ret_total.append({ret_index: state_data[kk].index(key) })
+                        ret_total.append({ret_index: state_data[kk].index(key)})
                     elif ret_value != {} and ret_index != {}:
-                        ret_total.append({ret_value: key, ret_index: state_data[kk].index(key) })
+                        ret_total.append({ret_value: key, ret_index: state_data[kk].index(key)})
                     else:
                         raise Exception("Map State Parameters parse error on dict input: " + str(state_data))
                 ret_total_dict[kk] = ret_total
@@ -1497,9 +1510,9 @@ class StateUtils:
                 if ret_value != {} and ret_index == {}:
                     ret_total.append({ret_value: key})
                 elif ret_value == {} and ret_index != {}:
-                    ret_total.append({ret_index: state_data.index(key) })
+                    ret_total.append({ret_index: state_data.index(key)})
                 elif ret_value != {} and ret_index != {}:
-                    ret_total.append({ret_value: key, ret_index: state_data.index(key) })
+                    ret_total.append({ret_value: key, ret_index: state_data.index(key)})
                 else:
                     raise Exception("Map State Parameters parse error on list input: " + str(list))
             ret_value = ret_total
@@ -1573,7 +1586,7 @@ class StateUtils:
         elif result_path is None:
             ret_value = {}
         else: # result_path is not empty so is there a match?
-            self._logger.debug("inside ResultPath processing: " + str(result_path) + " " + str(task_output) )
+            self._logger.debug("inside ResultPath processing: " + str(result_path) + " " + str(task_output))
             keys = list(tokenize(result_path)) # get all keys
             filtered_state_data = self.nested_dict(keys[1:], task_output)
             if isinstance(state_data, dict):

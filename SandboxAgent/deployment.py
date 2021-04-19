@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import time
+import threading
 
 import process_utils
 import state_utils
@@ -232,8 +233,8 @@ class Deployment:
 
     def _start_python_function_worker(self, worker_params, env_var_list):
         error = None
-        function_name = worker_params["fname"]
-        state_name = worker_params["functionstatename"]
+        function_name = worker_params["function_name"]
+        state_name = worker_params["function_state_name"]
         custom_env = os.environ.copy()
         old_ld_library_path = ""
         if "LD_LIBRARY_PATH" in custom_env:
@@ -294,13 +295,13 @@ class Deployment:
                 # if jar, the contents have already been extracted as if it was a zip archive
                 # start the java request handler if self._function_runtime == "java"
                 # we wrote the parameters to json file at the state directory
-                self._logger.info("Launching JavaRequestHandler for state: %s", worker_params["functionstatename"])
+                self._logger.info("Launching JavaRequestHandler for state: %s", worker_params["function_state_name"])
                 cmdjavahandler = "java -jar /opt/mfn/JavaRequestHandler/target/javaworker.jar "
-                cmdjavahandler += "/opt/mfn/workflow/states/" + worker_params["functionstatename"] + "/java_worker_params.json"
+                cmdjavahandler += "/opt/mfn/workflow/states/" + worker_params["function_state_name"] + "/java_worker_params.json"
 
                 error, process = process_utils.run_command(cmdjavahandler, self._logger, wait_until="Waiting for requests on:")
                 if error is not None:
-                    error = "Could not launch JavaRequestHandler: " + worker_params["fname"] + " " + error
+                    error = "Could not launch JavaRequestHandler: " + worker_params["function_name"] + " " + error
                     self._logger.error(error)
                 else:
                     self._javarequesthandler_process_list.append(process)
@@ -547,61 +548,89 @@ class Deployment:
 
         return (error, gextractedpath)
 
+    def _init_storage_dlc(self, locality, for_mfn, is_wf_private):
+        t_start_thread = time.time()
+        self._logger.info("Starting thread for storage init: %s, %s, %s", str(locality), str(for_mfn), str(is_wf_private))
+        if for_mfn:
+            dlc = DataLayerClient(locality=locality, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        elif is_wf_private:
+            dlc = DataLayerClient(locality=locality, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        else:
+            dlc = DataLayerClient(locality=locality, suid=self._storage_userid, connect=self._datalayer, init_tables=True)
+
+        dlc.shutdown()
+        t_total = (time.time() - t_start_thread) * 1000.0
+        self._logger.info("Thread to init storage finished: %s (ms), %s, %s, %s", str(t_total), str(locality), str(for_mfn), str(is_wf_private))
+
     def _initialize_data_layer_storage(self):
         # each data layer client will automatically create the local keyspace and tables
         # upon instantiation
 
+        threads = []
+
         # mfn internal tables
-        local_dlc = DataLayerClient(locality=0, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        local_dlc.shutdown()
+        #local_dlc = DataLayerClient(locality=0, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        #local_dlc.shutdown()
+        t_local_mfn = threading.Thread(target=self._init_storage_dlc, args=(0, True, False, ))
+        t_local_mfn.start()
+        threads.append(t_local_mfn)
 
         # user storage tables
-        local_dlc = DataLayerClient(locality=0, suid=self._storage_userid, connect=self._datalayer, init_tables=True)
-        local_dlc.shutdown()
+        #local_dlc = DataLayerClient(locality=0, suid=self._storage_userid, connect=self._datalayer, init_tables=True)
+        #local_dlc.shutdown()
+        t_local_user = threading.Thread(target=self._init_storage_dlc, args=(0, False, False, ))
+        t_local_user.start()
+        threads.append(t_local_user)
 
         # workflow private tables
-        local_dlc = DataLayerClient(locality=0, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        local_dlc.shutdown()
+        #local_dlc = DataLayerClient(locality=0, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+        #local_dlc.shutdown()
+        t_local_private = threading.Thread(target=self._init_storage_dlc, args=(0, False, True, ))
+        t_local_private.start()
+        threads.append(t_local_private)
 
-        # for global access, (re)create; it's okay because the operations are idempotent
-        # user storage is created by management service
-        # mfn internal tables
-        global_dlc = DataLayerClient(locality=1, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        global_dlc.shutdown()
+        # for global access:
+        # user storage is created by management service at login
+        # mfn internal storage and workflow-private storage is created by management service at workflow addition
 
-        # workflow private tables
-        global_dlc = DataLayerClient(locality=1, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
-        global_dlc.shutdown()
+        return threads
 
     def _populate_worker_params(self, function_topic, wf_node, state):
         worker_params = {}
         worker_params["userid"] = self._userid
-        worker_params["storageuserid"] = self._storage_userid
+        worker_params["storage_userid"] = self._storage_userid
         worker_params["sandboxid"] = self._sandboxid
         worker_params["workflowid"] = self._workflowid
         worker_params["workflowname"] = self._workflowname
-        worker_params["ffolder"] = state["resource_dirpath"]
-        worker_params["fpath"] = state["resource_filepath"]
-        worker_params["fname"] = state["resource_filename"]
-        worker_params["fruntime"] = state["resource_runtime"]
-        worker_params["ftopic"] = function_topic
+
+        worker_params["function_topic"] = function_topic
+        worker_params["function_path"] = state["resource_filepath"]
+        worker_params["function_name"] = state["resource_filename"]
+        worker_params["function_folder"] = state["resource_dirpath"]
+        worker_params["function_runtime"] = state["resource_runtime"]
+
+        worker_params["function_state_type"] = wf_node.getGWFType()
+        worker_params["function_state_name"] = wf_node.getGWFStateName()
+        worker_params["function_state_info"] = wf_node.getGWFStateInfo()
+
         worker_params["hostname"] = self._hostname
         worker_params["queue"] = self._queue
         worker_params["datalayer"] = self._datalayer
-        worker_params["externalendpoint"] = self._external_endpoint
-        worker_params["internalendpoint"] = self._internal_endpoint
-        worker_params["managementendpoints"] = self._management_endpoints
-        worker_params["fnext"] = wf_node.getNextMap()
-        worker_params["fpotnext"] = wf_node.getPotentialNextMap()
-        worker_params["functionstatetype"] = wf_node.getGWFType()
-        worker_params["functionstatename"] = wf_node.getGWFStateName()
-        worker_params["functionstateinfo"] = wf_node.getGWFStateInfo()
-        worker_params["workflowfunctionlist"] = self._workflow.getWorkflowFunctionMap()
-        worker_params["workflowexit"] = self._workflow.getWorkflowExitPoint()
-        worker_params["sessionworkflow"] = self._workflow.is_session_workflow()
-        worker_params["sessionfunction"] = wf_node.is_session_function()
-        worker_params["sessionfunctionparameters"] = wf_node.get_session_function_parameters()
-        worker_params["shouldcheckpoint"] = self._workflow.are_checkpoints_enabled()
+        worker_params["external_endpoint"] = self._external_endpoint
+        worker_params["internal_endpoint"] = self._internal_endpoint
+        worker_params["management_endpoints"] = self._management_endpoints
+
+        worker_params["wf_next"] = wf_node.getNextMap()
+        worker_params["wf_pot_next"] = wf_node.getPotentialNextMap()
+        worker_params["wf_function_list"] = self._workflow.getWorkflowFunctionMap()
+        worker_params["wf_exit"] = self._workflow.getWorkflowExitPoint()
+        worker_params["wf_entry"] = self._workflow.getWorkflowEntryTopic()
+
+        worker_params["is_session_workflow"] = self._workflow.is_session_workflow()
+        worker_params["is_session_function"] = wf_node.is_session_function()
+        worker_params["session_function_parameters"] = wf_node.get_session_function_parameters()
+
+        worker_params["should_checkpoint"] = self._workflow.are_checkpoints_enabled()
 
         return worker_params
 
@@ -675,6 +704,14 @@ class Deployment:
     def process_deployment_info(self):
         has_error = False
         errmsg = ""
+
+        t_start_storage = time.time()
+        # initialize local data layer space for user and workflow
+        # do so in separate threads
+        # join these threads just before returning
+        init_storage_threads = self._initialize_data_layer_storage()
+        total_time_threads_storage = (time.time() - t_start_storage) * 1000.0
+        self._logger.info("Storage thread initialization time: %s (ms)", str(total_time_threads_storage))
 
         if self._deployment_info is not None and self._deployment_info != "":
             try:
@@ -843,12 +880,6 @@ class Deployment:
         total_time_requirements = (time.time() - t_start_requirements) * 1000.0
         self._logger.info("Requirements install time: %s (ms)", str(total_time_requirements))
 
-        t_start_storage = time.time()
-        # initialize local data layer space for user and workflow
-        self._initialize_data_layer_storage()
-        total_time_storage = (time.time() - t_start_storage) * 1000.0
-        self._logger.info("Storage initialization time: %s (ms)", str(total_time_storage))
-
         self._local_queue_client = LocalQueueClient(connect=self._queue)
 
         self._local_queue_client.addTopic(self._workflow.getWorkflowExitTopic())
@@ -898,13 +929,13 @@ class Deployment:
 
             if state["resource_runtime"].find("java") != -1:
                 java_worker_params = {}
-                java_worker_params["functionPath"] = worker_params["ffolder"]
-                java_worker_params["functionName"] = worker_params["fname"]
-                java_worker_params["serverSocketFilename"] = "/tmp/java_handler_" + worker_params["functionstatename"] + ".uds"
+                java_worker_params["functionPath"] = worker_params["function_folder"]
+                java_worker_params["functionName"] = worker_params["function_name"]
+                java_worker_params["serverSocketFilename"] = "/tmp/java_handler_" + worker_params["function_state_name"] + ".uds"
 
                 if SINGLE_JVM_FOR_FUNCTIONS:
                     any_java_function = True
-                    single_jvm_worker_params[worker_params["functionstatename"]] = java_worker_params
+                    single_jvm_worker_params[worker_params["function_state_name"]] = java_worker_params
                 else:
                     java_params_filename = state["dirpath"] + "java_worker_params.json"
                     with open(java_params_filename, "w") as javaparamsf:
@@ -914,7 +945,7 @@ class Deployment:
             error = self._start_function_worker(worker_params, state["resource_runtime"], state["resource_env_var_list"])
 
             if error is not None:
-                errmsg = "Problem launching function worker for: " + worker_params["fname"]
+                errmsg = "Problem launching function worker for: " + worker_params["function_name"]
                 self._logger.error(errmsg)
                 has_error = True
                 return has_error, errmsg
@@ -987,5 +1018,9 @@ class Deployment:
                         errmsg += state_name + "\n"
 
         self._global_data_layer_client.shutdown()
+
+        for t in init_storage_threads:
+            t.join()
+        self._logger.info("Joined init storage threads.")
 
         return has_error, errmsg

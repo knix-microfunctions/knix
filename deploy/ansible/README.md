@@ -16,8 +16,11 @@
 
 # KNIX ansible installation
 
-To setup KNIX on localhost, or a single remote host, or a cluster of hosts
-(Tested on: Ubuntu 18.04 and Debian 9 as target machines)
+Setup KNIX on localhost, or a single remote host, or a cluster of hosts.
+Tested on the following operating systems on the target machines: 
+- Ubuntu 16.04, 18.04, 20.04
+- Xubuntu 18.04, 20.04
+- Debian 9
 
 ## Prerequisites: on host machine
 

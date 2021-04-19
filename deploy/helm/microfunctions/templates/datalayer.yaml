@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -70,9 +70,19 @@ spec:
       #tolerations:
       #- key: node-role.kubernetes.io/master
       #  effect: NoSchedule
+      {{- with .Values.datalayer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.datalayer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      imagePullSecrets: 
+          {{- toYaml .Values.datalayer.imagePullSecrets | nindent 8 }}
       containers:
       - name: datalayer
-        image: "{{ .Values.imageRepo }}{{ .Values.datalayer.imagePath }}:{{ .Values.datalayer.imageTag }}"
+        image: "{{ .Values.imageRepo }}{{ .Values.datalayer.imagePath }}:{{ .Values.datalayer.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.datalayer.imagePullPolicy }}"
         env:
         - name: RIAK_CONNECT

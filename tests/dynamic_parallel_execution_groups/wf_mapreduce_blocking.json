@@ -1,6 +1,7 @@
 {
   "Comment": "MapReduce in KNIX",
   "StartAt": "driver",
+  "EnableCheckpoints": false,
   "AllowImmediateMessages": true,
   "States": {
     "driver": {

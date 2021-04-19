@@ -62,7 +62,7 @@ class MicroFunctionsAPI:
     - session customization
     '''
 
-    def __init__(self, uid, sid, wid, funcstatename, key, publication_utils, is_session_workflow, is_session_function, session_utils, logger, datalayer, external_endpoint, internal_endpoint, useremail, usertoken, management_endpoints):
+    def __init__(self, worker_params, publication_utils, session_utils, usertoken, logger):
         '''
         Initialize data structures for MicroFunctionsAPI object created for a function instance.
 
@@ -84,32 +84,31 @@ class MicroFunctionsAPI:
         '''
 
         self._logger = logger
-        self._datalayer = datalayer
-        self._external_endpoint = external_endpoint
-        self._internal_endpoint = internal_endpoint
-        self._management_endpoints = management_endpoints
-        self._useremail = useremail
+        self._datalayer = worker_params["datalayer"]
+        self._external_endpoint = worker_params["external_endpoint"]
+        self._internal_endpoint = worker_params["internal_endpoint"]
+        self._management_endpoints = worker_params["management_endpoints"]
         self._usertoken = usertoken
-        self._sid = sid
-        self._wid = wid
+        self._sid = worker_params["sandboxid"]
+        self._wid = worker_params["workflowid"]
+        self._suid = worker_params["storage_userid"]
 
-        self._data_layer_operator = DataLayerOperator(
-            uid, sid, wid, self._datalayer)
+        self._data_layer_operator = DataLayerOperator(self._suid, self._sid, self._wid, self._datalayer)
 
         # for sending immediate triggers to other functions
         self._publication_utils = publication_utils
 
-        self._is_session_workflow = is_session_workflow
-        self._is_session_function = is_session_function
+        self._is_session_workflow = worker_params["is_session_workflow"]
+        self._is_session_function = worker_params["is_session_function"]
         self._session_utils = session_utils
 
-        self._function_state_name = funcstatename
+        self._function_state_name = worker_params["function_state_name"]
         self._function_version = 1  # Currently hardcoded to 1
 
-        self._instanceid = key
+        self._instanceid = None
 
         self._is_privileged = False
-        if sid == "Management" and wid == "Management":
+        if self._sid == "Management" and self._wid == "Management":
             self._is_privileged = True
 
         '''
@@ -161,6 +160,11 @@ class MicroFunctionsAPI:
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
 
+    def set_key(self, key):
+        self._instanceid = key
+        # The AWS identifier of the invocation request. Return the KNIX message key instead
+        self.aws_request_id = self._instanceid
+
     def get_context_object_properties(self):
         context_properties = {}
         context_properties["function_name"] = self.function_name
@@ -194,9 +198,9 @@ class MicroFunctionsAPI:
         output = num
         return 'pong ' + str(output)
 
-    def get_privileged_data_layer_client(self, suid=None, sid=None, is_wf_private=False, init_tables=False, drop_keyspace=False, tableName=None):
+    def get_privileged_data_layer_client(self, suid=None, sid=None, for_mfn=False, is_wf_private=False, init_tables=False, drop_keyspace=False, tableName=None):
         '''
-        Obtain a privileged data layer client to access a user's storage or a workflow-private storage.
+        Obtain a privileged data layer client to access a user's storage, a workflow-private storage or mfn internal tables of a workflow.
         Only can be usable by the management service.
 
         Args:
@@ -205,6 +209,7 @@ class MicroFunctionsAPI:
 
             init_tables (boolean): whether relevant data layer tables should be initialized; default: False.
             drop_keyspace (boolean): whether the relevant keyspace for the user's storage should be dropped; default: False.
+            for_mfn: whether it is about the mfn internal table of a workflow; default: False.
             tableName (string): name of the table to be used for subsequent storage operations. By default, the default table will be used.
                  If this method is called with is_wf_private = True, then the tableName parameter will be ignored.
 
@@ -218,9 +223,11 @@ class MicroFunctionsAPI:
                     return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace, tableName=tableName)
                 else:
                     return DataLayerClient(locality=1, suid=suid, connect=self._datalayer, init_tables=init_tables, drop_keyspace=drop_keyspace)
+            elif for_mfn:
+                return DataLayerClient(locality=1, sid=sid, for_mfn=True, init_tables=init_tables, connect=self._datalayer, drop_keyspace=drop_keyspace)
             elif is_wf_private:
-                # we'll never try to access the metadata stored for mfn
-                return DataLayerClient(locality=1, sid=sid, wid=sid, for_mfn=False, is_wf_private=is_wf_private, connect=self._datalayer, drop_keyspace=drop_keyspace)
+                return DataLayerClient(locality=1, sid=sid, wid=sid, is_wf_private=True, init_tables=init_tables, connect=self._datalayer, drop_keyspace=drop_keyspace)
+
         return None
 
     def update_metadata(self, metadata_name, metadata_value, is_privileged_metadata=False):

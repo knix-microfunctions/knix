@@ -22,29 +22,25 @@ import random
 import json
 
 from DataLayerClient import DataLayerClient
-from LocalQueueClient import LocalQueueClient
 from SessionHelperThread import SessionHelperThread
 
 class SessionUtils:
 
-    def __init__(self, hostname, uid, sid, wid, logger, funcstatename, functopic, key, session_id, publication_utils, queue, datalayer, internal_endpoint):
-
+    def __init__(self, worker_params, publication_utils, logger):
         self._logger = logger
 
-        self._queue = queue
-        self._datalayer = datalayer
+        self._queue = worker_params["queue"]
+        self._datalayer = worker_params["datalayer"]
 
-        self._session_id = session_id
         self._session_function_id = None
 
-        self._hostname = hostname
-        self._userid = uid
-        self._sandboxid = sid
-        self._workflowid = wid
-        self._function_state_name = funcstatename
-        self._function_topic = functopic
-        self._internal_endpoint = internal_endpoint
-        self._key = key
+        self._hostname = worker_params["hostname"]
+        self._userid = worker_params["userid"]
+        self._sandboxid = worker_params["sandboxid"]
+        self._workflowid = worker_params["workflowid"]
+        self._function_state_name = worker_params["function_state_name"]
+        self._function_topic = worker_params["function_topic"]
+        self._internal_endpoint = worker_params["internal_endpoint"]
 
         self._publication_utils = publication_utils
 
@@ -52,17 +48,16 @@ class SessionUtils:
 
         self._helper_thread = None
 
-        self._global_data_layer_client = DataLayerClient(locality=1, sid=sid, for_mfn=True, connect=self._datalayer)
+        self._global_data_layer_client = None
 
         # only valid if this is a session function (i.e., session_function_id is not None)
         self._local_topic_communication = None
 
         self._session_function_parameters = None
 
-        if self._session_id is None:
-            self._generate_session_id()
-
-        self._setup_metadata_tablenames()
+        # to be set later
+        self._key = None
+        self._session_id = None
 
         # _XXX_: the following does not have any effect and makes unnecessary calls
         # to the data layer
@@ -73,6 +68,19 @@ class SessionUtils:
         #self._create_metadata_tables()
 
         #self._logger.debug("[SessionUtils] init done.")
+
+    def set_key(self, key):
+        self._key = key
+
+    def set_session_id(self, session_id=None):
+        if session_id is None:
+            self._generate_session_id()
+        else:
+            self._session_id = session_id
+
+        self._setup_metadata_tablenames()
+
+        self._global_data_layer_client = DataLayerClient(locality=1, sid=self._sandboxid, for_mfn=True, connect=self._datalayer)
 
 
     ###########################
@@ -246,7 +254,7 @@ class SessionUtils:
             # due to key being different for each request to the workflow
             plain_session_id_bytes = (self._userid + "_" + self._sandboxid + "_" + self._workflowid + "_" + self._key).encode()
             self._session_id = hashlib.sha256(plain_session_id_bytes).hexdigest()
-            self._logger.debug("[SessionUtils] Session id: " + self._session_id)
+            #self._logger.debug("[SessionUtils] Session id: " + self._session_id)
 
     def _generate_session_function_id(self):
         if self._session_function_id is None:
@@ -257,7 +265,7 @@ class SessionUtils:
             random.seed()
             plain_session_function_id_bytes = (self._function_state_name + "_" + self._key + "_" + str(random.uniform(0, 100000))).encode()
             self._session_function_id = hashlib.sha256(plain_session_function_id_bytes).hexdigest()
-            self._logger.debug("[SessionUtils] Session function id: " + self._session_function_id)
+            #self._logger.debug("[SessionUtils] Session function id: " + self._session_function_id)
 
     # these calls don't have an effect until an entry is added
     # and the entries still succeed even without calling to createSet or createMap
@@ -378,7 +386,8 @@ class SessionUtils:
         self._helper_thread.start()
 
     def shutdown_helper_thread(self):
-        self._helper_thread.shutdown()
+        if self._helper_thread is not None:
+            self._helper_thread.shutdown()
 
     def cleanup(self):
         self._remove_metadata()
@@ -483,4 +492,3 @@ class SessionUtils:
             messages = self._helper_thread.get_messages(count=count, block=block)
             return messages
         return None
-

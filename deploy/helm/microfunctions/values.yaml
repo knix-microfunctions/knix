@@ -1,4 +1,4 @@
-#   Copyright 2020 The KNIX Authors
+#   Copyright 2021 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -20,10 +20,6 @@
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
 imageRepo: "registry.kube-system.svc.cluster.local:5000"
-#imageRepo: "localhost:5000" # kubespray deployment
-
-#imageRepo: "localhost:5000" # kubespray deployment
-
 apiKey: "abcdef"
 #imageRepo: "localhost:5000" # kubespray deployment
 manager:
@@ -38,8 +34,9 @@ manager:
       maxReplicas: 1
   setup:
     imagePath: "/microfn/management"
-    imageTag: "latest"
+    # imageTag: "latest" (default .Chart.AppVersion)
     imagePullPolicy: "Always"
+    imagePullSecrets: []
     initialDelaySeconds: 60
     resources:
       limits:
@@ -51,11 +48,12 @@ manager:
   sandbox:
     imagePathPython: "/microfn/sandbox"
     imagePathJava: "/microfn/sandbox_java"
-    imageTag: "latest"
+    # imageTag: "latest" (default .Chart.AppVersion)
     imagePullPolicy: "Always"
     env:
       name: API_TOKEN
-      value: "123test" 
+      value: "123test"
+    imagePullSecrets: []
     resources:
       limits:
         cpu: 1
@@ -72,26 +70,32 @@ manager:
         cpu: 2
         memory: 2Gi
   createServiceAccounts: true
+  nodeSelector: {}
+  tolerations: {}
 
 #------------------------------------------------------------------------------
 # MicroFunction Datalayer
 #------------------------------------------------------------------------------
 datalayer:
-  replicas: 1 # kubespray deployment 
+  replicas: 1 # kubespray deployment
   #replicas: 3
   imagePath: "/microfn/datalayer"
-  imageTag: "latest"
+  # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
+  imagePullSecrets: []
   port: 4998
   initialDelaySeconds: 0
   javaOpts: "-Xmx4096m"
   resources:
     limits:
-      cpu: 1 
+      cpu: 1
       memory: 8Gi
     requests:
       cpu: 1
       memory: 8Gi
+  nodeSelector: {}
+  tolerations: {}
+
 
 #------------------------------------------------------------------------------
 # Riak global data storage
@@ -100,8 +104,9 @@ riak:
   replicas: 1 # kubespray deployment
   #replicas: 3
   imagePath: "/microfn/riak"
-  imageTag: "latest"
+  # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
+  imagePullSecrets: []
   nameOverride: "microfunctions-riak"
   ClientPortHttp: 8098
   ClientPortProtobuf: 8087
@@ -113,13 +118,14 @@ riak:
       cpu: 1
       memory: 8Gi
   DataStorage: 8Gi
-  DataStorageClass: manual 
+  DataStorageClass: manual
   ClusterName: "riak"
   WaitForErlang: 180
   ErlangDistributionPortRangeMinimum: 6000
   ErlangDistributionPortRangeMaximum: 6999
   LogConsoleLevel: "debug"
   StorageBackend: "leveldb"
+  # Has to fit in the memory configuration alongside Riak (default setting claims half the pod memory)
   LevelDbMaximumMemory: 4294967296
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
@@ -127,6 +133,8 @@ riak:
   ErlangSchedulersOnline: 2
   ErlangSchedulersForceWakeupInterval: 500
   ErlangSchedulersCompactionOfLoad: "false"
+  nodeSelector: {}
+  tolerations: {}
 
 #------------------------------------------------------------------------------
 # ElasticSearch for all components and MicroFunction logs
@@ -135,15 +143,18 @@ elastic:
   imageRepo: "docker.elastic.co"
   imagePath: "/elasticsearch/elasticsearch-oss"
   imageTag: "7.3.2"
+  imagePullSecrets: []
   clientPort: 9200
   masterPort: 9300
   resources:
     limits:
-      cpu: 500m
-      memory: 2Gi
+      cpu: 4
+      memory: 4Gi
     requests:
-      cpu: 100m
+      cpu: 2
       memory: 2Gi
+  nodeSelector: {}
+  tolerations: {}
 
 #------------------------------------------------------------------------------
 # Nginx with MicroFunctions web GUI and Storage API
@@ -158,7 +169,7 @@ nginx:
   #managementService: wf-mfn1-management.knix.example.com
   managementService: wf-mfn-management.default.192.168.8.161.xip.io
   imagePath: "/microfn/nginx"
-  imageTag: "latest"
+  # imageTag: "latest" (default .Chart.AppVersion)
   httpPort: 32180
   location: "/"
 # If httpsPort is defined, the Base64 encoded certificate authority, certificate and key are required to serve securely from the Pod
@@ -167,6 +178,7 @@ nginx:
 #  httpsCert: <base64-encoded cert>
 #  httpsKey: <base64-encoded key>
   imagePullPolicy: "Always"
+  imagePullSecrets: []
   resources:
     limits:
       cpu: 500m
@@ -174,16 +186,20 @@ nginx:
     requests:
       cpu: 100m
       memory: 1Gi
+  nodeSelector: {}
+  tolerations: {}
 
 #------------------------------------------------------------------------------
-# TriggersFrontend 
+# TriggersFrontend
 #------------------------------------------------------------------------------
 triggersFrontend:
   imagePath: "/microfn/triggers_frontend"
-  imageTag: "latest"
+  # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
+  imagePullSecrets: []
   nameOverride: "microfunctions-triggers-frontend"
   httpPort: 4997
+  replicas: 3
   statusReportIntervalSec: 30
   resources:
     limits:
@@ -192,3 +208,5 @@ triggersFrontend:
     requests:
       cpu: 1
       memory: 1Gi
+  nodeSelector: {}
+  tolerations: {}

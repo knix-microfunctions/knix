@@ -19,12 +19,14 @@ import sys
 sys.path.append("../")
 from mfn_test_utils import MFNTest
 
+COUNT = 5
+
 class EchoTest(unittest.TestCase):
 
     #@unittest.skip("")
     def test_echo_wfd(self):
         test_tuple_list=[]
-        for i in range(10):
+        for i in range(COUNT):
             # 1MB
             #inp0 = "echo" * 1024 * 256
             #res0 = "echo" * 1024 * 256
@@ -34,6 +36,9 @@ class EchoTest(unittest.TestCase):
             test_tuple_list.append((json.dumps(inp0), json.dumps(res0)))
 
         test = MFNTest(test_name='echo', workflow_filename='echo.json')
-        test.exec_tests(test_tuple_list, check_duration=True)
+        test.exec_tests(test_tuple_list, check_duration=True, print_report=False, should_undeploy=False)
 
-        #test.plot_latency_breakdown(20)
+        #test.plot_latency_breakdown(COUNT)
+
+        test.undeploy_workflow()
+        test.cleanup()

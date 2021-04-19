@@ -359,6 +359,38 @@ def create_function(config,runtime,name,file):
         fn.code = code
     click.echo(fn.id)
 
+@create.command(name='bucket')
+@click.argument('name')
+@pass_config
+def create_bucket(config,name):
+    """ Create a bucket
+
+    NAME is the bucket's name (immutable)
+    """
+    client = config.get_client()
+    b = client.add_bucket(str(name).strip())
+    log.info("Created bucket "+b._name)
+    click.echo(b._name)
+
+@create.command(name='trigger')
+@click.argument('name')
+@click.argument('trigger_info',type=click.File('r'),required=True)
+@pass_config
+def create_function(config,name,trigger_info):
+    """Create a trigger.
+
+    NAME is the trigger's name
+    """
+    try:
+        info = json.load(trigger_info)
+    except Exception as e:
+        click.echo("Can't read trigger info from "+trigger_info+" ("+str(e)+")")
+        return
+    client = config.get_client()
+    t = client.add_trigger(str(name).strip(),info)
+    log.info("Created trigger "+t._name)
+    click.echo(t._name)
+
 
 #########
 ## GET ##
@@ -366,7 +398,7 @@ def create_function(config,runtime,name,file):
 @cli.command(cls=Aliased)
 @click.pass_context
 def get(ctx):
-    """ Get a resource [workflow|function].
+    """ Get a resource [workflow|function|bucket|trigger].
     """
     pass
 
@@ -381,7 +413,11 @@ def get_workflow(config,workflow):
     client = config.get_client()
 
     if workflow:
-        wfs = [client.find_workflow(str(workflow).strip())]
+        try:
+            wfs = [client.find_workflow(str(workflow).strip())]
+        except Exception as e:
+            click.echo(e)
+            return
     else:
         wfs = client.workflows
     table = [("ID","NAME","STATUS","MODIFIED","ENDPOINT")]
@@ -406,7 +442,11 @@ def get_function(config,function):
     client = config.get_client()
 
     if function:
-        fns = [client.find_function(str(function).strip())]
+        try:
+            fns = [client.find_function(str(function).strip())]
+        except Exception as e:
+            click.echo(e)
+            return
     else:
         fns = client.functions
 
@@ -420,6 +460,110 @@ def get_function(config,function):
     formatstr = f"%-32s %-{namelen}s %-{rtlen}s %-12s"
     for row in table:
         click.echo(formatstr % row)
+
+@get.command(name='bucket')
+@click.argument('bucket', required=False)
+@click.argument('type', required=False)
+@pass_config
+def get_bucket(config,bucket,type):
+    """Get bucket.
+
+    BUCKET is the bucket's name, accepts partial values\n
+    TYPE (key, set, map, all) if provided, lists the elements of keys in a given bucket
+    """
+    client = config.get_client()
+
+    if bucket:
+        try:
+            buckets = [client.find_bucket(str(bucket).strip())]
+        except Exception as e:
+            click.echo(e)
+            return
+    else:
+        buckets = list(client.buckets.values())
+
+    table = [("NAME","WORKFLOWS")]
+    namelen = 0
+    wflen = 0
+    for b in buckets:
+        wfs = ""
+        if b._associated_workflows:
+            wfs = ",".join(b._associated_workflows)
+        table.append((b._name,wfs))
+        namelen = max(namelen,len(b._name))
+        wflen = max(wflen,len(wfs))
+    formatstr = f"%-{namelen}s %-{wflen}s"
+    for row in table:
+        click.echo(formatstr % row)
+    if type is None:
+        return
+    if len(buckets) == 0:
+        click.echo("No bucket found, can't show elements")
+        return
+    if type.startswith("k") or type.startswith("a"):
+        click.echo("keys:")
+        blist = buckets[0].list_keys()
+        if len(blist) == 0:
+            click.echo(" <none>")
+        for k in blist:
+            click.echo(" "+k)
+    if type.startswith("s") or type.startswith("a"):
+        click.echo("sets:")
+        blist = buckets[0].list_sets()
+        if len(blist) == 0:
+            click.echo(" <none>")
+        for k in blist:
+            click.echo(" "+k)
+    if type.startswith("m") or type.startswith("a"):
+        click.echo("maps:")
+        blist = buckets[0].list_maps()
+        if len(blist) == 0:
+            click.echo(" <none>")
+        for k in blist:
+            click.echo(" "+k)
+
+@get.command(name='trigger')
+@click.argument('trigger', required=False)
+@pass_config
+def get_trigger(config,trigger):
+    """Get trigger.
+
+    TRIGGER is the trigger's name, accepts partial values\n
+    """
+    client = config.get_client()
+
+    if trigger:
+        try:
+            triggers = [client.find_trigger(str(trigger).strip())]
+        except Exception as e:
+            click.echo(e)
+            return
+    else:
+        triggers = list(client.triggers.values())
+
+    table = [("NAME","STATUS","TYPE","COUNT","WORKFLOWS")]
+    namelen = 0
+    slen = 6
+    tlen = 4
+    clen = 5
+    wflen = 9
+    for t in triggers:
+        wfs = ""
+        if t._associated_workflows:
+            wfs = ",".join([wf['workflow_name'] for wf in t._associated_workflows])
+        table.append((t._name,t._status,t._type,t._count,wfs))
+        namelen = max(namelen,len(t._name))
+        slen = max(slen,len(str(t._status)))
+        tlen = max(tlen,len(str(t._type)))
+        clen = max(clen,len(str(t._count)))
+        wflen = max(wflen,len(wfs))
+    formatstr = f"%-{namelen}s %-{slen}s %-{tlen}s %-{clen}s %-{wflen}s"
+    for row in table:
+        click.echo(formatstr % row)
+    if len(triggers) != 1:
+        return
+    for k in triggers[0]._info:
+        click.echo("  "+k+": "+str(triggers[0]._info[k]))
 
 
 ##########
@@ -502,7 +646,7 @@ def edit_function(config,function):
 @click.pass_context
 @click.option('--force','-f',is_flag=True,help="Don't ask for confirmation.",default=False)
 def delete(ctx,force):
-    """ Delete a resource [workflow|function].
+    """ Delete a resource [workflow|function|bucket|trigger].
     """
     ctx.obj.force=force
     pass
@@ -527,7 +671,7 @@ def delete_workflow(ctx,name,force):
 @click.argument('name')
 @click.option('--force','-f',is_flag=True,help="Don't ask for confirmation.",default=False)
 @click.pass_context
-def delete_workflow(ctx,name,force):
+def delete_function(ctx,name,force):
     ctx.obj.force=force
     client = ctx.obj.get_client()
     try:
@@ -539,6 +683,141 @@ def delete_workflow(ctx,name,force):
     if ctx.obj.force or click.confirm("Do you want to delete function '"+fn._name+"' ("+fn.id+")?"):
         client.delete_function(fn)
         click.echo(fn.id)
+
+@delete.command(name='bucket')
+@click.argument('name')
+@click.option('--force','-f',is_flag=True,help="Don't ask for confirmation.",default=False)
+@click.pass_context
+def delete_bucket(ctx,name,force):
+    """Delete a bucket
+
+    BUCKET is the bucket's name, accepts partial values
+    """
+    ctx.obj.force=force
+    client = ctx.obj.get_client()
+    b = client.find_bucket(str(name).strip())
+    if ctx.obj.force or click.confirm("Do you want to delete bucket '"+b._name+"'?"):
+        client.delete_bucket(b._name)
+        click.echo(b._name)
+
+@delete.command(name='trigger')
+@click.argument('name')
+@click.option('--force','-f',is_flag=True,help="Don't ask for confirmation.",default=False)
+@click.pass_context
+def delete_bucket(ctx,name,force):
+    """Delete a trigger
+
+    TRIGGER is the trigger's name, accepts partial values
+    """
+    ctx.obj.force=force
+    client = ctx.obj.get_client()
+    t = client.find_trigger(str(name).strip())
+    if ctx.obj.force or click.confirm("Do you want to delete trigger '"+t._name+"'?"):
+        client.delete_trigger(t._name)
+        click.echo(t._name)
+
+##########
+## BIND ##
+##########
+
+@cli.command(cls=Aliased)
+@click.pass_context
+def bind(ctx):
+    """ Bind a workflow to a resource [bucket|trigger].
+    """
+    pass
+
+@bind.command(name='bucket')
+@click.argument('bucket')
+@click.argument('workflow')
+@click.pass_context
+def bind_bucket(ctx,bucket,workflow):
+    """Bind a bucket to a workflow
+
+    BUCKET is the bucket's name, accepts partial values
+    WORKFLOW is the workflow's name or id, accepts partial values
+    """
+    client = ctx.obj.get_client()
+    try:
+        b = client.find_bucket(str(bucket).strip())
+        wf = client.find_workflow(str(workflow).strip())
+    except Exception as e:
+        click.echo(e)
+        return
+    b.associate_workflow(wf)
+    click.echo("Bound workflow '"+wf._name+"' ("+wf._id+") to bucket '"+b._name+"'")
+
+@bind.command(name='trigger')
+@click.argument('trigger')
+@click.argument('workflow')
+@click.pass_context
+def bind_trigger(ctx,trigger,workflow):
+    """Bind a trigger to a workflow
+
+    TRIGGER is the trigger's name, accepts partial values
+    WORKFLOW is the workflow's name or id, accepts partial values
+    """
+    client = ctx.obj.get_client()
+    try:
+        t = client.find_trigger(str(trigger).strip())
+        wf = client.find_workflow(str(workflow).strip())
+    except Exception as e:
+        click.echo(e)
+        return
+    t.associate_workflow(wf)
+    click.echo("Bound workflow '"+wf._name+"' ("+wf._id+") to trigger '"+t._name+"'")
+
+
+############
+## UNBIND ##
+############
+
+@cli.command(cls=Aliased)
+@click.pass_context
+def unbind(ctx):
+    """ Unbind a workflow from a resource [bucket|trigger].
+    """
+    pass
+
+@unbind.command(name='bucket')
+@click.argument('bucket')
+@click.argument('workflow')
+@click.pass_context
+def unbind_bucket(ctx,bucket,workflow):
+    """Unbind a workflow from a bucket
+
+    BUCKET is the bucket's name, accepts partial values
+    WORKFLOW is the workflow's name or id, accepts partial values
+    """
+    client = ctx.obj.get_client()
+    try:
+        b = client.find_bucket(str(bucket).strip())
+        wf = client.find_workflow(str(workflow).strip())
+    except Exception as e:
+        click.echo(e)
+        return
+    b.disassociate_workflow(wf)
+    click.echo("Unbound workflow '"+wf._name+"' ("+wf._id+") from bucket '"+b._name+"'")
+
+@unbind.command(name='trigger')
+@click.argument('trigger')
+@click.argument('workflow')
+@click.pass_context
+def unbind_trigger(ctx,trigger,workflow):
+    """Unbind a workflow from a trigger
+
+    TRIGGER is the trigger's name, accepts partial values
+    WORKFLOW is the workflow's name or id, accepts partial values
+    """
+    client = ctx.obj.get_client()
+    try:
+        t = client.find_trigger(str(trigger).strip())
+        wf = client.find_workflow(str(workflow).strip())
+    except Exception as e:
+        click.echo(e)
+        return
+    t.disassociate_workflow(wf)
+    click.echo("Unbound workflow '"+wf._name+"' from trigger '"+t._name+"'")
 
 
 #########################
@@ -620,6 +899,52 @@ def functions(config):
         namelen = max(namelen,len(fn._name))
         rtlen = max(rtlen,len(fn._runtime))
     formatstr = f"%-32s %-{namelen}s %-{rtlen}s %-12s"
+    for row in table:
+        click.echo(formatstr % row)
+
+@cli.command()
+@pass_config
+def buckets(config):
+    """List buckets.
+
+    BUCKET is the bucket's name, accepts partial values
+    """
+    client = config.get_client()
+
+    table = [("NAME","WORKFLOWS")]
+    namelen = 0
+    wflen = 0
+    for b in client.buckets.values():
+        wfs = ""
+        if b._associated_workflows:
+            wfs = ",".join(b._associated_workflows)
+        table.append((b._name,wfs))
+        namelen = max(namelen,len(b._name))
+        wflen = max(wflen,len(wfs))
+    formatstr = f"%-{namelen}s %-{wflen}s"
+    for row in table:
+        click.echo(formatstr % row)
+
+@cli.command()
+@pass_config
+def triggers(config):
+    """List triggers.
+
+    TRIGGER is the trigger's name, accepts partial values
+    """
+    client = config.get_client()
+
+    table = [("NAME","WORKFLOWS")]
+    namelen = 0
+    wflen = 0
+    for t in client.triggers.values():
+        wfs = ""
+        if t._associated_workflows:
+            wfs = ",".join(t._associated_workflows)
+        table.append((t._name,wfs))
+        namelen = max(namelen,len(t._name))
+        wflen = max(wflen,len(wfs))
+    formatstr = f"%-{namelen}s %-{wflen}s"
     for row in table:
         click.echo(formatstr % row)
 

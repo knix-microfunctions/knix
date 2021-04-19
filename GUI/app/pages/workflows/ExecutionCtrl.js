@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The KNIX Authors
+   Copyright 2021 The KNIX Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -69,28 +69,18 @@
         vm.$apply(function() {
           fileContents = reader.result.slice(reader.result.indexOf("base64,") + "base64,".length);
           var decodedFileContents = atob(fileContents);
-          /*if (decodedFileContents.match(/[^\u0000-\u007f]/)) {
-            // non-ASCII file
-            //$scope.aceInputSession.setValue(fileContents);
-            $scope.aceInputSession.setValue("Uploaded file: " + file.name);
-            sharedData.setWorkflowExecutionInputEditor(workflowId, "Uploaded file: " + file.name);
-            sharedData.setWorkflowExecutionInput(workflowId, fileContents);
-            $scope.aceInput.focus();
-          } else {*/
-            // ASCII file
-            $scope.aceInputSession.setValue(decodedFileContents);
-            if (workflowName.endsWith("   ")) {
-              // test function
-              sharedData.setWorkflowExecutionInputEditor("mfn-internal-" + workflowName, decodedFileContents);
-              sharedData.setWorkflowExecutionInput("mfn-internal-" + workflowName, decodedFileContents);
-            } else {
-              // execute workflow
-              sharedData.setWorkflowExecutionInputEditor(workflowId, decodedFileContents);
-              sharedData.setWorkflowExecutionInput(workflowId, decodedFileContents);
-            }
-            //$scope.aceInput.focus();
-          //}
-
+          
+          $scope.aceInputSession.setValue(decodedFileContents);
+          if (workflowName.endsWith("   ")) {
+            // test function
+            sharedData.setWorkflowExecutionInputEditor("mfn-internal-" + workflowName, decodedFileContents);
+            sharedData.setWorkflowExecutionInput("mfn-internal-" + workflowName, decodedFileContents);
+          } else {
+            // execute workflow
+            sharedData.setWorkflowExecutionInputEditor(workflowId, decodedFileContents);
+            sharedData.setWorkflowExecutionInput(workflowId, decodedFileContents);
+          }
+          
         });
     };
     reader.readAsDataURL(file);
@@ -119,32 +109,36 @@
              if (response.data.data.workflow.log != prevLogEntry) {
 
                var logStr = atob(response.data.data.workflow.log);
-               var log_lines = logStr.split('\n');
-
-               log_lines.sort();
-
-               for (var i = 0; i < log_lines.length; i++)
+               logStr = logStr.replace(/\[1[0-9]{15}\]/g, "#@!");
+               
+               var logArr = logStr.split('#@!');
+               logArr.sort();
+               for (var i = 0; i < logArr.length; i++)
                {
-                   var line = log_lines[i];
-                   log_lines[i] = line.substring(line.indexOf(" ") + 1);
+                   var line = logArr[i];
+                   logArr[i] = line.substring(line.indexOf(" ") + 1);
                }
 
-               $scope.aceLogSession.setValue(log_lines.join("\n"));
+                $scope.aceLogSession.setValue(logArr.join(""));
 
-               var n = $scope.aceLog.getValue().split("\n").length;
-               $scope.aceLog.gotoLine(n, 0, true);
-               $scope.aceInput.focus();
+                var n = $scope.aceLog.getValue().split("\n").length;
+                $scope.aceLog.gotoLine(n, 0, true);
+                $scope.aceInput.focus();
 
-               prevLogEntry = response.data.data.workflow.log;
+                prevLogEntry = response.data.data.workflow.log;
+
             }
             if (response.data.data.workflow.progress != prevProgressEntry) {
 
-
-              //var logFile = $scope.aceLogSession.getDocument().getValue();
-              var logFile = atob(response.data.data.workflow.log);
-
-              var logArray = logFile.split(/\r?\n/);
-
+              var logStr = atob(response.data.data.workflow.log);
+              logStr = logStr.replace(/\[1[0-9]{15}\]/g, "#@!");
+              var logArray = logStr.split('#@!');
+              logArray.sort();
+              for (var i = 0; i < logArray.length; i++)
+              {
+                  var line = logArray[i];
+                  logArray[i] = line.substring(line.indexOf(" ") + 1);
+              }
               prevProgressEntry = response.data.data.workflow.progress;
 
               var progress = atob(response.data.data.workflow.progress);
@@ -165,6 +159,8 @@
 
                 var functionExecId = "";
                 var wfExecId = "";
+                var numberOfLogLines = 0;
+                
                 // [2019-10-07 19:36:07.272] [INFO] [b4caad66e93911e9b41f02dc5d3985be] [g] [__mfn_progress] b4caad66e93911e9b41f02dc5d3985be_46851328608099ff478b53c1a798a095-46851328608099ff478b53c1a798a095-g {"t_start_fork": 1570476966756.972, "t_start_pubutils": 1570476966766.0327, "t_start_sessutils": 1570476966774.294, "t_start_sapi": 1570476966774.2964, "t_start": 1570476966774.4314, "t_end": 1570476966775.858, "t_pub_start": 1570476966775.9727, "t_pub_end": 1570476967272.2407, "t_end_fork": 1570476967272.2407, "function_instance_id": "b4caad66e93911e9b41f02dc5d3985be_46851328608099ff478b53c1a798a095-46851328608099ff478b53c1a798a095-g"}
                 const regex = /\[(.+?)\] \[(.+?)\] \[(.+?)\] \[(.+?)\] \[(.+?)\] (.+?) ({.+?})/;
                 for (var i=0;i<progArray.length;i++) {
@@ -174,6 +170,7 @@
                     var stateName = m[4];
                     var functionExecStart = e.t_start;
                     var functionExecEnd = e.t_end;
+                    
                     functionExecId = e.function_instance_id;
 
                     //var functionExecStart = progArray[i].split('function_exec_start=').pop().split(',').shift();
@@ -193,6 +190,7 @@
 
                     var dStart = new Date(parseFloat(functionExecStart));
                     var dEnd = new Date(parseFloat(functionExecEnd));
+                    
 
                     if (dStart == dEnd) {
                       dEnd = new Date(parseFloat(functionExecEnd+1));
@@ -225,9 +223,7 @@
                     if (functionExecId && !functionExecIds[functionExecId] && ((!workflowJson.hasOwnProperty('StartAt') || (!workflowJson.States[stateName] || workflowJson.States[stateName].Type!="Parallel")))) {
 
                       functionExecIds[functionExecId] = true;
-                      if (functionExecIds[functionExecId]) {
-                        //console.log('gEId:' + functionExecId);
-                      }
+                    
                       var duration = dEnd.getTime() - dStart.getTime();
                       if (duration==0) {
                         duration = "<1ms";
@@ -238,49 +234,66 @@
                       var errorLine = '';
                       execErr = 'Success';
                       for (var t=0;t<logArray.length;t++) {
-                        if (logArray[t].includes(stateName)) {
-                          //console.log("ggg:" + stateName);
-                          //console.log("ggg:" + logArray[t]);
-                          var rawDate = logArray[t].substring(nthIndex(logArray[t],'[', 2)+1, nthIndex(logArray[t],']', 2));
+                        
+                        if (logArray[t].includes('[' + stateName + ']')) {
+                          
+                          var rawDate = logArray[t].substring(nthIndex(logArray[t],'[', 1)+1, nthIndex(logArray[t],']', 1));
+                          
                           rawDate = rawDate.replace(' ', 'T');
                           rawDate = rawDate.replace(',', '.');
-                          //console.log(rawDate);
+
                           var logEntryDate = new Date(rawDate + "+00:00");
-                          //console.log(logEntryDate.toString());
-                          //console.log(dStart.toString());
-                          //console.log(dEnd.toString());
-                          if (logEntryDate >= dStart && logEntryDate <= dEnd) {
+                          if (logEntryDate.getTime() >= (dStart.getTime()-5) && logEntryDate.getTime() <= (dEnd.getTime()+5)) {
+
                             if (logArray[t].includes("ERROR")) {
                               execErr = 'Error';
                             }
-                            var cutB = nthIndex(logArray[t],'[', 1);
-                            var cutE = nthIndex(logArray[t],']', 1);
-                            logArray[t] = logArray[t].replace(logArray[t].substring(cutB, cutE+1), "");
+                            
+                            var cutB = nthIndex(logArray[t],'[', 3);
+                            var cutE = nthIndex(logArray[t],']', 3);
+                            logArray[t] = logArray[t].replace(logArray[t].substring(cutB, cutE+2), "");
                             cutB = nthIndex(logArray[t],'[', 3);
                             cutE = nthIndex(logArray[t],']', 3);
-                            logArray[t] = logArray[t].replace(logArray[t].substring(cutB, cutE+1), "");
-                            cutB = nthIndex(logArray[t],'[', 3);
-                            cutE = nthIndex(logArray[t],']', 3);
-                            var lStr = logArray[t].replace(logArray[t].substring(cutB, cutE+1), "");
+                            var lStr = logArray[t].replace(logArray[t].substring(cutB, cutE+2), "");
+                            lStr = lStr.substring(lStr.indexOf(" ") + 1);
+                            
                             if (!lStr.includes("(functionworker)")) {
-                              logOutput += lStr + "<br>";
+                              logOutput += lStr;
                             }
-
-                            var f = t+1;
-
-                            while (logArray[f] && !logArray[f].startsWith('[') && (f-t)<25) {
-                              logOutput += logArray[f];
-                              logOutput += "<br>";
-                              f++;
-                            }
-
                           }
+                      
 
                         }
 
                       }
+                      
+                      if (logOutput!='') {
+                        if (logOutput.length>=1200) {
+                          logOutput = logOutput.substring(0, 1200);
+                          logOutput+= "...";
+                        }
 
-                      toolTip = '<table style="width:100%;"><tr><th style="padding-bottom:10px;"><b>Function Log Output</b></th><th></th><th style="padding-left:20px;padding-bottom:10px;" valign="top"><b>Function Execution Statistics</b></th></tr><tr><td valign="top" style="width:750px;">' + truncate.apply(logOutput, [1200, true]) + '</td><td></td><td style="padding-left:20px;" valign="top">State Name: ' + stateName + '<br>Function Name: ' + state2FunctionMapping[stateName] + '<br>Status: ' + execErr + '<br><br>Duration: ' + duration + '<table><tr><td>Execution Start:&nbsp;</td><td>' + dateFormat(new Date(parseFloat(functionExecStart))) + '</td></tr><tr><td>Execution End:&nbsp;</td><td>' + dateFormat(new Date(parseFloat(functionExecEnd))) + '</td></tr></table>Exec Id: ' + wfExecId + '</td></tr></table>';
+                        var logLines = logOutput.split('\n');
+                        var addedLinebreaks = 0;
+                        if (logLines) {
+                          for (var f=0;f<logLines.length;f++) {
+                            if (logLines[f].length>100) {
+                              addedLinebreaks += Math.floor(logLines[f].length / 100.0);
+                            }
+                          }
+                          numberOfLogLines = logLines.length + addedLinebreaks;
+                          
+                        } else {
+                          numberOfLogLines = 1;
+                        }
+
+                        logOutput = '<pre style="font-size: 12px;white-space: pre-wrap; overflow-wrap: break-word;max-height: 285px; overflow-y: hidden;">' + logOutput + '</pre>';
+                      } else {
+                        numberOfLogLines = 0;
+                      }
+                   
+                      
+                      toolTip = '<table style="width:100%;"><tr><th style="padding-bottom:10px;"><b>Function Log Output</b></th><th></th><th style="padding-left:20px;padding-bottom:10px;" valign="top"><b>Function Execution Statistics</b></th></tr><tr><td valign="top" style="width:840px;">' + logOutput + '</td><td></td><td style="padding-left:20px;" valign="top">State Name: ' + stateName + '<br>Function Name: ' + state2FunctionMapping[stateName] + '<br>Status: ' + execErr + '<br><br>Duration: ' + duration + '<table><tr><td>Execution Start:&nbsp;</td><td>' + dateFormat(new Date(parseFloat(functionExecStart))) + '</td></tr><tr><td>Execution End:&nbsp;</td><td>' + dateFormat(new Date(parseFloat(functionExecEnd))) + '</td></tr></table>Exec Id: ' + wfExecId + '</td></tr></table>';
 
 
                       if (prevExecutedFunction!=stateName) {
@@ -289,12 +302,10 @@
                         lastFunctionExecutionDate = parseFloat(functionExecStart);
                       }
 
-                      //console.log('dStart:' + dStart.getTime());
-                      //console.log('dEnd:' + dEnd.getTime());
                       if (dEnd.getTime() - dStart.getTime() > 0) {
-                        ev[counter] = [{id: execCounter + counter, start: new Date(dStart.getTime()), end: new Date(dEnd.getTime()), content: stateName + " <span style='color:black;float:right;'>" + duration + "</span>", ttip: toolTip}];
+                        ev[counter] = [{id: execCounter + counter, start: new Date(dStart.getTime()), end: new Date(dEnd.getTime()), content: stateName + " <span style='color:black;float:right;'>" + duration + "</span>", ttip: toolTip, state: stateName, execId: wfExecId, log: logOutput}];
                       } else {
-                        ev[counter] = [{id: execCounter + counter, start: new Date(dStart.getTime()), end: new Date(dStart.getTime()+1), content: stateName + " <span style='color:black;float:right;'>&lt;1ms</span>", ttip: toolTip}];
+                        ev[counter] = [{id: execCounter + counter, start: new Date(dStart.getTime()), end: new Date(dStart.getTime()+1), content: stateName + " <span style='color:black;float:right;'>&lt;1ms</span>", ttip: toolTip, execId: wfExecId, state: stateName,log: logOutput}];
                       }
                       if (execErr=='Error') {
                         ev[counter][0].style = "background-color: #f7a8a8; border-color: black;";
@@ -302,63 +313,12 @@
                         ev[counter][0].style = "background-color: #92d193; border-color: black;";
                       }
                       ev[counter][0].status = execErr;
+                      ev[counter][0].logLines = numberOfLogLines;
                       counter++;
 
                     }
                   }
                 }
-
-
-                for (var t=0;t<logArray.length;t++) {
-                  var rawDate = "";
-                  if (logArray[t].includes("ERROR")) {
-
-                    //console.log("Err:" + logArray[t]);
-                    var logOutput = '';
-                    var cutB = nthIndex(logArray[t],'[', 3);
-                    var cutE = nthIndex(logArray[t],']', 3);
-                    var stateName = logArray[t].substring(cutB+1, cutE);
-                    //cutB = nthIndex(logArray[t],'[', 4);
-                    //cutE = nthIndex(logArray[t],']', 4);
-                    var lStr = logArray[t].replace(logArray[t].substring(cutB, cutE+1), "");
-
-                    logOutput += lStr;
-                    logOutput += "<br>";
-                    var f = t+1;
-                    while (logArray[f] && !logArray[f].startsWith('[')) {
-
-                      logOutput += logArray[f];
-                      logOutput += "<br>";
-                      f++;
-                    }
-
-                    rawDate = logArray[t].substring(logArray[t].indexOf("[")+1,logArray[t].indexOf("]"));
-                    rawDate = rawDate.replace(' ', 'T');
-                    rawDate = rawDate.replace(',', '.');
-                    var logEntryDate = new Date(rawDate + "+00:00");
-
-                    var eLine = logOutput.lastIndexOf("line ");
-                    if (eLine>=0) {
-                      errorLine = logOutput.substr(eLine + 5, logOutput.length-1);
-                      if (errorLine.indexOf(',')>0) {
-                        errorLine = errorLine.substr(0, errorLine.indexOf(','));
-                      } else {
-                        errorLine = errorLine.substr(0, errorLine.indexOf('<br>'));
-                      }
-                      //console.log('lg:' + lastFunctionExecutionDate + ' ed:' + logEntryDate.getTime());
-                      if (lastFunctionExecutionDate < logEntryDate.getTime()) {
-
-                        codeError = state2FunctionMapping[stateName] + ':' + errorLine;
-                        failedFunctions[0] = stateName;
-
-                        $scope.workflowButtonLabel = "Go to Error";
-                      }
-                    }
-
-                  }
-                }
-
-                //ev.sort(compareExecutionEvents);
 
                 for (var i=0;i<ev.length;i++) {
                   execEvents[execCounter] = ev[i];
@@ -366,25 +326,53 @@
                   currentEntry = execCounter;
                   execCounter++;
                 }
+                var lastFailedExecution = -1;
+                for (var i=0;i<execEvents.length;i++) {
+                  if (execEvents[i][0].status=="Error") {
+                    lastFailedExecution = i;
+                  }  
+                }
+       
+                if (lastFailedExecution>=0 && execEvents[lastFailedExecution][0].execId==execEvents[execEvents.length-1][0].execId) {
+                  var logOutput = execEvents[lastFailedExecution][0].log; 
+                  var eLine = logOutput.lastIndexOf("line ");
+                  if (eLine>=0) {
+                    errorLine = logOutput.substr(eLine + 5, logOutput.length-1);
+                    if (errorLine.indexOf(',')>0) {
+                      errorLine = errorLine.substr(0, errorLine.indexOf(','));
+                    } else {
+                      errorLine = errorLine.substr(0, errorLine.indexOf('<br>'));
+                    }
+                    codeError = state2FunctionMapping[execEvents[lastFailedExecution][0].state] + ':' + errorLine;
+                    failedFunctions[0] = execEvents[lastFailedExecution][0].state;
+                    $scope.workflowButtonLabel = "Go to Error";
+                    
+                  }
+                }
 
                 if (initialized) {
                   timeline.on('itemover', function (properties) {
                     if (!popoverVisible) {
-                      var logLines = (execEvents[properties.item][0].ttip.match(/<br>/g) || []).length;
-                      //console.log('count:' + logLines);
-                      logLines -= 12;
-                      logLines = Math.max(0, logLines);
-                      var marginTop = 11 - logLines;
-                      if (marginTop>5 && logLines>0) {
+                                            
+                      var numberOfLogLines = execEvents[properties.item][0].logLines;
+                                            
+                      numberOfLogLines -= 12;
+                      numberOfLogLines = Math.max(0, numberOfLogLines);
+                      var marginTop = 11 - numberOfLogLines;
+                      if (marginTop>5 && numberOfLogLines>0) {
                         marginTop-=4;
                       }
+                      if (marginTop<3) {
+                        marginTop = 3;
+                      }
                       document.getElementById('popover').style.top = marginTop.toString() + '%';
-                      if (logLines > 12) {
-                      } else if (logLines > 20) {
-                        document.getElementById('popover').style.top = '15%';
+                      if (numberOfLogLines > 12) {
+                      } else if (numberOfLogLines > 20) {
+                        document.getElementById('popover').style.top = '0%';
                       }
                       document.getElementById('popover').innerHTML = execEvents[properties.item][0].ttip;
                       document.getElementById('popover').style.display = 'block';
+                      document.getElementById('popover').style.width = '98%';
                       popoverVisible = true;
                     }
                   });
@@ -395,10 +383,6 @@
                     }
                   });
                 }
-                 /*if (execErr && lastFunctionExecutionDate < logEntryDate.getTime()) {
-
-                   setTimeout(function() { timeline.setWindow(new Date(logEntryDate.getTime()-300), new Date(logEntryDate.getTime()+450)) }, 500);
-*/
                  if (counter>0) {
 
                    setTimeout(function() { timeline.setWindow(new Date(dStart.getTime()-((dEnd-dStart)*2)), new Date(dEnd.getTime()+((dEnd-dStart)*2))) }, 500);
@@ -461,14 +445,6 @@
          return 1;
        return 0;
      }
-
-     function truncate( n, useWordBoundary ){
-       if (this.length <= n) { return this; }
-       var subString = this.substr(0, n-1);
-       return (useWordBoundary
-         ? subString.substr(0, subString.lastIndexOf(' '))
-         : subString) + "&hellip;";
-     };
 
      function colorExecutedFunctions(workflowFunctions, workflowStateNames, workflowJson, states, curStateName, prevStateName, prevChoice, executed, parallelNext, prefix, wForNum) {
        var parallelNextState = parallelNext;
@@ -1163,23 +1139,16 @@
 
          intervalCounter = 0;
 
-         //setTimeout(function() { prepareLogFile(); }, 3000);
-
          setTimeout(function() { inter = $interval(function(){prepareLogFile();}, 3000); }, 250);
 
          $http(req).then(function successCallback(response) {
 
-                //console.log(response.data);
-                //console.log(atob(response.data.data.workflow.log));
-
-               //setTimeout(function() { promise = $interval(function(){prepareLogFile();}, 3000); }, 500);
-
+          
                $interval.cancel(inter);
 
                setTimeout(function() { prepareLogFile(); }, 500);
                setTimeout(function() { workflowExecuted = true; prepareLogFile(); }, 4500);
 
-               //showTimeline();
                if (response.data.status=="success") {
                    console.log("executeWorkflow called succesfully.");
                    result = response.data.data.result;
@@ -1210,7 +1179,7 @@
              console.log("Error occurred during workflow execution");
              console.log("Response:" + response);
              $interval.cancel(inter);
-             //$interval.cancel(promise);
+        
              if (response.statusText) {
                $scope.errorMessage = response.statusText;
                console.log(response.statusText);
@@ -1222,16 +1191,9 @@
              }
              toastr.error('Workflow Execution Error: ' + $scope.errorMessage);
              $interval.cancel(inter);
-             /*if (executionModalVisible) {
-              $uibModal.open({
-                animation: true,
-                scope: $scope,
-                templateUrl: 'app/pages/workflows/modals/errorModal.html',
-                size: 'md',
-              });
-            }*/
+             
          });
-        //return $timeout(function() {}, 8000);
+        
        });
      };
 
@@ -1514,3 +1476,4 @@
 
 
 }());
+

@@ -218,6 +218,9 @@ class ASL_SessionSupportTest(unittest.TestCase):
         heartbeat_timestamps = {}
         for line in heartbeat_lines:
             line = line.split(" ")[-1]
+            line = line.strip()
+            if line == "":
+                continue
             fields = line.split("@")
             timestamp = fields[1]
             function_info = fields[0]

@@ -1,6 +1,0 @@
-.factorypath
-src/main/java/org/microfunctions/queue/local/LocalQueueService.java
-src/main/java/org/microfunctions/queue/local/LocalQueueMessage.java
-bin/
-target/
-.m2/

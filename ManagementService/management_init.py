@@ -375,9 +375,12 @@ if __name__ == "__main__":
             time.sleep(5)
 
     # client for bucket "storage_" + get_storage_userid(email) + ";defaultTable"
-    DLCLIENT = DataLayerClient(1,suid="adminATmanagement",is_wf_private=False,for_mfn=False, connect=connect, init_tables=True)
+    DLCLIENT = DataLayerClient(locality=1, suid="adminATmanagement", connect=connect, init_tables=True)
     # client for bucket "sbox_Management;wf_Management"
-    DLCLIENT_MANAGEMENT = DataLayerClient(1,sid="Management",wid="Management",is_wf_private=True,for_mfn=False, connect=connect, init_tables=True)
+    DLCLIENT_MANAGEMENT = DataLayerClient(locality=1, sid="Management", wid="Management", is_wf_private=True, connect=connect, init_tables=True)
+    # client for mfn internal storage (for completeness)
+    DLCLIENT_MFN = DataLayerClient(locality=1, sid="Management", for_mfn=True, connect=connect, init_tables=True)
+    DLCLIENT_MFN.shutdown()
 
     '''
     keyspace = "storage_" + get_storage_userid(email)
@@ -422,15 +425,6 @@ if __name__ == "__main__":
             endpoint_list = [url]
             DLCLIENT_MANAGEMENT.put("management_endpoints", json.dumps(endpoint_list))
         else:
-            #os.environ["MFN_QUEUE"] = os.getenv("QUEUE_CONNECT",hostname+":4999")
-            #os.environ["MFN_DATALAYER"] = os.getenv("DATALAYER_CONNECT",hostname+":4998")
-            #os.environ["MFN_ELASTICSEARCH"] = os.getenv("ELASTICSEARCH_CONNECT",hostname+":9200")
-            #os.environ["HTTP_PROXY"] = os.getenv("HTTP_PROXY", "")
-            #os.environ["HTTPS_PROXY"] = os.getenv("HTTPS_PROXY", "")
-            #os.environ["http_proxy"] = os.getenv("http_proxy", "")
-            #os.environ["https_proxy"] = os.getenv("https_proxy", "")
-            #os.environ["no_proxy"] = os.getenv("no_proxy", "")
-            #os.environ["NO_PROXY"] = os.getenv("NO_PROXY", "")
             host_to_deploy=(hostname,socket.gethostbyname(hostname))
             #Container in the bare metal case will be started by start_management.sh
             #deployWorkflow.start_docker_sandbox(host_to_deploy, email, workflow_info["sandboxId"], workflow_info["workflowId"], workflow_info["workflowName"])
@@ -458,7 +452,7 @@ if __name__ == "__main__":
                 f.write("SANDBOXID="+ workflow_info["sandboxId"] + "\n")
                 f.write("WORKFLOWID="+ workflow_info["workflowId"] + "\n")
                 f.write("WORKFLOWNAME="+ workflow_info["workflowName"] + "\n")
-                f.write("MFN_QUEUE=" + "127.0.0.1:4999" + "\n")
+                f.write("MFN_QUEUE=/opt/mfn/redis-server/redis.sock\n")
                 f.write("MFN_DATALAYER="+ os.getenv("DATALAYER_CONNECT",hostname+":4998") + "\n")
                 f.write("MFN_ELASTICSEARCH="+ os.getenv("ELASTICSEARCH_CONNECT",hostname+":9200") + "\n")
                 f.write("MFN_ENDPOINT_KEY=" + endpoint_key + "\n")

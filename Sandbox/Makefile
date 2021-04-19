@@ -25,6 +25,7 @@ default: build_thrift \
 
 clean:
 	make -C frontend clean
+	make -C ../redis clean
 	rm -rf build/*
 
 build_thrift:
@@ -36,12 +37,12 @@ build_thrift:
 frontend/frontend: $(shell find frontend/ -type f -not -wholename frontend/frontend)
 	make -C frontend
 
+FWSOURCE = $(shell find ../FunctionWorker)
 SBASOURCE = $(shell find ../SandboxAgent)
-build/SandboxAgent.tar.gz: $(SBASOURCE)
+build/SandboxAgent.tar.gz: $(SBASOURCE) $(FWSOURCE)
 	mkdir -p build
 	tar -czf $@ ../SandboxAgent
 
-FWSOURCE = $(shell find ../FunctionWorker)
 build/FunctionWorker.tar.gz: \
 		$(FWSOURCE) \
 		../build_env.mk \
@@ -50,15 +51,14 @@ build/FunctionWorker.tar.gz: \
 	mkdir -p build
 	docker run --user $$(id -u):$$(id -g) --rm -v $$(pwd)/../:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerMessage.thrift; \
-		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift; \
-		thrift --gen py -out FunctionWorker/python/ QueueService/thrift/LocalQueueService.thrift;'
+		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift;'
 	tar -czf $@ ../FunctionWorker
 
-QSOURCE = $(shell find ../QueueService/src)
-build/queueservice.jar: $(QSOURCE) ../build_env.mk
+RSOURCE = $(shell find ../redis/src)
+build/redis-server.tar.gz: $(RSOURCE) ../build_env.mk
 	mkdir -p build
-	cd ../QueueService; make; cd -
-	cp ../QueueService/target/queueservice.jar build/
+	cd ../redis && make && cd -
+	tar -czf $@ -C ../redis redis-server
 
 LSOURCE = $(shell find ../LoggingService/fluent-bit-1.2.2)
 build/LoggingService.tar.gz: $(LSOURCE)
@@ -78,7 +78,7 @@ build/JavaRequestHandler.tar.gz: $(JRHSOURCE) $(wildcard ../JavaRequestHandler/*
 	tar -rf build/JavaRequestHandler.tar -C ../ JavaRequestHandler/init-mvn.pom.xml
 	gzip -f build/JavaRequestHandler.tar
 
-build: build/queueservice.jar \
+build: build/redis-server.tar.gz \
 	frontend/frontend \
 	build/LoggingService.tar.gz \
 	build/JavaRequestHandler.tar.gz \
@@ -89,7 +89,7 @@ include ../docker.mk
 
 image: \
 	Dockerfile \
-	build/queueservice.jar \
+	build/redis-server.tar.gz \
 	frontend/frontend \
 	build/LoggingService.tar.gz \
 	build/FunctionWorker.tar.gz \
@@ -98,7 +98,7 @@ image: \
 
 image_gpu: \
 	Dockerfile_gpu \
-	build/queueservice.jar \
+	build/redis-server.tar.gz \
 	frontend/frontend \
 	build/LoggingService.tar.gz \
 	build/FunctionWorker.tar.gz \
@@ -108,7 +108,7 @@ image_gpu: \
 
 image_java: \
 	Dockerfile_java \
-	build/queueservice.jar \
+	build/redis-server.tar.gz \
 	frontend/frontend \
 	build/LoggingService.tar.gz \
 	build/JavaRequestHandler.tar.gz \

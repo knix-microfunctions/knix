@@ -118,7 +118,7 @@ def get_log_filters(workflow):
     return filters
 
 def get_workflow_log(workflowid, filters, num_last_entries=150):
-    index = "mfnwf-" + workflowid
+    index_name = "mfnwf-" + workflowid
     #print(filters)
     #print("------ search all documents where workflow = <workflowid>")
     data = \
@@ -138,8 +138,9 @@ def get_workflow_log(workflowid, filters, num_last_entries=150):
 
     print(data)
 
+    print("Getting workflow index: " + index_name)
     try:
-        r = requests.get(ELASTICSEARCH_URL + "/" + index + '/_search', json=data, proxies={"http":None})
+        r = requests.get(ELASTICSEARCH_URL + "/" + index_name + '/_search', json=data, proxies={"http":None})
         response = r.json()
         #print(str(response))
         if 'hits' in response:

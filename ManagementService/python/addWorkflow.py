@@ -50,15 +50,30 @@ def create_workflow_index(index_name):
         }
     }
 
+    print("Creating workflow index: " + index_name)
     try:
         r = requests.put(ELASTICSEARCH_URL + "/" + index_name, json=index_data, proxies={"http":None})
-        #response = r.json()
-        #print(str(response))
+        response = r.json()
+        print(str(response))
     except Exception as e:
         if type(e).__name__ == 'ConnectionError':
             print('Could not connect to: ' + ELASTICSEARCH_URL)
         else:
             raise e
+
+def initialize_storage(sapi, wid):
+    #sapi.get_privileged_data_layer_client(storage_userid, init_tables=True)
+    # mfn internal tables
+    #global_dlc = DataLayerClient(locality=1, for_mfn=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+    print("Initializing global mfn internal storage for workflow: " + wid)
+    global_dlc = sapi.get_privileged_data_layer_client(for_mfn=True, sid=wid, init_tables=True)
+    global_dlc.shutdown()
+
+    # workflow private tables
+    print("Initializing global workflow-private storage: " + wid)
+    #global_dlc = DataLayerClient(locality=1, is_wf_private=True, sid=self._sandboxid, wid=self._workflowid, connect=self._datalayer, init_tables=True)
+    global_dlc = sapi.get_privileged_data_layer_client(is_wf_private=True, sid=wid, init_tables=True)
+    global_dlc.shutdown()
 
 
 def handle(value, sapi):
@@ -71,7 +86,7 @@ def handle(value, sapi):
     success = False
 
     email = data["email"]
-    
+
 
     if "workflow" in data:
         workflow = data["workflow"]
@@ -96,6 +111,9 @@ def handle(value, sapi):
         create_workflow_index("mfnwf-" + wf["id"])
 
         #wf["on_gpu"] = True # add metadata on GPU requirements for this workflow. ToDo: make this configurable via GUI
+
+        # initialize global workflow related storage (workflow-private and mfn internal tables)
+        initialize_storage(sapi, wf["id"])
 
         sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True, True)
         #sapi.put(email + "_workflow_json_" + wf["id"], "", True, True)
