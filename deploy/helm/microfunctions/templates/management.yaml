@@ -176,7 +176,7 @@ data:
                  */}}
                   {"name": "MFN_DATALAYER", "value": "datalayer.{{ .Release.Namespace }}.svc:{{ .Values.datalayer.port }}" },
                   {"name": "MFN_ELASTICSEARCH", "value": {{ include "esConnect.url" . | quote }} },
-                  {"name": "MFN_MANAGEMENT", "value": "http://wf-{{ .Release.Name }}-management.{{ .Release.Namespace }}.svc" }
+                  {"name": "MFN_MANAGEMENT", "value": "http://wf-{{ .Release.Name }}-management.{{ .Release.Namespace }}.svc" },
                   {"name": "API_TOKEN", "value": "{{.Values.apiKey}}" }
                 ],
                 {{/* not allowed in KNative
