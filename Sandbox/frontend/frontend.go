@@ -440,9 +440,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       http.Error(w, "Error submitting event to system", http.StatusInternalServerError)
     } else {
-      // w.Header().Set("Content-Type", "application/json")
-      // w.WriteHeader(http.StatusAccepted)
-      w.Write([]byte(id))
+        // w.Header().Set("Content-Type", "application/json")
+        // w.WriteHeader(http.StatusAccepted)
+        // Create entry and lock to wait on
+        m := sync.Mutex{}
+        c := sync.NewCond(&m)
+        e := Execution{c,nil,0}
+        ExecutionCond.L.Lock()
+        ExecutionResults[id] = &e
+        ExecutionCond.L.Unlock()
+        w.Write([]byte(id))
     }
   } else {
     // Create entry and lock to wait on
