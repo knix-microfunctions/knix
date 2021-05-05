@@ -246,13 +246,36 @@ func handler(w http.ResponseWriter, r *http.Request) {
       http.Error(w, "Can't fetch result", http.StatusInternalServerError)
     } else if res == nil {
       if async {
-        log.Printf("handler: Result not yet available of execution ID %s, redirecting", id)
+        /*
+        the client asked for the result in async mode.
+        if the result is not available yet, then just return the execution id again
+        and let the client handle the retry.
+        */
+        log.Printf("handler: Result not yet available of execution ID %s.", id)
+        //log.Printf("handler: Result not yet available of execution ID %s, redirecting", id)
         // TODO: 300 location redirect
-        http.Redirect(w, r, r.URL.Path + "?executionId=" + id, http.StatusTemporaryRedirect)
-        // w.Header().Set("Content-Type", "application/json")
+        //http.Redirect(w, r, r.URL.Path + "?executionId=" + id, http.StatusTemporaryRedirect)
+        //w.Header().Set("Content-Type", "application/json")
         // w.Header().Set("Retry-After", "5")
         // http.Redirect(w, r, r.URL.Path + "?executionId=" + id, http.StatusFound)
-        // w.Write([]byte(id))
+
+        type ResultMessage struct {
+              ExecutionId string `json:"executionId"`
+              Result []byte `json:"result"`
+          }
+          var res ResultMessage
+          res.ExecutionId = id
+          res.Result = nil
+          var msgb []byte
+          msgb, err := json.Marshal(res)
+          if err != nil {
+            http.Error(w, "Couldn't marshal result to JSON", http.StatusInternalServerError)
+            log.Println("handler: Couldn't marshal result to JSON: ", err)
+          } else {
+            w.Header().Set("Content-Type", "application/json")
+            w.Write(msgb)
+          }
+        //w.Write([]byte(id))
       } else {
         log.Printf("handler: Result not yet available of execution ID %s, waiting", id)
         ExecutionCond.L.Lock()
@@ -305,12 +328,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
       topic string
       msg MfnMessage
       id string
+      is_special_message bool
   )
   actionhdr := r.Header.Get("x-mfn-action")
   actiondata := r.Header.Get("x-mfn-action-data")
   if (actionhdr != "" && actiondata != "") {
       // handle different cases here
       log.Printf("Got a special message: [%s] [%s]", actionhdr, actiondata)
+      is_special_message = true
       if (actionhdr == "session-update") {
           log.Printf("New session update message...")
 
@@ -410,6 +435,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
         log.Printf("Trigger-Event message topic: [%s], id: [%s]", topic, id)
     }
   } else {
+      is_special_message = false
       // the headers are not special, so this must be a regular message to trigger a workflow
       // CREATE NEW MfnMessage
       id, err = GenerateExecutionID()
@@ -440,9 +466,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       http.Error(w, "Error submitting event to system", http.StatusInternalServerError)
     } else {
-      // w.Header().Set("Content-Type", "application/json")
-      // w.WriteHeader(http.StatusAccepted)
-      w.Write([]byte(id))
+        // w.Header().Set("Content-Type", "application/json")
+        // w.WriteHeader(http.StatusAccepted)
+        // Create entry and lock to wait on
+        if !is_special_message {
+            m := sync.Mutex{}
+            c := sync.NewCond(&m)
+            e := Execution{c,nil,0}
+            ExecutionCond.L.Lock()
+            ExecutionResults[id] = &e
+            ExecutionCond.L.Unlock()
+        }
+        w.Write([]byte(id))
     }
   } else {
     // Create entry and lock to wait on

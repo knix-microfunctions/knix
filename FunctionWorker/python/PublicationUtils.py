@@ -103,7 +103,7 @@ class PublicationUtils():
 
     def _get_backup_data_layer_client(self):
         if self._backup_data_layer_client is None:
-            self._backup_data_layer_client = DataLayerClient(locality=0, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
+            self._backup_data_layer_client = DataLayerClient(locality=-1, for_mfn=True, sid=self._sandboxid, connect=self._datalayer)
         return self._backup_data_layer_client
 
     def _shutdown_backup_data_layer_client(self):
