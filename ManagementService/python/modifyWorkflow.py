@@ -15,6 +15,58 @@
 import json
 import time
 
+'''
+# sample input 
+{
+  "action": "modifyWorkflow",
+  "data": {
+    "user": {
+      "token": "...."
+    },
+    "workflow": {
+            # to update workflow name, specify both id and name
+            # to update workflows resources/annotations specify id and/or name and the optional field below
+
+      "id": "asdf",
+      "name": "qwerty",
+      "knative": {
+        "annotations": {                        # <if specified will merge with 'spec.template.metadata.annotations'>
+          "autoscaling.knative.dev/target": "10",
+          "autoscaling.knative.dev/panicWindowPercentage": "5.0",
+          "autoscaling.knative.dev/panicThresholdPercentage": "110.0",
+          "autoscaling.knative.dev/targetUtilizationPercentage": "70",
+          "autoscaling.knative.dev/targetBurstCapacity": "10",
+          "autoscaling.knative.dev/...": "..."
+        },
+        "container": {                          # <if specified will merge with 'spec.template.spec.containers[0]'>
+          "image": "asdfasdfdf",                # <optional, overwrites 'spec.template.spec.containers[0].image'>
+          "resources": {                        # <optional, overwrites 'spec.template.spec.containers[0].resources'>
+            "requests": {
+              "memory": "64Mi",
+              "cpu": "250m",
+              "tencent.com/vcuda-core": 4,
+              "tencent.com/vcuda-memory": 3,
+              "....": "..."
+            },
+            "limits": {
+              "tencent.com/vcuda-core": 4,
+              "tencent.com/vcuda-memory": 3,
+              "memory": "128Mi",
+              "cpu": "500m",
+              "....": "..."
+            }
+          }
+        },
+        "spec": {                                   # <if specified, will merge with 'spec.template.spec>'
+          "containerConcurrency": 50
+        }
+      }
+    }
+  }
+}
+'''
+
+
 def handle(value, sapi):
     assert isinstance(value, dict)
     data = value
@@ -54,17 +106,29 @@ def handle(value, sapi):
                 else:
                     wf["ASL_type"] = "unknown"
 
-                sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True, True)
+                sapi.put(email + "_workflow_" + wf["id"], json.dumps(wf), True)
 
-                sapi.put(email + "_list_workflows", json.dumps(workflows), True, True)
+                sapi.put(email + "_list_workflows", json.dumps(workflows), True)
 
                 response_data["message"] = "Successfully modified workflow " + workflow["id"] + "."
                 response_data["workflow"] = wf
-
                 success = True
-
+        elif "knative" in workflow and ("id" in workflow or "name" in workflow):
+            id = None
+            if "id" not in workflow:
+                id = get_workflow_id(workflow["name"], email, sapi)
             else:
-                response_data["message"] = "Couldn't modify workflow; workflow metadata is not valid."
+                id = workflow["id"]
+            
+            if id is not None:
+                wf = sapi.get(email + "_workflow_" + id, True)
+                wf = json.loads(wf)
+                wf["knative"] = workflow["knative"]
+                sapi.put(email + "_workflow_" + id, json.dumps(wf), True)
+                success = True
+                response_data["message"] = "New knative resource and annotation specifications will be applied next time the workflow is deployed."
+            else:
+                response_data["message"] = "Couldn't modify workflow resources; Unable to find workflow id."
         else:
             response_data["message"] = "Couldn't modify workflow; malformed input."
     else:
@@ -81,3 +145,12 @@ def handle(value, sapi):
 
     return response
 
+
+def get_workflow_id(workflow_name, email, context):
+    id = None
+    workflows = context.get(email + "_list_workflows", True)
+    if workflows is not None and workflows != "":
+        workflows = json.loads(workflows)
+        if workflow_name in workflows:
+            id = workflows[workflow_name]
+    return id

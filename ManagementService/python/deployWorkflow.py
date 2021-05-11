@@ -320,6 +320,31 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
             continue
         for container in kservice['spec']['template']['spec']['containers']:
             container['env'].append({'name': k, 'value': os.getenv(k)})
+    
+    # get user provided requests, limits, and other knative autoscaling annotations
+    if not management:
+        if "workflowMetadata" in workflow_info and "knative" in workflow_info["workflowMetadata"]:
+            knative_groups = workflow_info["workflowMetadata"]["knative"]
+            for group_name in ["annotations", "container", "spec"]:
+                if group_name not in knative_groups:
+                    continue
+                if group_name is "annotations":
+                    if "annotations" not in kservice['spec']['template']['metadata']:
+                        kservice['spec']['template']['metadata']['annotations'] = {}
+                    group_to_update = kservice['spec']['template']['metadata']['annotations']
+                elif group_name is "container":
+                    group_to_update = kservice['spec']['template']['spec']['containers'][0]
+                else:
+                    group_to_update = kservice['spec']['template']['spec']
+                
+                assert(type(group_to_update) == type({}))
+                group = knative_groups[group_name]
+                for user_provided_value_key in group:
+                    # overwrite or key a user provided key
+                    group_to_update[user_provided_value_key] = group[user_provided_value_key]
+            print('Updated Knative service definition to: ' + str(kservice))
+
+
     print('Checking if kservice exists')
     resp = requests.get(
         "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
@@ -448,6 +473,7 @@ def handle(value, sapi):
         workflow_info["json_ref"] = "workflow_json_" + wfmeta["id"]
         workflow_info["workflowName"] = wfmeta["name"]
         workflow_info["usertoken"] = data["usertoken"]
+        workflow_info["workflowMetadata"] = wfmeta
         req = {}
         req["installer"] = "pip"
         workflow_info["sandbox_requirements"] = req
