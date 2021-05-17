@@ -321,3 +321,5 @@ class SessionHelperThread(threading.Thread):
 
     def shutdown(self):
         self._is_running = False
+        # put a dummy message to get out of any blocking 'self.get_messages()' call
+        self._message_queue.put(None)
