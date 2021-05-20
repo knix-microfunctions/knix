@@ -16,6 +16,8 @@ FROM ubuntu:18.04 as builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+ENV REDIS_VERSION=6.2.3
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       build-essential \
@@ -44,8 +46,9 @@ RUN apt-get update && \
 RUN set -ex && \
     mkdir /build && \
     cd /build && \
-    wget https://github.com/redis/redis/archive/refs/tags/6.2.1.tar.gz && \
-    tar -xvf 6.2.1.tar.gz && \
-    cd redis-6.2.1 && \
+    wget https://github.com/redis/redis/archive/refs/tags/${REDIS_VERSION}.tar.gz && \
+    tar -xvf ${REDIS_VERSION}.tar.gz && \
+    mv redis-${REDIS_VERSION} redis && \
+    cd redis && \
     make
 
