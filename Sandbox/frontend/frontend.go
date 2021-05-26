@@ -16,25 +16,26 @@
 package main
 
 import (
-  "bufio"
-  "context"
-  "encoding/json"
-  "fmt"
-  "io/ioutil"
-  "log"
-  "net/http"
-  "os"
-  "os/signal"
-  "strings"
-  "sync"
-  "syscall"
-  "time"
-  "errors"
-  "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
-  "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
-  "github.com/apache/thrift/lib/go/thrift"
-  "github.com/google/uuid"
-  "github.com/go-redis/redis/v8"
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
+	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
+	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
 )
 
 // custom log writer to overwrite the default log format
@@ -489,6 +490,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     ExecutionCond.L.Unlock()
     c.L.Lock()
     // Send now that we're able to wait on it
+    inFlightRequestsCounterChan <- 1
     err, rt_sendlq = SendMessage(msg, topic)
     rt_sentlq = time.Now().UnixNano()
     if err != nil {
@@ -507,6 +509,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       w.Header().Set("Content-Type", "application/json")
       w.Write([]byte(e.msg.Mfnuserdata))
       rt_exitfe = time.Now().UnixNano()
+      inFlightRequestsCounterChan <- -1
       log.Printf(
         `[ResumedUserSession] [ExecutionId] [%s] [Size] [0] [TimestampMap] [{"tfe_entry":%d,"tfe_sendlq":%d,"tfe_sentlq":%d,"tfe_rcvdlq":%d,"tfe_exit":%d}] [LatencyRoundtrip] [%d] [Response] {...}`,
         e.msg.Mfnmetadata.ExecutionId,
@@ -733,6 +736,9 @@ func Fakeit(msg *MfnMessage) (error) {
   return nil
 }
 
+func init() {
+	initResourceStats()
+}
 
 // The frontend initializes datalayer and producer thrift clients, starts consumer as a go routine, registers a signal handler for graceful shutdowns and blocks at starting the http server
 func main() {
@@ -761,6 +767,7 @@ func main() {
   }
   mux := http.NewServeMux()
   mux.HandleFunc("/", handler)
+  mux.HandleFunc("/metrics", handle_metrics)
   httpServer = &http.Server{
     Addr:    listenAddr,
     Handler: mux,
