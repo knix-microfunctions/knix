@@ -316,17 +316,28 @@ class PublicationUtils():
             action_data["key"] = key
             action_data["value"] = value
 
-            resp = requests.post(remote_address,
-                                params={"async": 1},
-                                json={},
-                                headers={"x-mfn-action": "session-update",
-                                        "x-mfn-action-data": json.dumps(action_data)})
+            # exponential backoff
+            retry = 0.1
+            # retry 7 times, wait for 5 seconds for the connection to time out
+            while retry <= 6.4:
+                try:
+                    resp = requests.post(remote_address,
+                                         params={"async": 1},
+                                         json={},
+                                         timeout=5,
+                                         headers={"x-mfn-action": "session-update",
+                                                  "x-mfn-action-data": json.dumps(action_data)})
+                except Exception as exc:
+                    self._logger.info("Sending remote message failed: " + str(exc) + "; retrying in: " + str(retry) + "s")
+                    time.sleep(retry)
+                    retry = retry * 2
+
+            if retry > 6.4:
+                self._logger.info("Could not send remote message due to timeouts.")
 
         elif message_type == "global_pub":
             # TODO: if global publishing, set headers appropriately (e.g., for load balancing)
             pass
-
-        return
 
     def _publish_privileged_output(self, function_output, lqcpub):
         next = function_output["next"]
@@ -461,19 +472,19 @@ class PublicationUtils():
     def _send_message_to_recovery_manager(self, key, message_type, topic, func_exec_id, has_error, error_type, lqcpub):
         # TODO
         return
-        message_rec = {}
-        message_rec["messageType"] = message_type
-        message_rec["currentTopic"] = topic
-        message_rec["currentFunctionExecutionId"] = func_exec_id
-        message_rec["hasError"] = has_error
-        message_rec["errorType"] = error_type
+        #message_rec = {}
+        #message_rec["messageType"] = message_type
+        #message_rec["currentTopic"] = topic
+        #message_rec["currentFunctionExecutionId"] = func_exec_id
+        #message_rec["hasError"] = has_error
+        #message_rec["errorType"] = error_type
 
-        output = {}
-        output["topicNext"] = self._recovery_manager_topic
-        output["value"] = json.dumps(message_rec)
-        outputstr = json.dumps(output)
+        #output = {}
+        #output["topicNext"] = self._recovery_manager_topic
+        #output["value"] = json.dumps(message_rec)
+        #outputstr = json.dumps(output)
         # message via global publisher to pub manager's queue for backups
-        self._send_local_queue_message(lqcpub, self._pub_topic_global, key, outputstr)
+        #self._send_local_queue_message(lqcpub, self._pub_topic_global, key, outputstr)
 
     # need to log backups of inputs and send message to recovery manager
     def send_to_function_now(self, key, trigger, lqcpub=None):
@@ -659,4 +670,3 @@ class PublicationUtils():
         # shut down the local queue client
         self._shutdown_local_queue_client()
         self._shutdown_backup_data_layer_client()
-
