@@ -447,9 +447,7 @@ class SessionUtils:
         trigger["value"] = message
         trigger["to_running_function"] = True
         trigger["next"] = function_metadata["communicationTopic"]
-        # TESTING: the below check should be about equality '=='
-        #if self._hostname == function_metadata["hostname"]:
-        if self._hostname != function_metadata["hostname"]:
+        if self._hostname == function_metadata["hostname"]:
             # local function instance; send it via local queue
             #self._logger.debug("[SessionUtils] Local session function: " + str(session_function_id))
             trigger["is_local"] = True
@@ -460,7 +458,7 @@ class SessionUtils:
             trigger["remote_address"] = function_metadata["remote_address"]
 
         if send_now:
-            self._publication_utils.send_to_function_now("-1l", trigger)
+            self._publication_utils.send_to_function_now(self._key, trigger)
         else:
             self._publication_utils.append_trigger(trigger)
 

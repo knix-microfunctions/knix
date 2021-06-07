@@ -324,6 +324,7 @@ class PublicationUtils():
                                      timeout=5,
                                      headers={"x-mfn-action": message_type,
                                               "x-mfn-action-data": json.dumps(action_data)})
+                break
             except Exception as exc:
                 self._logger.info("Sending remote message (" + message_type + ") failed: " + str(exc) + "; retrying in: " + str(retry) + "s")
                 time.sleep(retry)
@@ -412,10 +413,12 @@ class PublicationUtils():
                 self._send_remote_message(trigger["remote_address"], "session-update", action_data)
 
             return (None, None)
+
         elif "is_privileged" in trigger and trigger["is_privileged"]:
             # next[0:6] == "async_"
             # next == self._recovery_manager_topic:
             return self._publish_privileged_output(trigger, lqcpub)
+
         else:
             topic_next = self._prefix + next
 
@@ -433,14 +436,15 @@ class PublicationUtils():
                     timestamp_map['t_pub_localqueue'] = time.time() * 1000.0
                 self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
             else:
-                # TODO: three cases:
+                # Three cases:
                 # 1. non-local next: remote message; header: "global-pub"
                 # 2. non-local end: remote message; header: "remote-result"
                 # 3. local end: publish to local queue
-                # TODO: global publishing, set headers appropriately "global-pub" (e.g., for load balancing)
-                # TODO: need to also ensure that a message to a non-local topic gets properly handled
+                # need to ensure that a message to a non-local topic gets properly handled
+                # TODO: global publishing, set headers appropriately "global-pub" (e.g., for load balancing) (case 1)
                 # for multi-host deployments for load redirection
-                # currently, we don't have such cases
+                # currently, we don't have case 1; requires a global messaging mechanism with some metadata
+                # of where the remote message needs to be sent
 
                 # check if 'next' is exit topic
                 if next == self._wf_exit:
@@ -448,9 +452,10 @@ class PublicationUtils():
                     # check __client_origin_frontend in metadata
                     # compile remote-result message
                     # send remote message directly to the origin frontend
-                    # TODO: ensure that remote address is not our frontend
-                    # TESTING: remove the commented out check with internal endpoint
-                    if "__client_origin_frontend" in self._metadata:# and self._internal_endpoint != self._metadata["__client_origin_frontend"]:
+                    # ensure that remote address is not our frontend
+                    # TESTING: ignore whether the host is local or not; replace the check with the commented out line below
+                    #if "__client_origin_frontend" in self._metadata:
+                    if "__client_origin_frontend" in self._metadata and self._internal_endpoint != self._metadata["__client_origin_frontend"]:
                         remote_result_message = {}
                         remote_result_message["key"] = key
                         remote_result_message["value"] = output["value"]

@@ -345,7 +345,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
       if (actionhdr == "session-update") {
           log.Printf("New session update message...")
 
-          // TODO: need to get additional metadata about __client_origin_frontend
           type ActionMessage struct {
               Topic string `json:"topic"`
               Key string `json:"key"`
@@ -432,6 +431,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
         msg.Mfnmetadata.AsyncExecution = async
         msg.Mfnmetadata.ExecutionId = id
         msg.Mfnmetadata.FunctionExecutionId = id
+        msg.Mfnmetadata.ClientOriginFrontend = internalEndpoint
         msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
         body, err := ioutil.ReadAll(r.Body)
         if err != nil {
@@ -443,7 +443,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
         topic = actiondata
         log.Printf("Trigger-Event message topic: [%s], id: [%s]", topic, id)
     } else if (actionhdr == "remote-result") {
-        // TODO
         log.Printf("New remote result message...")
 
         type ActionMessage struct {
@@ -465,7 +464,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
         msg := MfnMessage{}
         err = msg.UnmarshalJSON(valueb)
 
-        // TODO: get the execution context and signal that the result is available
+        // get the execution context and signal that the result is available
         ExecutionCond.L.Lock()
         e, ok := ExecutionResults[msg.Mfnmetadata.ExecutionId]
         ExecutionCond.L.Unlock()
@@ -493,12 +492,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
         return
       }
 
-      // TODO: metadata about __client_origin_frontend
       msg = MfnMessage{}
       msg.Mfnmetadata = &Metadata{}
       msg.Mfnmetadata.AsyncExecution = async
       msg.Mfnmetadata.ExecutionId = id
       msg.Mfnmetadata.FunctionExecutionId = id
+      msg.Mfnmetadata.ClientOriginFrontend = internalEndpoint
       msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
       body, err := ioutil.ReadAll(r.Body)
       if err != nil {
