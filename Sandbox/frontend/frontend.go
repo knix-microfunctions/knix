@@ -350,6 +350,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
               Topic string `json:"topic"`
               Key string `json:"key"`
               Value string `json:"value"`
+              ClientOriginFrontend string `json:"client_origin_frontend"`
           }
           var data ActionMessage
           bactiondata := []byte(actiondata)
@@ -369,6 +370,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
           msg.Mfnmetadata.AsyncExecution = async
           msg.Mfnmetadata.ExecutionId = id
           msg.Mfnmetadata.FunctionExecutionId = id
+          msg.Mfnmetadata.ClientOriginFrontend = data.ClientOriginFrontend
           msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
 
           msg.Mfnuserdata = data.Value

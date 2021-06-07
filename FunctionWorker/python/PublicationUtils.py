@@ -407,6 +407,7 @@ class PublicationUtils():
                 action_data["key"] = key
                 action_data["value"] = trigger["value"]
                 # TODO: include the metadata about __origin_client_frontend
+                action_data["client_origin_frontend"] = self._metadata["__client_origin_frontend"]
 
                 self._send_remote_message(trigger["remote_address"], "session-update", action_data)
 
@@ -432,41 +433,46 @@ class PublicationUtils():
                     timestamp_map['t_pub_localqueue'] = time.time() * 1000.0
                 self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
             else:
+                # TODO: three cases:
+                # 1. non-local next: remote message; header: "global-pub"
+                # 2. non-local end: remote message; header: "remote-result"
+                # 3. local end: publish to local queue
                 # TODO: global publishing, set headers appropriately "global-pub" (e.g., for load balancing)
                 # TODO: need to also ensure that a message to a non-local topic gets properly handled
                 # for multi-host deployments for load redirection
                 # currently, we don't have such cases
 
-                self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
-
                 # check if 'next' is exit topic
                 if next == self._wf_exit:
-                    if timestamp_map is not None:
-                        timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
-                        timestamp_map['exitsize'] = len(output["value"])
-
-                    key = self._metadata["__execution_id"]
-
-                    # TODO: check __client_origin_frontend in metadata
-                    # TODO: compile remote-result message
-                    # TODO: send remote message directly to the origin frontend
+                    # Case 2: non-local end
+                    # check __client_origin_frontend in metadata
+                    # compile remote-result message
+                    # send remote message directly to the origin frontend
                     # TODO: ensure that remote address is not our frontend
-                    if "__client_origin_frontend" in self._metadata and self._internal_endpoint != self._metadata["__client_origin_frontend"]:
+                    # TESTING: remove the commented out check with internal endpoint
+                    if "__client_origin_frontend" in self._metadata:# and self._internal_endpoint != self._metadata["__client_origin_frontend"]:
                         remote_result_message = {}
                         remote_result_message["key"] = key
                         remote_result_message["value"] = output["value"]
 
                         self._send_remote_message(self._metadata["__client_origin_frontend"], "remote-result", remote_result_message)
+                    else:
+                        # Case 3: local end
+                        self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
 
-                    dlc = self._get_backup_data_layer_client()
+                    if timestamp_map is not None:
+                        timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
+                        timestamp_map['exitsize'] = len(output["value"])
 
                     # store the workflow's final result
+                    dlc = self._get_backup_data_layer_client()
                     dlc.put("result_" + key, output["value"])
                     #self._logger.debug("[__mfn_backup] [exitresult] [%s] %s", "result_" + key, output["value"])
 
                 else:
-
-
+                    # Case 1: non-local next
+                    # TODO
+                    pass
 
             return (next_function_execution_id, output)
 
