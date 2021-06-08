@@ -327,13 +327,13 @@ class MFNTest():
         if self._workflow.status == "deployed":
             return self._workflow.endpoints
 
-    def execute(self, message, timeout=None, check_duration=False, async_=False):
+    def execute(self, message, timeout=None, check_duration=False, async_=False, endpoint=None):
         if timeout is None:
             timeout = self._settings["timeout"]
         if async_:
-            return self._workflow.execute_async(message, timeout)
+            return self._workflow.execute_async(message, timeout, endpoint)
         else:
-            return self._workflow.execute(message, timeout, check_duration)
+            return self._workflow.execute(message, timeout, check_duration, endpoint)
 
     def get_workflow_logs(self, num_lines=500):
         data = self._workflow.logs(num_lines=num_lines)

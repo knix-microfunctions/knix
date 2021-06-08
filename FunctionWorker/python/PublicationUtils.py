@@ -407,7 +407,7 @@ class PublicationUtils():
                 action_data["topic"] = next
                 action_data["key"] = key
                 action_data["value"] = trigger["value"]
-                # TODO: include the metadata about __origin_client_frontend
+                # include also the metadata about __origin_client_frontend
                 action_data["client_origin_frontend"] = self._metadata["__client_origin_frontend"]
 
                 self._send_remote_message(trigger["remote_address"], "session-update", action_data)

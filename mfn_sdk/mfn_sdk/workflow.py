@@ -219,7 +219,7 @@ class Workflow(object):
                 time.sleep(sleep)
                 sleep += 1
 
-    def execute_async(self,data,timeout=30):
+    def execute_async(self, data, timeout=30, endpoint=None):
         """ execute a workflow asynchronously and returns an Execution object
 
         The function delivers an event to the frontend and returns an Execution object. Note that the timeout here applies to the delivery of the event, another timeout can be used when fetching the result with the Execution.get(timeout) method
@@ -229,6 +229,8 @@ class Workflow(object):
         :type data: dict()
         :param timeout: time in seconds to wait for the event delivery to complete, otherwise throws ReadTimeout
         :type timeout: int
+        :param endpoint: endpoint url to use
+        :type endpoint: string
         :return: an Execution object to fetch the result
         :rtype: Execution
         :raises requests.exceptions.HTTPError: when the HTTP request to deliver the event fails
@@ -239,8 +241,11 @@ class Workflow(object):
         if self._status != "deployed":
             raise Exception("Workflow not deployed: " + self.name)
 
-        # we are already deployed and have the endpoints stored in self._endpoints
-        url = random.choice(self._endpoints)
+        if endpoint:
+            url = endpoint
+        else:
+            # we are already deployed and have the endpoints stored in self._endpoints
+            url = random.choice(self._endpoints)
 
         try:
             r = self.client._s.post(url,
@@ -255,7 +260,7 @@ class Workflow(object):
         exec_id = r.text
         return Execution(self.client, url, exec_id)
 
-    def execute(self,data,timeout=60, check_duration=False):
+    def execute(self, data, timeout=60, check_duration=False, endpoint=None):
         """ execute a workflow synchronously
 
         The function sends an event to the frontend and waits for the result in the HTTP response
@@ -264,7 +269,11 @@ class Workflow(object):
         :type data: dict()
         :param timeout: time in seconds to wait for the workflow to complete, otherwise throws ReadTimeout
         :type timeout: int
-        :return: the result of the workflow execution
+        :param check_duration: whether to report latency
+        :type check_duration: bool
+        :param endpoint: endpoint url to use
+        :type endpoint: string
+        :return: the result of the workflow execution, or a tuple of the execution result and latency if check_duration is True
         :rtype: dict()
 
         :raises requests.exceptions.HTTPError: when the HTTP request to execute the workflow fails (e.g. 500 ServerError)
@@ -277,8 +286,11 @@ class Workflow(object):
         if self._status != "deployed":
             raise Exception("Workflow not deployed: " + self.name)
 
-        # we are already deployed and have the endpoints stored in self._endpoints
-        url = random.choice(self._endpoints)
+        if endpoint:
+            url = endpoint
+        else:
+            # we are already deployed and have the endpoints stored in self._endpoints
+            url = random.choice(self._endpoints)
         try:
             #postdata = {}
             #postdata["value"] = json.dumps(data)
