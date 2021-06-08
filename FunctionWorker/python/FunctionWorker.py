@@ -93,7 +93,7 @@ class FunctionWorker:
         if self._is_session_workflow:
             self._session_utils = SessionUtils(self._worker_params, self._publication_utils, self._logger)
 
-        # TODO: SAPI
+        # SAPI
         # pass the SessionUtils object for API calls to send a message to other running functions?
         # MicroFunctionsAPI object checks before sending a message (i.e., allow only if this is_session_workflow is True)
         # Maybe allow only if the destination is a session function? Requires a list of session functions and passing them to the MicroFunctionsAPI and SessionUtils

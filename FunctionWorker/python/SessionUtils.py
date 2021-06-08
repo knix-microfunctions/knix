@@ -458,7 +458,7 @@ class SessionUtils:
             trigger["remote_address"] = function_metadata["remote_address"]
 
         if send_now:
-            self._publication_utils.send_to_function_now("-1l", trigger)
+            self._publication_utils.send_to_function_now(self._key, trigger)
         else:
             self._publication_utils.append_trigger(trigger)
 

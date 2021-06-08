@@ -15,7 +15,7 @@
 ---
   # run as follows: ansible-playbook -K -e "@settings.json" init_once.yml
   # or as: ./run.sh init_once.yml
-- hosts: all
+- hosts: sandbox
 
   vars:
     sandbox_deployment_package_directory: "../../Sandbox"
@@ -26,13 +26,13 @@
     container_tag: "microfn/sandbox"
     container_java_tag: "microfn/sandbox_java"
     install_dir: "{{ mfn_server_installation_folder }}/sandbox"
-    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}:8087"
+    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_ssh_host }}:8087"
 
   tasks:
   - debug:
       msg:
       - inventory_hostname = {{ inventory_hostname }}
-      - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+      - ansible_ssh_host = {{ ansible_ssh_host }}
       - mfn_server_installation_folder = {{ mfn_server_installation_folder }}
       - sandbox deployment directory = {{ sandbox_deployment_package_directory }}
       - sandbox deployment package name = {{ sandbox_deployment_package_name }}

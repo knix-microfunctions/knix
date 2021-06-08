@@ -19,7 +19,7 @@
 
   vars:
     coordinator_name: "{{ groups['riak'][0] }}"
-    coordinator_ip: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}"
+    coordinator_ip: "{{ hostvars[groups['riak'][0]].ansible_ssh_host }}"
 
     # location of mfn's riak deployment package on local machine
     mfn_riak_deployment_package_dir: "../../riak"
@@ -75,7 +75,7 @@
   - debug:
       msg:
         - inventory_hostname = {{ inventory_hostname }}
-        - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+        - ansible_ssh_host = {{ ansible_ssh_host }}
         - mfn_server_installation_folder = {{ mfn_server_installation_folder }}    # e.g. /opt/mfn
         - coordinator_name = {{ coordinator_name }}
         - coordinator_ip = {{ coordinator_ip }}
@@ -183,7 +183,7 @@
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
       regexp: "^nodename = "
-      line: "nodename = riak@{{ ansible_default_ipv4.address }}"
+      line: "nodename = riak@{{ ansible_ssh_host }}"
 
   - name: configure riak distributed_cookie
     lineinfile:
@@ -195,13 +195,13 @@
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
       regexp: "^listener.protobuf.internal = "
-      line: "listener.protobuf.internal = {{ ansible_default_ipv4.address }}:8087"
+      line: "listener.protobuf.internal = {{ ansible_ssh_host }}:8087"
 
   - name: configure riak http listener
     lineinfile:
       path: "{{ riak_server_config_filepath }}"
       regexp: "^listener.http.internal = "
-      line: "listener.http.internal = {{ ansible_default_ipv4.address }}:8098"
+      line: "listener.http.internal = {{ ansible_ssh_host }}:8098"
 
   - name: configure riak erlang.distribution.port_range.minimum
     lineinfile:
@@ -332,8 +332,8 @@
         #!/bin/sh
         # config file path: {{ riak_server_config_filepath }}
         sudo systemctl start {{ riak_server_service_name }}
-        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:8087 -t 45
-        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:8098 -t 45
+        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_ssh_host }}:8087 -t 45
+        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_ssh_host }}:8098 -t 45
 
   - name: create riak stop script
     copy:
@@ -365,7 +365,7 @@
     shell: |
       /usr/sbin/riak-admin cluster status | egrep {{ coordinator_ip }}
     register: alreadypart
-    when: ansible_default_ipv4.address != coordinator_ip
+    when: ansible_ssh_host != coordinator_ip
     failed_when: alreadypart.rc == 1 and alreadypart.stdout != ""
 
   - debug:
@@ -374,13 +374,13 @@
         - already part of cluster cmd stdout = {{ alreadypart.stdout }}
         - already part of cluster cmd stderr = {{ alreadypart.stderr }}
         - already part of cluster cmd rc = {{ alreadypart.rc }}
-    when: ansible_default_ipv4.address != coordinator_ip
+    when: ansible_ssh_host != coordinator_ip
 
   - name: join cluster
     shell: |
       /usr/sbin/riak-admin cluster join riak@{{ coordinator_ip }}
     register: clusterout
-    when: ansible_default_ipv4.address != coordinator_ip and alreadypart.stdout == ""
+    when: ansible_ssh_host != coordinator_ip and alreadypart.stdout == ""
 
   - debug:
       msg:
@@ -388,7 +388,7 @@
         - join cluster cmd stdout = {{ clusterout.stdout }}
         - join cluster cmd stderr = {{ clusterout.stderr }}
         - join cluster rc = {{ clusterout.rc }}
-    when: ansible_default_ipv4.address != coordinator_ip and alreadypart.stdout == ""
+    when: ansible_ssh_host != coordinator_ip and alreadypart.stdout == ""
 
   - name: set mfn_counter_trigger bucket
     shell: |
@@ -451,11 +451,11 @@
       /usr/sbin/riak-admin bucket-type activate maps
 
   - name: wait for riak 8087
-    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:8087 -t 45"
+    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_ssh_host }}:8087 -t 45"
     register: wait_result1
 
   - name: wait for riak 8098
-    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_default_ipv4.address }}:8098 -t 45"
+    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_ssh_host }}:8098 -t 45"
     register: wait_result2
 
   - name: waiting result
@@ -475,7 +475,7 @@
     shell: |
       /usr/sbin/riak-admin cluster plan
       /usr/sbin/riak-admin cluster commit
-    when: hostvars[groups['riak'][0]].ansible_default_ipv4.address == ansible_default_ipv4.address
+    when: hostvars[groups['riak'][0]].ansible_ssh_host == ansible_ssh_host
 
 #  - name: systemd install and disable mfn-riak service
 #    systemd:

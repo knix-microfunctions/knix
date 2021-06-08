@@ -16,26 +16,26 @@
 package main
 
 import (
-	"bufio"
-	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
+    "bufio"
+    "context"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "io/ioutil"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "strings"
+    "sync"
+    "syscall"
+    "time"
 
-	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
-	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
-	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
+    "github.com/apache/thrift/lib/go/thrift"
+    "github.com/go-redis/redis/v8"
+    "github.com/google/uuid"
+    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
+    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
 )
 
 // custom log writer to overwrite the default log format
@@ -84,6 +84,11 @@ var (
 // Consumer (see ConsumeResults() uses a global result topic set by main()
 var (
   resultTopic string
+)
+
+var (
+  internalEndpoint string
+  externalEndpoint string
 )
 
 // Datalayer is used to store checkpoints when sending a message and to retrieve results of executions by the HTTP handler
@@ -344,6 +349,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
               Topic string `json:"topic"`
               Key string `json:"key"`
               Value string `json:"value"`
+              ClientOriginFrontend string `json:"client_origin_frontend"`
           }
           var data ActionMessage
           bactiondata := []byte(actiondata)
@@ -363,6 +369,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
           msg.Mfnmetadata.AsyncExecution = async
           msg.Mfnmetadata.ExecutionId = id
           msg.Mfnmetadata.FunctionExecutionId = id
+          msg.Mfnmetadata.ClientOriginFrontend = data.ClientOriginFrontend
           msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
 
           msg.Mfnuserdata = data.Value
@@ -424,6 +431,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
         msg.Mfnmetadata.AsyncExecution = async
         msg.Mfnmetadata.ExecutionId = id
         msg.Mfnmetadata.FunctionExecutionId = id
+        msg.Mfnmetadata.ClientOriginFrontend = internalEndpoint
         msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
         body, err := ioutil.ReadAll(r.Body)
         if err != nil {
@@ -434,6 +442,45 @@ func handler(w http.ResponseWriter, r *http.Request) {
         msg.Mfnuserdata = string(body)
         topic = actiondata
         log.Printf("Trigger-Event message topic: [%s], id: [%s]", topic, id)
+    } else if (actionhdr == "remote-result") {
+        log.Printf("New remote result message...")
+
+        type ActionMessage struct {
+            Key string `json:"key"`
+            Value string `json:"value"`
+        }
+        var data ActionMessage
+        bactiondata := []byte(actiondata)
+        err := json.Unmarshal(bactiondata, &data)
+        if err != nil {
+            log.Printf("handler: Couldn't unmarshal remote result message: %s", err)
+            log.Fatal(err)
+        }
+
+        log.Printf("Parsed remote result message: id: [%s], result: [%s]", data.Key, data.Value)
+
+        valueb := []byte(data.Value)
+
+        msg := MfnMessage{}
+        err = msg.UnmarshalJSON(valueb)
+
+        // get the execution context and signal that the result is available
+        ExecutionCond.L.Lock()
+        e, ok := ExecutionResults[msg.Mfnmetadata.ExecutionId]
+        ExecutionCond.L.Unlock()
+        if !ok {
+            log.Println("handler: Received unknown remote result", string(msg.Mfnmetadata.ExecutionId))
+            return
+        }
+        log.Println("handler: Received remote result for ID", msg.Mfnmetadata.ExecutionId)
+        e.cond.L.Lock()
+        e.rt_rcvdlq = rt_rcvdlq
+        e.msg = &msg
+        e.cond.Broadcast()
+        e.cond.L.Unlock()
+
+        // this special message doesn't trigger the workflow; therefore, need to stop here
+        return
     }
   } else {
       is_special_message = false
@@ -450,6 +497,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       msg.Mfnmetadata.AsyncExecution = async
       msg.Mfnmetadata.ExecutionId = id
       msg.Mfnmetadata.FunctionExecutionId = id
+      msg.Mfnmetadata.ClientOriginFrontend = internalEndpoint
       msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
       body, err := ioutil.ReadAll(r.Body)
       if err != nil {
@@ -737,7 +785,7 @@ func Fakeit(msg *MfnMessage) (error) {
 }
 
 func init() {
-	initResourceStats()
+    initResourceStats()
 }
 
 // The frontend initializes datalayer and producer thrift clients, starts consumer as a go routine, registers a signal handler for graceful shutdowns and blocks at starting the http server
@@ -749,6 +797,8 @@ func main() {
   fmt.Println("Frontend starting ...")
   entryTopic  = os.Getenv("MFN_ENTRYTOPIC")
   resultTopic = os.Getenv("MFN_RESULTTOPIC")
+  internalEndpoint = os.Getenv("MFN_INTERNAL_ENDPOINT")
+  externalEndpoint = os.Getenv("MFN_EXTERNAL_ENDPOINT")
   fmt.Println("consuming results from", resultTopic)
   datalayerKeyspace = "sbox_"+os.Getenv("SANDBOXID")
   datalayerTable = "sbox_default_" + os.Getenv("SANDBOXID")
