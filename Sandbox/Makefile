@@ -21,6 +21,7 @@ include ../build_env.mk
 default: build_thrift \
 	image \
 	image_gpu \
+	image_gpu_opencv \
 	image_java
 
 clean:
@@ -105,6 +106,15 @@ image_gpu: \
 	build/SandboxAgent.tar.gz
 	$(call build_image,Dockerfile_gpu,microfn/sandbox_gpu)
 
+image_gpu_opencv: \
+	Dockerfile_gpu_opencv \
+	build/redis-server.tar.gz \
+	frontend/frontend \
+	build/LoggingService.tar.gz \
+	build/FunctionWorker.tar.gz \
+	build/SandboxAgent.tar.gz
+	$(call build_image,Dockerfile_gpu_opencv,microfn/sandbox_gpu_opencv)
+
 
 image_java: \
 	Dockerfile_java \
@@ -116,9 +126,10 @@ image_java: \
 	build/SandboxAgent.tar.gz
 	$(call build_image,Dockerfile_java,microfn/sandbox_java)
 
-push: image image_gpu image_java 
+push: image image_gpu image_java image_gpu_opencv
 	$(call push_image,microfn/sandbox)
 	$(call push_image,microfn/sandbox_gpu)
+	$(call push_image,microfn/sandbox_gpu_opencv)
 	$(call push_image,microfn/sandbox_java)
 
 
