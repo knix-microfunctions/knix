@@ -419,14 +419,20 @@ class StateUtils:
         self._logger.debug("[StateUtils] evaluateMapState, maxConcurrency: " + str(maxConcurrency))
         self._logger.debug("[StateUtils] evaluateMapState metadata: " + str(metadata))
 
+        self._logger.info("[StateUtils] evaluateMapState, maxConcurrency: " + str(maxConcurrency))
+        self._logger.info("[StateUtils] evaluateMapState metadata: " + str(metadata))
+
         counter_name_topic = self.functionstatename + "-" + self.sandboxid
 
         total_branch_count = len(function_input) # all branches executed concurrently
-
+        #sapi.put(name_prefix + "_" + "mapInputCount", str(len(function_input)))
+  
         klist = [total_branch_count]
 
         self.parsedfunctionstateinfo["BranchCount"] = int(total_branch_count) # overwrite parsed BranchCount with new value
         self._logger.debug("[StateUtils] evaluateMapState, total_branch_count: " + str(total_branch_count))
+
+        self._logger.info("[StateUtils] evaluateMapState, total_branch_count: " + str(total_branch_count))
 
         # prepare counter metadata
         counter_metadata = {}
@@ -459,6 +465,7 @@ class StateUtils:
         counter_name_value_metadata["__state_action"] = "post_map_processing"
         counter_name_value_metadata["state_counter"] = metadata["state_counter"]
         self._logger.debug("[StateUtils] evaluateMapState, metadata[state_counter]: " + str(metadata["state_counter"]))
+        self._logger.info("[StateUtils] evaluateMapState, metadata[state_counter]: " + str(metadata["state_counter"]))
         self.mapStateCounter = int(metadata["state_counter"])
 
         counter_name_value = {"__mfnmetadata": counter_name_value_metadata, "__mfnuserdata": '{}'}
@@ -506,6 +513,8 @@ class StateUtils:
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
         self._logger.debug("[StateUtils] full_metadata_encoded put key: " + str(workflow_instance_metadata_storage_key))
 
+        self._logger.info("[StateUtils] full_metadata_encoded put key: " + str(workflow_instance_metadata_storage_key))
+
         sapi.put(workflow_instance_metadata_storage_key, json.dumps(metadata))
 
         # Now provide each branch with its own input
@@ -523,9 +532,14 @@ class StateUtils:
             self._logger.debug("\t Map State StartAt:" + startat)
             self._logger.debug("\t Map State input:" + str(function_input[i]))
 
+            self._logger.info("\t Map State StartAt:" + startat)
+            self._logger.info("\t Map State input:" + str(function_input[i]))
+
         return function_input, metadata
 
     def evaluatePostMap(self, function_input, key, metadata, sapi):
+        self._logger.info("\t inside evaluatePostMap: " + str(function_input)+ " " + str(metadata) + " " + str(sapi))
+
 
         name_prefix = self.functiontopic + "_" + key
 
@@ -542,10 +556,14 @@ class StateUtils:
 
         self._logger.debug("\t metadata:" + json.dumps(metadata))
 
+        self._logger.info("\t metadata:" + json.dumps(metadata))
+
         workflow_instance_metadata_storage_key = str(function_input["WorkflowInstanceMetadataStorageKey"])
         assert py3utils.is_string(workflow_instance_metadata_storage_key)
         full_metadata_encoded = sapi.get(workflow_instance_metadata_storage_key)
         self._logger.debug("[StateUtils] full_metadata_encoded get: " + str(full_metadata_encoded))
+
+        self._logger.info("[StateUtils] full_metadata_encoded get: " + str(full_metadata_encoded))
 
         full_metadata = json.loads(full_metadata_encoded)
         full_metadata["state_counter"] = state_counter
@@ -556,6 +574,8 @@ class StateUtils:
         branchOutputKeysSetKey = str(mapInfo["BranchOutputKeysSetKey"])
         branchOutputKeysSet = sapi.retrieveSet(branchOutputKeysSetKey)
         self._logger.debug("\t branchOutputKeysSet: " + str(branchOutputKeysSet))
+
+        self._logger.info("\t branchOutputKeysSet: " + str(branchOutputKeysSet))
 
         if not branchOutputKeysSet:
             self._logger.error("[StateUtils] branchOutputKeysSet is empty")
@@ -576,12 +596,16 @@ class StateUtils:
         NumBranchesFinished = abs(counterValue)
         self._logger.debug("\t NumBranchesFinished:" + str(NumBranchesFinished))
 
+        self._logger.info("\t NumBranchesFinished:" + str(NumBranchesFinished))
+
         do_cleanup = False
 
         if klist[-1] == NumBranchesFinished:
             do_cleanup = True
 
         self._logger.debug("\t do_cleanup:" + str(do_cleanup))
+
+        self._logger.info("\t do_cleanup:" + str(do_cleanup))
 
         counterName = str(mapInfo["CounterName"])
         counter_metadata_key_name = counterName + "_metadata"
@@ -610,6 +634,10 @@ class StateUtils:
 
         self._logger.debug("\t mapInfo_BranchOutputKeys length: " + str(len(mapInfo["BranchOutputKeys"])))
 
+        self._logger.info("\t mapInfo_BranchOutputKeys:" + str(mapInfo["BranchOutputKeys"]))
+
+        self._logger.info("\t mapInfo_BranchOutputKeys length: " + str(len(mapInfo["BranchOutputKeys"])))
+
         for outputkey in mapInfo["BranchOutputKeys"]:
             outputkey = str(outputkey)
             if outputkey in branchOutputKeysSet: # mapInfo["BranchOutputKeys"]:
@@ -623,15 +651,23 @@ class StateUtils:
                 self._logger.debug("\t branchOutput:" + branchOutput)
                 self._logger.debug("\t branchOutput_decoded(type):" + str(type(branchOutput_decoded)))
                 self._logger.debug("\t branchOutput_decoded:" + str(branchOutput_decoded))
+                self._logger.info("\t branchOutput(type):" + str(type(branchOutput)))
+                self._logger.info("\t branchOutput:" + branchOutput)
+                self._logger.info("\t branchOutput_decoded(type):" + str(type(branchOutput_decoded)))
+                self._logger.info("\t branchOutput_decoded:" + str(branchOutput_decoded))
                 post_map_output_values = post_map_output_values + [branchOutput_decoded]
                 if do_cleanup:
                     sapi.delete(outputkey) # cleanup the key from data layer
                     self._logger.debug("\t cleaned output key:" + outputkey)
+                    self._logger.info("\t cleaned output key:" + outputkey)
             else:
                 post_map_output_values = post_map_output_values + [None]
                 self._logger.debug("\t this_BranchOutputKeys is not contained: " + str(outputkey))
 
+                self._logger.info("\t this_BranchOutputKeys is not contained: " + str(outputkey))
+
         self._logger.debug("\t post_map_output_values:" + str(post_map_output_values))
+        self._logger.info("\t post_map_output_values:" + str(post_map_output_values))
         while (sapi.get(name_prefix + "_" + "mapStatePartialResult")) == "":
             time.sleep(0.1) # wait until value is available
 
@@ -640,15 +676,25 @@ class StateUtils:
         mapStatePartialResult += post_map_output_values
         sapi.put(name_prefix + "_" + "mapStatePartialResult", str(mapStatePartialResult))
 
+        time.sleep(5.0)
+ 
         # now apply ResultPath and OutputPath
         if do_cleanup:
 
             sapi.deleteSet(branchOutputKeysSetKey)
 
+        while (sapi.get(name_prefix + "_" + "mapInputCount") == ""):
+            time.sleep(0.1) # wait until value is available
+
         if ast.literal_eval(sapi.get(name_prefix + "_" + "mapInputCount")) == len(mapStatePartialResult):
+            #time.sleep(0.5)
 
             # we are ready to publish  but need to honour ResultPath and OutputPath
+            while (sapi.get(name_prefix + "_" +"mapStatePartialResult") == ""):
+                time.sleep(0.1)
             res_raw = ast.literal_eval(sapi.get(name_prefix + "_" +"mapStatePartialResult"))
+            self._logger.info("[StateUtils] evaluatePostMap: res_raw" + str(res_raw) + " vs. " + sapi.get(name_prefix + "_" + "mapInputCount"))
+ 
 
             # remove unwanted keys from input before publishing
             function_input = {}
@@ -668,6 +714,9 @@ class StateUtils:
             sapi.delete(name_prefix + "_" + "mapStatePartialResult")
             sapi.delete(name_prefix + "_" + "tobeProcessedlater")
             post_map_output_values = function_input_post_output
+        else:
+            #raise Exception("mapInputCount" + str(sapi.get(name_prefix + "_" + "mapInputCount")) + " does not match mapStatePartialResult: " + str(mapStatePartialResult))
+            print("mapInputCount" + str(sapi.get(name_prefix + "_" + "mapInputCount")) + " does not match mapStatePartialResult: " + str(mapStatePartialResult))
         return post_map_output_values, full_metadata
 
     def evaluateParallelState(self, function_input, key, metadata, sapi):
@@ -964,7 +1013,7 @@ class StateUtils:
 
     def evaluateNonTaskState(self, function_input, key, metadata, sapi):
         # 3. Evaluate Non Task states
-        #self._logger.debug("[StateUtils] NonTask state type: " + str(self.functionstatetype))
+        self._logger.info("[StateUtils] NonTask state type: " + str(self.functionstatetype))
         #self._logger.debug("[StateUtils] Welcome to evaluateNonTaskState! Current key:" + str(key))
         function_output = None
         if self.functionstatetype == StateUtils.choiceStateType:
@@ -1090,6 +1139,9 @@ class StateUtils:
             self._logger.debug("[StateUtils] Map state maxConcurrency: " + str(maxConcurrency))
             self._logger.debug("[StateUtils] Map state handling")
 
+            self._logger.info("[StateUtils] Map state maxConcurrency: " + str(maxConcurrency))
+            self._logger.info("[StateUtils] Map state handling metadata: " + str(metadata) )
+
             if "__state_action" not in metadata or metadata["__state_action"] != "post_map_processing":
                 # here we start the iteration process on a first batch
                 if maxConcurrency != 0:
@@ -1099,25 +1151,40 @@ class StateUtils:
                     tobeProcessednow = function_input
                     tobeProcessedlater = []
                 self._logger.debug("[StateUtils] Map state function_input split:" + str(tobeProcessednow) + " " + str(tobeProcessedlater))
+                self._logger.info("[StateUtils] Map state function_input split:" + str(tobeProcessednow) + " " + str(tobeProcessedlater))
                 sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater)) # store elements to be processed on DL
                 sapi.put(name_prefix + "_" + "mapStatePartialResult", "[]") # initialise the collector variable
                 sapi.put(name_prefix + "_" + "mapInputCount", str(len(function_input)))
+                #metadata["__state_action"] = ""
 
                 function_output, metadata = self.evaluateMapState(tobeProcessednow, key, metadata, sapi)
+                #metadata["__state_action"] = ""
+
 
             elif metadata["__state_action"] == "post_map_processing":
                 tobeProcessedlater = ast.literal_eval(sapi.get(name_prefix + "_" + "tobeProcessedlater")) # get all elements that have not yet been processed
                 self._logger.debug("[StateUtils] Map state post_map processing input:" + str(tobeProcessedlater))
+                self._logger.info("[StateUtils] Map state post_map processing input:" + str(tobeProcessedlater))
                 # we need to decide at this point if there is a need for more batches. if so:
 
                 if len(tobeProcessedlater) > 0: # we need to start another batch
+                    self._logger.info("[StateUtils] tobeProcessedlater: " + str(tobeProcessedlater)+ ", function_input: " +str(function_input))
                     function_output, metadata2 = self.evaluatePostMap(function_input, key, metadata, sapi) # take care not to overwrite metadata
+                    self._logger.info("[StateUtils] after evaluatPostMap: " + str(function_output))
                     function_output, metadata = self.evaluateMapState(tobeProcessedlater[:maxConcurrency], key, metadata, sapi) # start a new batch
+                    self._logger.info("[StateUtils] after evaluateMapState:" + str(function_output))
+                    self._logger.info("[StateUtils] after evaluateMapState, metadata: " + str(metadata))
                     sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
+                    self._logger.info("[StateUtils] after sapi.put: " + str(tobeProcessedlater[maxConcurrency:]))
+ 
 
                 else:# no more batches required. we are at the iteration end, publish the final result
                     self._logger.debug("[StateUtils] Map state input final stage: " + str(function_input))
+                    self._logger.info("[StateUtils] Map state input final stage: " + str(function_input))
                     function_output, metadata = self.evaluatePostMap(function_input, key, metadata, sapi)
+
+            elif metadata["__state_action"] == '':
+                raise Exception("Unkown state action in map state")
 
             else:
                 raise Exception("Unknow action type in map state")

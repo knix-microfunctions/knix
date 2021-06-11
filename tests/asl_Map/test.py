@@ -29,6 +29,7 @@ class MapStateTest(unittest.TestCase):
     """
 
     def test_map_state(self):
+        
         file_list = ["wfms_delivery_test.data",
                      "wfms_context_test.data",
                      "wfms_example_test.data",
@@ -50,7 +51,7 @@ class MapStateTest(unittest.TestCase):
             print ("test duration (s): %s" % str(et-st))
 
         
-        for mc in range(0): # set maxConcurrency parameter
+        for mc in range(1,4): # set maxConcurrency parameter
             """ creates and executes the Map state test workflow from the ASL description """
 
             testtuplelist = []
@@ -67,16 +68,18 @@ class MapStateTest(unittest.TestCase):
             expectedResponse = ["Hello, joe!", "Hello, bob!", "Hello, meg!"]
             testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
 
+                                
             event = [{"who": "joe"}, {"who": "bob"}, {"who": "meg"}, {"who":"dave"}, {"who":"tom"}, {"who":"ray"}]
             expectedResponse = ["Hello, joe!", "Hello, bob!", "Hello, meg!", "Hello, dave!", "Hello, tom!", "Hello, ray!"]
             testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
+            
 
             test = MFNTest(test_name="Map State Test", workflow_filename=("wfms_test_mc%s.json" % mc))
 
             print("MaxConcurrency level: %i " % mc)
 
             st = time.time()
-            test.exec_tests(testtuplelist)
+            test.exec_tests(testtuplelist, should_undeploy=False)
             et = time.time()
 
             print ("test duration (s): %s" % str(et-st))
