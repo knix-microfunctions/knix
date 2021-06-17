@@ -645,6 +645,9 @@ class StateUtils:
 
             sapi.deleteSet(branchOutputKeysSetKey)
 
+        while sapi.get(name_prefix + "_" + "mapStatePartialResult") != str(mapStatePartialResult):
+            time.sleep(0.1)
+
         if ast.literal_eval(sapi.get(name_prefix + "_" + "mapInputCount")) == len(mapStatePartialResult):
 
             # we are ready to publish  but need to honour ResultPath and OutputPath
@@ -1079,6 +1082,7 @@ class StateUtils:
         elif self.functionstatetype == StateUtils.mapStateType:
             name_prefix = self.functiontopic + "_" + key
 
+
             self._logger.debug("[StateUtils] Map state handling function_input: " + str(function_input))
             self._logger.debug("[StateUtils] Map state handling metadata: " + str(metadata))
 
@@ -1102,6 +1106,8 @@ class StateUtils:
                 sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater)) # store elements to be processed on DL
                 sapi.put(name_prefix + "_" + "mapStatePartialResult", "[]") # initialise the collector variable
                 sapi.put(name_prefix + "_" + "mapInputCount", str(len(function_input)))
+                #if "__client_origin_frontend" in metadata and metadata["__client_origin_frontend"] != "":
+                #    sapi.put(name_prefix + "_" + "mapInputOriginFE", str(metadata["__client_origin_frontend"]))
 
                 function_output, metadata = self.evaluateMapState(tobeProcessednow, key, metadata, sapi)
 
@@ -1111,7 +1117,11 @@ class StateUtils:
                 # we need to decide at this point if there is a need for more batches. if so:
 
                 if len(tobeProcessedlater) > 0: # we need to start another batch
-                    function_output, metadata2 = self.evaluatePostMap(function_input, key, metadata, sapi) # take care not to overwrite metadata
+                    function_output, metadata = self.evaluatePostMap(function_input, key, metadata, sapi) # take care not to overwrite metadata
+                    metadata["__client_origin_frontend"] =  self._internal_endpoint
+                    time.sleep(5.0) # allow cleanup of previous execution before launching new
+                    #metadata["__client_origin_frontend"] = sapi.get(name_prefix + "_" + "mapInputOriginFE")
+                    self._logger.debug("[StateUtils] Map state metadata between calls: " + str(metadata))
                     function_output, metadata = self.evaluateMapState(tobeProcessedlater[:maxConcurrency], key, metadata, sapi) # start a new batch
                     sapi.put(name_prefix + "_" + "tobeProcessedlater", str(tobeProcessedlater[maxConcurrency:])) # store remaining elements to be processed on DL
 
