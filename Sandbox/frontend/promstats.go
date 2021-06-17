@@ -429,19 +429,23 @@ func updateNetworkStats() string {
 }
 
 func updateResourceStats() error {
-	now := uint64(time.Now().UnixNano())
+	//now := uint64(time.Now().UnixNano())
 
-	memoryStatsString := updateMemoryStats()
+	//memoryStatsString := updateMemoryStats()
+	updateMemoryStats()
 
-	pidsStatsString := updatePidsStats()
+	//pidsStatsString := updatePidsStats()
+	updatePidsStats()
 
-	cpuStatsString := updateCpuStats()
+	//cpuStatsString := updateCpuStats()
+	updateCpuStats()
 
-	networkStatsString := updateNetworkStats()
+	//networkStatsString := updateNetworkStats()
+	updateNetworkStats()
 
-	fmt.Printf("[resources],timestamp_sec,%.9f,%s,%s,%s,%s\n", 
-		float64(now)/1e9,
-		memoryStatsString, pidsStatsString, cpuStatsString, networkStatsString)
+	//fmt.Printf("[resources],timestamp_sec,%.9f,%s,%s,%s,%s\n", 
+	//	float64(now)/1e9,
+	//	memoryStatsString, pidsStatsString, cpuStatsString, networkStatsString)
 
 	return nil
 }

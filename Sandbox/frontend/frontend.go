@@ -16,26 +16,26 @@
 package main
 
 import (
-    "bufio"
-    "context"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "io/ioutil"
-    "log"
-    "net/http"
-    "os"
-    "os/signal"
-    "strings"
-    "sync"
-    "syscall"
-    "time"
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
 
-    "github.com/apache/thrift/lib/go/thrift"
-    "github.com/go-redis/redis/v8"
-    "github.com/google/uuid"
-    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
-    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
+	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
+	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
 )
 
 // custom log writer to overwrite the default log format
@@ -197,7 +197,7 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
         log.Println("consumer: Received unknown result", string(msg.Mfnmetadata.ExecutionId))
         continue
       }
-      log.Println("consumer: Received result for ID", msg.Mfnmetadata.ExecutionId)
+      //log.Println("consumer: Received result for ID", msg.Mfnmetadata.ExecutionId)
       e.cond.L.Lock()
       e.rt_rcvdlq = rt_rcvdlq
       e.msg = &msg
@@ -558,7 +558,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
       w.Write([]byte(e.msg.Mfnuserdata))
       rt_exitfe = time.Now().UnixNano()
       inFlightRequestsCounterChan <- -1
-      log.Printf(
+
+      // to stop the compiler from producing used variables warings
+      _ = rt_entry
+      _ = rt_sendlq
+      _ = rt_sentlq
+      _ = rt_rcvdlq
+      _ = rt_rcvdlq
+      _ = rt_exitfe
+      /*log.Printf(
         `[ResumedUserSession] [ExecutionId] [%s] [Size] [0] [TimestampMap] [{"tfe_entry":%d,"tfe_sendlq":%d,"tfe_sentlq":%d,"tfe_rcvdlq":%d,"tfe_exit":%d}] [LatencyRoundtrip] [%d] [Response] {...}`,
         e.msg.Mfnmetadata.ExecutionId,
         rt_entry / 1000000,
@@ -567,6 +575,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
         rt_rcvdlq / 1000000,
         rt_exitfe / 1000000,
         (rt_rcvdlq - rt_sendlq) / 1000000)
+        */
     }
     c.L.Unlock()
     // Modify ExecutionResults
@@ -723,7 +732,7 @@ func SendMessage(msg MfnMessage, topic string) (error, int64) {
     return err, 0
   }
 
-  log.Printf("New execution (id=%s)\n", msg.Mfnmetadata.ExecutionId)
+  //log.Printf("New execution (id=%s)\n", msg.Mfnmetadata.ExecutionId)
 
   // Send the local queue message
   producerMutex.Lock()

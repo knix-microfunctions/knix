@@ -326,7 +326,7 @@ class PublicationUtils():
                                               "x-mfn-action-data": json.dumps(action_data)})
                 break
             except Exception as exc:
-                self._logger.info("Sending remote message (" + message_type + ") failed: " + str(exc) + "; retrying in: " + str(retry) + "s")
+                self._logger.debug("Sending remote message (" + message_type + ") failed: " + str(exc) + "; retrying in: " + str(retry) + "s")
                 time.sleep(retry)
                 retry = retry * 2
 
@@ -494,9 +494,9 @@ class PublicationUtils():
     def _log_trigger_backups(self, input_backup_map, current_function_instance_id, store_next_backup_list=False):
         if self._execution_info_map_name is not None:
             for input_backup_key in input_backup_map:
-                self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, input_backup_key, input_backup_map[input_backup_key])
+                self._logger.debug("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, input_backup_key, input_backup_map[input_backup_key])
             if store_next_backup_list:
-                self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "next_" + current_function_instance_id, json.dumps(self._next_backup_list))
+                self._logger.debug("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "next_" + current_function_instance_id, json.dumps(self._next_backup_list))
 
     def _send_message_to_recovery_manager(self, key, message_type, topic, func_exec_id, has_error, error_type, lqcpub):
         # TODO
@@ -607,7 +607,7 @@ class PublicationUtils():
             if self._should_checkpoint:
                 timestamp_map["t_start_dlcbackup"] = time.time() * 1000.0
                 timestamp_map["t_start_resultmap"] = time.time() * 1000.0
-                self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
+                self._logger.debug("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
 
             # get the combined (next, value) tuple list for the output
             # use here the original output:
@@ -694,7 +694,7 @@ class PublicationUtils():
         size = 0
         if 'exitsize' in timestamp_map and 't_pub_exittopic' in timestamp_map:
             size = timestamp_map['exitsize']
-        self._logger.info("[__mfn_tracing] [ExecutionId] [%s] [Size] [%s] [TimestampMap] [%s] [%s]", key, str(size), timestamp_map_str, timestamp_map["function_instance_id"])
+        self._logger.debug("[__mfn_tracing] [ExecutionId] [%s] [Size] [%s] [TimestampMap] [%s] [%s]", key, str(size), timestamp_map_str, timestamp_map["function_instance_id"])
 
         # shut down the local queue client
         self._shutdown_local_queue_client()
