@@ -607,7 +607,7 @@ class PublicationUtils():
             if self._should_checkpoint:
                 timestamp_map["t_start_dlcbackup"] = time.time() * 1000.0
                 timestamp_map["t_start_resultmap"] = time.time() * 1000.0
-                self._logger.debug("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
+                self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "result_" + current_function_instance_id, encapsulated_value_output)
 
             # get the combined (next, value) tuple list for the output
             # use here the original output:
