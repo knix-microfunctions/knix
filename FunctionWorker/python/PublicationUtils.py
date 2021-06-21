@@ -494,9 +494,9 @@ class PublicationUtils():
     def _log_trigger_backups(self, input_backup_map, current_function_instance_id, store_next_backup_list=False):
         if self._execution_info_map_name is not None:
             for input_backup_key in input_backup_map:
-                self._logger.debug("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, input_backup_key, input_backup_map[input_backup_key])
+                self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, input_backup_key, input_backup_map[input_backup_key])
             if store_next_backup_list:
-                self._logger.debug("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "next_" + current_function_instance_id, json.dumps(self._next_backup_list))
+                self._logger.info("[__mfn_backup] [%s] [%s] %s", self._execution_info_map_name, "next_" + current_function_instance_id, json.dumps(self._next_backup_list))
 
     def _send_message_to_recovery_manager(self, key, message_type, topic, func_exec_id, has_error, error_type, lqcpub):
         # TODO
