@@ -16,26 +16,25 @@
 package main
 
 import (
-	"bufio"
-	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
-
-	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
-	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
-	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
+    "bufio"
+    "context"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "io/ioutil"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "strings"
+    "sync"
+    "syscall"
+    "time"
+    "github.com/apache/thrift/lib/go/thrift"
+    "github.com/go-redis/redis/v8"
+    "github.com/google/uuid"
+    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
+    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
 )
 
 // custom log writer to overwrite the default log format
@@ -677,46 +676,14 @@ func InitProducer() {
   fmt.Println("producer: entry topic", entryTopic)
 }
 
-func StoreData(msg MfnMessage, msgb []byte) {
-  mapName := "execution_info_map_" + msg.Mfnmetadata.ExecutionId
-  var kvp *datalayermessage.KeyValuePair
-  // WRITE BACKUP input to first function
-  kvp = &datalayermessage.KeyValuePair{
-    "input_" + msg.Mfnmetadata.ExecutionId + "_"+entryTopic,
-    msgb,
-  }
-  // LOCALITY = 1 (access global datalayer)
-  //PutEntryToMap(ctx context.Context, keyspace string, table string, mapName string, keyValuePair *datalayermessage.KeyValuePair, locality int32) (r bool, err error)
-  datalayerMutex.Lock()
-  res, err := datalayer.PutEntryToMap(datalayerCtx, datalayerKeyspace, datalayerMapTable, mapName, kvp, 1)
-  datalayerMutex.Unlock()
-  if res == false {
-    log.Print("producer: Could not store the workflow trigger input. Something mysterious happened and the result is false, check DataLayerService for more details")
-    return
-  }
-  if err != nil {
-    log.Print(err)
-    return
-  }
+func LogBackup(msg MfnMessage, msgb []byte) {
+  var mapName = "execution_info_map_" + msg.Mfnmetadata.ExecutionId
+  var input_key = "input_" + msg.Mfnmetadata.ExecutionId + "_" + entryTopic
+  var input_value = string(msgb)
+  log.Printf("[__mfn_backup] [%s] [%s] %s", mapName, input_key, input_value)
 
-  // WRITE NEXT ARRAY
-  kvp = &datalayermessage.KeyValuePair{
-    "next_" + msg.Mfnmetadata.ExecutionId + "_frontend",
-    msgb,
-  }
-  // LOCALITY = 1 (access global datalayer)
-  //PutEntryToMap(ctx context.Context, keyspace string, table string, mapName string, keyValuePair *datalayermessage.KeyValuePair, locality int32) (r bool, err error)
-  datalayerMutex.Lock()
-  res, err = datalayer.PutEntryToMap(datalayerCtx, datalayerKeyspace, datalayerMapTable, mapName, kvp, 1)
-  datalayerMutex.Unlock()
-  if res == false {
-    log.Print("producer: Could not store next array for workflow start. Something mysterious happened and the result is false, check DataLayerService for more details")
-    return
-  }
-  if err != nil {
-    log.Print(err)
-    return
-  }
+  var input_key_next = "next_" + msg.Mfnmetadata.ExecutionId + "_frontend"
+  log.Printf("[__mfn_backup] [%s] [%s] %s", mapName, input_key_next, input_value)
 }
 // Send message accepts an MfnMessage (JSON spec)
 // It wraps the JSON MfnMessage in a construct known as LocalQueueClientMessage consisting of 4 bytes length (uint32) denoting the end of key, a key byte string and the actual MfnMessage as byte array
@@ -747,7 +714,7 @@ func SendMessage(msg MfnMessage, topic string) (error, int64) {
     return err, rt_sendlq
   }
 
-  go StoreData(msg, msgb)
+  go LogBackup(msg, msgb)
   return nil, rt_sendlq
 }
 
