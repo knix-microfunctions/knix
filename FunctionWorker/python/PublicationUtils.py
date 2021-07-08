@@ -470,9 +470,11 @@ class PublicationUtils():
                         timestamp_map['exitsize'] = len(output["value"])
 
                     # store the workflow's final result
-                    dlc = self._get_backup_data_layer_client()
-                    dlc.put("result_" + key, output["value"])
-                    #self._logger.debug("[__mfn_backup] [exitresult] [%s] %s", "result_" + key, output["value"])
+                    # do so only if the execution was asynchronous
+                    if "__async_execution" in self._metadata and self._metadata["__async_execution"]:
+                        dlc = self._get_backup_data_layer_client()
+                        dlc.put("result_" + key, output["value"])
+                        #self._logger.debug("[__mfn_backup] [exitresult] [%s] %s", "result_" + key, output["value"])
 
                 else:
                     # Case 1: non-local next
