@@ -359,6 +359,7 @@ class SandboxAgent:
         workflow = self._deployment.get_workflow()
         fenv["MFN_ENTRYTOPIC"] = workflow.getWorkflowEntryTopic()
         fenv["MFN_RESULTTOPIC"] = workflow.getWorkflowExitTopic()
+        fenv["MFN_SHOULDCHECKPOINT"] = str(workflow.are_checkpoints_enabled())
         fenv["MFN_QUEUE"] = self._queue
         fenv["MFN_EXTERNAL_ENDPOINT"] = self._external_endpoint
         fenv["MFN_INTERNAL_ENDPOINT"] = self._internal_endpoint

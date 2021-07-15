@@ -26,6 +26,7 @@ import (
     "net/http"
     "os"
     "os/signal"
+    "strconv"
     "strings"
     "sync"
     "syscall"
@@ -86,6 +87,7 @@ var (
 )
 
 var (
+  shouldCheckpoint bool
   internalEndpoint string
   externalEndpoint string
 )
@@ -714,7 +716,9 @@ func SendMessage(msg MfnMessage, topic string) (error, int64) {
     return err, rt_sendlq
   }
 
-  go LogBackup(msg, msgb)
+  if shouldCheckpoint {
+    go LogBackup(msg, msgb)
+  }
   return nil, rt_sendlq
 }
 
@@ -773,6 +777,7 @@ func main() {
   fmt.Println("Frontend starting ...")
   entryTopic  = os.Getenv("MFN_ENTRYTOPIC")
   resultTopic = os.Getenv("MFN_RESULTTOPIC")
+  shouldCheckpoint, _ = strconv.ParseBool(os.Getenv("MFN_SHOULDCHECKPOINT"))
   internalEndpoint = os.Getenv("MFN_INTERNAL_ENDPOINT")
   externalEndpoint = os.Getenv("MFN_EXTERNAL_ENDPOINT")
   fmt.Println("consuming results from", resultTopic)
