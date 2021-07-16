@@ -16,27 +16,26 @@
 package main
 
 import (
-	"bufio"
-	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"os/signal"
-	"strconv"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
-
-	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
-	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
-	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
-	log "github.com/sirupsen/logrus"
+    "bufio"
+    "context"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "io/ioutil"
+    "net/http"
+    "os"
+    "os/signal"
+    "strconv"
+    "strings"
+    "sync"
+    "syscall"
+    "time"
+    "github.com/apache/thrift/lib/go/thrift"
+    "github.com/go-redis/redis/v8"
+    "github.com/google/uuid"
+    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
+    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
+    log "github.com/sirupsen/logrus"
 )
 
 type PlainFormatter struct {
@@ -859,7 +858,7 @@ func main() {
   }()
 
   // TODO: not actually listening, this could still fail opening the socket
-  log.Infoln("Frontend is ready to handle requests at", listenAddr)
+  fmt.Println("Frontend is ready to handle requests at", listenAddr)
   fErr, err := os.OpenFile("logs/frontend.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
   if err != nil {
     log.Fatalf("Could not open log file logs/frontend.log: %v\n", err)
