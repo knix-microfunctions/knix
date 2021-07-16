@@ -40,6 +40,10 @@ import time
         },
         "container": {                          # <if specified will merge with 'spec.template.spec.containers[0]'>
           "image": "asdfasdfdf",                # <optional, overwrites 'spec.template.spec.containers[0].image'>
+          "env": [
+            {"name": "LOG_LEVEL", "value": "debug" },
+            {"name": "SOME_VAR", "value": "some_value" }
+          ],
           "resources": {                        # <optional, overwrites 'spec.template.spec.containers[0].resources'>
             "requests": {
               "memory": "64Mi",

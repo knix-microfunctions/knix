@@ -339,9 +339,16 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
                 
                 assert(type(group_to_update) == type({}))
                 group = knative_groups[group_name]
+                # group = the user provided new info for a group,  group_to_update = the existing group to update
                 for user_provided_value_key in group:
-                    # overwrite or key a user provided key
-                    group_to_update[user_provided_value_key] = group[user_provided_value_key]
+                    # env variables should be appended
+                    if group_name is "container" and user_provided_value_key is "env":
+                        if user_provided_value_key in group_to_update and type(group[user_provided_value_key]) is type([]) and len(group[user_provided_value_key]) > 0:
+                            for env_key_val in group[user_provided_value_key]:
+                                group_to_update[user_provided_value_key].append(env_key_val)
+                    else:
+                        # overwrite or add the user provided key value
+                        group_to_update[user_provided_value_key] = group[user_provided_value_key]
             print('Updated Knative service definition to: ' + str(kservice))
 
 
