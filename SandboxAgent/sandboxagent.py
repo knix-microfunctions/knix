@@ -223,25 +223,33 @@ class SandboxAgent:
         raise KeyboardInterrupt
 
     def sigchld(self, signum, _):
-        if not self._shutting_down:
-            should_shutdown, pid, failed_process_name, log_filepath = self._deployment.check_child_process()
+        should_shutdown, pid, failed_process_name, log_filepath = self._deployment.check_child_process()
 
-            if should_shutdown:
-                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name, log_filepath)
+        if should_shutdown:
+            self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name, log_filepath)
 
-                if pid == self._queue_service_process.pid:
-                    self._queue_service_process = None
-                elif pid == self._frontend_process.pid:
-                    self._frontend_process = None
+            if pid == self._queue_service_process.pid:
+                self._queue_service_process = None
+            elif pid == self._frontend_process.pid:
+                self._frontend_process = None
+            elif failed_process_name == "Fluent-bit":
+                self._fluentbit_process = None
 
-                self.shutdown(reason="Process " + failed_process_name + " with pid: " + str(pid) + " stopped unexpectedly.")
+            self.shutdown(reason="Process " + failed_process_name + " with pid: " + str(pid) + " stopped unexpectedly.")
 
     def shutdown(self, reason=None):
+        if self._shutting_down:
+            return
+
         self._shutting_down = True
         errmsg = ""
         if reason is not None:
             errmsg = "Shutting down sandboxagent due to reason: " + reason + "..."
             self._logger.info(errmsg)
+            # some process dies unexpectedly; need to stop as immediately as possible
+            if self._fluentbit_process is not None:
+                time.sleep(2) # flush interval of fluent-bit
+            os._exit(1)
         else:
             self._logger.info("Gracefully shutting down sandboxagent...")
 

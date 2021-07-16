@@ -53,7 +53,7 @@ build/FunctionWorker.tar.gz: \
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift;'
 	tar -czf $@ ../FunctionWorker
 
-RSOURCE = $(shell find ../redis/src)
+RSOURCE = $(shell find ../redis)
 build/redis-server.tar.gz: $(RSOURCE) ../build_env.mk
 	mkdir -p build
 	cd ../redis && make && cd -

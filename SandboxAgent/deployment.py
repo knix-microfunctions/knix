@@ -124,7 +124,7 @@ class Deployment:
                 log_filepath = "/opt/mfn/LoggingService/fluent-bit/fluent-bit.log"
             elif pid == self._queue_service_process.pid:
                 failed_process_name = "Queue service"
-                log_filepath = "/opt/mfn/logs/queueservice.log"
+                log_filepath = None
             elif pid == self._frontend_process.pid:
                 failed_process_name = "Frontend"
                 log_filepath = "/opt/mfn/logs/frontend.log"
