@@ -177,6 +177,7 @@ data:
                   {"name": "MFN_DATALAYER", "value": "datalayer.{{ .Release.Namespace }}.svc:{{ .Values.datalayer.port }}" },
                   {"name": "MFN_ELASTICSEARCH", "value": {{ include "esConnect.url" . | quote }} },
                   {"name": "MFN_MANAGEMENT", "value": "http://wf-{{ .Release.Name }}-management.{{ .Release.Namespace }}.svc" }
+                  {"name": "LOG_LEVEL", "value": "{{ .Values.manager.sandbox.logLevel }}" }
                 ],
                 {{/* not allowed in KNative
                 "lifecycle": {"preStop": {"exec":{"command":["python3","/sand/SandboxAgent/shutdown.py"]}}},

@@ -16,39 +16,38 @@
 package main
 
 import (
-    "bufio"
-    "context"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "io/ioutil"
-    "log"
-    "net/http"
-    "os"
-    "os/signal"
-    "strconv"
-    "strings"
-    "sync"
-    "syscall"
-    "time"
-    "github.com/apache/thrift/lib/go/thrift"
-    "github.com/go-redis/redis/v8"
-    "github.com/google/uuid"
-    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
-    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
+	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
+	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
+	log "github.com/sirupsen/logrus"
 )
 
-// custom log writer to overwrite the default log format
-type LogWriter struct {
+type PlainFormatter struct {
+  TimestampFormat string
+  LevelDesc []string
 }
 
-func (writer LogWriter) Write(bytes []byte) (int, error) {
-  tnow := time.Now()
-  tnow_millis := tnow.UnixNano() / 1000000
-  return fmt.Printf("[%d] [%s] [INFO] [org.microfunctions.sandbox.frontend] %s",
-      tnow_millis,
-      tnow.Format("2006-01-02 15:04:05.000"),
-      string(bytes))
+func (f *PlainFormatter) Format(entry *log.Entry) ([]byte, error) {
+  timestamp_millis := entry.Time.UnixNano()/1000000
+  timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
+  return []byte(fmt.Sprintf("[%d] [%s] [%s] [org.microfunctions.sandbox.frontend] %s\n", timestamp_millis, timestamp, f.LevelDesc[entry.Level], entry.Message)), nil
 }
 
 // Execution keeps a condition and a message pointer
@@ -119,7 +118,7 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
     consumer *redis.Client
     consumerCtx = context.Background()
   )
-  fmt.Println("consumer: Starting client")
+  log.Infoln("consumer: Starting client")
 
   consumer = redis.NewClient(&redis.Options {
           Addr: os.Getenv("MFN_QUEUE"),
@@ -134,7 +133,7 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
   //  fmt.Println("consumer: Error creating result topic", resultTopic, err)
   //  log.Fatal(err)
   //}
-  fmt.Println("consumer: result topic", resultTopic)
+  log.Infoln("consumer: result topic", resultTopic)
 
   defer func() {
     //err := consumer.RemoveTopic(consumerCtx, resultTopic)
@@ -171,12 +170,12 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
       n, err := consumer.XDel(consumerCtx, resultTopic, lqcm_id).Result()
 
       if n != 1 {
-        log.Println("consumer: Couldn't receive message", err)
+        log.Infoln("consumer: Couldn't receive message", err)
         continue
       }
 
       if err != nil {
-        log.Println("consumer: Couldn't receive message", err)
+        log.Warnln("consumer: Couldn't receive message", err)
         continue
       }
 
@@ -195,10 +194,11 @@ func ConsumeResults(quit <-chan bool, done chan<- bool) {
       e, ok := ExecutionResults[msg.Mfnmetadata.ExecutionId]
       ExecutionCond.L.Unlock()
       if !ok {
-        log.Println("consumer: Received unknown result", string(msg.Mfnmetadata.ExecutionId))
+        log.Warnln("consumer: Received unknown result", string(msg.Mfnmetadata.ExecutionId))
         continue
       }
       //log.Println("consumer: Received result for ID", msg.Mfnmetadata.ExecutionId)
+      log.Debugf("[Received local result] [ExecutionID] %s", msg.Mfnmetadata.ExecutionId)
       e.cond.L.Lock()
       e.rt_rcvdlq = rt_rcvdlq
       e.msg = &msg
@@ -249,7 +249,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     id := hexecutionid[0]
     res, err := FetchResult(id)
     if err != nil {
-      log.Println("handler: Couldn't fetch result of execution ID", id, err)
+      log.Warnln("handler: Couldn't fetch result of execution ID", id, err)
       http.Error(w, "Can't fetch result", http.StatusInternalServerError)
     } else if res == nil {
       if async {
@@ -258,7 +258,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
         if the result is not available yet, then just return the execution id again
         and let the client handle the retry.
         */
-        log.Printf("handler: Result not yet available of execution ID %s.", id)
+        log.Infof("handler: Result not yet available of execution ID %s.", id)
         //log.Printf("handler: Result not yet available of execution ID %s, redirecting", id)
         // TODO: 300 location redirect
         //http.Redirect(w, r, r.URL.Path + "?executionId=" + id, http.StatusTemporaryRedirect)
@@ -277,14 +277,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
           msgb, err := json.Marshal(res)
           if err != nil {
             http.Error(w, "Couldn't marshal result to JSON", http.StatusInternalServerError)
-            log.Println("handler: Couldn't marshal result to JSON: ", err)
+            log.Warnln("handler: Couldn't marshal result to JSON: ", err)
           } else {
             w.Header().Set("Content-Type", "application/json")
             w.Write(msgb)
           }
         //w.Write([]byte(id))
       } else {
-        log.Printf("handler: Result not yet available of execution ID %s, waiting", id)
+        log.Infof("handler: Result not yet available of execution ID %s, waiting", id)
         ExecutionCond.L.Lock()
         e, ok := ExecutionResults[id]
         ExecutionCond.L.Unlock()
@@ -341,10 +341,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
   actiondata := r.Header.Get("x-mfn-action-data")
   if (actionhdr != "" && actiondata != "") {
       // handle different cases here
-      log.Printf("Got a special message: [%s] [%s]", actionhdr, actiondata)
+      log.Infof("Got a special message: [%s], data: [%s]", actionhdr, actiondata)
       is_special_message = true
       if (actionhdr == "session-update") {
-          log.Printf("New session update message...")
+          log.Debugf("New session update message...")
 
           type ActionMessage struct {
               Topic string `json:"topic"`
@@ -356,11 +356,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
           bactiondata := []byte(actiondata)
           err := json.Unmarshal(bactiondata, &data)
           if err != nil {
-              log.Printf("handler: Couldn't unmarshal session update message: %s", err)
-              log.Fatal(err)
+              log.Fatalf("handler: Couldn't unmarshal session update message: %s", err)
           }
 
-          log.Printf("Parsed session update message topic: [%s], id: [%s], value: [%s]", data.Topic, data.Key, data.Value)
+          log.Debugf("Parsed session update message topic: [%s], id: [%s], value: [%s]", data.Topic, data.Key, data.Value)
 
           topic = data.Topic
           id = data.Key
@@ -375,10 +374,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
           msg.Mfnuserdata = data.Value
 
-          log.Printf("Session update message topic: [%s], id: [%s]", topic, id)
+          log.Debugf("Session update message topic: [%s], id: [%s]", topic, id)
 
       } else if (actionhdr == "post-parallel") {
-          log.Printf("New Post-Parallel update message...")
+          log.Debugf("New Post-Parallel update message...")
 
           type ActionMessage struct {
               Key string `json:"Key"`
@@ -393,11 +392,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
           bactiondata := []byte(actiondata)
           err := json.Unmarshal(bactiondata, &data)
           if err != nil {
-              log.Printf("handler: Couldn't unmarshal post parallel message: %s", err)
-              log.Fatal(err)
+              log.Fatalf("handler: Couldn't unmarshal post parallel message: %s", err)
           }
 
-          log.Printf("Parsed post parallel message Topic: [%s], Key: [%s], StateAction: [%s], AsyncExec: [%t], CounterValue: [%d], WorkflowInstanceMetadataStorageKey: [%s]", data.Topic, data.Key, data.StateAction, data.AsyncExec, data.CounterValue, data.WorkflowInstanceMetadataStorageKey)
+          log.Debugf("Parsed post parallel message Topic: [%s], Key: [%s], StateAction: [%s], AsyncExec: [%t], CounterValue: [%d], WorkflowInstanceMetadataStorageKey: [%s]", data.Topic, data.Key, data.StateAction, data.AsyncExec, data.CounterValue, data.WorkflowInstanceMetadataStorageKey)
 
           topic = data.Topic
           id = data.Key
@@ -412,7 +410,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
           msg.Mfnuserdata = actiondata
 
-          log.Printf("Post-Parallel message topic: [%s], id: [%s]", topic, id)
+          log.Debugf("Post-Parallel message topic: [%s], id: [%s]", topic, id)
 
       } else if (actionhdr == "post-map") {
           // TODO
@@ -436,15 +434,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
         msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
         body, err := ioutil.ReadAll(r.Body)
         if err != nil {
-          log.Println("handler: Error reading body", err)
+          log.Warnln("handler: Error reading body", err)
           http.Error(w, "can't read body", http.StatusBadRequest)
           return
         }
         msg.Mfnuserdata = string(body)
         topic = actiondata
-        log.Printf("Trigger-Event message topic: [%s], id: [%s]", topic, id)
+        log.Debugf("Trigger-Event message topic: [%s], id: [%s]", topic, id)
     } else if (actionhdr == "remote-result") {
-        log.Printf("New remote result message...")
+        log.Debugf("New remote result message...")
 
         type ActionMessage struct {
             Key string `json:"key"`
@@ -458,7 +456,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
             log.Fatal(err)
         }
 
-        log.Printf("Parsed remote result message: id: [%s], result: [%s]", data.Key, data.Value)
+        log.Debugf("Parsed remote result message: id: [%s], result: [%s]", data.Key, data.Value)
 
         valueb := []byte(data.Value)
 
@@ -470,10 +468,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
         e, ok := ExecutionResults[msg.Mfnmetadata.ExecutionId]
         ExecutionCond.L.Unlock()
         if !ok {
-            log.Println("handler: Received unknown remote result", string(msg.Mfnmetadata.ExecutionId))
+            log.Warnln("handler: Received unknown remote result", string(msg.Mfnmetadata.ExecutionId))
             return
         }
-        log.Println("handler: Received remote result for ID", msg.Mfnmetadata.ExecutionId)
+        log.Infof("[Received remote result] [ExecutionID] %s", msg.Mfnmetadata.ExecutionId)
         e.cond.L.Lock()
         e.rt_rcvdlq = rt_rcvdlq
         e.msg = &msg
@@ -489,6 +487,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       // CREATE NEW MfnMessage
       id, err = GenerateExecutionID()
       if err != nil {
+        log.Warnln("handler: Unable to generate execution id")
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
       }
@@ -502,7 +501,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       msg.Mfnmetadata.TimestampFrontendEntry = float64(time.Now().UnixNano()) / float64(1000000000.0)
       body, err := ioutil.ReadAll(r.Body)
       if err != nil {
-        log.Println("handler: Error reading body", err)
+        log.Warnln("handler: Error reading body", err)
         http.Error(w, "can't read body", http.StatusBadRequest)
         return
       }
@@ -514,8 +513,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
   if async {
     err, _ = SendMessage(msg, topic)
     if err != nil {
+      log.Warnln("handler: Error submitting event to system")
       http.Error(w, "Error submitting event to system", http.StatusInternalServerError)
     } else {
+        log.Infof("[Async Request Started] [ExecutionId] [%s]", id)
         // w.Header().Set("Content-Type", "application/json")
         // w.WriteHeader(http.StatusAccepted)
         // Create entry and lock to wait on
@@ -539,13 +540,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
     ExecutionCond.L.Unlock()
     c.L.Lock()
     // Send now that we're able to wait on it
-    inFlightRequestsCounterChan <- 1
     err, rt_sendlq = SendMessage(msg, topic)
     rt_sentlq = time.Now().UnixNano()
     if err != nil {
-      log.Println("Couldn't send message to LocalQueueService: ", err)
+      log.Warnln("Couldn't send message to LocalQueueService: ", err)
       http.Error(w, "Error submitting event to system", http.StatusInternalServerError)
     } else {
+      inFlightRequestsCounterChan <- 1
+      log.Infof("[Request Started] [ExecutionId] [%s]", id)
       // Wait on Result
       c.Wait()
       // Marshall result
@@ -558,16 +560,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
       w.Header().Set("Content-Type", "application/json")
       w.Write([]byte(e.msg.Mfnuserdata))
       rt_exitfe = time.Now().UnixNano()
-      inFlightRequestsCounterChan <- -1
 
-      // to stop the compiler from producing used variables warings
-      _ = rt_entry
-      _ = rt_sendlq
-      _ = rt_sentlq
-      _ = rt_rcvdlq
-      _ = rt_rcvdlq
-      _ = rt_exitfe
-      /*log.Printf(
+      inFlightRequestsCounterChan <- -1
+      log.Infof(
+        `[Request Finished] [ExecutionId] [%s] [LatencyRoundtrip] [%d]`,
+        e.msg.Mfnmetadata.ExecutionId, (rt_rcvdlq - rt_sendlq) / 1000000)
+
+      log.Debugf(
         `[ResumedUserSession] [ExecutionId] [%s] [Size] [0] [TimestampMap] [{"tfe_entry":%d,"tfe_sendlq":%d,"tfe_sentlq":%d,"tfe_rcvdlq":%d,"tfe_exit":%d}] [LatencyRoundtrip] [%d] [Response] {...}`,
         e.msg.Mfnmetadata.ExecutionId,
         rt_entry / 1000000,
@@ -576,7 +575,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
         rt_rcvdlq / 1000000,
         rt_exitfe / 1000000,
         (rt_rcvdlq - rt_sendlq) / 1000000)
-        */
     }
     c.L.Unlock()
     // Modify ExecutionResults
@@ -596,13 +594,12 @@ func GenerateExecutionID() (string, error) {
   var msgid uuid.UUID
   msgid,err = uuid.NewUUID()
   if err != nil {
-    log.Println("handler: Couldn't generate UUID", err)
+    log.Errorln("handler: Couldn't generate UUID", err)
     return "", errors.New("Can't generate UUID for event")
   }
   mid,err = msgid.MarshalText()
   if err != nil {
-    fmt.Println("handler: Couldn't marshal UUID", err)
-    log.Fatal(err)
+    log.Fatalln("handler: Couldn't marshal UUID", err)
   }
   sid := string(mid)
   bid := make([]byte, 32)
@@ -618,7 +615,7 @@ func GenerateExecutionID() (string, error) {
 
 // InitDatalayer initializes and connects the datalayer thrift client
 func InitDatalayer() {
-  log.Print("datalayer: Starting client")
+  log.Infoln("datalayer: Starting client")
   var err error
   var protocolFactory thrift.TProtocolFactory
   protocolFactory = thrift.NewTCompactProtocolFactory()
@@ -628,8 +625,7 @@ func InitDatalayer() {
   var transport thrift.TTransport
   transport, err = thrift.NewTSocket(os.Getenv("MFN_DATALAYER"))
   if err != nil {
-      log.Println("producer: Error opening socket:", err)
-      log.Fatal(err)
+      log.Fatal("producer: Error opening socket:", err)
   }
   datalayerTransport, err = transportFactory.GetTransport(transport)
   if err != nil {
@@ -661,7 +657,7 @@ func FetchResult(id string) (*MfnMessage, error) {
 
 // InitProducer initialized the producer thrift client and connects it to the local queue service
 func InitProducer() {
-  fmt.Print("producer: Starting client")
+  log.Info("producer: Starting client")
   producer = redis.NewClient(&redis.Options {
           Addr: os.Getenv("MFN_QUEUE"),
           Password: "",
@@ -675,17 +671,17 @@ func InitProducer() {
   //  log.Println("producer: Error creating entry topic", entryTopic, err)
   //  log.Fatal(err)
   //}
-  fmt.Println("producer: entry topic", entryTopic)
+  log.Infoln("producer: entry topic", entryTopic)
 }
 
 func LogBackup(msg MfnMessage, msgb []byte) {
   var mapName = "execution_info_map_" + msg.Mfnmetadata.ExecutionId
   var input_key = "input_" + msg.Mfnmetadata.ExecutionId + "_" + entryTopic
   var input_value = string(msgb)
-  log.Printf("[__mfn_backup] [%s] [%s] %s", mapName, input_key, input_value)
+  log.Infof("[__mfn_backup] [%s] [%s] %s", mapName, input_key, input_value)
 
   var input_key_next = "next_" + msg.Mfnmetadata.ExecutionId + "_frontend"
-  log.Printf("[__mfn_backup] [%s] [%s] %s", mapName, input_key_next, input_value)
+  log.Infof("[__mfn_backup] [%s] [%s] %s", mapName, input_key_next, input_value)
 }
 // Send message accepts an MfnMessage (JSON spec)
 // It wraps the JSON MfnMessage in a construct known as LocalQueueClientMessage consisting of 4 bytes length (uint32) denoting the end of key, a key byte string and the actual MfnMessage as byte array
@@ -697,7 +693,7 @@ func SendMessage(msg MfnMessage, topic string) (error, int64) {
   // Marshal JSON
   msgb,err := msg.MarshalJSON()
   if err != nil {
-    log.Println("handler: Couldn't marshal message to JSON", err)
+    log.Errorln("handler: Couldn't marshal message to JSON", err)
     return err, 0
   }
 
@@ -729,7 +725,7 @@ func Fakeit(msg *MfnMessage) (error) {
   // Marshal JSON
   msgb,err := msg.MarshalJSON()
   if err != nil {
-    log.Println("handler: Couldn't marshal message to JSON", err)
+    log.Errorln("handler: Couldn't marshal message to JSON", err)
     return err
   }
 
@@ -771,20 +767,27 @@ func init() {
 // The frontend initializes datalayer and producer thrift clients, starts consumer as a go routine, registers a signal handler for graceful shutdowns and blocks at starting the http server
 func main() {
   // overwrite the log's default format
-  log.SetFlags(0)
-  log.SetOutput(new(LogWriter))
+  plainFormatter := new(PlainFormatter)
+  plainFormatter.TimestampFormat = "2006-01-02 15:04:05.000"
+  plainFormatter.LevelDesc = []string{"PANIC", "FATAL", "ERROR", "WARN", "INFO", "DEBUG"}
+  log.SetFormatter(plainFormatter)
+  logLevel, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
+  if err != nil {
+    logLevel = log.InfoLevel
+  }
+  log.SetLevel(logLevel)
 
-  fmt.Println("Frontend starting ...")
+  fmt.Printf("Frontend starting ... log level: %v\n", logLevel)
   entryTopic  = os.Getenv("MFN_ENTRYTOPIC")
   resultTopic = os.Getenv("MFN_RESULTTOPIC")
   shouldCheckpoint, _ = strconv.ParseBool(os.Getenv("MFN_SHOULDCHECKPOINT"))
   internalEndpoint = os.Getenv("MFN_INTERNAL_ENDPOINT")
   externalEndpoint = os.Getenv("MFN_EXTERNAL_ENDPOINT")
-  fmt.Println("consuming results from", resultTopic)
+  log.Infoln("consuming results from", resultTopic)
   datalayerKeyspace = "sbox_"+os.Getenv("SANDBOXID")
   datalayerTable = "sbox_default_" + os.Getenv("SANDBOXID")
   datalayerMapTable = "sbox_map_" + os.Getenv("SANDBOXID")
-  fmt.Printf("datalayer keyspace=%s, table=%s, maptable=%s\n", datalayerKeyspace, datalayerTable, datalayerMapTable)
+  log.Infof("datalayer keyspace=%s, table=%s, maptable=%s\n", datalayerKeyspace, datalayerTable, datalayerMapTable)
   InitDatalayer()
   InitProducer()
 
@@ -817,7 +820,7 @@ func main() {
   go func() {
     // Shutdown hook
     <-quit // wait on signal
-    log.Println("Server is shutting down...")
+    log.Warnln("Server is shutting down...")
 
     // create a timed out context to gravefully shutdown httpServer in 30 sec
     ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -830,7 +833,7 @@ func main() {
     }
 
     // shutdown producer
-    log.Println("producer: stopping ...")
+    log.Debugln("producer: stopping ...")
     // _XXX_: don't remove the entry topic, because the sandbox agent still
     // needs to gracefully shutdown the entry function
     //err := producer.RemoveTopic(producerCtx, entryTopic)
@@ -840,22 +843,23 @@ func main() {
     //}
     //fmt.Println("producer: Removed entry topic", entryTopic)
     producer.Close()
-    log.Println("producer: stopped")
+    log.Debugln("producer: stopped")
     // shutdown consumer
     consumerQuit <- true
-    log.Println("consumer: stopping ...")
+    log.Debugln("consumer: stopping ...")
     <-consumerDone
-    log.Println("consumer: stopped")
+    log.Debugln("consumer: stopped")
     // shutdown datalayer
-    log.Println("datalayer: stopping ...")
+    log.Debugln("datalayer: stopping ...")
     datalayerTransport.Close()
-    log.Println("datalayer: stopped")
+    log.Debugln("datalayer: stopped")
 
+    log.Warnln("Server is shut down complete")
     close(done)
   }()
 
   // TODO: not actually listening, this could still fail opening the socket
-  fmt.Println("Frontend is ready to handle requests at", listenAddr)
+  log.Infoln("Frontend is ready to handle requests at", listenAddr)
   fErr, err := os.OpenFile("logs/frontend.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
   if err != nil {
     log.Fatalf("Could not open log file logs/frontend.log: %v\n", err)
@@ -866,5 +870,5 @@ func main() {
     log.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
   }
   <-done
-  log.Println("Frontend stopped")
+  log.Warnln("Frontend stopped")
 }
