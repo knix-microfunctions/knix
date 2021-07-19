@@ -16,26 +16,27 @@
 package main
 
 import (
-    "bufio"
-    "context"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "io/ioutil"
-    "net/http"
-    "os"
-    "os/signal"
-    "strconv"
-    "strings"
-    "sync"
-    "syscall"
-    "time"
-    "github.com/apache/thrift/lib/go/thrift"
-    "github.com/go-redis/redis/v8"
-    "github.com/google/uuid"
-    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
-    "github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
-    log "github.com/sirupsen/logrus"
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
+	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayermessage"
+	"github.com/knix-microfunctions/knix/Sandbox/frontend/datalayerservice"
+	log "github.com/sirupsen/logrus"
 )
 
 type PlainFormatter struct {
@@ -516,6 +517,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       http.Error(w, "Error submitting event to system", http.StatusInternalServerError)
     } else {
         log.Infof("[Async Request Started] [ExecutionId] [%s]", id)
+        log.Debugf("[Request Started] [ExecutionId] [%s], [Request body] [%s], [Topic] [%s], [MfnMessage] [%v]", id, msg.Mfnuserdata, topic, msg)
         // w.Header().Set("Content-Type", "application/json")
         // w.WriteHeader(http.StatusAccepted)
         // Create entry and lock to wait on
@@ -547,6 +549,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     } else {
       inFlightRequestsCounterChan <- 1
       log.Infof("[Request Started] [ExecutionId] [%s]", id)
+      log.Debugf("[Request Started] [ExecutionId] [%s], [Request body] [%s], [Topic] [%s], [MfnMessage] [%v]", id, msg.Mfnuserdata, topic, msg)
       // Wait on Result
       c.Wait()
       // Marshall result
