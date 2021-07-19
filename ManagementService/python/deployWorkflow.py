@@ -325,6 +325,7 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     if not management:
         if "workflowMetadata" in workflow_info and "knative" in workflow_info["workflowMetadata"]:
             knative_groups = workflow_info["workflowMetadata"]["knative"]
+            print("[kservice update]: User provided kservice metadata: " + str(knative_groups))
             for group_name in ["annotations", "container", "spec"]:
                 if group_name not in knative_groups:
                     continue
@@ -339,17 +340,23 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
                 
                 assert(type(group_to_update) == type({}))
                 group = knative_groups[group_name]
+                print("[kservice update]: Updating group: " + group_name + ", current value: " + str(group_to_update))
+                print("[kservice update]: User provided group value: " + str (group))
                 # group = the user provided new info for a group,  group_to_update = the existing group to update
                 for user_provided_value_key in group:
                     # env variables should be appended
                     if group_name is "container" and user_provided_value_key is "env":
                         if user_provided_value_key in group_to_update and type(group[user_provided_value_key]) is type([]) and len(group[user_provided_value_key]) > 0:
+                            print("[kservice update]: Updating env variables")
                             for env_key_val in group[user_provided_value_key]:
-                                group_to_update[user_provided_value_key].append(env_key_val)
+                                print("[kservice update]: env: appending: " + str(env_key_val))
+                                env.append(env_key_val)
                     else:
                         # overwrite or add the user provided key value
+                        print("[kservice update]: Updating " + str(user_provided_value_key))
                         group_to_update[user_provided_value_key] = group[user_provided_value_key]
-            print('Updated Knative service definition to: ' + str(kservice))
+                print("[kservice update]: Updated group: " + group_name + ", updated value: " + str(group_to_update))
+            print('[kservice update]: Updated Knative service definition to: ' + str(kservice))
 
 
     print('Checking if kservice exists')
