@@ -318,12 +318,14 @@ class PublicationUtils():
         # retry 7 times, wait for 5 seconds for the connection to time out
         while retry <= 6.4:
             try:
+                action_data_str = json.dumps(action_data)
+                self._logger.debug("Sending remote message (" + message_type + ") : " + action_data_str)
                 resp = requests.post(remote_address,
                                      params={"async": 1},
                                      json={},
                                      timeout=5,
                                      headers={"x-mfn-action": message_type,
-                                              "x-mfn-action-data": json.dumps(action_data)})
+                                              "x-mfn-action-data": action_data_str})
                 break
             except Exception as exc:
                 self._logger.debug("Sending remote message (" + message_type + ") failed: " + str(exc) + "; retrying in: " + str(retry) + "s")
@@ -331,7 +333,7 @@ class PublicationUtils():
                 retry = retry * 2
 
         if retry > 6.4:
-            self._logger.info("Could not send remote message (" + message_type + ") due to timeouts.")
+            self._logger.debug("Could not send remote message (" + message_type + ") due to timeouts.")
 
 
     def _publish_privileged_output(self, function_output, lqcpub):

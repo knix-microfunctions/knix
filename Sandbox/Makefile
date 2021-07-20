@@ -26,6 +26,7 @@ clean:
 	make -C frontend clean
 	make -C ../redis clean
 	rm -rf build/*
+	rm sandbox_deployment_package.tar.gz
 
 build_thrift:
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
@@ -42,10 +43,7 @@ build/SandboxAgent.tar.gz: $(SBASOURCE) $(FWSOURCE)
 	mkdir -p build
 	tar -czf $@ ../SandboxAgent
 
-build/FunctionWorker.tar.gz: \
-		$(FWSOURCE) \
-		../build_env.mk \
-		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+build/FunctionWorker.tar.gz: $(FWSOURCE) ../build_env.mk ../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	mkdir -p build
 	docker run --user $$(id -u):$$(id -g) --rm -v $$(pwd)/../:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
