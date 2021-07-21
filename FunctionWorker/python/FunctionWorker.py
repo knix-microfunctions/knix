@@ -187,6 +187,12 @@ class FunctionWorker:
 
         self._should_checkpoint = args["should_checkpoint"]
 
+    def _get_loglevel(self):    
+        loglevel = logging.INFO
+        if "LOG_LEVEL" in os.environ and os.environ["LOG_LEVEL"] != None and len(str(os.environ["LOG_LEVEL"])) > 0:
+            loglevel = logging._nameToLevel.get(str(os.environ["LOG_LEVEL"]).upper(), loglevel)
+        return loglevel
+
     def _setup_loggers(self):
         global LOGGER_HOSTNAME
         global LOGGER_CONTAINERNAME
@@ -200,15 +206,16 @@ class FunctionWorker:
         LOGGER_WORKFLOWNAME = self._workflowname
         LOGGER_WORKFLOWID = self._workflowid
 
+        logevel = self._get_loglevel()
         self._logger = logging.getLogger(self._function_state_name)
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(logevel)
         self._logger.addFilter(LoggingFilter())
 
         formatter = logging.Formatter("[%(timestamp)d] [%(levelname)s] [%(hostname)s] [%(containername)s] [%(uuid)s] [%(userid)s] [%(workflowname)s] [%(workflowid)s] [%(name)s] [%(asctime)s.%(msecs)03d] %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
         logfile = '/opt/mfn/logs/function_'+ self._function_state_name + '.log'
 
         hdlr = logging.FileHandler(logfile)
-        hdlr.setLevel(logging.INFO)
+        hdlr.setLevel(logevel)
         hdlr.setFormatter(formatter)
         self._logger.addHandler(hdlr)
 
