@@ -206,16 +206,16 @@ class FunctionWorker:
         LOGGER_WORKFLOWNAME = self._workflowname
         LOGGER_WORKFLOWID = self._workflowid
 
-        logevel = self._get_loglevel()
+        loglevel = self._get_loglevel()
         self._logger = logging.getLogger(self._function_state_name)
-        self._logger.setLevel(logevel)
+        self._logger.setLevel(loglevel)
         self._logger.addFilter(LoggingFilter())
 
         formatter = logging.Formatter("[%(timestamp)d] [%(levelname)s] [%(hostname)s] [%(containername)s] [%(uuid)s] [%(userid)s] [%(workflowname)s] [%(workflowid)s] [%(name)s] [%(asctime)s.%(msecs)03d] %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
         logfile = '/opt/mfn/logs/function_'+ self._function_state_name + '.log'
 
         hdlr = logging.FileHandler(logfile)
-        hdlr.setLevel(logevel)
+        hdlr.setLevel(loglevel)
         hdlr.setFormatter(formatter)
         self._logger.addHandler(hdlr)
 
