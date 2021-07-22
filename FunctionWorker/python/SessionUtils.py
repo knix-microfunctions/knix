@@ -431,6 +431,7 @@ class SessionUtils:
         #self._logger.debug("[SessionUtils] Sending message to running function: " + str(session_function_id) + " now: " + str(send_now))
         # send the message to the specific running function id
         function_metadatastr = self._global_data_layer_client.getMapEntry(self._map_name_session_functions, session_function_id)
+        self._logger.debug(f"[SessionUtils] Sending message to running function: {str(session_function_id)}, now: {str(send_now)}, function_metadata: {str(function_metadatastr)}")
         try:
             #self._logger.debug("[SessionUtils] function metadata: " + function_metadatastr)
             function_metadata = json.loads(function_metadatastr)

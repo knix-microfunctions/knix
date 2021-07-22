@@ -391,6 +391,7 @@ class PublicationUtils():
     def _publish_output(self, key, trigger, lqcpub, timestamp_map=None):
         if timestamp_map is not None:
             timestamp_map['t_pub_output'] = time.time() * 1000.0
+        self._logger.debug(f"[_publish_output] key: {key}, trigger: {str(trigger)}")
         next = trigger["next"]
 
         if "to_running_function" in trigger and trigger["to_running_function"]:
