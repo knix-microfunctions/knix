@@ -206,6 +206,7 @@ class SandboxAgent:
             self._logger.info("External endpoint: %s", self._external_endpoint)
             self._logger.info("Internal endpoint: %s", self._internal_endpoint)
             self._logger.info("Management endpoints: %s", str(self._management_endpoints))
+            self._logger.info("Hostname: %s", str(self._hostname))
             self._deployment = Deployment(deployment_info,\
                 self._hostname, self._userid, self._sandboxid, self._workflowid,\
                 self._workflowname, self._queue, self._datalayer, \
@@ -456,7 +457,7 @@ def get_k8s_nodename():
         sys.exit(1)
     return podname
 
-def find_k8s_ep(fqdn):
+def find_k8s_ep(fqdn, nodename):
     # On K8s, sandboxes are run with MFN_HOSTNAME = kubernetes node name
     # Find host-local queue and datalayer endpoints
     with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as ftoken:
@@ -465,7 +466,6 @@ def find_k8s_ep(fqdn):
         namespace = fnamespace.read()
 
     k8sport = os.getenv('KUBERNETES_SERVICE_PORT_HTTPS')
-    nodename = os.getenv("MFN_HOSTNAME")
     svcname = fqdn.split('.', 1)[0]
     retry = True
     try:
@@ -528,10 +528,10 @@ if __name__ == "__main__":
 
     if os.path.exists('/var/run/secrets/kubernetes.io'):
         if "MFN_HOSTNAME" not in os.environ:
-            os.environ["MFN_HOSTNAME"] = get_k8s_nodename()
-            hostname = os.environ["MFN_HOSTNAME"]
+            hostname = socket.gethostname()
+            os.environ["MFN_HOSTNAME"] = hostname
         # Find endpoints for datalayer
-        datalayer = find_k8s_ep(datalayer)
+        datalayer = find_k8s_ep(datalayer, get_k8s_nodename())
         #queue = find_k8s_ep(queue)
 
     sandbox_agent = SandboxAgent(hostname, queue, datalayer, sandboxid, userid, workflowid, elasticsearch, workflowname, endpoint_key)
