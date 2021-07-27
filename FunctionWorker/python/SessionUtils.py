@@ -211,6 +211,13 @@ class SessionUtils:
         rgidlist = list(rgidset)
         return rgidlist
 
+    def get_all_session_metadata(self):
+        session_metadata_dict = self._global_data_layer_client.retrieveMap(self._map_name_session_functions)
+        if session_metadata_dict != None and type(session_metadata_dict) == type({}):
+            return session_metadata_dict
+        else:
+            return {}
+
     def get_all_session_function_aliases(self):
         alias_map = {}
         alias_map = self._global_data_layer_client.retrieveMap(self._map_name_session_function_alias_id)
@@ -427,10 +434,12 @@ class SessionUtils:
     # API to send a message to another session function
     # check the locally running functions, and send them the message locally if so
     # otherwise, send it to the EventGlobalPublisher's queue
-    def send_to_running_function_in_session(self, session_function_id, message, send_now=False):
+    def send_to_running_function_in_session(self, session_function_id, message, send_now=False, session_metadata=None):
         #self._logger.debug("[SessionUtils] Sending message to running function: " + str(session_function_id) + " now: " + str(send_now))
         # send the message to the specific running function id
-        function_metadatastr = self._global_data_layer_client.getMapEntry(self._map_name_session_functions, session_function_id)
+        function_metadatastr = session_metadata
+        if function_metadatastr == None or function_metadatastr == '' or type(function_metadatastr) != type(''):
+            function_metadatastr = self._global_data_layer_client.getMapEntry(self._map_name_session_functions, session_function_id)
         self._logger.debug(f"[SessionUtils] Sending message to running function: {str(session_function_id)}, now: {str(send_now)}, function_metadata: {str(function_metadatastr)}")
         try:
             #self._logger.debug("[SessionUtils] function metadata: " + function_metadatastr)
