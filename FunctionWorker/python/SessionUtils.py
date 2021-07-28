@@ -440,7 +440,8 @@ class SessionUtils:
         function_metadatastr = session_metadata
         if function_metadatastr == None or function_metadatastr == '' or type(function_metadatastr) != type(''):
             function_metadatastr = self._global_data_layer_client.getMapEntry(self._map_name_session_functions, session_function_id)
-        self._logger.debug(f"[SessionUtils] Sending message to running function: {str(session_function_id)}, now: {str(send_now)}, function_metadata: {str(function_metadatastr)}")
+            self._logger.debug(f"[SessionUtils] Fetched session metadata from datalayer. Session function id: {str(session_function_id)}, now: {str(send_now)}, user provided session_metadata: {str(session_metadata)}, fetched function_metadata: {str(function_metadatastr)}")
+        #self._logger.debug(f"[SessionUtils] Sending message to running function: {str(session_function_id)}, now: {str(send_now)}, function_metadata: {str(function_metadatastr)}")
         try:
             #self._logger.debug("[SessionUtils] function metadata: " + function_metadatastr)
             function_metadata = json.loads(function_metadatastr)
