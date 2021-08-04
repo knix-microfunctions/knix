@@ -200,8 +200,6 @@ class SandboxAgent:
                 else:
                     self._management_endpoints = json.loads(self._management_endpoints)
 
-
-
         if not has_error:
             self._logger.info("External endpoint: %s", self._external_endpoint)
             self._logger.info("Internal endpoint: %s", self._internal_endpoint)
@@ -224,30 +222,30 @@ class SandboxAgent:
         raise KeyboardInterrupt
 
     def sigchld(self, signum, _):
-        should_shutdown, pid, failed_process_name, log_filepath = self._deployment.check_child_process()
+        if self._shutting_down:
+            return
+
+        should_shutdown, pid, stopped_process_name, log_filepath = self._deployment.check_child_process()
 
         if should_shutdown:
-            self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name, log_filepath)
+            self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + stopped_process_name, log_filepath)
 
             if pid == self._queue_service_process.pid:
                 self._queue_service_process = None
             elif pid == self._frontend_process.pid:
                 self._frontend_process = None
-            elif failed_process_name == "Fluent-bit":
+            elif stopped_process_name == "Fluent-bit":
                 self._fluentbit_process = None
 
-            self.shutdown(reason="Process " + failed_process_name + " with pid: " + str(pid) + " stopped unexpectedly.")
+            self.shutdown(reason="Process " + stopped_process_name + " with pid: " + str(pid) + " stopped unexpectedly.")
 
     def shutdown(self, reason=None):
-        if self._shutting_down:
-            return
-
         self._shutting_down = True
         errmsg = ""
         if reason is not None:
             errmsg = "Shutting down sandboxagent due to reason: " + reason + "..."
             self._logger.info(errmsg)
-            # some process dies unexpectedly; need to stop as immediately as possible
+            # some process died unexpectedly; need to stop as immediately as possible
             if self._fluentbit_process is not None:
                 time.sleep(2) # flush interval of fluent-bit
             os._exit(1)
@@ -269,8 +267,8 @@ class SandboxAgent:
             self._local_queue_client.removeTopic(self._instructions_topic)
             self._local_queue_client.shutdown()
 
-            self._logger.info("Shutting down the queue service...")
-            process_utils.terminate_and_wait_child(self._queue_service_process, "queue service", 5, self._logger)
+            #self._logger.info("Shutting down the queue service...")
+            #process_utils.terminate_and_wait_child(self._queue_service_process, "queue service", 5, self._logger)
         else:
             self._logger.info("No queue service; most probably it was the reason of the shutdown.")
             self._logger.info("Force shutting down the function worker(s)...")

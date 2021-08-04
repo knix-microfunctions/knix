@@ -73,7 +73,7 @@ def run_command(command, logger, custom_env=None, wait_output=False, process_log
 
 def run_command_return_output(cmd, logger):
     error = None
-    output = None
+    output = ""
     try:
         args = shlex.split(cmd)
         child = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
@@ -82,7 +82,7 @@ def run_command_return_output(cmd, logger):
         if child.returncode != 0:
             error = child_stderr_bytes.decode().strip()
     except Exception as exc:
-        logger.error('[SandboxAgent] Could not execute command and return output: %s', str(exc))
+        logger.error('[SandboxAgent] Could not execute command and return output: %s, %s', cmd, str(exc))
         error = exc
 
     return output.strip(), error
