@@ -15,7 +15,7 @@
 ---
   # run as follows: ansible-playbook -K -e "@settings.json" init_once.yml
   # or as: ./run.sh init_once.yml
-- hosts: sandbox
+- hosts: all
 
   vars:
     sandbox_deployment_package_directory: "../../Sandbox"
