@@ -24,7 +24,14 @@ Tested on the following operating systems on the target machines:
 
 ## Prerequisites: on host machine
 
-1. Install dependencies required by ansible
+1. Install python.
+
+   ```bash
+   sudo apt-get update
+   sudo apt-get install python3 python3-dev python3-pip
+   ```
+
+2. Install dependencies required by ansible
 
     ```bash
     # for python2
@@ -34,12 +41,12 @@ Tested on the following operating systems on the target machines:
     # OR
     sudo apt install python-netaddr
     ```
-2. Install ansible on host machine
+3. Install ansible on host machine
 
     <https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html>
 
 
-3. You should be able to ssh into the target machines/VMs without a password. If not then run (on host machine):
+4. You should be able to ssh into the target machines/VMs without a password. If not then run (on host machine):
 
     ```bash
     # if not installed yet
@@ -48,6 +55,7 @@ Tested on the following operating systems on the target machines:
     # you must ensure the target machine has ssh server installed already (see below)
     ssh-copy-id -i ~/.ssh/id_rsa your-username@your-target-hostname
     ```
+Note that for a local installation, your public key should be put into `~/.ssh/authorized_keys`.
 
 ## Prerequisites: on target machines
 
@@ -141,6 +149,8 @@ Tested on the following operating systems on the target machines:
     make
     ```
 6. Check *.log files for any errors
+
+For Ubuntu installation, if riak fails to install via a missing `libssl` dependency, check out [this comment](https://github.com/knix-microfunctions/knix/issues/117#issuecomment-832854669).
 
 7. After installation, open a browser and access `http://<nginx-hostname>:<nginx_http_listen_port>/`
 
