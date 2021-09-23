@@ -62,7 +62,7 @@ class MicroFunctionsAPI:
     - session customization
     '''
 
-    def __init__(self, uid, sid, wid, funcstatename, key, publication_utils, is_session_workflow, is_session_function, session_utils, logger, datalayer, external_endpoint, internal_endpoint, useremail, usertoken, management_endpoints):
+    def __init__(self, worker_params, publication_utils, session_utils, usertoken, logger):
         '''
         Initialize data structures for MicroFunctionsAPI object created for a function instance.
 
@@ -84,32 +84,31 @@ class MicroFunctionsAPI:
         '''
 
         self._logger = logger
-        self._datalayer = datalayer
-        self._external_endpoint = external_endpoint
-        self._internal_endpoint = internal_endpoint
-        self._management_endpoints = management_endpoints
-        self._useremail = useremail
+        self._datalayer = worker_params["datalayer"]
+        self._external_endpoint = worker_params["external_endpoint"]
+        self._internal_endpoint = worker_params["internal_endpoint"]
+        self._management_endpoints = worker_params["management_endpoints"]
         self._usertoken = usertoken
-        self._sid = sid
-        self._wid = wid
+        self._sid = worker_params["sandboxid"]
+        self._wid = worker_params["workflowid"]
+        self._suid = worker_params["storage_userid"]
 
-        self._data_layer_operator = DataLayerOperator(
-            uid, sid, wid, self._datalayer)
+        self._data_layer_operator = DataLayerOperator(self._suid, self._sid, self._wid, self._datalayer)
 
         # for sending immediate triggers to other functions
         self._publication_utils = publication_utils
 
-        self._is_session_workflow = is_session_workflow
-        self._is_session_function = is_session_function
+        self._is_session_workflow = worker_params["is_session_workflow"]
+        self._is_session_function = worker_params["is_session_function"]
         self._session_utils = session_utils
 
-        self._function_state_name = funcstatename
+        self._function_state_name = worker_params["function_state_name"]
         self._function_version = 1  # Currently hardcoded to 1
 
-        self._instanceid = key
+        self._instanceid = None
 
         self._is_privileged = False
-        if sid == "Management" and wid == "Management":
+        if self._sid == "Management" and self._wid == "Management":
             self._is_privileged = True
 
         '''
@@ -160,6 +159,11 @@ class MicroFunctionsAPI:
         self.client_context.env = {'knix_env': 'test'}
 
         #self._logger.debug("[MicroFunctionsAPI] init done.")
+
+    def set_key(self, key):
+        self._instanceid = key
+        # The AWS identifier of the invocation request. Return the KNIX message key instead
+        self.aws_request_id = self._instanceid
 
     def get_context_object_properties(self):
         context_properties = {}
@@ -248,7 +252,7 @@ class MicroFunctionsAPI:
 
     # session related API calls
     # only valid if the workflow has at least one session function
-    def send_to_running_function_in_session(self, rgid, message, send_now=False):
+    def send_to_running_function_in_session(self, rgid, message, send_now=False, session_metadata=None):
         '''
         Send a message to a long-running session function instance identified with its id in this session.
 
@@ -256,6 +260,7 @@ class MicroFunctionsAPI:
             rgid (string): the running long-running session function instance's id.
             message (*): the message to be sent; can be any python data type (<type 'dict', 'list', 'str', 'int', 'float', or 'NoneType'>).
             send_now (boolean): whether the message should be sent immediately or at the end of current function's execution; default: False.
+            session_metadata (string): (optional) the running long-running session function instance's metadata
 
         Returns:
             None
@@ -276,7 +281,7 @@ class MicroFunctionsAPI:
 
         if self._is_session_workflow:
             self._session_utils.send_to_running_function_in_session(
-                rgid, message, send_now)
+                rgid, message, send_now, session_metadata)
         else:
             self._logger.warning(
                 "Cannot send a session update message in a workflow with no session functions.")
@@ -762,6 +767,32 @@ class MicroFunctionsAPI:
             self._logger.warning(
                 "Cannot get session function ids in a workflow with no session functions.")
         return rgidlist
+
+    def get_all_session_metadata(self):
+        '''
+        Retrieve a dict of metadata related to all ids of the session function instances in this session.
+
+        Args:
+            None
+
+        Returns:
+            Dict of id (string) -> metadata (string) of all the session function instances in this session.
+
+        Warns:
+            When the calling function is not part of a workflow with at least one session function.
+
+        Note:
+            The usage of this function is only possible with a KNIX-specific feature (i.e., session functions).
+            Using a KNIX-specific feature might make the workflow description incompatible with other platforms.
+
+        '''
+        session_metadata_dict = {}
+        if self._is_session_workflow:
+            session_metadata_dict = self._session_utils.get_all_session_metadata()
+        else:
+            self._logger.warning(
+                "Cannot get session metadata in a workflow with no session functions.")
+        return session_metadata_dict
 
     def is_still_running(self):
         '''

@@ -174,6 +174,12 @@
       } else return 'Not set';
     };
 
+    $scope.getRandomEndpoint = function(workflow) {
+      if (workflow.endpoints && workflow.status=='deployed') {
+        return workflow.endpoints[Math.floor(Math.random() * workflow.endpoints.length)];
+      } else return '';
+    };
+
     $scope.showStatus= function(workflow) {
       if (workflow.status) {
         return workflow.status;

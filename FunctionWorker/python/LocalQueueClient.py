@@ -25,14 +25,20 @@ class LocalQueueClient:
         as the publication manager in the queue service.
 
     '''
-    def __init__(self, connect="127.0.0.1:4999"):
+    def __init__(self, connect="/opt/mfn/redis-server/redis.sock"):
         self._qaddress = connect
+
+        self._is_running = True
+
         self.connect()
 
     def connect(self):
-        while True:
+        retry = 0.5 #s
+        while self._is_running:
             try:
-                self._queue = redis.Redis.from_url("redis://" + self._qaddress, decode_responses=True)
+                self._queue = redis.Redis.from_url("unix://" + self._qaddress, decode_responses=True)
+                # make sure we are really connected by forcing the redis connection to be established
+                self._queue.ping()
                 break
             except Exception as exc:
                 if retry < 60:
@@ -88,6 +94,7 @@ class LocalQueueClient:
         return msg_list
 
     def shutdown(self):
+        self._is_running = False
         self._queue.close()
 
     def addTopic(self, topic):

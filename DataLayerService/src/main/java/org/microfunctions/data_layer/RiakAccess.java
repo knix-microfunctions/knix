@@ -147,7 +147,10 @@ public class RiakAccess {
         try {
             Namespace bucket = new Namespace(BUCKET_TYPE_DEFAULT, MFN_KEYSPACES);
             StoreBucketProperties props = new StoreBucketProperties.Builder(bucket).withNVal(NUM_NODES).build();
+            
+            long t_start = System.currentTimeMillis();
             client.execute(props);
+			this.logExecutionTime("connect(bucketProperties)", System.currentTimeMillis() - t_start);
             
             this.initiateBucketToTypeMapping();
         } catch (Exception e) {
@@ -174,6 +177,11 @@ public class RiakAccess {
 			client.shutdown();
 		}
 		LOGGER.info("Riak client shutdown.");
+	}
+	
+	private void logExecutionTime(String commandName, long duration)
+	{
+		LOGGER.info(commandName + " execution time: " + duration + " ms.");
 	}
 	
 	private boolean detectInvalidName (String str) {
@@ -203,7 +211,11 @@ public class RiakAccess {
 		try {
 			Namespace bucket = new Namespace(BUCKET_TYPE_DEFAULT, keyspace);
 			StoreBucketProperties props = new StoreBucketProperties.Builder(bucket).withNVal(NUM_NODES).build();
+			
+			long t_start = System.currentTimeMillis();
 			client.execute(props);
+			this.logExecutionTime("createKeyspace(bucketProperties)", System.currentTimeMillis() - t_start);
+
 			LOGGER.info("createKeyspace() Keyspace: " + keyspace + "  Metadata: replication factor: " + Integer.toString(replicationFactor));
 			return this.insertRow(MFN_KEYSPACES, null, keyspace, ByteBuffer.allocate(Integer.BYTES).putInt(replicationFactor));
 		} catch (Exception e) {
@@ -394,7 +406,11 @@ public class RiakAccess {
 			
 			Namespace bucket = new Namespace(tableType, keyspace + ";" + table);
 			StoreBucketProperties props = new StoreBucketProperties.Builder(bucket).withNVal(replicationFactor).withW(replicationFactor).withR(replicationFactor).withNotFoundOk(false).build();
+			
+			long t_start = System.currentTimeMillis();
 			client.execute(props);
+			this.logExecutionTime("createTableWithType(bucketProperties)", System.currentTimeMillis() - t_start);
+
 			LOGGER.info("createTableWithType() Keyspace: " + keyspace + "  Table: " + table + "  TableType: " + tableType);
 			boolean success = this.insertRow(keyspace, null, table, ByteBuffer.wrap(tableType.getBytes(StandardCharsets.UTF_8)));
 			if (success) {
@@ -534,7 +550,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, key);
 			RiakObject object = new RiakObject().setContentType(Constants.CTYPE_OCTET_STREAM).setValue(BinaryValue.unsafeCreate(value.array()));
 			StoreValue store = new StoreValue.Builder(object).withLocation(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			client.execute(store);
+			this.logExecutionTime("insertRow()", System.currentTimeMillis() - t_start);
+			
 			return true;
 		} catch (Exception e) {
 			LOGGER.error("insertRow() failed.  Keyspace: " + keyspace + "  Table: " + table, e);
@@ -570,7 +590,10 @@ public class RiakAccess {
 			
 			Location location = new Location(bucket, key);
 			FetchValue fetch = new FetchValue.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchValue.Response response = client.execute(fetch);
+			this.logExecutionTime("selectRow()", System.currentTimeMillis() - t_start);
 			
 			RiakObject object = response.getValue(RiakObject.class);
 			if (object == null || object.getValue() == null) {
@@ -623,13 +646,20 @@ public class RiakAccess {
 			
 			Location location = new Location(bucket, key);
 			FetchValue fetch = new FetchValue.Builder(location).withOption(FetchValue.Option.DELETED_VCLOCK, true).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchValue.Response response = client.execute(fetch);
+			this.logExecutionTime("updateRow(fetch)", System.currentTimeMillis() - t_start);
 			
 			RiakObject object = response.getValue(RiakObject.class);
 			object.setValue(BinaryValue.unsafeCreate(value.array()));
 			
 			StoreValue store = new StoreValue.Builder(object).withLocation(location).build();
+			
+			t_start = System.currentTimeMillis();
 			client.execute(store);
+			this.logExecutionTime("updateRow(store)", System.currentTimeMillis() - t_start);
+
 			return true;
 		} catch (Exception e) {
             LOGGER.error("updateRow() failed.  Keyspace: " + keyspace + "  Table: " + table, e);
@@ -669,7 +699,11 @@ public class RiakAccess {
 			
 			Location location = new Location(bucket, key);
 			DeleteValue delete = new DeleteValue.Builder(location).build();
+
+			long t_start = System.currentTimeMillis();
 			client.execute(delete);
+			this.logExecutionTime("deleteRowWithType()", System.currentTimeMillis() - t_start);
+
 			return true;
 		} catch (Exception e) {
             LOGGER.error("deleteRowWithType() failed.  Keyspace: " + keyspace + "  Table: " + table + "  TableType: " + tableType, e);
@@ -708,7 +742,10 @@ public class RiakAccess {
 			}
 			
 			ListKeys list = new ListKeys.Builder(bucket).build();
+			
+			long t_start = System.currentTimeMillis();
 			ListKeys.Response response = client.execute(list);
+			this.logExecutionTime("selectKeysWithType()", System.currentTimeMillis() - t_start);
 			
 			List<String> keys = new ArrayList<String>();
 			for (Location location: response) {
@@ -744,8 +781,11 @@ public class RiakAccess {
 			}
 			
 			ListKeys list = new ListKeys.Builder(bucket).build();
-			ListKeys.Response response = client.execute(list);
 			
+			long t_start = System.currentTimeMillis();
+			ListKeys.Response response = client.execute(list);
+			this.logExecutionTime("selectAllKeysWithType()", System.currentTimeMillis() - t_start);
+
 			List<String> keys = new ArrayList<String>();
 			for (Location location: response) {
 				keys.add(location.getKeyAsString());
@@ -787,7 +827,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, counterName);
 			
 			FetchCounter fetch = new FetchCounter.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchCounter.Response response = client.execute(fetch);
+			this.logExecutionTime("getCounter()", System.currentTimeMillis() - t_start);
+
 			RiakCounter counter = response.getDatatype();
 			Long counterValue = counter.view();
 			return new AbstractMap.SimpleEntry<String, Long>(counterName, counterValue);
@@ -815,7 +859,11 @@ public class RiakAccess {
 			
 			CounterUpdate delta = new CounterUpdate(increment);
 			UpdateCounter update = new UpdateCounter.Builder(location, delta).withReturnDatatype(true).build();
+			
+			long t_start = System.currentTimeMillis();
 			UpdateCounter.Response response = client.execute(update);
+			this.logExecutionTime("incrementCounter()", System.currentTimeMillis() - t_start);
+
 			RiakCounter counter = response.getDatatype();
 			Long counterValue = counter.view();
 			return new AbstractMap.SimpleEntry<String, Long>(counterName, counterValue);
@@ -880,7 +928,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, setName);
 			
 			FetchSet fetch = new FetchSet.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchSet.Response response = client.execute(fetch);
+			this.logExecutionTime("retrieveSet()", System.currentTimeMillis() - t_start);
+
 			RiakSet rSet = response.getDatatype();
 			Set<BinaryValue> binarySet = rSet.view();
 			
@@ -907,7 +959,10 @@ public class RiakAccess {
 			
 			SetUpdate item = new SetUpdate().add(setItem);
 			UpdateSet update = new UpdateSet.Builder(location, item).build();
+			long t_start = System.currentTimeMillis();
 			client.execute(update);
+			this.logExecutionTime("addItemToSet()", System.currentTimeMillis() - t_start);
+
 			return true;
 		} catch (Exception e) {
 		    LOGGER.error("addItemToSet() failed.  Keyspace: " + keyspace + "  Table: " + table, e);
@@ -926,12 +981,20 @@ public class RiakAccess {
 			Location location = new Location(bucket, setName);
 			
 			FetchSet fetch = new FetchSet.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchSet.Response response = client.execute(fetch);
+			this.logExecutionTime("removeItemFromSet(fetch)", System.currentTimeMillis() - t_start);
+
 			Context context = response.getContext();
 			
 			SetUpdate item = new SetUpdate().remove(setItem);
 			UpdateSet update = new UpdateSet.Builder(location, item).withContext(context).build();
+			
+			t_start = System.currentTimeMillis();
 			client.execute(update);
+			this.logExecutionTime("removeItemFromSet(update)", System.currentTimeMillis() - t_start);
+
 			return true;
 		} catch (Exception e) {
 		    LOGGER.error("removeItemFromSet() failed.  Keyspace: " + keyspace + "  Table: " + table, e);
@@ -950,7 +1013,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, setName);
 			
 			FetchSet fetch = new FetchSet.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchSet.Response response = client.execute(fetch);
+			this.logExecutionTime("containsItemInSet()", System.currentTimeMillis() - t_start);
+
 			RiakSet rSet = response.getDatatype();
 			Set<BinaryValue> binarySet = rSet.view();
 			return binarySet.contains(BinaryValue.create(setItem));
@@ -995,7 +1062,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, setName);
 			
 			FetchSet fetch = new FetchSet.Builder(location).build();
+
+			long t_start = System.currentTimeMillis();
 			FetchSet.Response response = client.execute(fetch);
+			this.logExecutionTime("getSizeOfSet()", System.currentTimeMillis() - t_start);
+
 			RiakSet rSet = response.getDatatype();
 			Set<BinaryValue> binarySet = rSet.view();
 			return binarySet.size();
@@ -1039,7 +1110,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, mapName);
 			
 			FetchMap fetch = new FetchMap.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchMap.Response response = client.execute(fetch);
+			this.logExecutionTime("retrieveKeysetFromMap()", System.currentTimeMillis() - t_start);
+
 			RiakMap rMap = response.getDatatype();
 			Map<BinaryValue, List<RiakDatatype>> entries = rMap.view();
 			
@@ -1065,7 +1140,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, mapName);
 			
 			FetchMap fetch = new FetchMap.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchMap.Response response = client.execute(fetch);
+			this.logExecutionTime("retrieveAllEntriesFromMap()", System.currentTimeMillis() - t_start);
+
 			RiakMap rMap = response.getDatatype();
 			Map<BinaryValue, List<RiakDatatype>> entries = rMap.view();
 			
@@ -1096,7 +1175,11 @@ public class RiakAccess {
 			RegisterUpdate register = new RegisterUpdate(BinaryValue.unsafeCreate(entryValue.array()));
 			MapUpdate entry = new MapUpdate().update(entryKey, register);
 			UpdateMap update = new UpdateMap.Builder(location, entry).build();
+			
+			long t_start = System.currentTimeMillis();
 			client.execute(update);
+			this.logExecutionTime("putEntryToMap()", System.currentTimeMillis() - t_start);
+
 			return true;
 		} catch (Exception e) {
 		    LOGGER.error("putEntryToMap() failed.  Keyspace: " + keyspace + "  Table: " + table, e);
@@ -1115,7 +1198,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, mapName);
 			
 			FetchMap fetch = new FetchMap.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchMap.Response response = client.execute(fetch);
+			this.logExecutionTime("getEntryFromMap()", System.currentTimeMillis() - t_start);
+
 			RiakMap rMap = response.getDatatype();
 			RiakRegister rRegister = rMap.getRegister(entryKey);
 			ByteBuffer entryValue = ByteBuffer.wrap(rRegister.view().unsafeGetValue());
@@ -1137,12 +1224,20 @@ public class RiakAccess {
 			Location location = new Location(bucket, mapName);
 			
 			FetchMap fetch = new FetchMap.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchMap.Response response = client.execute(fetch);
+			this.logExecutionTime("removeEntryFromMap(fetch)", System.currentTimeMillis() - t_start);
+
 			Context context = response.getContext();
 			
 			MapUpdate entry = new MapUpdate().removeRegister(entryKey);
 			UpdateMap update = new UpdateMap.Builder(location, entry).withContext(context).build();
+			
+			t_start = System.currentTimeMillis();
 			client.execute(update);
+			this.logExecutionTime("removeEntryFromMap(update)", System.currentTimeMillis() - t_start);
+
 			return true;
 		} catch (Exception e) {
 		    LOGGER.error("removeEntryFromMap() failed.  Keyspace: " + keyspace + "  Table: " + table, e);
@@ -1161,7 +1256,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, mapName);
 			
 			FetchMap fetch = new FetchMap.Builder(location).build();
+
+			long t_start = System.currentTimeMillis();
 			FetchMap.Response response = client.execute(fetch);
+			this.logExecutionTime("containsKeyInMap()", System.currentTimeMillis() - t_start);
+
 			RiakMap rMap = response.getDatatype();
 			Map<BinaryValue, List<RiakDatatype>> entries = rMap.view();
 			return entries.containsKey(BinaryValue.create(entryKey));
@@ -1206,7 +1305,11 @@ public class RiakAccess {
 			Location location = new Location(bucket, mapName);
 			
 			FetchMap fetch = new FetchMap.Builder(location).build();
+			
+			long t_start = System.currentTimeMillis();
 			FetchMap.Response response = client.execute(fetch);
+			this.logExecutionTime("getSizeOfMap()", System.currentTimeMillis() - t_start);
+
 			RiakMap rMap = response.getDatatype();
 			Map<BinaryValue, List<RiakDatatype>> entries = rMap.view();
 			return entries.size();

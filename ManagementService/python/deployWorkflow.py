@@ -167,7 +167,7 @@ def start_docker_sandbox(host_to_deploy, uid, sid, wid, wname, sandbox_image_nam
     env_vars = {}
     env_vars["MFN_HOSTNAME"] = host_to_deploy[0]
     env_vars["MFN_ELASTICSEARCH"] = os.getenv("MFN_ELASTICSEARCH")
-    env_vars["MFN_QUEUE"] = "127.0.0.1:"+os.getenv("MFN_QUEUE").split(':')[1]
+    env_vars["MFN_QUEUE"] = "/opt/mfn/redis-server/redis.sock"
     env_vars["MFN_DATALAYER"] = host_to_deploy[0]+":"+os.getenv("MFN_DATALAYER").split(':')[1]
     env_vars["USERID"] = uid
     env_vars["SANDBOXID"] = sid
@@ -260,7 +260,7 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
         raise Exception("Unable to load "+ksvc_file+". Ensure that the configmap has been setup properly", e)
 
     # Kubernetes labels cannot contain @ or _ and should start and end with alphanumeric characters (and not be greater than 63 chars)
-    workflowNameForLabel = workflow_info["workflowName"].replace('@', '-').replace('_', '-').lower()
+    workflowNameForLabel = workflow_info["workflowName"].replace('@', '-').replace('/', '-').replace('_', '-').lower()
     wfNameSanitized = 'w-' + workflowNameForLabel[:59] + '-w'
 
     emailForLabel = email.replace('@', '-').replace('_', '-').lower()
@@ -320,6 +320,45 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
             continue
         for container in kservice['spec']['template']['spec']['containers']:
             container['env'].append({'name': k, 'value': os.getenv(k)})
+    
+    # get user provided requests, limits, and other knative autoscaling annotations
+    if not management:
+        if "workflowMetadata" in workflow_info and "knative" in workflow_info["workflowMetadata"]:
+            knative_groups = workflow_info["workflowMetadata"]["knative"]
+            print("[kservice update]: User provided kservice metadata: " + str(knative_groups))
+            for group_name in ["annotations", "container", "spec"]:
+                if group_name not in knative_groups:
+                    continue
+                if group_name is "annotations":
+                    if "annotations" not in kservice['spec']['template']['metadata']:
+                        kservice['spec']['template']['metadata']['annotations'] = {}
+                    group_to_update = kservice['spec']['template']['metadata']['annotations']
+                elif group_name is "container":
+                    group_to_update = kservice['spec']['template']['spec']['containers'][0]
+                else:
+                    group_to_update = kservice['spec']['template']['spec']
+                
+                assert(type(group_to_update) == type({}))
+                group = knative_groups[group_name]
+                print("[kservice update]: Updating group: " + group_name + ", current value: " + str(group_to_update))
+                print("[kservice update]: User provided group value: " + str (group))
+                # group = the user provided new info for a group,  group_to_update = the existing group to update
+                for user_provided_value_key in group:
+                    # env variables should be appended
+                    if group_name == "container" and user_provided_value_key == "env":
+                        if user_provided_value_key in group_to_update and type(group[user_provided_value_key]) == type([]) and len(group[user_provided_value_key]) > 0:
+                            print("[kservice update]: Updating env variables")
+                            for env_key_val in group[user_provided_value_key]:
+                                print("[kservice update]: env: appending: " + str(env_key_val))
+                                env.append(env_key_val)
+                    else:
+                        # overwrite or add the user provided key value
+                        print("[kservice update]: Updating " + str(user_provided_value_key))
+                        group_to_update[user_provided_value_key] = group[user_provided_value_key]
+                print("[kservice update]: Updated group: " + group_name + ", updated value: " + str(group_to_update))
+            print('[kservice update]: Updated Knative service definition to: ' + str(kservice))
+
+
     print('Checking if kservice exists')
     resp = requests.get(
         "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services/"+ksvcname,
@@ -448,6 +487,7 @@ def handle(value, sapi):
         workflow_info["json_ref"] = "workflow_json_" + wfmeta["id"]
         workflow_info["workflowName"] = wfmeta["name"]
         workflow_info["usertoken"] = data["usertoken"]
+        workflow_info["workflowMetadata"] = wfmeta
         req = {}
         req["installer"] = "pip"
         workflow_info["sandbox_requirements"] = req
@@ -698,7 +738,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
         tf_ip_port = global_trigger_info["frontend_ip_port"]
         if tf_ip_port not in tf_hosts:
             raise Exception("Frontend: " + tf_ip_port + " not available")
-        
+
         url = "http://" + tf_ip_port + "/add_workflows"
         # send the request and wait for response
 
@@ -712,7 +752,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
             res_obj = res.json()
         except Exception as e:
             status_msg = "Error: trigger_id" + trigger_id + "," + str(e)
-        
+
         if "status" in res_obj and res_obj["status"].lower() == "success":
             # if success then update the global trigger table to add a new workflow.
             print("[addTriggerForWorkflow] Success response from " + url)
@@ -728,7 +768,7 @@ def addWorkflowToTrigger(email, workflow_name, workflow_state, workflow_details,
     except Exception as e:
         print("[addTriggerForWorkflow] exception: " + str(e))
         # TODO: why remove this?
-        #if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:            
+        #if 'associatedTriggers' in workflow_details and trigger_name in workflow_details['associatedTriggers']:
         #    associatedTriggers = workflow_details['associatedTriggers']
         #    del associatedTriggers[trigger_name]
         #    workflow_details['associatedTriggers'] = associatedTriggers

@@ -71,7 +71,7 @@
       "Type": "Task",
       "Resource": "sendOrderSummary",
       "ResultPath": "$.summary",
-      "InputPath": "$.processedItems",
+      "InputPath": "$.detail.processedItems",
       "End": true
     }
   }

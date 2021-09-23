@@ -65,7 +65,7 @@ mfnmessage.go: ../schema/mfnmessage-schema.json
 #		golang:1.13 \
 #		bash -c 'go get github.com/a-h/generate/...; schema-generate $^ > $@'
 
-frontend: mfnmessage.go datalayermessage datalayerservice $(SOURCES)
+frontend: mfnmessage.go promstats.go datalayermessage datalayerservice $(SOURCES)
 	-rm -f frontend
 	docker run --rm -i --name build-$@ \
 		--user $(UID):$(GID) \

@@ -113,43 +113,47 @@ class Deployment:
         return children_pids
 
     def check_child_process(self):
+        log_filepath = None
         pid, status = os.waitpid(-1, os.WNOHANG|os.WUNTRACED|os.WCONTINUED)
-        failed_process_name = ""
+        if pid == 0:
+            return True, pid, "Unknown process", log_filepath
+
+        stopped_process_name = ""
         if os.WIFCONTINUED(status) or os.WIFSTOPPED(status):
             return False, _
         if os.WIFSIGNALED(status) or os.WIFEXITED(status):
             self._logger.error("Process with pid: " + str(pid) + " stopped.")
             if pid == self._fluentbit_actual_pid:
-                failed_process_name = "Fluent-bit"
+                stopped_process_name = "Fluent-bit"
                 log_filepath = "/opt/mfn/LoggingService/fluent-bit/fluent-bit.log"
             elif pid == self._queue_service_process.pid:
-                failed_process_name = "Queue service"
-                log_filepath = "/opt/mfn/logs/queueservice.log"
+                stopped_process_name = "Queue service"
+                log_filepath = None
             elif pid == self._frontend_process.pid:
-                failed_process_name = "Frontend"
+                stopped_process_name = "Frontend"
                 log_filepath = "/opt/mfn/logs/frontend.log"
             else:
                 for jrhp in self._javarequesthandler_process_list:
                     if pid == jrhp.pid:
-                        failed_process_name = "Java request handler"
+                        stopped_process_name = "Java request handler"
                         log_filepath = "/opt/mfn/logs/javaworker.log"
                         break
                 for state_name in self._functionworker_process_map:
                     process = self._functionworker_process_map[state_name]
                     if pid == process.pid:
-                        failed_process_name = "Function worker (" + state_name + ")"
+                        stopped_process_name = "Function worker (" + state_name + ")"
                         log_filepath = "/opt/mfn/logs/function_" + state_name + ".log"
                         del self._functionworker_process_map[state_name]
                         break
 
-            self._logger.error("Failed process name: " + failed_process_name)
+            self._logger.error("Stopped process name: " + stopped_process_name)
 
         if os.path.exists('/var/run/secrets/kubernetes.io'):
-            return True, pid, failed_process_name, log_filepath
+            return True, pid, stopped_process_name, log_filepath
         else:
             # TODO: try to relaunch some of the processes (FWs, fluentbit, frontend)
             self._logger.info(self._child_process_command_args_map[pid])
-            return True, pid, failed_process_name, log_filepath
+            return True, pid, stopped_process_name, log_filepath
 
     def shutdown(self):
         shutdown_message = {}
@@ -233,8 +237,8 @@ class Deployment:
 
     def _start_python_function_worker(self, worker_params, env_var_list):
         error = None
-        function_name = worker_params["fname"]
-        state_name = worker_params["functionstatename"]
+        function_name = worker_params["function_name"]
+        state_name = worker_params["function_state_name"]
         custom_env = os.environ.copy()
         old_ld_library_path = ""
         if "LD_LIBRARY_PATH" in custom_env:
@@ -295,13 +299,13 @@ class Deployment:
                 # if jar, the contents have already been extracted as if it was a zip archive
                 # start the java request handler if self._function_runtime == "java"
                 # we wrote the parameters to json file at the state directory
-                self._logger.info("Launching JavaRequestHandler for state: %s", worker_params["functionstatename"])
+                self._logger.info("Launching JavaRequestHandler for state: %s", worker_params["function_state_name"])
                 cmdjavahandler = "java -jar /opt/mfn/JavaRequestHandler/target/javaworker.jar "
-                cmdjavahandler += "/opt/mfn/workflow/states/" + worker_params["functionstatename"] + "/java_worker_params.json"
+                cmdjavahandler += "/opt/mfn/workflow/states/" + worker_params["function_state_name"] + "/java_worker_params.json"
 
                 error, process = process_utils.run_command(cmdjavahandler, self._logger, wait_until="Waiting for requests on:")
                 if error is not None:
-                    error = "Could not launch JavaRequestHandler: " + worker_params["fname"] + " " + error
+                    error = "Could not launch JavaRequestHandler: " + worker_params["function_name"] + " " + error
                     self._logger.error(error)
                 else:
                     self._javarequesthandler_process_list.append(process)
@@ -598,32 +602,39 @@ class Deployment:
     def _populate_worker_params(self, function_topic, wf_node, state):
         worker_params = {}
         worker_params["userid"] = self._userid
-        worker_params["storageuserid"] = self._storage_userid
+        worker_params["storage_userid"] = self._storage_userid
         worker_params["sandboxid"] = self._sandboxid
         worker_params["workflowid"] = self._workflowid
         worker_params["workflowname"] = self._workflowname
-        worker_params["ffolder"] = state["resource_dirpath"]
-        worker_params["fpath"] = state["resource_filepath"]
-        worker_params["fname"] = state["resource_filename"]
-        worker_params["fruntime"] = state["resource_runtime"]
-        worker_params["ftopic"] = function_topic
+
+        worker_params["function_topic"] = function_topic
+        worker_params["function_path"] = state["resource_filepath"]
+        worker_params["function_name"] = state["resource_filename"]
+        worker_params["function_folder"] = state["resource_dirpath"]
+        worker_params["function_runtime"] = state["resource_runtime"]
+
+        worker_params["function_state_type"] = wf_node.getGWFType()
+        worker_params["function_state_name"] = wf_node.getGWFStateName()
+        worker_params["function_state_info"] = wf_node.getGWFStateInfo()
+
         worker_params["hostname"] = self._hostname
         worker_params["queue"] = self._queue
         worker_params["datalayer"] = self._datalayer
-        worker_params["externalendpoint"] = self._external_endpoint
-        worker_params["internalendpoint"] = self._internal_endpoint
-        worker_params["managementendpoints"] = self._management_endpoints
-        worker_params["fnext"] = wf_node.getNextMap()
-        worker_params["fpotnext"] = wf_node.getPotentialNextMap()
-        worker_params["functionstatetype"] = wf_node.getGWFType()
-        worker_params["functionstatename"] = wf_node.getGWFStateName()
-        worker_params["functionstateinfo"] = wf_node.getGWFStateInfo()
-        worker_params["workflowfunctionlist"] = self._workflow.getWorkflowFunctionMap()
-        worker_params["workflowexit"] = self._workflow.getWorkflowExitPoint()
-        worker_params["sessionworkflow"] = self._workflow.is_session_workflow()
-        worker_params["sessionfunction"] = wf_node.is_session_function()
-        worker_params["sessionfunctionparameters"] = wf_node.get_session_function_parameters()
-        worker_params["shouldcheckpoint"] = self._workflow.are_checkpoints_enabled()
+        worker_params["external_endpoint"] = self._external_endpoint
+        worker_params["internal_endpoint"] = self._internal_endpoint
+        worker_params["management_endpoints"] = self._management_endpoints
+
+        worker_params["wf_next"] = wf_node.getNextMap()
+        worker_params["wf_pot_next"] = wf_node.getPotentialNextMap()
+        worker_params["wf_function_list"] = self._workflow.getWorkflowFunctionMap()
+        worker_params["wf_exit"] = self._workflow.getWorkflowExitPoint()
+        worker_params["wf_entry"] = self._workflow.getWorkflowEntryTopic()
+
+        worker_params["is_session_workflow"] = self._workflow.is_session_workflow()
+        worker_params["is_session_function"] = wf_node.is_session_function()
+        worker_params["session_function_parameters"] = wf_node.get_session_function_parameters()
+
+        worker_params["should_checkpoint"] = self._workflow.are_checkpoints_enabled()
 
         return worker_params
 
@@ -922,13 +933,13 @@ class Deployment:
 
             if state["resource_runtime"].find("java") != -1:
                 java_worker_params = {}
-                java_worker_params["functionPath"] = worker_params["ffolder"]
-                java_worker_params["functionName"] = worker_params["fname"]
-                java_worker_params["serverSocketFilename"] = "/tmp/java_handler_" + worker_params["functionstatename"] + ".uds"
+                java_worker_params["functionPath"] = worker_params["function_folder"]
+                java_worker_params["functionName"] = worker_params["function_name"]
+                java_worker_params["serverSocketFilename"] = "/tmp/java_handler_" + worker_params["function_state_name"] + ".uds"
 
                 if SINGLE_JVM_FOR_FUNCTIONS:
                     any_java_function = True
-                    single_jvm_worker_params[worker_params["functionstatename"]] = java_worker_params
+                    single_jvm_worker_params[worker_params["function_state_name"]] = java_worker_params
                 else:
                     java_params_filename = state["dirpath"] + "java_worker_params.json"
                     with open(java_params_filename, "w") as javaparamsf:
@@ -938,7 +949,7 @@ class Deployment:
             error = self._start_function_worker(worker_params, state["resource_runtime"], state["resource_env_var_list"])
 
             if error is not None:
-                errmsg = "Problem launching function worker for: " + worker_params["fname"]
+                errmsg = "Problem launching function worker for: " + worker_params["function_name"]
                 self._logger.error(errmsg)
                 has_error = True
                 return has_error, errmsg

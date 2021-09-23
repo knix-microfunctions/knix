@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: knix-workflows-podmonitor
+  # namespace where prometheus is installed
+  namespace: prometheus
+  labels:
+    # release name of prometheus, if installed via helm
+    release: prometheus
+spec:
+  podMetricsEndpoints:
+  - interval: 2s
+    port: user-port
+  namespaceSelector:
+    matchNames:
+      - knix   # namespace where knix is installed
+  selector:
+    matchLabels:
+      app: microfunctions-workflow

@@ -200,12 +200,11 @@ class SandboxAgent:
                 else:
                     self._management_endpoints = json.loads(self._management_endpoints)
 
-
-
         if not has_error:
             self._logger.info("External endpoint: %s", self._external_endpoint)
             self._logger.info("Internal endpoint: %s", self._internal_endpoint)
             self._logger.info("Management endpoints: %s", str(self._management_endpoints))
+            self._logger.info("Hostname: %s", str(self._hostname))
             self._deployment = Deployment(deployment_info,\
                 self._hostname, self._userid, self._sandboxid, self._workflowid,\
                 self._workflowname, self._queue, self._datalayer, \
@@ -223,18 +222,22 @@ class SandboxAgent:
         raise KeyboardInterrupt
 
     def sigchld(self, signum, _):
-        if not self._shutting_down:
-            should_shutdown, pid, failed_process_name, log_filepath = self._deployment.check_child_process()
+        if self._shutting_down:
+            return
 
-            if should_shutdown:
-                self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + failed_process_name, log_filepath)
+        should_shutdown, pid, stopped_process_name, log_filepath = self._deployment.check_child_process()
 
-                if pid == self._queue_service_process.pid:
-                    self._queue_service_process = None
-                elif pid == self._frontend_process.pid:
-                    self._frontend_process = None
+        if should_shutdown:
+            self._update_deployment_status(True, "A sandbox process stopped unexpectedly: " + stopped_process_name, log_filepath)
 
-                self.shutdown(reason="Process " + failed_process_name + " with pid: " + str(pid) + " stopped unexpectedly.")
+            if pid == self._queue_service_process.pid:
+                self._queue_service_process = None
+            elif pid == self._frontend_process.pid:
+                self._frontend_process = None
+            elif stopped_process_name == "Fluent-bit":
+                self._fluentbit_process = None
+
+            self.shutdown(reason="Process " + stopped_process_name + " with pid: " + str(pid) + " stopped unexpectedly.")
 
     def shutdown(self, reason=None):
         self._shutting_down = True
@@ -242,6 +245,10 @@ class SandboxAgent:
         if reason is not None:
             errmsg = "Shutting down sandboxagent due to reason: " + reason + "..."
             self._logger.info(errmsg)
+            # some process died unexpectedly; need to stop as immediately as possible
+            if self._fluentbit_process is not None:
+                time.sleep(2) # flush interval of fluent-bit
+            os._exit(1)
         else:
             self._logger.info("Gracefully shutting down sandboxagent...")
 
@@ -260,8 +267,8 @@ class SandboxAgent:
             self._local_queue_client.removeTopic(self._instructions_topic)
             self._local_queue_client.shutdown()
 
-            self._logger.info("Shutting down the queue service...")
-            process_utils.terminate_and_wait_child(self._queue_service_process, "queue service", 5, self._logger)
+            #self._logger.info("Shutting down the queue service...")
+            #process_utils.terminate_and_wait_child(self._queue_service_process, "queue service", 5, self._logger)
         else:
             self._logger.info("No queue service; most probably it was the reason of the shutdown.")
             self._logger.info("Force shutting down the function worker(s)...")
@@ -269,7 +276,6 @@ class SandboxAgent:
 
         # we can't do this here, because there may be other sandboxes running the same workflow
         #self._management_data_layer_client.put("workflow_status_" + self._workflowid, "undeployed")
-        self._management_data_layer_client.shutdown()
 
         self._logger.info("Shutting down fluent-bit...")
         time.sleep(2) # flush interval of fluent-bit
@@ -284,14 +290,18 @@ class SandboxAgent:
                 self._frontend_process.kill()
                 _, _ = self._frontend_process.communicate()
 
-        self._logger.info("Shutdown complete.")
         if reason is not None:
             self._update_deployment_status(True, errmsg)
-            self._management_data_layer_client.shutdown()
-            os._exit(1)
         else:
             self._update_deployment_status(False, errmsg)
-            self._management_data_layer_client.shutdown()
+
+        self._management_data_layer_client.shutdown()
+
+        self._logger.info("Shutdown complete.")
+
+        if reason is not None:
+            os._exit(1)
+        else:
             os._exit(0)
 
     def _stop_deployment(self, reason, errmsg):
@@ -326,11 +336,12 @@ class SandboxAgent:
         ts_qs_launch = time.time()
         # 1. launch the QueueService here
         self._logger.info("Launching local queue with redis...")
-        cmdqs = "/opt/mfn/redis-server/./redis-server /opt/mfn/redis-server/redis_4999.conf"
+        #cmdqs = "/opt/mfn/redis-server/./redis-server /opt/mfn/redis-server/redis_4999.conf"
+        cmdqs = "/opt/mfn/redis-server/./redis-server /opt/mfn/redis-server/redis_sock.conf"
         command_args_map_qs = {}
         command_args_map_qs["command"] = cmdqs
-        command_args_map_qs["wait_until"] = "Ready to accept connections"
-        error, self._queue_service_process = process_utils.run_command(cmdqs, self._logger, wait_until="Ready to accept connections")
+        command_args_map_qs["wait_until"] = "The server is now ready to accept connections at /opt/mfn/redis-server/redis.sock"
+        error, self._queue_service_process = process_utils.run_command(cmdqs, self._logger, wait_until=command_args_map_qs["wait_until"])
         if error is not None:
             has_error = True
             errmsg = "Could not start the sandbox local queue: " + str(error)
@@ -355,7 +366,10 @@ class SandboxAgent:
         workflow = self._deployment.get_workflow()
         fenv["MFN_ENTRYTOPIC"] = workflow.getWorkflowEntryTopic()
         fenv["MFN_RESULTTOPIC"] = workflow.getWorkflowExitTopic()
+        fenv["MFN_SHOULDCHECKPOINT"] = str(workflow.are_checkpoints_enabled())
         fenv["MFN_QUEUE"] = self._queue
+        fenv["MFN_EXTERNAL_ENDPOINT"] = self._external_endpoint
+        fenv["MFN_INTERNAL_ENDPOINT"] = self._internal_endpoint
         # MFN_DATALAYER already set
 
         command_args_map_fe = {}
@@ -441,7 +455,7 @@ def get_k8s_nodename():
         sys.exit(1)
     return podname
 
-def find_k8s_ep(fqdn):
+def find_k8s_ep(fqdn, nodename):
     # On K8s, sandboxes are run with MFN_HOSTNAME = kubernetes node name
     # Find host-local queue and datalayer endpoints
     with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as ftoken:
@@ -450,7 +464,6 @@ def find_k8s_ep(fqdn):
         namespace = fnamespace.read()
 
     k8sport = os.getenv('KUBERNETES_SERVICE_PORT_HTTPS')
-    nodename = os.getenv("MFN_HOSTNAME")
     svcname = fqdn.split('.', 1)[0]
     retry = True
     try:
@@ -494,7 +507,7 @@ if __name__ == "__main__":
         userid = sys.argv[3]
         sandboxid = sys.argv[4]
         workflowid = sys.argv[5]
-        queue = "127.0.0.1:4999"
+        queue = "/opt/mfn/redis-server/redis.sock"
         datalayer = hostname + ":4998"
         elasticsearch = sys.argv[6]
         endpoint_key = sys.argv[7]
@@ -502,7 +515,7 @@ if __name__ == "__main__":
     else:
         logger.info("Getting parameters from environment variables...")
         hostname = os.getenv("MFN_HOSTNAME", os.getenv("HOSTNAME", socket.gethostname()))
-        queue = os.getenv("MFN_QUEUE", "127.0.0.1:4999")
+        queue = os.getenv("MFN_QUEUE", "/opt/mfn/redis-server/redis.sock")
         datalayer = os.getenv("MFN_DATALAYER", hostname+":4998")
         userid = os.getenv("USERID")
         sandboxid = os.getenv("SANDBOXID")
@@ -513,10 +526,10 @@ if __name__ == "__main__":
 
     if os.path.exists('/var/run/secrets/kubernetes.io'):
         if "MFN_HOSTNAME" not in os.environ:
-            os.environ["MFN_HOSTNAME"] = get_k8s_nodename()
-            hostname = os.environ["MFN_HOSTNAME"]
+            hostname = socket.gethostname()
+            os.environ["MFN_HOSTNAME"] = hostname
         # Find endpoints for datalayer
-        datalayer = find_k8s_ep(datalayer)
+        datalayer = find_k8s_ep(datalayer, get_k8s_nodename())
         #queue = find_k8s_ep(queue)
 
     sandbox_agent = SandboxAgent(hostname, queue, datalayer, sandboxid, userid, workflowid, elasticsearch, workflowname, endpoint_key)

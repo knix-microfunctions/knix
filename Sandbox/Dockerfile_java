@@ -60,6 +60,7 @@ RUN chmod +x /opt/mfn/JavaRequestHandler/setup_maven.sh
 RUN /opt/mfn/JavaRequestHandler/./setup_maven.sh True
 RUN mvn -Duser.home=/tmp -DskipTests -gs /opt/mfn/JavaRequestHandler/maven/sandbox-mvn-settings.xml -f /opt/mfn/JavaRequestHandler/maven/init-mvn.pom.xml dependency:resolve-plugins
 
+
 RUN chown mfn:mfn -R /opt/mfn
 USER mfn
 WORKDIR /opt/mfn

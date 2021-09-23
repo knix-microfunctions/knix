@@ -25,18 +25,20 @@
 
     service_name: mfn-datalayer
     service_script: "/lib/systemd/system/{{ service_name }}.service"
-    datalayer_bind: "{{ ansible_default_ipv4.address }}:4998"
-    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}:8087"
-    all_datalayer_hosts_bind: "{{ groups['all']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join(':4998,') }}:4998"
+    datalayer_bind: "{{ ansible_ssh_host }}:4998"
+    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_ssh_host }}:8087"
+    all_datalayer_hosts_bind: "{{ groups['all']|map('extract',hostvars)|map(attribute='ansible_ssh_host')|join(':4998,') }}:4998"
 
   tasks:
 
   - debug:
       msg: 
         - inventory_hostname = {{ inventory_hostname }}
-        - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
+        - host_ip_address = {{ ansible_ssh_host }}
         - install_dir = {{ install_dir }}    # e.g. /opt/mfn
         - "datalayer package = {{ datalayer_dist }}/{{ datalayer_jar }}"
+        - riak_connect = {{ riak_connect }}
+        - all_datalayer_hosts_bind = {{ all_datalayer_hosts_bind }}
 
   - name: stop service
     systemd:
@@ -78,7 +80,7 @@
         [Unit]
         Description=Microfunctions Datalayer
         After=network.target
-        Requires=mfn-riak.service
+        #Requires=mfn-riak.service
         [Service]
         Type=simple
         WorkingDirectory={{ install_dir }}

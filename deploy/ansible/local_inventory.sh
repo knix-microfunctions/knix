@@ -14,20 +14,24 @@
 #   limitations under the License.
 
 HOSTNAME=$(/bin/hostname -f)
+# get hostip via ping, so that it is using the public IP
+HOSTIP=$(ping $HOSTNAME -c 1 | head -1 | awk '{print $3}' | awk 'BEGIN {FS="[()]"}; {print $2}')
 
+# ansible_ssh_host will be utilized to map the IP addresses to the publicly available IP address
+# (i.e., the one connected by ansible master)
 cat <<END >inventory.cfg
 [riak]
-$HOSTNAME
+$HOSTNAME ansible_ssh_host=$HOSTIP
 
 [elasticsearch]
-$HOSTNAME
+$HOSTNAME ansible_ssh_host=$HOSTIP
 
 [management]
-$HOSTNAME
+$HOSTNAME ansible_ssh_host=$HOSTIP
 
 [nginx]
-$HOSTNAME
+$HOSTNAME ansible_ssh_host=$HOSTIP
 
 [triggers_frontend]
-$HOSTNAME
+$HOSTNAME ansible_ssh_host=$HOSTIP
 END

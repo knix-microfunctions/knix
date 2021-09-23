@@ -86,7 +86,7 @@ class SessionHelperThread(threading.Thread):
 
     def _init_heartbeat_parameters(self, heartbeat_params):
         if "heartbeat_method" not in heartbeat_params:
-            self._logger.debug("No heartbeat method is specified; disabling heartbeat.")
+            #self._logger.debug("No heartbeat method is specified; disabling heartbeat.")
             return
         else:
             self._heartbeat_enabled = True
@@ -214,7 +214,7 @@ class SessionHelperThread(threading.Thread):
         except Exception as exc:
             is_json = False
             msg = value
-            self._logger.debug("[SessionHelperThread] non-JSON value: " + str(msg))
+            #self._logger.debug("[SessionHelperThread] non-JSON value: " + str(msg))
 
         # cannot be a special message; queue whatever it is
         # _XXX_: we are encoding/decoding the delivered message; should not actually execute this code
@@ -321,3 +321,5 @@ class SessionHelperThread(threading.Thread):
 
     def shutdown(self):
         self._is_running = False
+        # put a dummy message to get out of any blocking 'self.get_messages()' call
+        self._message_queue.put(None)
