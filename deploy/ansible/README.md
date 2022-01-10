@@ -1,5 +1,5 @@
 <!--
-   Copyright 2020 The KNIX Authors
+   Copyright 2020-2021 The KNIX Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -24,61 +24,70 @@ Tested on the following operating systems on the target machines:
 
 ## Prerequisites: on host machine
 
-1. Install ansible on host machine
+1. Install python.
 
-    <https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html>
+   ```bash
+   sudo apt-get update
+   sudo apt-get install python3 python3-dev python3-pip
+   ```
 
 2. Install dependencies required by ansible
 
     ```bash
     # for python2
     sudo pip install netaddr
-    ```
-or:
-
-    ```bash
     # for python3
     sudo pip3 install netaddr
+    # OR
+    sudo apt install python-netaddr
     ```
+3. Install ansible on host machine
+
+    <https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html>
+
+
+4. You should be able to ssh into the target machines/VMs without a password. If not then run (on host machine):
+
+    ```bash
+    # if not installed yet
+    sudo apt-get install ssh
+    ssh-keygen
+    # you must ensure the target machine has ssh server installed already (see below)
+    ssh-copy-id -i ~/.ssh/id_rsa your-username@your-target-hostname
+    ```
+Note that for a local installation, your public key should be put into `~/.ssh/authorized_keys`.
 
 ## Prerequisites: on target machines
 
-1. You can ssh into the target machines/VMs without a password. If not then run (on host machine):
+1. Ensure the ssh server is installed
 
     ```bash
-    ssh-keygen
-    ssh-copy-id -i ~/.ssh/id_rsa your-username@your-target-hostname
+    sudo apt-get install ssh
     ```
 
-2. The login user (in step 1) on the target machines has been added to the sudoer group
+2. The login user (in step 1) on the target machines should be added to the sudoer group
 
-3. Appropriate proxies (/etc/profile, /etc/bash.bashrc, and /etc/apt/apt.conf) are set on target machines
+3. Appropriate proxies (/etc/profile, /etc/bash.bashrc, and /etc/apt/apt.conf) should be set on target machines
 
-4. `python3`, `python3-dev`, `python3-pip` are installed on each of the target machines
+4. Appropriate packages should be installed on target machines:
 
     ```bash
     sudo apt-get update
     sudo apt-get install python3 python3-dev python3-pip
+    # install docker-ce
+    #<https://docs.docker.com/install/linux/docker-ce/ubuntu/>
+    #<https://docs.docker.com/install/linux/docker-ce/debian/>
+    # activate sudo-less access to docker commands
+    sudo usermod -a -G docker your-username
+    #if you don't want to log out and in to activate the change to group
+    newgrp docker
+    # set docker proxies by updating `/etc/systemd/system/docker.service.d/http-proxy.conf`
+    sudo apt-get install rustc
     ```
 
-5. docker-ce is installed on target machines
+5. Ensure that the hostname of the target machine resolves to the correct IP.
 
-    * Install docker-ce:
-    <https://docs.docker.com/install/linux/docker-ce/ubuntu/>
-    <https://docs.docker.com/install/linux/docker-ce/debian/>
-
-    * Enable sudo-less access to docker commands - add remote user to the docker group
-
-        ```bash
-        sudo usermod -a -G docker your-username
-        #newgrp docker (if you don't want to log out and in to activate the change to group)
-        ```
-
-    * Set docker proxies by updating `/etc/systemd/system/docker.service.d/http-proxy.conf`
-
-6. Hostname of the target machine resolves to the correct IP.
-
-7. Remove any old installation of KNIX
+6. Remove any old installation of KNIX
 
     ```bash
     cd /opt/knix
@@ -87,9 +96,6 @@ or:
     cd ..
     sudo rm -rf knix
     ```
-
-*Note: If you find something wrong or missing, please consider opening an issue on [GitHub](https://github.com/knix-microfunctions/knix) and/or letting us know in our [Slack workspace](https://knix.slack.com). Thank you!*
-
 
 ## Installation Steps (to be executed on host machine)
 
@@ -119,8 +125,9 @@ or:
         # For a single remote host installation, the hostname should be added to all groups.
 
         # For a cluster of hosts (preferably 3 or more), all host names must be added to [riak] group.
-        #  Hosts with a NVIDIA GPU should be added to group [gpu_workstations] so that they can be used by KNIX workflow deployments.
-        #  Only one host name (referred to as the <nginx-hostname>) should be added for other groups [elasticsearch], [management], [triggers_frontend], and [nginx].
+        # Hosts with a NVIDIA GPU should be added to group [gpu_workstations] so that they can be used by KNIX workflow deployments.
+        # [nginx] and [elasticsearch] group should contain a single host.
+        # At least one host should be in [management] and [triggers_frontend] group.
         ```
 
 3. Update `settings.json`
@@ -142,5 +149,10 @@ or:
     ```bash
     make
     ```
+6. Check *.log files for any errors
 
-6. After installation, open a browser and access `http://<nginx-hostname>:<nginx_http_listen_port>/`
+For Ubuntu installation, if riak fails to install via a missing `libssl` dependency, check out [this comment](https://github.com/knix-microfunctions/knix/issues/117#issuecomment-832854669).
+
+7. After installation, open a browser and access `http://<nginx-hostname>:<nginx_http_listen_port>/`
+
+*Note: If you find something wrong or missing, please consider opening an issue on [GitHub](https://github.com/knix-microfunctions/knix) and/or letting us know in our [Slack workspace](https://knix.slack.com). Thank you!*

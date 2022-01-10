@@ -48,6 +48,7 @@ manager:
   sandbox:
     imagePathPython: "/microfn/sandbox"
     imagePathJava: "/microfn/sandbox_java"
+    logLevel: "info"
     # imageTag: "latest" (default .Chart.AppVersion)
     imagePullPolicy: "Always"
     env:

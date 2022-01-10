@@ -83,12 +83,25 @@ public class MicroFunctionsAPI
 
 	private boolean hasError;
 	
+	private boolean connected = false;
+	private boolean contextInited = false;
+	
 	public MicroFunctionsAPI(String APISocketFilename)
 	{
 		this.APISocketFilename = APISocketFilename;
 		this.hasError = false;
 
         LOGGER.debug("API server at: " + this.APISocketFilename);
+        
+	}
+	
+	private void initConnection()
+	{
+		if (this.connected)
+		{
+			return;
+		}
+		
         final File APISocketFile = new File(this.APISocketFilename);
 
         try
@@ -143,24 +156,34 @@ public class MicroFunctionsAPI
                 this.transport = new TFramedTransport(new TSocket(APISocket), maxMessageLength);
                 TProtocol protocol = new TCompactProtocol(transport);
                 this.mfnapiClient = new MicroFunctionsAPIService.Client(protocol);
+                this.connected = true;
             }
             catch (TTransportException tte)
             {
                 this.hasError = true;
                 LOGGER.error("Error in initializing API connection: " + this.APISocketFilename + " " + tte);
             }
-        }
-        
+        }        
+	}
+	
+	private void initContextObjectProperties()
+	{
+		if (this.contextInited)
+		{
+			return;
+		}
+
+		this.initConnection();
+
         // obtain the context object properties
+		JSONObject jobj = null;
         if (!this.hasError)
         {
         	LOGGER.debug("Obtaining the context object properties...");
         	try
         	{
         		String objectPropertiesStr = this.mfnapiClient.get_context_object_properties();
-        		JSONObject jobj = new JSONObject(objectPropertiesStr);
-        		// parse the object and initialize the parameters in Java
-        		this.initContextObjectProperties(jobj);
+        		jobj = new JSONObject(objectPropertiesStr);
         	}
         	catch (Exception te)
         	{
@@ -168,44 +191,46 @@ public class MicroFunctionsAPI
         		LOGGER.error("Error obtaining the context object properties: " + this.APISocketFilename + " " + te);
         	}
         }
-	}
-	
-	private void initContextObjectProperties(JSONObject jobj)
-	{
-		this.functionName = jobj.getString("function_name");
-		this.functionVersion = jobj.getInt("function_version");
-		this.invokedFunctionArn = jobj.getString("invoked_function_arn");
-		this.memoryLimitInMB = jobj.getInt("memory_limit_in_mb");
-		this.awsRequestId = jobj.getString("aws_request_id");
-		this.logGroupName = jobj.getString("log_group_name");
-		this.logStreamName = jobj.getString("log_stream_name");
-		
-		this.identity = new LambdaCognitoIdentity();
-		JSONObject jobjIdentity = jobj.getJSONObject("identity");
-		this.identity.cognitoIdentityId = jobjIdentity.getString("cognito_identity_id");
-		this.identity.cognitoIdentityPoolId = jobjIdentity.getString("cognito_identity_pool_id");
-		
-		this.clientContext = new LambdaClientContext();
-		JSONObject jobjClientContext = jobj.getJSONObject("client_context");
-		JSONObject jobjClient = jobjClientContext.getJSONObject("client");
-		this.clientContext.client.installationId = jobjClient.getString("installation_id");
-		this.clientContext.client.appTitle = jobjClient.getString("app_title");
-		this.clientContext.client.appVersionName = jobjClient.getString("app_version_name");
-		this.clientContext.client.appVersionCode = jobjClient.getString("app_version_code");
-		this.clientContext.client.appPackageName = jobjClient.getString("app_package_name");
-		
-		JSONObject custom = jobjClientContext.getJSONObject("custom");
-		for (String key: custom.keySet())
-		{
-			this.clientContext.custom.put(key, custom.get(key));
-		}
-		
-		JSONObject env = jobjClientContext.getJSONObject("env");
-		for (String key: env.keySet())
-		{
-			this.clientContext.env.put(key, env.get(key));
-		}
-		
+
+        if (!this.hasError)
+        {
+			// parse the object and initialize the parameters in Java
+			this.functionName = jobj.getString("function_name");
+			this.functionVersion = jobj.getInt("function_version");
+			this.invokedFunctionArn = jobj.getString("invoked_function_arn");
+			this.memoryLimitInMB = jobj.getInt("memory_limit_in_mb");
+			this.awsRequestId = jobj.getString("aws_request_id");
+			this.logGroupName = jobj.getString("log_group_name");
+			this.logStreamName = jobj.getString("log_stream_name");
+			
+			this.identity = new LambdaCognitoIdentity();
+			JSONObject jobjIdentity = jobj.getJSONObject("identity");
+			this.identity.cognitoIdentityId = jobjIdentity.getString("cognito_identity_id");
+			this.identity.cognitoIdentityPoolId = jobjIdentity.getString("cognito_identity_pool_id");
+			
+			this.clientContext = new LambdaClientContext();
+			JSONObject jobjClientContext = jobj.getJSONObject("client_context");
+			JSONObject jobjClient = jobjClientContext.getJSONObject("client");
+			this.clientContext.client.installationId = jobjClient.getString("installation_id");
+			this.clientContext.client.appTitle = jobjClient.getString("app_title");
+			this.clientContext.client.appVersionName = jobjClient.getString("app_version_name");
+			this.clientContext.client.appVersionCode = jobjClient.getString("app_version_code");
+			this.clientContext.client.appPackageName = jobjClient.getString("app_package_name");
+			
+			JSONObject custom = jobjClientContext.getJSONObject("custom");
+			for (String key: custom.keySet())
+			{
+				this.clientContext.custom.put(key, custom.get(key));
+			}
+			
+			JSONObject env = jobjClientContext.getJSONObject("env");
+			for (String key: env.keySet())
+			{
+				this.clientContext.env.put(key, env.get(key));
+			}
+			
+			this.contextInited = true;
+        }
 	}
 	
 	public boolean hasError()
@@ -256,7 +281,9 @@ public class MicroFunctionsAPI
 	**/
 	public void updateMetadata(String metadataName, String metadataValue, boolean isPrivilegedMetadata)
 	{
-	    try
+		this.initConnection();
+	    
+		try
 	    {
 	        this.mfnapiClient.update_metadata(metadataName, metadataValue, isPrivilegedMetadata);
 	    }
@@ -290,7 +317,9 @@ public class MicroFunctionsAPI
 	 */
 	public void sendToAllRunningFunctionsInSession(Object message, boolean sendNow)
 	{
-        FunctionAPIMessage fam = new FunctionAPIMessage(message);
+		this.initConnection();
+        
+		FunctionAPIMessage fam = new FunctionAPIMessage(message);
         String encodedMessage = fam.toString();
 	    try
 	    {
@@ -336,7 +365,9 @@ public class MicroFunctionsAPI
 	 */
 	public void sendToAllRunningFunctionsInSessionWithFunctionName(String name, Object message, boolean sendNow)
 	{
-        FunctionAPIMessage fam = new FunctionAPIMessage(message);
+		this.initConnection();
+        
+		FunctionAPIMessage fam = new FunctionAPIMessage(message);
         String encodedMessage = fam.toString();
 	    try
 	    {
@@ -380,7 +411,9 @@ public class MicroFunctionsAPI
      */
     public void sendToRunningFunctionInSessionWithAlias(String alias, Object message, boolean sendNow)
     {
-        FunctionAPIMessage fam = new FunctionAPIMessage(message);
+		this.initConnection();
+        
+		FunctionAPIMessage fam = new FunctionAPIMessage(message);
         String encodedMessage = fam.toString();
         try
         {
@@ -420,7 +453,9 @@ public class MicroFunctionsAPI
      */
 	public void sendToRunningFunctionInSession(String sessionFunctionId, Object message, boolean sendNow)
 	{
-        FunctionAPIMessage fam = new FunctionAPIMessage(message);
+		this.initConnection();
+
+		FunctionAPIMessage fam = new FunctionAPIMessage(message);
         String encodedMessage = fam.toString();
 	    try
 	    {
@@ -521,7 +556,9 @@ public class MicroFunctionsAPI
 	 */
 	public List<String> getSessionUpdateMessages(int count, boolean block)
 	{
-	    List<String> msglist = null;
+		this.initConnection();
+
+		List<String> msglist = null;
 	    try
 	    {
 	        List<String> msglist2 = this.mfnapiClient.get_session_update_messages(count, block);
@@ -552,7 +589,9 @@ public class MicroFunctionsAPI
 	
 	public void createCounter(String countername, long count, boolean isPrivate, boolean isQueued)
 	{
-	    try
+		this.initConnection();
+
+		try
 	    {
 	        this.mfnapiClient.createCounter(countername, count, isPrivate, isQueued);
 	    }
@@ -569,6 +608,8 @@ public class MicroFunctionsAPI
 	
 	public long getCounterValue(String countername, boolean isPrivate)
 	{
+		this.initConnection();
+
 	    long count = 0l;
 	    try
 	    {
@@ -593,6 +634,8 @@ public class MicroFunctionsAPI
 	
 	public boolean incrementCounter(String countername, long increment, boolean isPrivate, boolean isQueued)
 	{
+		this.initConnection();
+
         boolean status = false;
 	    try
 	    {
@@ -617,6 +660,8 @@ public class MicroFunctionsAPI
 
 	public boolean decrementCounter(String countername, long decrement, boolean isPrivate, boolean isQueued)
 	{
+		this.initConnection();
+
         boolean status = false;
 	    try
 	    {
@@ -641,6 +686,8 @@ public class MicroFunctionsAPI
     
     public void deleteCounter(String countername, boolean isPrivate, boolean isQueued)
     {
+		this.initConnection();
+
         try
         {
             this.mfnapiClient.deleteCounter(countername, isPrivate, isQueued);
@@ -673,6 +720,8 @@ public class MicroFunctionsAPI
     
     public List<String> getCounterNames(int startIndex, int endIndex, boolean isPrivate)
     {
+		this.initConnection();
+
         List<String> names = null;
         try
         {
@@ -684,7 +733,6 @@ public class MicroFunctionsAPI
         }
         return names;
     }
-    
 
     public void createSet(String setname)
 	{
@@ -698,6 +746,8 @@ public class MicroFunctionsAPI
 
 	public void createSet(String setname, boolean isPrivate, boolean isQueued)
 	{
+		this.initConnection();
+
 	    try
 	    {
 	        this.mfnapiClient.createSet(setname, isPrivate, isQueued);
@@ -720,6 +770,8 @@ public class MicroFunctionsAPI
 	
 	public void addSetEntry(String setname, String item, boolean isPrivate, boolean isQueued)
 	{
+		this.initConnection();
+
 	    try
 	    {
 	        this.mfnapiClient.addSetEntry(setname, item, isPrivate, isQueued);
@@ -742,6 +794,8 @@ public class MicroFunctionsAPI
 	
 	public void removeSetEntry(String setname, String item, boolean isPrivate, boolean isQueued)
 	{
+		this.initConnection();
+
 	    try
 	    {
 	        this.mfnapiClient.removeSetEntry(setname, item, isPrivate, isQueued);
@@ -759,6 +813,8 @@ public class MicroFunctionsAPI
 	
 	public boolean containsSetItem(String setname, String item, boolean isPrivate)
 	{
+		this.initConnection();
+
 	    boolean res = false;
 	    try
 	    {
@@ -778,6 +834,8 @@ public class MicroFunctionsAPI
 	
 	public Set<String> retrieveSet(String setname, boolean isPrivate)
 	{
+		this.initConnection();
+
 	    Set<String> set = null;
 	    try
 	    {
@@ -802,6 +860,8 @@ public class MicroFunctionsAPI
 	
 	public void clearSet(String setname, boolean isPrivate, boolean isQueued)
 	{
+		this.initConnection();
+
 	    try
 	    {
 	        this.mfnapiClient.clearSet(setname, isPrivate, isQueued);
@@ -824,6 +884,8 @@ public class MicroFunctionsAPI
 	
 	public void deleteSet(String setname, boolean isPrivate, boolean isQueued)
 	{
+		this.initConnection();
+
 	    try
 	    {
 	        this.mfnapiClient.deleteSet(setname, isPrivate, isQueued);
@@ -856,6 +918,8 @@ public class MicroFunctionsAPI
     
     public List<String> getSetNames(int startIndex, int endIndex, boolean isPrivate)
     {
+		this.initConnection();
+
         List<String> names = null;
         try
         {
@@ -870,6 +934,8 @@ public class MicroFunctionsAPI
 	
 	public String ping(int num)
 	{
+		this.initConnection();
+
 		try
 		{
 			long t_api_call = System.currentTimeMillis();
@@ -887,6 +953,8 @@ public class MicroFunctionsAPI
 	
 	public List<Map<String, String>> getDynamicWorkflow()
 	{
+		this.initConnection();
+
 	    List<Map<String, String>> dynamicWorkflow = null;
 	    try
 	    {
@@ -906,6 +974,8 @@ public class MicroFunctionsAPI
 	
 	public String getSessionFunctionIdWithAlias(String alias)
 	{
+		this.initConnection();
+
 	    String sessionFunctionId = "";
 	    try
 	    {
@@ -920,6 +990,8 @@ public class MicroFunctionsAPI
 	
 	public List<String> getAllSessionFunctionIds()
 	{
+		this.initConnection();
+
 	    List<String> idList = null;
 	    try
 	    {
@@ -934,6 +1006,8 @@ public class MicroFunctionsAPI
 	
 	public Map<String, String> getAllSessionFunctionAliases()
 	{
+		this.initConnection();
+
 	    Map<String, String> aliasMap = null;
 	    try
 	    {
@@ -948,6 +1022,8 @@ public class MicroFunctionsAPI
 	
 	public Map<String, Map<String, String>> getAliasSummary()
 	{
+		this.initConnection();
+
 	    Map<String, Map<String, String>> aliasMap = null;
 	    try
 	    {
@@ -962,6 +1038,8 @@ public class MicroFunctionsAPI
 	
 	public boolean isStillRunning()
 	{
+		this.initConnection();
+
 	    boolean running = false;
 	    try
 	    {
@@ -976,6 +1054,8 @@ public class MicroFunctionsAPI
 	
 	public String getEventKey()
 	{
+		this.initConnection();
+
 	    String key = "";
 	    try
 	    {
@@ -990,6 +1070,8 @@ public class MicroFunctionsAPI
 	
 	public String getInstanceId()
 	{
+		this.initConnection();
+
 	    String key = "";
 	    try
 	    {
@@ -1004,6 +1086,8 @@ public class MicroFunctionsAPI
 	
 	public long getRemainingTimeInMillis()
 	{
+		this.initConnection();
+
 	    long t = 0l;
 	    try
 	    {
@@ -1018,6 +1102,8 @@ public class MicroFunctionsAPI
 	
 	public String getSessionId()
 	{
+		this.initConnection();
+
 	    String sessionId = "";
 	    try
 	    {
@@ -1032,6 +1118,8 @@ public class MicroFunctionsAPI
 	
 	public String getSessionFunctionId()
 	{
+		this.initConnection();
+
 	    String sessionFunctionId = "";
 	    try
 	    {
@@ -1046,6 +1134,8 @@ public class MicroFunctionsAPI
 	
 	public void setSessionAlias(String alias)
 	{
+		this.initConnection();
+
 	    try
 	    {
 	        this.mfnapiClient.set_session_alias(alias);
@@ -1058,6 +1148,8 @@ public class MicroFunctionsAPI
 	
 	public void unsetSessionAlias()
 	{
+		this.initConnection();
+
 	    try
 	    {
 	        this.mfnapiClient.unset_session_alias();
@@ -1070,6 +1162,8 @@ public class MicroFunctionsAPI
 	
 	public String getSessionAlias()
 	{
+		this.initConnection();
+
 	    String alias = "";
 	    try
 	    {
@@ -1089,6 +1183,8 @@ public class MicroFunctionsAPI
 	
 	public void setSessionFunctionAlias(String alias, String sessionFunctionId)
 	{
+		this.initConnection();
+
 	    try
 	    {
 	        this.mfnapiClient.set_session_function_alias(alias, sessionFunctionId);
@@ -1106,6 +1202,8 @@ public class MicroFunctionsAPI
 	
 	public void unsetSessionFunctionAlias(String sessionFunctionId)
 	{
+		this.initConnection();
+	    
 	    try
 	    {
 	        this.mfnapiClient.unset_session_function_alias(sessionFunctionId);
@@ -1123,6 +1221,8 @@ public class MicroFunctionsAPI
 	
 	public String getSessionFunctionAlias(String sessionFunctionId)
 	{
+		this.initConnection();
+	    
 	    String alias = "";
 	    try
 	    {
@@ -1142,6 +1242,8 @@ public class MicroFunctionsAPI
 	
     public void log(String text, String level)
     {
+		this.initConnection();
+	    
         try
         {
             this.mfnapiClient.log(text, level);
@@ -1154,6 +1256,8 @@ public class MicroFunctionsAPI
     
     public void addWorkflowNext(String next, Object value)
     {
+		this.initConnection();
+	    
         FunctionAPIMessage fam = new FunctionAPIMessage(value);
         String encodedValue = fam.toString();
         try
@@ -1173,6 +1277,8 @@ public class MicroFunctionsAPI
     
     public void sendToFunctionNow(String destination, Object value)
     {
+		this.initConnection();
+	    
         FunctionAPIMessage fam = new FunctionAPIMessage(value);
         String encodedValue = fam.toString();
         try
@@ -1194,6 +1300,8 @@ public class MicroFunctionsAPI
     
     public void addDynamicWorkflow(ArrayList<HashMap<String, Object>> triggerList)
     {
+		this.initConnection();
+	    
         int size = triggerList.size();
         for (int i = 0; i < size; i++)
         {
@@ -1211,6 +1319,8 @@ public class MicroFunctionsAPI
     
     public String get(String key, boolean isPrivate)
     {
+		this.initConnection();
+	    
         String response = null;
         try
         {
@@ -1235,6 +1345,8 @@ public class MicroFunctionsAPI
 
     public void put(String key, String value, boolean isPrivate, boolean isQueued)
     {
+		this.initConnection();
+	    
         try
         {
             this.mfnapiClient.put(key, value, isPrivate, isQueued);
@@ -1272,6 +1384,8 @@ public class MicroFunctionsAPI
 
     public void remove(String key, boolean isPrivate, boolean isQueued)
     {
+		this.initConnection();
+	    
         try
         {
             this.mfnapiClient.remove(key, isPrivate, isQueued);
@@ -1304,6 +1418,8 @@ public class MicroFunctionsAPI
     
     public List<String> getKeys(int startIndex, int endIndex, boolean isPrivate)
     {
+		this.initConnection();
+	    
         List<String> names = null;
         try
         {
@@ -1328,6 +1444,8 @@ public class MicroFunctionsAPI
     
     public void createMap(String mapname, boolean isPrivate, boolean isQueued)
     {
+		this.initConnection();
+	    
         try
         {
             this.mfnapiClient.createMap(mapname, isPrivate, isQueued);
@@ -1350,6 +1468,8 @@ public class MicroFunctionsAPI
     
     public void putMapEntry(String mapname, String key, String value, boolean isPrivate, boolean isQueued)
     {
+		this.initConnection();
+	    
         try
         {
             this.mfnapiClient.putMapEntry(mapname, key, value, isPrivate, isQueued);
@@ -1367,6 +1487,8 @@ public class MicroFunctionsAPI
     
     public String getMapEntry(String mapname, String key, boolean isPrivate)
     {
+		this.initConnection();
+	    
         String value = null;
         try
         {
@@ -1391,6 +1513,8 @@ public class MicroFunctionsAPI
 
     public void deleteMapEntry(String mapname, String key, boolean isPrivate, boolean isQueued)
     {
+		this.initConnection();
+	    
         try
         {
             this.mfnapiClient.deleteMapEntry(mapname, key, isPrivate, isQueued);
@@ -1408,6 +1532,8 @@ public class MicroFunctionsAPI
     
     public boolean containsMapKey(String mapname, String key, boolean isPrivate)
     {
+		this.initConnection();
+	    
         boolean res = false;
         try
         {
@@ -1442,6 +1568,8 @@ public class MicroFunctionsAPI
     
     public List<String> getMapNames(int startIndex, int endIndex, boolean isPrivate)
     {
+		this.initConnection();
+	    
         List<String> names = null;
         try
         {
@@ -1461,6 +1589,8 @@ public class MicroFunctionsAPI
     
     public Set<String> getMapKeys(String mapname, boolean isPrivate)
     {
+		this.initConnection();
+	    
         Set<String> keys = null;
         try
         {
@@ -1480,6 +1610,8 @@ public class MicroFunctionsAPI
     
     public Map<String, String> retrieveMap(String mapname, boolean isPrivate)
     {
+		this.initConnection();
+	    
         Map<String, String> map = null;
         try
         {
@@ -1504,6 +1636,8 @@ public class MicroFunctionsAPI
     
     public void deleteMap(String mapname, boolean isPrivate, boolean isQueued)
     {
+		this.initConnection();
+	    
         try
         {
             this.mfnapiClient.deleteMap(mapname, isPrivate, isQueued);
@@ -1526,6 +1660,8 @@ public class MicroFunctionsAPI
     
     public void clearMap(String mapname, boolean isPrivate, boolean isQueued)
     {
+		this.initConnection();
+	    
         try
         {
             this.mfnapiClient.clearMap(mapname, isPrivate, isQueued);
@@ -1543,6 +1679,8 @@ public class MicroFunctionsAPI
     
     public Map<String, Boolean> getDataToBeDeleted(boolean isPrivate)
     {
+		this.initConnection();
+	    
         Map<String, Boolean> map = null;
         try
         {
@@ -1562,6 +1700,8 @@ public class MicroFunctionsAPI
     
     public Map<String, String> getTransientDataOutput(boolean isPrivate)
     {
+    	this.initConnection();
+
         Map<String, String> map = null;
         try
         {
@@ -1575,47 +1715,69 @@ public class MicroFunctionsAPI
     }
 
 	public String getFunctionName() {
+		this.initContextObjectProperties();
+
 		return functionName;
 	}
 
 	public int getFunctionVersion() {
+		this.initContextObjectProperties();
+
 		return functionVersion;
 	}
 
 	public String getInvokedFunctionArn() {
+		this.initContextObjectProperties();
+
 		return invokedFunctionArn;
 	}
 
 	public int getMemoryLimitInMB() {
+		this.initContextObjectProperties();
+
 		return memoryLimitInMB;
 	}
 
 	public String getAwsRequestId() {
+		this.initContextObjectProperties();
+
 		return awsRequestId;
 	}
 
 	public String getLogGroupName() {
+		this.initContextObjectProperties();
+
 		return logGroupName;
 	}
 
 	public String getLogStreamName() {
+		this.initContextObjectProperties();
+
 		return logStreamName;
 	}
 
 	public LambdaCognitoIdentity getIdentity() {
+		this.initContextObjectProperties();
+
 		return identity;
 	}
 
 	public LambdaClientContext getClientContext() {
+		this.initContextObjectProperties();
+
 		return clientContext;
 	}
 
 	public Logger getLogger() {
+		this.initContextObjectProperties();
+		
 		return logger;
 	}
 	
 	public boolean addTriggerableBucket(String bucketName)
 	{
+		this.initConnection();
+
 		boolean success = false;
 		try
         {
@@ -1630,6 +1792,8 @@ public class MicroFunctionsAPI
 	
 	public boolean deleteTriggerableBucket(String bucketName)
 	{
+		this.initConnection();
+
 		boolean success = false;
 		try
         {
@@ -1644,6 +1808,8 @@ public class MicroFunctionsAPI
 	
 	public boolean addStorageTriggerForWorkflow(String workflowName, String bucketName)
 	{
+		this.initConnection();
+
 		boolean success = false;
 		try
         {
@@ -1658,6 +1824,8 @@ public class MicroFunctionsAPI
 	
 	public boolean deleteStorageTriggerForWorkflow(String workflowName, String bucketName)
 	{
+		this.initConnection();
+
 		boolean success = false;
 		try
         {
@@ -1695,6 +1863,8 @@ public class MicroFunctionsAPI
 	public TriggerAPIResult addTriggerAMQP(String triggerName, String AMQPAddress, String routingKey, String exchange, 
 			boolean withAck, boolean isDurable, boolean isExclusive, double ignoreMessageProbability)
 	{
+		this.initConnection();
+
 		TriggerAPIResult result = null;
 		
 		TriggerInfoAMQP triggerInfo = new TriggerInfoAMQP();
@@ -1719,6 +1889,8 @@ public class MicroFunctionsAPI
 	
 	public TriggerAPIResult addTriggerTimer(String triggerName, long timerIntervalMilliseconds)
 	{
+		this.initConnection();
+
 		TriggerAPIResult result = null;
 		
 		TriggerInfoTimer triggerInfo = new TriggerInfoTimer();
@@ -1742,6 +1914,8 @@ public class MicroFunctionsAPI
 
 	public TriggerAPIResult addTriggerForWorkflow(String triggerName, String workflowName, String workflowState)
 	{
+		this.initConnection();
+
 		TriggerAPIResult result = null;
 		try
 		{
@@ -1756,6 +1930,8 @@ public class MicroFunctionsAPI
 	
 	public TriggerAPIResult deleteTriggerForWorkflow(String triggerName, String workflowName)
 	{
+		this.initConnection();
+
 		TriggerAPIResult result = null;
 		try
 		{
@@ -1770,6 +1946,8 @@ public class MicroFunctionsAPI
 
 	public TriggerAPIResult deleteTrigger(String triggerName)
 	{
+		this.initConnection();
+
 		TriggerAPIResult result = null;
 		try
 		{

@@ -16,6 +16,7 @@
         "required": [
           "__execution_id",
           "__async_execution",
+          "__client_origin_frontend",
           "__function_execution_id",
           "__timestamp_frontend_entry"
         ],
@@ -38,6 +39,15 @@
             "examples": [
               true,
               false
+            ]
+          },
+          "__client_origin_frontend": {
+            "$id": "#/properties/__mfnmetadata/properties/__client_origin_frontend",
+            "type": "string",
+            "title": "ClientOriginFrontend",
+            "default": "",
+            "examples": [
+              "http://10.20.20.10:8080", "http://192.168.0.100:49125"
             ]
           },
           "__function_execution_id": {

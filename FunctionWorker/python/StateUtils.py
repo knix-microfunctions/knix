@@ -728,12 +728,12 @@ class StateUtils:
         if "WaitForNumBranches" in self.parsedfunctionstateinfo:
             klist = self.parsedfunctionstateinfo["WaitForNumBranches"]
             if not isinstance(klist, list):
-                self._logger.info("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
+                self._logger.debug("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
                 raise Exception("[StateUtils] WaitForNumBranches must be a sorted list with 1 or more integers")
             klist.sort()
             for k in klist:
                 if not isinstance(k, int):
-                    self._logger.info("[StateUtils] Values inside WaitForNumBranches must be integers")
+                    self._logger.debug("[StateUtils] Values inside WaitForNumBranches must be integers")
                     raise Exception("[StateUtils] Values inside WaitForNumBranches must be integers")
                 if k > total_branch_count:
                     self._logger.info("[StateUtils] Values inside WaitForNumBranches list cannot be greater than the number of branches in the parallel state")
@@ -1128,6 +1128,7 @@ class StateUtils:
         elif self.functionstatetype == StateUtils.mapStateType:
             name_prefix = self.functiontopic + "_" + key
 
+
             self._logger.debug("[StateUtils] Map state handling function_input: " + str(function_input))
             self._logger.debug("[StateUtils] Map state handling metadata: " + str(metadata))
 
@@ -1521,7 +1522,7 @@ class StateUtils:
                     ret_value[key] = {}
                     for k in parameters[key]: # get nested keys
                         if not k.split(".")[-1] == "$": # parse static value
-                            print(parameters[key][k])
+                            #print(parameters[key][k])
                             ret_value[key][k] = parameters[key][k]
                         else:
                             new_key = k.split(".$")[0] # use the json paths in paramters to match

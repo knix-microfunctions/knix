@@ -25,7 +25,8 @@ sys.path.insert(1, os.path.join(sys.path[0], '../FunctionWorker/python'))
 from LocalQueueClient import LocalQueueClient
 from LocalQueueClientMessage import LocalQueueClientMessage
 
-
+'''
+# queue is local to sandbox, so no need to find the queue
 def find_queue(logger):
     queue = os.getenv("MFN_QUEUE")
     if 'KUBERNETES_SERVICE_HOST' in os.environ and "MFN_HOSTNAME" in os.environ:
@@ -55,11 +56,11 @@ def find_queue(logger):
         except (requests.exceptions.HTTPError, KeyError) as e:
             logger.error(resp.text, e)
     return queue
-
+'''
 
 if __name__ == "__main__":
     logger = logging.getLogger()
-    queue = find_queue(logger)
+    queue = "/opt/mfn/redis-server/redis.sock"
     sandboxid = os.getenv("SANDBOXID")
     print("Send shutdown message to sandboxagent")
     shutdown_message = {}

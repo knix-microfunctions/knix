@@ -71,6 +71,9 @@ class PublicationUtils():
         self._execution_info_map_name = None
         self._next_backup_list = []
 
+        self._internal_endpoint = worker_params["internal_endpoint"]
+        self._external_endpoint = worker_params["external_endpoint"]
+
         #self._logger.debug("[PublicationUtils] init done.")
 
     def set_workflow_local_functions(self, wf_local):
@@ -306,27 +309,32 @@ class PublicationUtils():
         while not ack:
             ack = lqcpub.addMessage(lqtopic, lqcm, True)
 
-    def _send_remote_message(self, remote_address, message_type, lqtopic, key, value):
+    def _send_remote_message(self, remote_address, message_type, action_data):
         # form a http request to send to remote host
         # need to set async=true in request URL, so that the frontend does not have a sync object waiting
-        if message_type == "session_update":
-            # if a session update message, set headers appropriately
-            action_data = {}
-            action_data["topic"] = lqtopic
-            action_data["key"] = key
-            action_data["value"] = value
 
-            resp = requests.post(remote_address,
-                                params={"async": 1},
-                                json={},
-                                headers={"x-mfn-action": "session-update",
-                                        "x-mfn-action-data": json.dumps(action_data)})
+        # exponential backoff
+        retry = 0.1
+        # retry 7 times, wait for 5 seconds for the connection to time out
+        while retry <= 6.4:
+            try:
+                action_data_str = json.dumps(action_data)
+                self._logger.debug(f"Sending remote message ({message_type}) to {remote_address}, data: {action_data_str}")
+                resp = requests.post(remote_address,
+                                     params={"async": 1},
+                                     json={},
+                                     timeout=5,
+                                     headers={"x-mfn-action": message_type,
+                                              "x-mfn-action-data": action_data_str})
+                break
+            except Exception as exc:
+                self._logger.warn(f"Failed sending remote message ({message_type}) to {remote_address}, data: {action_data_str}, exception: {str(exc)}; retrying in: {str(retry)}s")
+                time.sleep(retry)
+                retry = retry * 2
 
-        elif message_type == "global_pub":
-            # TODO: if global publishing, set headers appropriately (e.g., for load balancing)
-            pass
+        if retry > 6.4:
+            self._logger.warn(f"Failed sending remote message ({message_type}) to {remote_address} failed, data: {action_data_str}, due to timeouts")
 
-        return
 
     def _publish_privileged_output(self, function_output, lqcpub):
         next = function_output["next"]
@@ -383,6 +391,7 @@ class PublicationUtils():
     def _publish_output(self, key, trigger, lqcpub, timestamp_map=None):
         if timestamp_map is not None:
             timestamp_map['t_pub_output'] = time.time() * 1000.0
+        self._logger.debug(f"[_publish_output] key: {key}, trigger: {str(trigger)}")
         next = trigger["next"]
 
         if "to_running_function" in trigger and trigger["to_running_function"]:
@@ -397,12 +406,22 @@ class PublicationUtils():
                 self._send_local_queue_message(lqcpub, next, key, trigger["value"])
             else:
                 # send it to the remote host with a special header
-                self._send_remote_message(trigger["remote_address"], "session_update", next, key, trigger["value"])
+                action_data = {}
+                action_data["topic"] = next
+                action_data["key"] = key
+                action_data["value"] = trigger["value"]
+                # include also the metadata about __origin_client_frontend
+                action_data["client_origin_frontend"] = self._metadata["__client_origin_frontend"]
+
+                self._send_remote_message(trigger["remote_address"], "session-update", action_data)
+
             return (None, None)
+
         elif "is_privileged" in trigger and trigger["is_privileged"]:
             # next[0:6] == "async_"
             # next == self._recovery_manager_topic:
             return self._publish_privileged_output(trigger, lqcpub)
+
         else:
             topic_next = self._prefix + next
 
@@ -420,24 +439,50 @@ class PublicationUtils():
                     timestamp_map['t_pub_localqueue'] = time.time() * 1000.0
                 self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
             else:
-                # TODO: need to also ensure that a message to a non-local topic gets properly handled
+                # Three cases:
+                # 1. non-local next: remote message; header: "global-pub"
+                # 2. non-local end: remote message; header: "remote-result"
+                # 3. local end: publish to local queue
+                # need to ensure that a message to a non-local topic gets properly handled
+                # TODO: global publishing, set headers appropriately "global-pub" (e.g., for load balancing) (case 1)
                 # for multi-host deployments for load redirection
-                # currently, we don't have such cases
-                self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
+                # currently, we don't have case 1; requires a global messaging mechanism with some metadata
+                # of where the remote message needs to be sent
 
                 # check if 'next' is exit topic
                 if next == self._wf_exit:
+                    # Case 2: non-local end
+                    # check __client_origin_frontend in metadata
+                    # compile remote-result message
+                    # send remote message directly to the origin frontend
+                    # ensure that remote address is not our frontend
+                    # TESTING: ignore whether the host is local or not; replace the check with the commented out line below
+                    #if "__client_origin_frontend" in self._metadata:
+                    if "__client_origin_frontend" in self._metadata and self._internal_endpoint != self._metadata["__client_origin_frontend"]:
+                        remote_result_message = {}
+                        remote_result_message["key"] = key
+                        remote_result_message["value"] = output["value"]
+
+                        self._send_remote_message(self._metadata["__client_origin_frontend"], "remote-result", remote_result_message)
+                    else:
+                        # Case 3: local end
+                        self._send_local_queue_message(lqcpub, topic_next, key, output["value"])
+
                     if timestamp_map is not None:
                         timestamp_map['t_pub_exittopic'] = time.time() * 1000.0
                         timestamp_map['exitsize'] = len(output["value"])
 
-                    key = self._metadata["__execution_id"]
-
-                    dlc = self._get_backup_data_layer_client()
-
                     # store the workflow's final result
-                    dlc.put("result_" + key, output["value"])
-                    #self._logger.debug("[__mfn_backup] [exitresult] [%s] %s", "result_" + key, output["value"])
+                    # do so only if the execution was asynchronous
+                    if "__async_execution" in self._metadata and self._metadata["__async_execution"]:
+                        dlc = self._get_backup_data_layer_client()
+                        dlc.put("result_" + key, output["value"])
+                        #self._logger.debug("[__mfn_backup] [exitresult] [%s] %s", "result_" + key, output["value"])
+
+                else:
+                    # Case 1: non-local next
+                    # TODO
+                    pass
 
             return (next_function_execution_id, output)
 
@@ -461,19 +506,19 @@ class PublicationUtils():
     def _send_message_to_recovery_manager(self, key, message_type, topic, func_exec_id, has_error, error_type, lqcpub):
         # TODO
         return
-        message_rec = {}
-        message_rec["messageType"] = message_type
-        message_rec["currentTopic"] = topic
-        message_rec["currentFunctionExecutionId"] = func_exec_id
-        message_rec["hasError"] = has_error
-        message_rec["errorType"] = error_type
+        #message_rec = {}
+        #message_rec["messageType"] = message_type
+        #message_rec["currentTopic"] = topic
+        #message_rec["currentFunctionExecutionId"] = func_exec_id
+        #message_rec["hasError"] = has_error
+        #message_rec["errorType"] = error_type
 
-        output = {}
-        output["topicNext"] = self._recovery_manager_topic
-        output["value"] = json.dumps(message_rec)
-        outputstr = json.dumps(output)
+        #output = {}
+        #output["topicNext"] = self._recovery_manager_topic
+        #output["value"] = json.dumps(message_rec)
+        #outputstr = json.dumps(output)
         # message via global publisher to pub manager's queue for backups
-        self._send_local_queue_message(lqcpub, self._pub_topic_global, key, outputstr)
+        #self._send_local_queue_message(lqcpub, self._pub_topic_global, key, outputstr)
 
     # need to log backups of inputs and send message to recovery manager
     def send_to_function_now(self, key, trigger, lqcpub=None):
@@ -654,9 +699,8 @@ class PublicationUtils():
         size = 0
         if 'exitsize' in timestamp_map and 't_pub_exittopic' in timestamp_map:
             size = timestamp_map['exitsize']
-        self._logger.info("[__mfn_tracing] [ExecutionId] [%s] [Size] [%s] [TimestampMap] [%s] [%s]", key, str(size), timestamp_map_str, timestamp_map["function_instance_id"])
+        self._logger.debug("[__mfn_tracing] [ExecutionId] [%s] [Size] [%s] [TimestampMap] [%s] [%s]", key, str(size), timestamp_map_str, timestamp_map["function_instance_id"])
 
         # shut down the local queue client
         self._shutdown_local_queue_client()
         self._shutdown_backup_data_layer_client()
-

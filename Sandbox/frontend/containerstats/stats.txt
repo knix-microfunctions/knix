@@ -1,0 +1,250 @@
+Memory: total_rss, total_cache, total_mapped_file
+mfn@wf-knix-b41aefdcabd3c2f36b37268fdfb171de-00003-deployment-g7zpt:~$ cat /sys/fs/cgroup/memory/memory.stat
+cache 19329024
+rss 90271744
+rss_huge 0
+shmem 0
+mapped_file 0
+dirty 135168
+writeback 0
+swap 0
+pgpgin 74221752
+pgpgout 74194956
+pgfault 75020484
+pgmajfault 0
+inactive_anon 0
+active_anon 85831680
+inactive_file 23248896
+active_file 811008
+unevictable 0
+hierarchical_memory_limit 8589934592
+hierarchical_memsw_limit 8589934592
+total_cache 19329024
+total_rss 90271744
+total_rss_huge 0
+total_shmem 0
+total_mapped_file 0
+total_dirty 135168
+total_writeback 0
+total_swap 0
+total_pgpgin 74221752
+total_pgpgout 74194956
+total_pgfault 75020484
+total_pgmajfault 0
+total_inactive_anon 0
+total_active_anon 85831680
+total_inactive_file 23248896
+total_active_file 811008
+total_unevictable 0
+
+Number of processes inside a container
+mfn@wf-knix-b41aefdcabd3c2f36b37268fdfb171de-00003-deployment-g7zpt:~$ cat /sys/fs/cgroup/cpu/cgroup.procs
+1
+9
+11
+53
+55
+57
+59
+5595
+5641
+5653
+5686
+5702
+
+Cpu usage
+mfn@wf-knix-b41aefdcabd3c2f36b37268fdfb171de-00003-deployment-g7zpt:~$ cat /sys/fs/cgroup/cpu/cpuacct.usage_all
+cpu user system
+0 1264819701873 0
+1 1242646262543 0
+2 1157390280636 0
+3 1241411114194 0
+
+
+Cpu throttling
+$ cat /sys/fs/cgroup/cpu/cpu.stat
+nr_periods 0
+nr_throttled 0
+throttled_time 0
+
+nr_periods – number of periods that any thread in the cgroup was runnable
+nr_throttled – number of runnable periods in which the application used its entire quota and was throttled
+throttled_time – sum total amount of time individual threads within the cgroup were throttled
+
+TCP counters
+mfn@wf-knix-b41aefdcabd3c2f36b37268fdfb171de-00003-deployment-g7zpt:~$ cat /proc/net/netstat
+TcpExt: SyncookiesSent SyncookiesRecv SyncookiesFailed EmbryonicRsts PruneCalled RcvPruned OfoPruned OutOfWindowIcmps LockDroppedIcmps ArpFilter TW TWRecycled TWKilled PAWSActive PAWSEstab DelayedACKs DelayedACKLocked DelayedACKLost ListenOverflows ListenDrops TCPHPHits TCPPureAcks TCPHPAcks TCPRenoRecovery TCPSackRecovery TCPSACKReneging TCPSACKReorder TCPRenoReorder TCPTSReorder TCPFullUndo TCPPartialUndo TCPDSACKUndo TCPLossUndo TCPLostRetransmit TCPRenoFailures TCPSackFailures TCPLossFailures TCPFastRetrans TCPSlowStartRetrans TCPTimeouts TCPLossProbes TCPLossProbeRecovery TCPRenoRecoveryFail TCPSackRecoveryFail TCPRcvCollapsed TCPBacklogCoalesce TCPDSACKOldSent TCPDSACKOfoSent TCPDSACKRecv TCPDSACKOfoRecv TCPAbortOnData TCPAbortOnClose TCPAbortOnMemory TCPAbortOnTimeout TCPAbortOnLinger TCPAbortFailed TCPMemoryPressures TCPMemoryPressuresChrono TCPSACKDiscard TCPDSACKIgnoredOld TCPDSACKIgnoredNoUndo TCPSpuriousRTOs TCPMD5NotFound TCPMD5Unexpected TCPMD5Failure TCPSackShifted TCPSackMerged TCPSackShiftFallback TCPBacklogDrop PFMemallocDrop TCPMinTTLDrop TCPDeferAcceptDrop IPReversePathFilter TCPTimeWaitOverflow TCPReqQFullDoCookies TCPReqQFullDrop TCPRetransFail TCPRcvCoalesce TCPOFOQueue TCPOFODrop TCPOFOMerge TCPChallengeACK TCPSYNChallenge TCPFastOpenActive TCPFastOpenActiveFail TCPFastOpenPassive TCPFastOpenPassiveFail TCPFastOpenListenOverflow TCPFastOpenCookieReqd TCPFastOpenBlackhole TCPSpuriousRtxHostQueues BusyPollRxPackets TCPAutoCorking TCPFromZeroWindowAdv TCPToZeroWindowAdv TCPWantZeroWindowAdv TCPSynRetrans TCPOrigDataSent TCPHystartTrainDetect TCPHystartTrainCwnd TCPHystartDelayDetect TCPHystartDelayCwnd TCPACKSkippedSynRecv TCPACKSkippedPAWS TCPACKSkippedSeq TCPACKSkippedFinWait2 TCPACKSkippedTimeWait TCPACKSkippedChallenge TCPWinProbe TCPKeepAlive TCPMTUPFail TCPMTUPSuccess TCPDelivered TCPDeliveredCE TCPAckCompressed TCPZeroWindowDrop TCPRcvQDrop TCPWqueueTooBig TCPFastOpenPassiveAltKey
+TcpExt: 0 0 0 0 0 0 0 0 0 0 147036 0 0 0 0 1757 442 4 0 0 5308 393713 1648319 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 19 0 0 0 0 5 4 0 0 0 2 161 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 825 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1948519 1 17 0 0 0 0 0 0 0 0 0 96705 0 0 2095738 0 0 0 0 0 0
+IpExt: InNoRoutes InTruncatedPkts InMcastPkts OutMcastPkts InBcastPkts OutBcastPkts InOctets OutOctets InMcastOctets OutMcastOctets InBcastOctets OutBcastOctets InCsumErrors InNoECTPkts InECT1Pkts InECT0Pkts InCEPkts ReasmOverlaps
+IpExt: 0 0 0 0 0 0 479871045 490015687 0 0 0 0 0 4287125 0 0 0 0
+
+
+    TcpExt
+    {
+    "ArpFilter": 0,
+    "BusyPollRxPackets": 0,
+    "DelayedACKLocked": 8937,
+    "DelayedACKLost": 3049,
+    "DelayedACKs": 216427,
+    "EmbryonicRsts": 0,
+    "IPReversePathFilter": 0,
+    "ListenDrops": 0,
+    "ListenOverflows": 0,
+    "LockDroppedIcmps": 0,
+    "OfoPruned": 0,
+    "OutOfWindowIcmps": 0,
+    "PAWSActive": 0,
+    "PAWSEstab": 296,
+    "PFMemallocDrop": 0,
+    "PruneCalled": 0,
+    "RcvPruned": 0,
+    "SyncookiesFailed": 0,
+    "SyncookiesRecv": 0,
+    "SyncookiesSent": 0,
+    "TCPACKSkippedChallenge": 5,
+    "TCPACKSkippedFinWait2": 0,
+    "TCPACKSkippedPAWS": 5,
+    "TCPACKSkippedSeq": 802,
+    "TCPACKSkippedSynRecv": 2,
+    "TCPACKSkippedTimeWait": 0,
+    "TCPAbortFailed": 0,
+    "TCPAbortOnClose": 125983,
+    "TCPAbortOnData": 134068,
+    "TCPAbortOnLinger": 0,
+    "TCPAbortOnMemory": 0,
+    "TCPAbortOnTimeout": 0,
+    "TCPAckCompressed": 3,
+    "TCPAutoCorking": 4472,
+    "TCPBacklogCoalesce": 13806,
+    "TCPBacklogDrop": 0,
+    "TCPChallengeACK": 1183,
+    "TCPDSACKIgnoredDubious": 0,
+    "TCPDSACKIgnoredNoUndo": 633,
+    "TCPDSACKIgnoredOld": 1,
+    "TCPDSACKOfoRecv": 0,
+    "TCPDSACKOfoSent": 0,
+    "TCPDSACKOldSent": 2902,
+    "TCPDSACKRecv": 762,
+    "TCPDSACKRecvSegs": 769,
+    "TCPDSACKUndo": 16,
+    "TCPDeferAcceptDrop": 0,
+    "TCPDelivered": 14205606,
+    "TCPDeliveredCE": 0,
+    "TCPFastOpenActive": 0,
+    "TCPFastOpenActiveFail": 0,
+    "TCPFastOpenBlackhole": 0,
+    "TCPFastOpenCookieReqd": 0,
+    "TCPFastOpenListenOverflow": 0,
+    "TCPFastOpenPassive": 0,
+    "TCPFastOpenPassiveAltKey": 0,
+    "TCPFastOpenPassiveFail": 0,
+    "TCPFastRetrans": 76,
+    "TCPFromZeroWindowAdv": 12,
+    "TCPFullUndo": 7,
+    "TCPHPAcks": 8109358,
+    "TCPHPHits": 6999634,
+    "TCPHystartDelayCwnd": 0,
+    "TCPHystartDelayDetect": 0,
+    "TCPHystartTrainCwnd": 5501,
+    "TCPHystartTrainDetect": 170,
+    "TCPKeepAlive": 264306,
+    "TCPLossFailures": 0,
+    "TCPLossProbeRecovery": 2,
+    "TCPLossProbes": 1515,
+    "TCPLossUndo": 2,
+    "TCPLostRetransmit": 4,
+    "TCPMD5Failure": 0,
+    "TCPMD5NotFound": 0,
+    "TCPMD5Unexpected": 0,
+    "TCPMTUPFail": 0,
+    "TCPMTUPSuccess": 0,
+    "TCPMemoryPressures": 0,
+    "TCPMemoryPressuresChrono": 0,
+    "TCPMinTTLDrop": 0,
+    "TCPOFODrop": 0,
+    "TCPOFOMerge": 0,
+    "TCPOFOQueue": 281,
+    "TCPOrigDataSent": 13264912,
+    "TCPPartialUndo": 6,
+    "TCPPureAcks": 2764923,
+    "TCPRcvCoalesce": 1117167,
+    "TCPRcvCollapsed": 0,
+    "TCPRcvQDrop": 0,
+    "TCPRenoFailures": 0,
+    "TCPRenoRecovery": 0,
+    "TCPRenoRecoveryFail": 0,
+    "TCPRenoReorder": 0,
+    "TCPReqQFullDoCookies": 0,
+    "TCPReqQFullDrop": 0,
+    "TCPRetransFail": 0,
+    "TCPSACKDiscard": 0,
+    "TCPSACKReneging": 0,
+    "TCPSACKReorder": 197,
+    "TCPSYNChallenge": 0,
+    "TCPSackFailures": 0,
+    "TCPSackMerged": 7,
+    "TCPSackRecovery": 37,
+    "TCPSackRecoveryFail": 0,
+    "TCPSackShiftFallback": 215,
+    "TCPSackShifted": 0,
+    "TCPSlowStartRetrans": 0,
+    "TCPSpuriousRTOs": 2,
+    "TCPSpuriousRtxHostQueues": 40,
+    "TCPSynRetrans": 22,
+    "TCPTSReorder": 6,
+    "TCPTimeWaitOverflow": 0,
+    "TCPTimeouts": 59,
+    "TCPToZeroWindowAdv": 12,
+    "TCPWantZeroWindowAdv": 12,
+    "TCPWinProbe": 0,
+    "TCPWqueueTooBig": 0,
+    "TCPZeroWindowDrop": 0,
+    "TW": 321387,
+    "TWKilled": 0,
+    "TWRecycled": 0,
+    "TcpDuplicateDataRehash": 0,
+    "TcpTimeoutRehash": 33
+    }
+
+mfn@wf-knix-b41aefdcabd3c2f36b37268fdfb171de-00003-deployment-g7zpt:~$ cat /proc/net/snmp
+Ip: Forwarding DefaultTTL InReceives InHdrErrors InAddrErrors ForwDatagrams InUnknownProtos InDiscards InDelivers OutRequests OutDiscards OutNoRoutes ReasmTimeout ReasmReqds ReasmOKs ReasmFails FragOKs FragFails FragCreates
+Ip: 1 255 4286956 0 0 0 0 0 4286956 2647254 0 0 0 0 0 0 0 0 0
+Icmp: InMsgs InErrors InCsumErrors InDestUnreachs InTimeExcds InParmProbs InSrcQuenchs InRedirects InEchos InEchoReps InTimestamps InTimestampReps InAddrMasks InAddrMaskReps OutMsgs OutErrors OutDestUnreachs OutTimeExcds OutParmProbs OutSrcQuenchs OutRedirects OutEchos OutEchoReps OutTimestamps OutTimestampReps OutAddrMasks OutAddrMaskReps
+Icmp: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+Tcp: RtoAlgorithm RtoMin RtoMax MaxConn ActiveOpens PassiveOpens AttemptFails EstabResets CurrEstab InSegs OutSegs RetransSegs InErrs OutRsts InCsumErrors
+Tcp: 1 200 120000 -1 147220 144484 4 161 4 4282207 2643137 19 0 181 0
+Udp: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti
+Udp: 4749 0 0 4749 0 0 0 0
+UdpLite: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti
+UdpLite: 0 0 0 0 0 0 0 0
+
+
+mfn@wf-knix-b41aefdcabd3c2f36b37268fdfb171de-00003-deployment-g7zpt:~$ cat /proc/net/sockstat
+sockets: used 26
+TCP: inuse 3 orphan 0 tw 6 alloc 132 mem 12
+UDP: inuse 0 mem 3
+UDPLITE: inuse 0
+RAW: inuse 0
+FRAG: inuse 0 memory 0
+
+
+mfn@wf-knix-b41aefdcabd3c2f36b37268fdfb171de-00003-deployment-g7zpt:~$ cat /proc/net/dev
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo: 50321937  874807    0    0    0     0          0         0 50321937  874807    0    0    0     0       0          0
+  eth0: 478527775 3441711    0    0    0     0          0         0 465716502 1802088    0    0    0     0       0          0
+
+      OR
+
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo: 2262033109 8131465    0    0    0     0          0         0 2262033109 8131465    0    0    0     0       0          0
+enp0s3: 117176692  262711    0    0    0     0          0         0 47647133  160902    0    0    0     0       0          0
+br-03bca564859d:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+docker0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+br-eae95fba91ef:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+flannel.1:       0       0    0    0    0     0          0         0        0       0    0  143    0     0       0          0
+  cni0: 5968912861 15748856    0    0    0     0          0         0 7774023227 15799207    0    0    0     0       0          0
+veth17546422: 39982875  175022    0    0    0     0          0         0 87211625  198385    0    0    0     0       0          0
+
+

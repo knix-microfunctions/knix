@@ -33,9 +33,12 @@ class LocalQueueClient:
         self.connect()
 
     def connect(self):
+        retry = 0.5 #s
         while self._is_running:
             try:
                 self._queue = redis.Redis.from_url("unix://" + self._qaddress, decode_responses=True)
+                # make sure we are really connected by forcing the redis connection to be established
+                self._queue.ping()
                 break
             except Exception as exc:
                 if retry < 60:

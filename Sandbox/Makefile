@@ -28,6 +28,7 @@ clean:
 	make -C frontend clean
 	make -C ../redis clean
 	rm -rf build/*
+	rm sandbox_deployment_package.tar.gz
 
 build_thrift:
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
@@ -44,10 +45,7 @@ build/SandboxAgent.tar.gz: $(SBASOURCE) $(FWSOURCE)
 	mkdir -p build
 	tar -czf $@ ../SandboxAgent
 
-build/FunctionWorker.tar.gz: \
-		$(FWSOURCE) \
-		../build_env.mk \
-		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
+build/FunctionWorker.tar.gz: $(FWSOURCE) ../build_env.mk ../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	mkdir -p build
 	docker run --user $$(id -u):$$(id -g) --rm -v $$(pwd)/../:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
@@ -55,7 +53,7 @@ build/FunctionWorker.tar.gz: \
 		thrift --gen py -out FunctionWorker/python/ DataLayerService/thrift/DataLayerService.thrift;'
 	tar -czf $@ ../FunctionWorker
 
-RSOURCE = $(shell find ../redis/src)
+RSOURCE = $(shell find ../redis)
 build/redis-server.tar.gz: $(RSOURCE) ../build_env.mk
 	mkdir -p build
 	cd ../redis && make && cd -

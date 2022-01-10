@@ -84,8 +84,6 @@ class Storage(object):
             raise Exception("GET failed: " + r.json()["data"]["message"])
         else:
             val = r.json()["data"]["value"]
-            if val is not None:
-                val = base64.b64decode(r.json()["data"]["value"]).decode()
             return val
 
     def delete(self, key, wid=None):

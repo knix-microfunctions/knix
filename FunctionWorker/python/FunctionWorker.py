@@ -93,7 +93,7 @@ class FunctionWorker:
         if self._is_session_workflow:
             self._session_utils = SessionUtils(self._worker_params, self._publication_utils, self._logger)
 
-        # TODO: SAPI
+        # SAPI
         # pass the SessionUtils object for API calls to send a message to other running functions?
         # MicroFunctionsAPI object checks before sending a message (i.e., allow only if this is_session_workflow is True)
         # Maybe allow only if the destination is a session function? Requires a list of session functions and passing them to the MicroFunctionsAPI and SessionUtils
@@ -187,6 +187,12 @@ class FunctionWorker:
 
         self._should_checkpoint = args["should_checkpoint"]
 
+    def _get_loglevel(self):    
+        loglevel = logging.INFO
+        if "LOG_LEVEL" in os.environ and os.environ["LOG_LEVEL"] != None and len(str(os.environ["LOG_LEVEL"])) > 0:
+            loglevel = logging._nameToLevel.get(str(os.environ["LOG_LEVEL"]).upper(), loglevel)
+        return loglevel
+
     def _setup_loggers(self):
         global LOGGER_HOSTNAME
         global LOGGER_CONTAINERNAME
@@ -200,15 +206,16 @@ class FunctionWorker:
         LOGGER_WORKFLOWNAME = self._workflowname
         LOGGER_WORKFLOWID = self._workflowid
 
+        loglevel = self._get_loglevel()
         self._logger = logging.getLogger(self._function_state_name)
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(loglevel)
         self._logger.addFilter(LoggingFilter())
 
         formatter = logging.Formatter("[%(timestamp)d] [%(levelname)s] [%(hostname)s] [%(containername)s] [%(uuid)s] [%(userid)s] [%(workflowname)s] [%(workflowid)s] [%(name)s] [%(asctime)s.%(msecs)03d] %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
         logfile = '/opt/mfn/logs/function_'+ self._function_state_name + '.log'
 
         hdlr = logging.FileHandler(logfile)
-        hdlr.setLevel(logging.INFO)
+        hdlr.setLevel(loglevel)
         hdlr.setFormatter(formatter)
         self._logger.addHandler(hdlr)
 

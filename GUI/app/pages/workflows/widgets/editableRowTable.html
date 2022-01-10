@@ -27,7 +27,7 @@
 
     <th style="text-align:left;border:0;" st-sort="name"><b>Name</b></th>
     <th style="border:0;" st-sort="status" st-sort-default="false"><b>Status</b></th>
-    <th style="border:0;"><b>Endpoint</b></th>
+    <th style="border:0;"><b>Endpoint(s)</b></th>
     <th style="border:0;"><b>Compatibility</b></th>
     <th id="sortHeader" style="border:0;" st-sort="modified" st-sort-default="reverse"><b>Last Modified</b></th>
     <th style="border:0;"><b>Actions</b></th>
@@ -55,7 +55,7 @@
         <span e-name="endpoint" e-form="rowform">
           <input ng-show="workflow.endpoints && workflow.status=='deployed'" type="text" name="wflowurl" size="35" style="border:0;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" value="{{ showEndpoint(workflow) }}">
           <div ng-show="workflow.status!='deployed'" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Not set</div>
-          <span ng-show="workflow.endpoints && workflow.status=='deployed'">&nbsp;</span><button type="button" ngclipboard data-clipboard-text="{{ showEndpoint(workflow) }}" ng-show="workflow.endpoints && workflow.status=='deployed'" class="btn btn-info editable-table-button btn-xs">Copy URL</button>
+          <span ng-show="workflow.endpoints && workflow.status=='deployed'">&nbsp;</span><button type="button" ngclipboard data-clipboard-text="{{ getRandomEndpoint(workflow) }}" ng-show="workflow.endpoints && workflow.status=='deployed'" class="btn btn-info editable-table-button btn-s">Copy URL</button>
 
         </span>
     </td>
@@ -104,14 +104,14 @@
   </tr>
   </tbody>
   <tfoot>
-			<tr style="border: 0;">
-				<td colspan="5" class="text-center" style="border: 0;">
+            <tr style="border: 0;">
+                <td colspan="5" class="text-center" style="border: 0;">
           <br>
-					<div id="workflowPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
+                    <div id="workflowPagination" st-pagination="" st-items-by-page="itemsByPage" st-displayed-pages="25"></div>
           <br>
-				</td>
+                </td>
 
-			</tr>
+            </tr>
 
-	</tfoot>
+    </tfoot>
 </table>
