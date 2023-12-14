@@ -1,0 +1,172 @@
+#   Copyright 2020 The KNIX Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+#FROM ubuntu:18.04
+FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
+
+# Install (as root)
+# Base
+RUN apt-get update --fix-missing
+RUN apt-get -y --no-install-recommends install build-essential
+RUN apt-get -y --no-install-recommends install netbase unzip file libmagic1
+
+
+# Python
+RUN apt-get update --fix-missing && apt-get -y --no-install-recommends install python3 python3-dev
+RUN apt-get -y --no-install-recommends install python3-pip
+RUN apt-get -y --no-install-recommends install zlib1g libssl1.0 libsasl2-2 ca-certificates
+
+RUN /usr/bin/python3 -m pip install --upgrade pip
+
+RUN /usr/bin/python3 -m pip install setuptools
+RUN /usr/bin/python3 -m pip install thrift>=0.12.0
+RUN /usr/bin/python3 -m pip install anytree
+RUN /usr/bin/python3 -m pip install ujsonpath
+RUN /usr/bin/python3 -m pip install requests
+RUN /usr/bin/python3 -m pip install retry
+# remove warnings from anytree package
+RUN /usr/bin/python3 -m pip install fastcache
+# Needed for multi-language support (currently just Java)
+RUN /usr/bin/python3 -m pip install thriftpy2
+
+# Add components (as mfn)
+RUN groupadd -o -g 1000 -r mfn && useradd -d /opt/mfn -u 1000 -m -r -g mfn mfn
+RUN mkdir /opt/mfn/logs
+
+RUN /usr/bin/python3 -m pip install redis
+ADD build/redis-server.tar.gz /opt/mfn/
+ADD frontend/frontend /opt/mfn/frontend
+ADD build/SandboxAgent.tar.gz /opt/mfn/
+ADD build/FunctionWorker.tar.gz /opt/mfn/
+ADD build/LoggingService.tar.gz /opt/mfn/
+
+# CUDA 10.1 dependencies and tools to build dlib
+RUN apt-get -y --no-install-recommends install libsm6 libxrender1 libxrender-dev libxext6 libglib2.0-0 git cmake
+RUN apt-get install -y --no-install-recommends libnvinfer6=6.0.1-1+cuda10.1 libnvinfer-dev=6.0.1-1+cuda10.1 libnvinfer-plugin6=6.0.1-1+cuda10.1
+
+# Install dlib for CUDA
+#RUN git clone https://github.com/davisking/dlib.git
+#RUN mkdir -p /dlib/build
+
+#RUN cmake -H/dlib -B/dlib/build -DDLIB_USE_CUDA=1 -DUSE_AVX_INSTRUCTIONS=1
+#RUN cmake --build /dlib/build
+
+#RUN cd /dlib; python3 /dlib/setup.py install
+
+
+ENV DEBIAN_FRONTEND noninteractive
+
+ARG OPENCV_VERSION='4.4.0'
+ARG GPU_ARCH='6.1'
+WORKDIR /opt
+
+# Build tools
+RUN apt update && \
+    apt install -y \
+    sudo \
+    tzdata \
+    git \
+    cmake \
+    wget \
+    unzip \
+    build-essential
+
+# Media I/O:
+RUN apt update && apt install -y \
+    zlib1g-dev \
+    libjpeg-dev \
+    libwebp-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libopenexr-dev \
+    libgdal-dev \
+    libgtk2.0-dev
+
+# Video I/O:
+RUN apt update && apt install -y \
+    libdc1394-22-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libtheora-dev \
+    libvorbis-dev \
+    libxvidcore-dev \
+    libx264-dev \
+    yasm \
+    libopencore-amrnb-dev \
+    libopencore-amrwb-dev \
+    libv4l-dev \
+    libxine2-dev \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    libopencv-highgui-dev \
+    ffmpeg
+
+# Parallelism and linear algebra libraries:
+RUN apt update && apt install -y \
+    libtbb-dev \
+    libeigen3-dev
+
+# Python:
+RUN apt update && apt install -y \
+    python3-dev \
+    python3-tk \
+    python3-numpy
+
+# Build OpenCV
+RUN wget https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip && \
+    unzip ${OPENCV_VERSION}.zip && rm ${OPENCV_VERSION}.zip && \
+    mv opencv-${OPENCV_VERSION} OpenCV && \
+    cd OpenCV && \
+    wget https://github.com/opencv/opencv_contrib/archive/${OPENCV_VERSION}.zip && \
+    unzip ${OPENCV_VERSION}.zip && \
+    mkdir build && \
+    cd build && \
+    cmake \
+      -D WITH_TBB=ON \
+      -D CMAKE_BUILD_TYPE=RELEASE \
+      -D BUILD_EXAMPLES=ON \
+      -D WITH_FFMPEG=ON \
+      -D WITH_V4L=ON \
+      -D WITH_OPENGL=ON \
+      -D WITH_CUDA=ON \
+      -D WITH_CUDNN=ON \
+      -D OPENCV_DNN_CUDA=ON \
+      -D ENABLE_FAST_MATH=1 \
+      -D CUDA_FAST_MATH=1 \
+      -D CUDA_ARCH_BIN=7.0 \
+      -D CUDA_ARCH_BIN=${GPU_ARCH} \
+      -D CUDA_ARCH_PTX=${GPU_ARCH} \
+      -D WITH_CUBLAS=ON \
+      -D WITH_CUFFT=ON \
+      -D WITH_EIGEN=ON \
+      -D EIGEN_INCLUDE_PATH=/usr/include/eigen3 \
+      -D HAVE_opencv_python3=ON \
+      -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VERSION}/modules/ \
+      .. && \
+    make all -j$(nproc) && \
+    make install
+
+#RUN apt-get update && apt-get install -y python3-opencv
+#RUN pip install opencv-python
+
+# Install the face recognition package and tensorflow
+#RUN /usr/bin/python3 -m pip install face_recognition
+#RUN /usr/bin/python3 -m pip install tensorflow==2.1.0
+
+
+RUN chown mfn:mfn -R /opt/mfn
+USER mfn
+WORKDIR /opt/mfn
+CMD ["python3", "/opt/mfn/SandboxAgent/sandboxagent.py"]

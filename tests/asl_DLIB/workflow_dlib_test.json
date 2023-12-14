@@ -1,0 +1,11 @@
+{
+    "Comment": "Dlib State Machine Example",
+    "StartAt": "dlibtest",
+    "States": {
+            "dlibtest":{
+              "Resource":"dlibtest",
+              "Type":"Task",
+              "End":true 
+            }
+   }
+}

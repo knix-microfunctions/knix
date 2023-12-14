@@ -49,7 +49,9 @@ def handle(value, sapi):
                 f["name"] = function["name"]
                 f["runtime"] = function["runtime"]
                 f["modified"] = time.time()
-
+                f["gpu_usage"] = function["gpu_usage"]
+                f["gpu_mem_usage"] = function["gpu_mem_usage"]
+ 
                 sapi.put(email + "_grain_" + function["id"], json.dumps(f), True, True)
 
                 sapi.put(email + "_list_grains", json.dumps(functions), True, True)

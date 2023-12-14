@@ -28,6 +28,23 @@ import random
 WF_TYPE_SAND = 0
 WF_TYPE_ASL = 1
 
+def get_kv_pairs(testdict, keys, dicts=None):
+    # find and return kv pairs with particular keys in testdict
+    if not dicts:
+        dicts = [testdict]
+        testdict = [testdict]
+    data = testdict.pop(0)
+    if isinstance(data, dict):
+        data = data.values()
+    for d in data:
+        if isinstance(d, dict) or isinstance(d, list): # check d for type
+            testdict.append(d)
+            if isinstance(d, dict):
+                dicts.append(d)
+    if testdict: # no more data to search
+        return get_kv_pairs(testdict, keys, dicts)
+    return [(k, v) for d in dicts for k, v in d.items() if k in keys]
+
 def is_asl_workflow(wfobj):
     return 'StartAt' in wfobj and 'States' in wfobj and isinstance(wfobj['States'], dict)
 
@@ -135,6 +152,12 @@ def compile_resource_info_map(resource_names, uploaded_resources, email, sapi, d
                 if "runtime" in resource_metadata:
                     resource_info["runtime"] = resource_metadata["runtime"]
 
+                if "gpu_usage" in resource_metadata:
+                    resource_info["gpu_usage"] = resource_metadata["gpu_usage"]
+
+                if "gpu_mem_usage" in resource_metadata:
+                    resource_info["gpu_mem_usage"] = resource_metadata["gpu_mem_usage"]
+
             num_chunks_str = dlc.get("grain_source_zip_num_chunks_" + resource_id)
             try:
                 num_chunks = int(num_chunks_str)
@@ -204,9 +227,11 @@ def start_docker_sandbox(host_to_deploy, uid, sid, wid, wname, sandbox_image_nam
         try:
             print("Starting sandbox docker container for: " + uid + " " + sid + " " + wid + " " + sandbox_image_name)
             print("Docker daemon: " + "tcp://" + host_to_deploy[1] + ":2375" + ", environment variables: " + str(env_vars))
-            client.containers.run(sandbox_image_name, init=True, detach=True, ports={"8080/tcp": None}, ulimits=ulimit_list, auto_remove=True, name=sid, environment=env_vars, extra_hosts={host_to_deploy[0]:host_to_deploy[1]}, log_config=lc)
+            if sandbox_image_name.endswith("gpu"):
+                client.containers.run(sandbox_image_name, init=True, detach=True, ports={"8080/tcp": None}, ulimits=ulimit_list, auto_remove=True, name=sid, environment=env_vars, extra_hosts={host_to_deploy[0]:host_to_deploy[1]}, log_config=lc, runtime="nvidia")
+            else:
+                client.containers.run(sandbox_image_name, init=True, detach=True, ports={"8080/tcp": None}, ulimits=ulimit_list, auto_remove=True, name=sid, environment=env_vars, extra_hosts={host_to_deploy[0]:host_to_deploy[1]}, log_config=lc)
             # TEST/DEVELOPMENT: no auto_remove to access sandbox logs
-            #client.containers.run(sandbox_image_name, init=True, detach=True, ports={"8080/tcp": None}, ulimits=ulimit_list, name=sid, environment=env_vars, extra_hosts={host_to_deploy[0]:host_to_deploy[1]}, log_config=lc)
         except Exception as exc:
             print("Error launching sandbox: " + str(host_to_deploy) + " " + uid + " " + sid + " " + wid)
             print(traceback.format_exc())
@@ -243,7 +268,7 @@ def get_workflow_host_port(host_to_deploy, sid):
 
     return success, host_port
 
-def create_k8s_deployment(email, workflow_info, runtime, management=False):
+def create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usage, management=False):
     # KUBERNETES MODE
     new_workflow_conf = {}
     conf_file = '/opt/mfn/SandboxAgent/conf/new_workflow.conf'
@@ -296,7 +321,95 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
     env.append({'name': 'WORKFLOWID', 'value': workflow_info["workflowId"]})
     env.append({'name': 'WORKFLOWNAME', 'value': workflow_info["workflowName"]})
 
-    # Special handling for the management container
+    # apply gpu_usage fraction to k8s deployment configuration
+    print("GPU usage in create_k8s_service: "+ str(gpu_usage))
+    print("GPU mem usage in create_k8s_service: "+ str(gpu_mem_usage))
+
+    use_gpus = gpu_usage
+    use_mem_gpus = gpu_mem_usage
+
+    if runtime=="Java": # non gpu python function
+        # overwrite values from values.yaml for new workflows
+        # only change the image name
+        imageName = kservice['spec']['template']['spec']['containers'][0]['image']
+        imageRepoName = imageName.split("/")[0]
+
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_java"
+
+    if not management and use_gpus == 0. and runtime=="Python": # non gpu python function
+        # overwrite values from values.yaml for new workflows
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['requests'].pop('nvidia.com/gpu', None) # ['nvidia.com/gpu'] = str(use_gpus)
+        imageName = kservice['spec']['template']['spec']['containers'][0]['image']
+        imageRepoName = imageName.split("/")[0]
+
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox"
+
+    if not management and use_gpus > 0. and runtime=="Python": # gpu using python function
+
+        # first set default values
+        vcore = 100
+        vmemory = 31
+        # use token obtained from kubernetes master to update cluster node properties
+
+        if os.getenv("API_TOKEN") is not None:
+            new_token=os.getenv("API_TOKEN")
+            print('getting cluster node capacity info with token' + str(new_token))
+        else:
+            new_token="default"
+
+        try:
+            resp = requests.get(
+                "https://kubernetes.default:"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/api/v1/nodes",
+                headers={"Authorization": "Bearer "+new_token, "Accept": "application/json"},
+                verify="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+                proxies={"https":""})
+            if resp.status_code == 200:
+                data = json.loads(resp.text)
+                vmemory = 0
+                vcore = 0
+
+                for d in data["items"]: # iterate over the cluster nodes
+                    res_capacity = d["status"]["capacity"]
+                    #print("res_capacity: " + str(res_capacity))
+                    if "tencent.com/vcuda-memory" in res_capacity.keys():
+                        vmemory += int(d["status"]["capacity"]["tencent.com/vcuda-memory"])
+                        vcore += int(d["status"]["capacity"]["tencent.com/vcuda-core"])
+                        print("found vcuda capability: " + str(vmemory) + " " + str(vcore))
+                    else:
+                        print("this node has no vcuda capability, skipping")
+            print('queried cluster node capacities:  vcuda-memory: %s, vcuda-core: %s' % (str(vmemory), str(vcore)))
+        except requests.exceptions.HTTPError as e:
+            print("Error: could not get cluster node vcuda capacities!")
+            print(e)
+            print(resp.text)
+
+        # overwrite values from values.yaml for new workflows
+        imageName = kservice['spec']['template']['spec']['containers'][0]['image']
+        imageRepoName = imageName.split("/")[0]
+
+        # gpu_total_memory = 7800 # hardcoded info (gtx1070), should give free GPU memory
+        gpu_core_request = str(int(use_gpus)) # derived from GUI float input parameter, yielding core percentage as required by gpu-manager
+        #gpu_memory_request = str(int(vmemory * use_gpus)) # adapted to gpu-manager memory parameter definition
+        gpu_memory_request = str(int(use_mem_gpus*4.0)) # gpu-manager requires gpu memory parameter in units of 256 MB
+        print ("memory request set to %s vcuda units " % gpu_memory_request)
+
+        if int(gpu_memory_request) > int(vmemory):
+            print("only up to %s GB GPU memory available on the cluster nodes!" % str(int(vmemory)))
+            gpu_memory_request = str(int(vmemory)) # limit to max available memory
+            print ("memory set to %s GB " % gpu_memory_request)
+
+        kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox_gpu"
+        kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
+        kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
+        # calculate limits resource parameters for gpu-manager, need to identical to requests parameter
+        kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-core'] = gpu_core_request #str(use_gpus)
+        kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['tencent.com/vcuda-memory'] = gpu_memory_request #str(use_gpus)
+        kservice['spec']['template']['metadata']['annotations']['tencent.com/vcuda-core-limit'] = str(int(vmemory)) #gpu_core_request #ToDo: check value
+        #kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['aliyun.com/gpu-mem'] = "2" #str(use_gpus)
+
+
+    # Special handling for the management container: never run on gpu
     if management:
         management_workflow_conf = {}
         conf_file = '/opt/mfn/SandboxAgent/conf/management_workflow.conf'
@@ -310,6 +423,17 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
         kservice['spec']['template']['spec']['containers'][0]['volumeMounts'] = [{'name': 'new-workflow-conf', 'mountPath': '/opt/mfn/SandboxAgent/conf'}]
         kservice['spec']['template']['spec']['containers'][0]['resources'] = management_workflow_conf['resources']
         kservice['spec']['template']['spec']['serviceAccountName'] = new_workflow_conf['mgmtserviceaccount']
+
+        # management container should not consume a CPU and use standard sandbox image
+        if (labels['workflowid'] == "Management"):
+            ###kservice['spec']['template']['spec']['containers'][0]['resources']['limits']['nvidia.com/gpu'] = "0"
+            ###kservice['spec']['template']['spec']['containers'][0]['resources']['requests']['nvidia.com/gpu'] = "0"
+            imageName = kservice['spec']['template']['spec']['containers'][0]['image']
+            imageRepoName = imageName.split("/")[0]
+            # kservice['spec']['template']['spec']['containers'][0]['image'] = "192.168.8.161:5000/microfn/sandbox"
+
+            kservice['spec']['template']['spec']['containers'][0]['image'] = imageRepoName+"/microfn/sandbox"
+
         if 'HTTP_GATEWAYPORT' in new_workflow_conf:
             env.append({'name': 'HTTP_GATEWAYPORT', 'value': new_workflow_conf['HTTP_GATEWAYPORT']})
         if 'HTTPS_GATEWAYPORT' in new_workflow_conf:
@@ -378,6 +502,7 @@ def create_k8s_deployment(email, workflow_info, runtime, management=False):
             print("ERROR deleting existing kservice")
             print(resp.text)
 
+    # no change for Java function
     print('Creating new kservice')
     resp = requests.post(
         "https://"+os.getenv("KUBERNETES_SERVICE_HOST")+":"+os.getenv("KUBERNETES_SERVICE_PORT_HTTPS")+"/apis/serving.knative.dev/v1/namespaces/"+namespace+"/services",
@@ -438,6 +563,8 @@ def handle(value, sapi):
             raise Exception("malformed input")
         sapi.log(json.dumps(workflow))
         wfmeta = sapi.get(email + "_workflow_" + workflow["id"], True)
+        print("WFMETA in deployWorkflow: "+ str(wfmeta))
+
         if wfmeta is None or wfmeta == "":
             raise Exception("workflow metadata is not valid.")
         try:
@@ -465,6 +592,8 @@ def handle(value, sapi):
         wf_type = WF_TYPE_SAND
         if is_asl_workflow(wfobj):
             wf_type = WF_TYPE_ASL
+
+        #use_gpus = int(wfmeta._gpu_usage)
 
         success, errmsg, resource_names, uploaded_resources = check_workflow_functions(wf_type, wfobj, email, sapi)
         if not success:
@@ -499,7 +628,37 @@ def handle(value, sapi):
         #dlc.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info))
         # _XXX_: important!
         # put must not be queued as the function currently waits for the container to become ready
-        sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True)
+        # case 1: gpu_usage is explicitly set in workflow metadata
+        if "gpu_usage" in wfmeta and wfmeta["gpu_usage"] != "None":
+            gpu_usage = float(wfmeta["gpu_usage"])
+        else:
+            gpu_usage = 0.
+
+        if "gpu_mem_usage" in wfmeta and wfmeta["gpu_mem_usage"] != "None":
+            gpu_mem_usage = float(wfmeta["gpu_mem_usage"])
+        else:
+            gpu_mem_usage = 0.
+
+        print("deduced gpu_usage from workflow metadata: " + str(gpu_usage))
+        print("deduced gpu_mem_usage from workflow metadata: " + str(gpu_mem_usage))
+
+        print("print deployment_info[resources] to evaluate: " + str(deployment_info["resources"]))
+        # case 2: gpu_usage is set in deployment info
+        for res in deployment_info["resources"]:
+            if "gpu_usage" in deployment_info["resources"][res].keys():
+                result_gpu = float(deployment_info["resources"][res]["gpu_usage"])
+                print("gpu_usage in loop: " + str(result_gpu))
+                if result_gpu > 0.:
+                    gpu_usage += result_gpu
+
+            if "gpu_mem_usage" in deployment_info["resources"][res].keys():
+                result_mem_gpu = float(deployment_info["resources"][res]["gpu_mem_usage"])
+                if result_mem_gpu > 0.:
+                    gpu_mem_usage += result_mem_gpu
+                print("gpu_mem_usage in loop: " + str(result_mem_gpu))
+
+        print("GPUINFO" + str(gpu_usage)+ " " + str(gpu_mem_usage))
+        sapi.put("deployment_info_workflow_" + workflow["id"], json.dumps(deployment_info), True, False)
 
         status = "deploying"
 
@@ -510,7 +669,8 @@ def handle(value, sapi):
                 runtime = "Java"
             else:
                 runtime = "Python"
-            url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime)
+
+            url, endpoint_key = create_k8s_deployment(email, workflow_info, runtime, gpu_usage, gpu_mem_usage)
             if url is not None and len(url) > 0:
                 status = "deploying"
                 sapi.addSetEntry(workflow_info["workflowId"] + "_workflow_endpoints", str(url), is_private=True)
@@ -522,21 +682,50 @@ def handle(value, sapi):
                 status = "failed"
         else:
             # We're running BARE METAL mode
-            # _XXX_: due to the queue service still being in java in the sandbox
-            sandbox_image_name = "microfn/sandbox"
-            if any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
+            print("gpu_usage before decision:" + str(gpu_usage))
+            if gpu_usage > 0:
+                sandbox_image_name = "microfn/sandbox_gpu" # sandbox uses GPU
+            elif any(resource_info_map[res_name]["runtime"] == "Java" for res_name in resource_info_map):
                 sandbox_image_name = "microfn/sandbox_java"
+            else:
+                sandbox_image_name = "microfn/sandbox" # default value
 
             # TODO: intelligence on how to pick hosts
             hosts = sapi.get("available_hosts", True)
-            print("available_hosts: " + str(hosts))
-            if hosts is not None and hosts != "":
-                hosts = json.loads(hosts)
-                deployed_hosts = {}
+            # hostst is string representation of list or dict
+            print("available_hosts: " + hosts)
+            hosts = json.loads(hosts)
+
+            deployed_hosts = {}
+            if hosts is not None and hosts != "" and isinstance(hosts,dict):
+                host_has_gpu = False
+                gpu_hosts = {}
+                picked_hosts = None
+                plain_hosts={}
+                for hostname in hosts: # individual host dict
+                    host_has_gpu = hosts[hostname]["has_gpu"] # check if host has a GPU
+                    hostip = hosts[hostname]["ip"]
+                    plain_hosts[hostname] = hostip # add to general hosts
+                    if host_has_gpu:
+                      gpu_hosts[hostname] = hostip # add to GPU hosts
                 # instruct hosts to start the sandbox and deploy workflow
-                for hostname in hosts:
-                    hostip = hosts[hostname]
+                print("selected host:" + str(hostname) + " " + str(hostip))
+                #print("founds hosts:" + str(gpu_hosts) + " " + str(plain_hosts))
+                if sandbox_image_name == "microfn/sandbox_gpu" and gpu_hosts:
+                    picked_hosts = gpu_hosts
+                elif sandbox_image_name == "microfn/sandbox_gpu":
+                    # can't deploy; no gpu hosts available.
+                    picked_hosts = {}
+                elif sandbox_image_name == "microfn/sandbox" or sandbox_image_name=="microfn/sandbox_java": # can use any host
+                    picked_hosts = plain_hosts
+
+                print("picked_hosts: " + str(picked_hosts))
+
+                for hostname in picked_hosts: # loop over all hosts, need to pich gpu hosts for python/gpu workflows
+                    hostip = hosts[hostname]["ip"]
                     host_to_deploy = (hostname, hostip)
+                    print("host_to_deploy: " + str(host_to_deploy) )
+                    #host_to_deploy = ("userslfu99", "192.168.8.99")
                     success, endpoint_key = start_docker_sandbox(host_to_deploy, email, workflow_info["sandboxId"], workflow_info["workflowId"], workflow_info["workflowName"], sandbox_image_name)
                     if success:
                         deployed_hosts[hostname] = hostip
@@ -558,15 +747,14 @@ def handle(value, sapi):
                         sapi.putMapEntry(workflow_info["workflowId"] + "_sandbox_status_map", endpoint_key, json.dumps(sbinfo), is_private=True)
                         #endpoints = sapi.retrieveMap(workflow_info["workflowId"] + "_workflow_endpoints", True)
                         #sapi.log(str(endpoints))
-
-                if not bool(deployed_hosts):
-                    status = "failed"
-                else:
-                    #sapi.log("deployed on hosts: " + json.dumps(deployed_hosts))
-                    sapi.put(email + "_workflow_hosts_" + workflow["id"], json.dumps(deployed_hosts), True)
             else:
-                print("available_hosts is empty. Not deploying")
+                print("available_hosts is empty or not a dictionary; not deploying...")
+
+            if not bool(deployed_hosts):
                 status = "failed"
+            else:
+                #sapi.log("deployed on hosts: " + json.dumps(deployed_hosts))
+                sapi.put(email + "_workflow_hosts_" + workflow["id"], json.dumps(deployed_hosts), True)
 
         # Update workflow status
         wfmeta["status"] = status

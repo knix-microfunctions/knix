@@ -25,18 +25,19 @@ class MapStateTest(unittest.TestCase):
     """
     event = '[{"who": "bob"},{"who": "meg"},{"who": "joe"}]'
     expectedResponse = '[{"ContextValue": {"who": "bob"}, "ContextIndex": 0},{"ContextValue": {"who": "meg"}, "ContextIndex": 1}, {"ContextValue": {"who": "joe"}, "ContextIndex": 2 }]'
-    test_map = [("asl_Map_State_Context_Data", "workflow_map_state_context_test/workflow_map_state_context_test.json", [(event, expectedResponse)])]
+    test_map = [("asl_Map_State_Context_Data", "wfms_context_test/wfms_context_test.json", [(event, expectedResponse)])]
     """
 
     def test_map_state(self):
-
-        file_list = ["workflow_map_state_delivery_test.data",
-                     "workflow_map_state_context_test.data",
-                     "workflow_map_state_example_test.data",
-                     "workflow_map_state_parameters_test.data",
-                     "workflow_map_state_thingspiratessay_test.data",
-                     "workflow_map_state_iro_paths_processing_test.data",
-                     "workflow_map_state_hardcoded_test.data"]
+        
+        file_list = ["wfms_delivery_test.data",
+                     "wfms_context_test.data",
+                     "wfms_example_test.data",
+                     "wfms_parameters_test.data",
+                     "wfms_thingspiratessay_test.data",
+                     "wfms_iro_paths_processing_test.data",
+                     "wfms_hardcoded_test.data"
+                     ]
 
         for file in file_list:
           with open(file) as json_input:
@@ -49,7 +50,8 @@ class MapStateTest(unittest.TestCase):
             et = time.time()
             print ("test duration (s): %s" % str(et-st))
 
-        for mc in [0,2,3]: # set maxConcurrency parameter
+        
+        for mc in range(1,4): # set maxConcurrency parameter
             """ creates and executes the Map state test workflow from the ASL description """
 
             testtuplelist = []
@@ -66,16 +68,18 @@ class MapStateTest(unittest.TestCase):
             expectedResponse = ["Hello, joe!", "Hello, bob!", "Hello, meg!"]
             testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
 
+                                
             event = [{"who": "joe"}, {"who": "bob"}, {"who": "meg"}, {"who":"dave"}, {"who":"tom"}, {"who":"ray"}]
             expectedResponse = ["Hello, joe!", "Hello, bob!", "Hello, meg!", "Hello, dave!", "Hello, tom!", "Hello, ray!"]
             testtuplelist.append((json.dumps(event), json.dumps(expectedResponse)))
+            
 
-            test = MFNTest(test_name="Map State Test", workflow_filename=("workflow_map_state_test_mc%s.json" % mc))
+            test = MFNTest(test_name="Map State Test", workflow_filename=("wfms_test_mc%s.json" % mc))
 
             print("MaxConcurrency level: %i " % mc)
 
             st = time.time()
-            test.exec_tests(testtuplelist)
+            test.exec_tests(testtuplelist, should_undeploy=False)
             et = time.time()
 
             print ("test duration (s): %s" % str(et-st))

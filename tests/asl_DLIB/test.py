@@ -1,4 +1,4 @@
-#   Copyright 2021 The KNIX Authors
+#   Copyright 2020 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -12,8 +12,28 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-apiVersion: v1
-appVersion: "latest"
-description: High Performance Serverless system
-name: MicroFunctions
-version: 0.0.1
+import unittest
+import os, sys
+import json
+
+sys.path.append("../")
+from mfn_test_utils import MFNTest
+
+class DlibTest(unittest.TestCase):
+
+    """ Example ASL state test with Dlib
+
+    """
+    def test_dlib(self):
+        """  testing dlib """
+
+        inp1 = '"abc"'
+        #res1 = '"Hello from Tensorflow 2.1.0"'
+
+        res1 = '"GPU available: True"'
+
+        testtuplelist =[(inp1, res1)]
+
+        test = MFNTest(test_name = "Dlib_Test", gpu_usage = "1", gpu_mem_usage="6")
+        test.exec_tests(testtuplelist)
+

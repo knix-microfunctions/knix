@@ -52,6 +52,8 @@
             "addFunction": {
                 "name": "addFunction",
                 "runtime": "Python 3.7",
+                "gpu_usage": "0.",
+		"gpu_mem_usage": "0.", 
                 "id": "00000000-0000-0000-0000-222222222222",
                 "modified": 1581498771.096527
             }
@@ -92,6 +94,8 @@
                     "name":"addFunction",
                     "id":"00000000-0000-0000-0000-222222222222",
                     "runtime":"Python 3.7",
+                    "gpu_usage":"0.",
+		    "gpu_mem_usage":"0.",
                     "type": "code",
                     "ref": "grain_source_00000000-0000-0000-0000-222222222222"
                 }

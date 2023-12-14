@@ -235,6 +235,7 @@ class SessionHelperThread(threading.Thread):
         self._message_queue.put(msg)
 
     def _handle_special_message(self, msg):
+        #self._logger.debug("[SessionHelperThread] Special message: " + str(msg))
         action = msg["action"]
 
         if action == "--stop":

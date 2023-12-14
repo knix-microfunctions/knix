@@ -24,6 +24,8 @@
 
     <th st-sort="name" style="text-align:left;border:0;"><b>Name</b></th>
     <th st-sort="runtime" style="border:0;"><b>Runtime</b></th>
+    <th st-sort="gpu_cores" style="border:0;"><b>GPU Cores (%)</b></th>
+    <th st-sort="gpu_memory" style="border:0;"><b>GPU Memory (GB)</b></th>
     <th id="sortHeader" style="border:0;" st-sort="modified" st-sort-default="reverse"><b>Last Modified</b></th>
     <th style="border:0;"><b>Actions</b></th>
   </tr>
@@ -44,6 +46,16 @@
               e-ng-options="s.value as s.text for s in runtimes">
           {{ showRuntime(mFunction) }}
         </span>
+    </td>
+    <td style="text-align:left;">
+      <span editable-text="mFunction.gpu_usage" e-name="gpu_usage" e-form="rowform">
+        {{ mFunction.gpu_usage || 'Not set' }}
+      </span>
+    </td>
+     <td style="text-align:left;">
+      <span editable-text="mFunction.gpu_mem_usage" e-name="gpu_mem_usage" e-form="rowform">
+        {{ mFunction.gpu_mem_usage || 'Not set' }}
+      </span>
     </td>
     <td>
         <span e-name="modified" e-form="rowform">
@@ -66,7 +78,7 @@
         </button>
       </form>
       <div class="buttons" ng-show="!rowform.$visible">
-        <button class="btn btn-primary editable-table-button btn-xs" ng-click="rowform.$show()">Rename</button>
+        <button class="btn btn-primary editable-table-button btn-xs" ng-click="rowform.$show()">Edit</button>
 
 
         <button type="button" ng-disabled="rowform.$waiting" class="btn btn-primary editable-table-button btn-xs" style="width:85px; background-color: #757a74; border-color: #757a74;" data-toggle="modal" ng-click="open('app/pages/functions/modals/codeEditorModal.html', 'lg', functions[getIndex(mFunction)].id, functions[getIndex(mFunction)].name, functions[getIndex(mFunction)].status, functions[getIndex(mFunction)].runtime)">Code Editor</button>

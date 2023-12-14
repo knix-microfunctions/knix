@@ -378,7 +378,7 @@ class Deployment:
                 else:
                     cmd = "python "
                 cmd = cmd + "-m pip install --user"
-                cmd += " --no-compile --no-clean"
+                cmd += " --no-compile --no-clean --no-cache-dir"
                 for opt in additional_installer_options:
                     cmd = cmd + " " + opt + " " + additional_installer_options[opt]
 

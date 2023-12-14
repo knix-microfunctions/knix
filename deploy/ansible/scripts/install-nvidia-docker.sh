@@ -1,4 +1,5 @@
-#   Copyright 2021 The KNIX Authors
+#!/bin/bash
+#   Copyright 2020 The KNIX Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -12,8 +13,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-apiVersion: v1
-appVersion: "latest"
-description: High Performance Serverless system
-name: MicroFunctions
-version: 0.0.1
+git clone https://github.com/NVIDIA/ansible-role-nvidia-docker.git ansible-role-nvidia-docker
+cd ansible-role-nvidia-docker
+cp ../installnvidiadocker.yaml tests/installnvidiadocker.yaml
+ansible-playbook  gpu_workstations --inventory ../inventory.cfg tests/installnvidiadocker.yaml 
+cd ..
+rm -r -f ansible-role-nvidia-docker
+
