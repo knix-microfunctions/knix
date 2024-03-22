@@ -54,16 +54,13 @@ RUN set -ex && \
     kerl install R16B02-basho10 /build/erlang/R16B02-basho10 && \
     . /build/erlang/R16B02-basho10/activate
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        rebar
-
 RUN set -ex && \
     . /build/erlang/R16B02-basho10/activate && \
     cd /build && \
     git clone https://github.com/davisp/jiffy.git && \
     cd jiffy && \
-    rebar compile && \
+    git checkout 1.0.9 && \
+    ./rebar compile && \
     cd .. && \
     chmod -R 777 jiffy && \
     tar --exclude .git -cvzf jiffy.tgz jiffy && \
