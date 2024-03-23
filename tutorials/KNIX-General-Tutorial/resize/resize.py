@@ -18,7 +18,7 @@ from PIL import Image
 # pre-requisite (PIL module should be downloaded in the current folder)
 #   pip3 install pillow -t .
 #         OR
-#   docker run -it --rm -u $(id -u):$(id -g) -v $(pwd):/temp -w /temp python:3.6 pip3 install pillow -t .
+#   docker run -it --rm -u $(id -u):$(id -g) -v "$(pwd)":/temp -w /temp python:3.6 pip3 install pillow -t .
 # zip -r ../resize.zip .
 
 def handle(event, context):
