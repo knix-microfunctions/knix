@@ -29,7 +29,7 @@ CLASSFILES=$(shell find target/classes/org/microfunctions/mfnapi/ -type f)
 mfnapi.jar: $(CLASSFILES)
 	docker run --rm --name mfnapijava \
 	--user $(UID):$(GID) \
-	-v $(CURDIR):/usr/src/mfnapijava -w /usr/src/mfnapijava \
+	-v "$(CURDIR)":/usr/src/mfnapijava -w /usr/src/mfnapijava \
 	openjdk:8-jdk-stretch \
 	bash -c 'cd target/classes; jar -cvf mfnapi.jar org/microfunctions/mfnapi/*.class; mv mfnapi.jar ../../'
 
@@ -41,7 +41,7 @@ src/main/java/org/microfunctions/mfnapi/MicroFunctionsAPIService.java: \
 	cp ../FunctionWorker/MicroFunctionsAPI.thrift .
 	docker run --rm -i --name mfnapi-thrift \
 		--user $(UID):$(GID) \
-		-v $(CURDIR):/usr/src/mfnapi -w /usr/src/mfnapi \
+		-v "$(CURDIR)":/usr/src/mfnapi -w /usr/src/mfnapi \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./MicroFunctionsAPI.thrift'
 	rm ./MicroFunctionsAPI.thrift
@@ -72,7 +72,7 @@ target/javaworker.jar: $(JAVA_SOURCES) \
 	if [ ! -e .m2/repository ]; then mkdir -p .m2/repository; fi
 	docker run --rm -i --name javaworker \
 		--user $(UID):$(GID) \
-		-e HOME=/usr/src/javaworker -v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
+		-e HOME=/usr/src/javaworker -v "$(CURDIR)":/usr/src/javaworker -w /usr/src/javaworker \
 		maven:3.6.1-jdk-8 \
 		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/javaworker/.m2/settings-docker.xml -e package; 
 
@@ -83,7 +83,7 @@ target/site/apidocs/index.html: $(JAVA_SOURCES) \
 		.m2/settings-docker.xml
 	docker run --rm -i --name javaworker \
 		--user $(UID):$(GID) \
-		-e HOME=/usr/src/javaworker -v $(CURDIR):/usr/src/javaworker -w /usr/src/javaworker \
+		-e HOME=/usr/src/javaworker -v "$(CURDIR)":/usr/src/javaworker -w /usr/src/javaworker \
 		maven:3.6.1-jdk-8 \
 		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/javaworker/.m2/settings-docker.xml -e javadoc:javadoc;
 

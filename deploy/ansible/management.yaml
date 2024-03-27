@@ -126,7 +126,7 @@
         python3 management_init.py start
         END
         chmod 775 dockerrun.sh
-        docker run -it --rm --network host --ulimit nofile=262144:262144 --env-file .management -v $(pwd):/code -w /code python:3.6 bash -c './dockerrun.sh'
+        docker run -it --rm --network host --ulimit nofile=262144:262144 --env-file .management -v "$(pwd)":/code -w /code python:3.6 bash -c './dockerrun.sh'
         rm dockerrun.sh
         [ "$(docker ps | grep Management)" ] && docker stop Management || true
         [ "$(docker ps -a | grep Management)" ] && docker rm Management || true

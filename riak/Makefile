@@ -24,7 +24,7 @@ lib/jiffy.tgz: Dockerfile
 	mkdir -p lib
 	echo "Building jiffy"
 	$(call build_image,Dockerfile,riak_libs_build)
-	docker run -i --rm -u $$(id -u):$$(id -g) -v $(CURDIR):/temp -w /temp --ulimit nofile=262144:262144 riak_libs_build:$(VERSION) cp /build/jiffy.tgz ./lib/.
+	docker run -i --rm -u $$(id -u):$$(id -g) -v "$(CURDIR)":/temp -w /temp --ulimit nofile=262144:262144 riak_libs_build:$(VERSION) cp /build/jiffy.tgz ./lib/.
 
 image: Dockerfile-riak \
 		lib/jiffy.tgz \

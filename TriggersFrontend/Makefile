@@ -25,7 +25,7 @@ RUST_SOURCES=$(shell find src/ -type f)
 target/release/TriggersFrontend: $(RUST_SOURCES) Cargo.toml ../build_env.mk
 	docker run --rm --name build_triggers_frontend \
 		--user $(UID):$(GID) \
-		-v $(CURDIR):/code -w /code \
+		-v "$(CURDIR)":/code -w /code \
 		-e http_proxy \
 		-e https_proxy \
 		$(RUST_IMAGE_NAME):$(RUST_VERSION) bash -c 'cargo build --release'
