@@ -119,7 +119,7 @@
       common_name: "{{ ansible_fqdn }}"
       subject_alt_name:
         - "DNS:{{ ansible_fqdn }}"
-        - "DNS:{{ ansible_default_ipv4.addressname }}"
+        - "DNS:{{ ansible_default_ipv4.address }}"
         - "{{ inventory_hostname | ipaddr() | ternary( 'IP:', 'DNS:') }}{{ inventory_hostname }}"
         - "IP:{{ ansible_default_ipv4.address }}"
 
