@@ -23,10 +23,10 @@
     management_archive_filename: management_deployment_package.tar.gz
 
     install_dir: "{{ mfn_server_installation_folder }}/management"
-    datalayer_connect: "{{ ansible_host }}:4998" # same host
-    elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_host }}:9200"
+    datalayer_connect: "{{ ansible_default_ipv4.address }}:4998" # same host
+    elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_default_ipv4.address }}:9200"
     nginx_http_listen_port: "{{ nginx_http_listen_port }}"
-    nginx_connect: "{{ hostvars[groups['nginx'][0]].ansible_host }}:{{ nginx_http_listen_port }}"
+    nginx_connect: "{{ hostvars[groups['nginx'][0]].ansible_default_ipv4.address }}:{{ nginx_http_listen_port }}"
 
   tasks:
 

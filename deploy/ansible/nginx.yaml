@@ -119,9 +119,9 @@
       common_name: "{{ ansible_fqdn }}"
       subject_alt_name:
         - "DNS:{{ ansible_fqdn }}"
-        - "DNS:{{ ansible_hostname }}"
+        - "DNS:{{ ansible_default_ipv4.addressname }}"
         - "{{ inventory_hostname | ipaddr() | ternary( 'IP:', 'DNS:') }}{{ inventory_hostname }}"
-        - "IP:{{ ansible_host }}"
+        - "IP:{{ ansible_default_ipv4.address }}"
 
   - name: Generate a Self Signed OpenSSL certificate
     openssl_certificate:

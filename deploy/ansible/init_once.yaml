@@ -78,7 +78,7 @@
     lineinfile:
       path: "/etc/hosts"
       insertafter: EOF
-      line: "{{ ansible_host }} {{ inventory_hostname }} {{ inventory_hostname }}"
+      line: "{{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ inventory_hostname }}"
 
   - name: ensure docker is at the latest version
     apt: name=docker-ce update_cache=yes

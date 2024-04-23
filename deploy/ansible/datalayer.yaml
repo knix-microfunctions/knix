@@ -25,16 +25,16 @@
 
     service_name: mfn-datalayer
     service_script: "/lib/systemd/system/{{ service_name }}.service"
-    datalayer_bind: "{{ ansible_host }}:4998"
-    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_host }}:8087"
-    all_datalayer_hosts_bind: "{{ groups['all']|map('extract',hostvars)|map(attribute='ansible_host')|join(':4998,') }}:4998"
+    datalayer_bind: "{{ ansible_default_ipv4.address }}:4998"
+    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}:8087"
+    all_datalayer_hosts_bind: "{{ groups['all']|map('extract',hostvars)|map(attribute='ansible_default_ipv4.address')|join(':4998,') }}:4998"
 
   tasks:
 
   - debug:
       msg: 
         - inventory_hostname = {{ inventory_hostname }}
-        - host_ip_address = {{ ansible_host }}
+        - host_ip_address = {{ ansible_default_ipv4.address }}
         - install_dir = {{ install_dir }}    # e.g. /opt/mfn
         - "datalayer package = {{ datalayer_dist }}/{{ datalayer_jar }}"
         - riak_connect = {{ riak_connect }}

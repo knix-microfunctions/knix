@@ -26,7 +26,7 @@
     container_tag: "microfn/sandbox"
     container_java_tag: "microfn/sandbox_java"
     install_dir: "{{ mfn_server_installation_folder }}/sandbox"
-    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_host }}:8087"
+    riak_connect: "{{ hostvars[groups['riak'][0]].ansible_default_ipv4.address }}:8087"
 
   tasks:
   - debug:
