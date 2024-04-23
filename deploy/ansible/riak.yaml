@@ -365,7 +365,7 @@
     shell: |
       /usr/sbin/riak-admin cluster status | egrep {{ coordinator_ip }}
     register: alreadypart
-    when: ansible_default_ipv4.addresscoordinator_ip
+    when: ansible_default_ipv4.address != coordinator_ip
     failed_when: alreadypart.rc == 1 and alreadypart.stdout != ""
 
   - debug:
