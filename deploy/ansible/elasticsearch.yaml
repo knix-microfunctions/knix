@@ -70,7 +70,7 @@
   - debug:
       msg: 
         - inventory_hostname = {{ inventory_hostname }}
-        - ansible_host = {{ ansible_host }}
+        - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
         - mfn_server_installation_folder = {{ mfn_server_installation_folder }}      # e.g. /opt/mfn
         - es_server_dir = {{ es_server_dir }}                                        # e.g. /opt/mfn/elasticsearch
         - es_server_config_filename = {{ es_server_config_filename }}                # e.g. elasticsearch.yml

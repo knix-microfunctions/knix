@@ -32,7 +32,7 @@
   - debug:
       msg:
       - inventory_hostname = {{ inventory_hostname }}
-      - ansible_host = {{ ansible_host }}
+      - ansible_default_ipv4.address = {{ ansible_default_ipv4.address }}
       - mfn_server_installation_folder = {{ mfn_server_installation_folder }}
       - sandbox deployment directory = {{ sandbox_deployment_package_directory }}
       - sandbox deployment package name = {{ sandbox_deployment_package_name }}
