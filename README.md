@@ -1,6 +1,6 @@
 # Important Disclaimer
 
-**KNIX** started as a research project Nokia Bell Labs and was open-sourced afterwards.
+**KNIX** started as a research project at Nokia Bell Labs and was open-sourced afterwards.
 In the meantime, the serverless landscape has drastically changed and improved.
 We try to maintain the codebase and provide support with issues; however, our research priorities and focus have since changed, limiting our time devoted to the maintenance of the repo.
 Please be aware of this situation.
