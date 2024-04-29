@@ -27,14 +27,14 @@
       triggers_frontend_service_script: "/lib/systemd/system/{{ triggers_frontend_service_name }}.service"
       triggers_frontend_port: "4997"
       triggers_frontend_management_update_interval_sec: "30"
-      management_url: "http://{{ hostvars[groups['management'][0]].ansible_ssh_host }}:{{ management_service_exposed_port }}"
+      management_url: "http://{{ hostvars[groups['management'][0]].ansible_host }}:{{ management_service_exposed_port }}"
   
     tasks:
   
     - debug:
         msg: 
           - inventory_hostname = {{ inventory_hostname }}
-          - ansible_ssh_host = {{ ansible_ssh_host }}
+          - ansible_host = {{ ansible_host }}
           - install_dir = {{ install_dir }}    # e.g. /opt/knix
           - "triggers_frontend package = {{ triggers_frontend_dist }}/{{ triggers_frontend_binary }}"
           - triggers_frontend_port = {{ triggers_frontend_port }}
@@ -114,7 +114,7 @@
         content: |
           #!/bin/sh
           sudo systemctl start {{ triggers_frontend_service_name }}
-          {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_ssh_host }}:{{ triggers_frontend_port }} -t 60
+          {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_host }}:{{ triggers_frontend_port }} -t 60
   
     - name: create stop script
       copy:
@@ -125,7 +125,7 @@
           sudo systemctl stop {{ triggers_frontend_service_name }}
 
     - name: wait for triggers frontend
-      shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_ssh_host }}:{{ triggers_frontend_port }} -t 60"
+      shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_host }}:{{ triggers_frontend_port }} -t 60"
       register: wait_result
 
     - name: waiting for result

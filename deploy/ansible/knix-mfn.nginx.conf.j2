@@ -1,6 +1,6 @@
 upstream knix_management {
 {% for host in groups['management'] %}
-        server {{ hostvars[host].ansible_ssh_host }}:{{ management_service_exposed_port }};
+        server {{ hostvars[host].ansible_host }}:{{ management_service_exposed_port }};
 {% endfor %}
 }
 

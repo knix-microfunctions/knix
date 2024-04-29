@@ -124,7 +124,7 @@ Note that for a local installation, your public key should be put into `~/.ssh/a
 
         # For a single remote host installation, the hostname should be added to all groups.
 
-        # For a cluster of hosts (preferably 3 or more), all host names must be added to [riak] group.
+        # For a cluster of hosts (preferably 3 or more), all host names must be added to [riak] group. After each host, add the text "ansible_host=<hostname or IP>"
         # [nginx] and [elasticsearch] group should contain a single host.
         # At least one host should be in [management] and [triggers_frontend] group.
         ```

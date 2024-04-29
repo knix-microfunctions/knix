@@ -49,7 +49,7 @@
   - debug:
       msg:
         - inventory_hostname = {{ inventory_hostname }}
-        - ansible_ssh_host = {{ ansible_ssh_host }}
+        - ansible_host = {{ ansible_host }}
         - mfn_server_installation_folder = {{ mfn_server_installation_folder }}    # e.g. /opt/mfn
         - install_dir = {{ install_dir }}
         - frontend_http_listen_port = {{ frontend_http_listen_port }}
@@ -121,7 +121,7 @@
         - "DNS:{{ ansible_fqdn }}"
         - "DNS:{{ ansible_hostname }}"
         - "{{ inventory_hostname | ipaddr() | ternary( 'IP:', 'DNS:') }}{{ inventory_hostname }}"
-        - "IP:{{ ansible_ssh_host }}"
+        - "IP:{{ ansible_host }}"
 
   - name: Generate a Self Signed OpenSSL certificate
     openssl_certificate:

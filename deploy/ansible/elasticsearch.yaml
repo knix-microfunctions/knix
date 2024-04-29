@@ -26,7 +26,7 @@
     es_installer_archive_filename: "{{ es_installer_archive_version }}-linux-x86_64.tar.gz"
 
     es_master_name: "{{ groups['elasticsearch'][0] }}"
-    es_master_ip: "{{ hostvars[groups['elasticsearch'][0]].ansible_ssh_host }}"
+    es_master_ip: "{{ hostvars[groups['elasticsearch'][0]].ansible_host }}"
 
     # Paths on target machine (where elasticsearch will be installed)
     es_server_dir: "{{ mfn_server_installation_folder }}/elasticsearch"
@@ -46,7 +46,7 @@
     es_server_service_path: "/lib/systemd/system/{{ es_server_service_name }}.service"
     es_server_cluster_name: mfn-elasticsearch
 
-    elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_ssh_host }}:9200"
+    elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_host }}:9200"
 
   tasks:
   - name: get http_proxy
@@ -70,7 +70,7 @@
   - debug:
       msg: 
         - inventory_hostname = {{ inventory_hostname }}
-        - ansible_ssh_host = {{ ansible_ssh_host }}
+        - ansible_host = {{ ansible_host }}
         - mfn_server_installation_folder = {{ mfn_server_installation_folder }}      # e.g. /opt/mfn
         - es_server_dir = {{ es_server_dir }}                                        # e.g. /opt/mfn/elasticsearch
         - es_server_config_filename = {{ es_server_config_filename }}                # e.g. elasticsearch.yml
@@ -152,11 +152,11 @@
       regexp: "node.name:"
       line: "node.name: {{ inventory_hostname }}"
 
-  - name: "Update {{ es_server_config_filepath }}   network.host: {{ ansible_ssh_host }}"
+  - name: "Update {{ es_server_config_filepath }}   network.host: {{ ansible_host }}"
     lineinfile:
       path: "{{ es_server_config_filepath }}"
       regexp: "network.host:"
-      line: "network.host: {{ ansible_ssh_host }}"
+      line: "network.host: {{ ansible_host }}"
 
   - name: "Update {{ es_server_config_filepath }}   path.data: {{ es_server_dir_data }}"
     lineinfile:
@@ -172,11 +172,11 @@
 
 
   # these could be the names of all the hosts in the cluster
-  - name: "Update {{ es_server_config_filepath }}   discovery.seed_hosts: [\"{{ groups['elasticsearch']|map('extract',hostvars)|map(attribute='ansible_ssh_host')|join('\", \"')}}\"]"
+  - name: "Update {{ es_server_config_filepath }}   discovery.seed_hosts: [\"{{ groups['elasticsearch']|map('extract',hostvars)|map(attribute='ansible_host')|join('\", \"')}}\"]"
     lineinfile:
       path: "{{ es_server_config_filepath }}"
       regexp: "discovery.seed_hosts:"
-      line: "discovery.seed_hosts: [\"{{ groups['elasticsearch']|map('extract',hostvars)|map(attribute='ansible_ssh_host')|join('\", \"')}}\"]"
+      line: "discovery.seed_hosts: [\"{{ groups['elasticsearch']|map('extract',hostvars)|map(attribute='ansible_host')|join('\", \"')}}\"]"
   
   # always points to the master node
   - name: "Update {{ es_server_config_filepath }}   cluster.initial_master_nodes: [\"{{ es_master_name }}\"]"
@@ -272,7 +272,7 @@
         #config file path: {{ es_server_dir_config }}
         cd {{ es_server_dir }}
         sudo systemctl start {{ es_server_service_name }}
-        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_ssh_host }}:9200 -t 60
+        {{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_host }}:9200 -t 60
         ./esconfig.sh
         cd -
 
@@ -296,7 +296,7 @@
         sudo rm -rf logs/*
 
   - name: wait for elasticsearch
-    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_ssh_host }}:9200 -t 180"
+    shell: "{{ mfn_server_installation_folder }}/wait-for-it.sh {{ ansible_host }}:9200 -t 180"
     register: wait_result
 
   - name: waiting result
@@ -315,11 +315,11 @@
       HTTP_PROXY: "{{ http_proxy }}"
       HTTPS_PROXY: "{{ https_proxy }}"
     register: esconfig_command
-    when: ansible_ssh_host == es_master_ip
+    when: ansible_host == es_master_ip
   
   - debug:
       var: esconfig_command.stdout
-    when: ansible_ssh_host == es_master_ip
+    when: ansible_host == es_master_ip
 
 #  - name: systemd install and disable mfn-elasticsearch service
 #    systemd:

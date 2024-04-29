@@ -35,7 +35,7 @@
   - debug:
       msg:
       - inventory_hostname = {{ inventory_hostname }}
-      - ansible_ssh_host = {{ ansible_ssh_host }}
+      - ansible_host = {{ ansible_host }}
       - mfn_server_installation_folder = {{ mfn_server_installation_folder }}
       - proxy settings files = ./proxy/
       - http_proxy = {{ http_proxy }}
@@ -78,7 +78,7 @@
     lineinfile:
       path: "/etc/hosts"
       insertafter: EOF
-      line: "{{ ansible_ssh_host }} {{ inventory_hostname }} {{ inventory_hostname }}"
+      line: "{{ ansible_host }} {{ inventory_hostname }} {{ inventory_hostname }}"
 
   - name: ensure docker is at the latest version
     apt: name=docker-ce update_cache=yes

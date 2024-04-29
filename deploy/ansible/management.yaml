@@ -23,10 +23,10 @@
     management_archive_filename: management_deployment_package.tar.gz
 
     install_dir: "{{ mfn_server_installation_folder }}/management"
-    datalayer_connect: "{{ ansible_ssh_host }}:4998" # same host
-    elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_ssh_host }}:9200"
+    datalayer_connect: "{{ ansible_host }}:4998" # same host
+    elasticsearch_connect: "{{ hostvars[groups['elasticsearch'][0]].ansible_host }}:9200"
     nginx_http_listen_port: "{{ nginx_http_listen_port }}"
-    nginx_connect: "{{ hostvars[groups['nginx'][0]].ansible_ssh_host }}:{{ nginx_http_listen_port }}"
+    nginx_connect: "{{ hostvars[groups['nginx'][0]].ansible_host }}:{{ nginx_http_listen_port }}"
 
   tasks:
 
@@ -50,7 +50,7 @@
   - debug:
       msg:
       - inventory_hostname = {{ inventory_hostname }}
-      - ansible_ssh_host = {{ ansible_ssh_host }}
+      - ansible_host = {{ ansible_host }}
       - mfn_server_installation_folder = {{ mfn_server_installation_folder }}    # e.g. /opt/mfn
       - management_service_dir = {{ management_service_dir }}
       - management_archive_filename = {{ management_archive_filename }}

@@ -21,7 +21,7 @@
     fluentbit_dir: "../../LoggingService/fluent-bit"
     install_dir: "{{ mfn_server_installation_folder }}/fluentbit"
     conf_dir: "{{ install_dir }}/conf"
-    elasticsearch_host: "{{ hostvars[groups['elasticsearch'][0]].ansible_ssh_host }}"
+    elasticsearch_host: "{{ hostvars[groups['elasticsearch'][0]].ansible_host }}"
     elasticsearch_port: 9200
     service_name: mfn-fluentbit
     service_script: "/lib/systemd/system/{{ service_name }}.service"
@@ -59,7 +59,7 @@
   - debug:
       msg: 
       - inventory_hostname = {{ inventory_hostname }}
-      - ansible_ssh_host = {{ ansible_ssh_host }}
+      - ansible_host = {{ ansible_host }}
       - mfn_server_installation_folder = {{ mfn_server_installation_folder }}    # e.g. /opt/mfn
       - install_dir = {{ install_dir }}
       - conf_dir = {{ conf_dir }}
