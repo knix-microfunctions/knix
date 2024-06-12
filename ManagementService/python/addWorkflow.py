@@ -78,7 +78,7 @@ def initialize_storage(sapi, wid):
 
 def handle(value, sapi):
     assert isinstance(value, dict)
-    data = value
+    data = value # data may contain "null" value
 
     response = {}
     response_data = {}
@@ -86,6 +86,7 @@ def handle(value, sapi):
     success = False
 
     email = data["email"]
+
 
     if "workflow" in data:
         workflow = data["workflow"]
@@ -97,12 +98,19 @@ def handle(value, sapi):
         wf["status"] = "undeployed"
         wf["modified"] = time.time()
         wf["endpoints"] = []
+        #wf["gpu_usage"] = None
+        if "gpu_usage" in workflow:
+            wf["gpu_usage"] = str(workflow["gpu_usage"])
+            #if "gpu_mem_usage" in workflow:
+            wf["gpu_mem_usage"] = str(workflow["gpu_mem_usage"])
         wf['associatedTriggerableTables'] = {}
         wf['associatedTriggers'] = {}
         wf["id"] = hashlib.md5(str(uuid.uuid4()).encode()).hexdigest().lower()
 
         # make a request to elasticsearch to create the workflow index
         create_workflow_index("mfnwf-" + wf["id"])
+
+        #wf["on_gpu"] = True # add metadata on GPU requirements for this workflow. ToDo: make this configurable via GUI
 
         # initialize global workflow related storage (workflow-private and mfn internal tables)
         initialize_storage(sapi, wf["id"])

@@ -1,0 +1,10 @@
+---
+- hosts: all
+  vars:
+    proxy_env:
+      http_proxy:  "{{ lookup('env','http_proxy') }}"
+      https_proxy:  "{{ lookup('env','https_proxy') }}"
+  become: true
+  roles:
+    - ../..
+

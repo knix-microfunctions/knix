@@ -2,7 +2,7 @@
 {
 "test_name": "Map State Example Test", 
 
-"workflow_name": "workflow_map_state_example_test/workflow_map_state_example_test.json",
+"workflow_name": "wfms_example_test/wfms_example_test.json",
 
 "event":  {"ship-date": "2016-03-14T01:59:00Z", 
                      "detail": 

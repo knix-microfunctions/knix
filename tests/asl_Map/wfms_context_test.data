@@ -2,7 +2,7 @@
 {
 "test_name": "Map State Context Test", 
 
-"workflow_name": "workflow_map_state_context_test/workflow_map_state_context_test.json",
+"workflow_name": "wfms_context_test/wfms_context.json",
 
 "event": [{"who": "bob"},{"who": "meg"},{"who": "joe"}],
 

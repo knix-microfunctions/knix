@@ -21,7 +21,7 @@ NAMES := $(YAML:%.yaml=%)
 .PHONY: $(NAMES)
 default: prepare_packages install
 
-install: init_once riak elasticsearch fluentbit datalayer sandbox management nginx triggers_frontend
+install: init_once installnvidiadocker riak elasticsearch fluentbit datalayer sandbox management nginx triggers_frontend
 	echo "Installed KNIX MicroFunctions"
 
 clean:

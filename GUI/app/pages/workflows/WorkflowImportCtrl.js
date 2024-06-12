@@ -658,7 +658,7 @@
 
          },
 
-         data:  JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : functionName, "runtime" : functionRuntime } } })
+	       data:  JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : functionName, "runtime" : functionRuntime, "gpu_usage": functionGpuusage, "gpu_mem_usage": functionGpuMemusage  } } })
 
        }
        $http(req).then(function successCallback(response) {

@@ -153,13 +153,13 @@
         ExecStart=
         ExecStart=/usr/bin/dockerd -H unix:// -H tcp://0.0.0.0:2375
 
-  - name: override configuration for docker daemon to disable tls
-    copy:
-      dest: /etc/docker/daemon.json
-      content: |
-        {
-          "tls": false
-        }
+#  - name: override configuration for docker daemon to disable tls
+#    copy:
+#      dest: /etc/docker/daemon.json
+#      content: |
+#        {
+#          "tls": false
+#        }
 
   - name: configure docker proxy
     copy:

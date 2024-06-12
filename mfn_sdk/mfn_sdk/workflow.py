@@ -55,6 +55,9 @@ class Workflow(object):
         self.client=client
         self.id=wf["id"]
         self._name=wf["name"]
+        self._gpu_usage=None
+        if "gpu_usage" in wf:
+            self._gpu_usage=wf["gpu_usage"]
         self._modified=wf["modified"]
         self._status=wf.get("status",None)
         self._endpoints=wf.get("endpoints",None)
@@ -67,6 +70,19 @@ class Workflow(object):
             return f"{self.id} ({self._name}, status: {self._status}, endpoints: {self._endpoints})"
         else:
             return f"{self.id} ({self._name}, status: {self._status})"
+
+    @property
+    def gpu_usage(self):
+        # TODO: workflow GPU usage could have been updated, decide if we should fetch workflow status
+        return self._gpu_usage
+
+    """    
+    @gpu_usage.setter
+    def gpu_usage(self,gpu_usage):
+        # TODO: workflow GPU could have been updated, decide if we should fetch workflow status
+        res = self.client.action('modifyWorkflow',{'workflow':{'id':self.id,'name':name,'gpu_usage':self._gpu_usage}})
+        self.gpu_usage = gpu_usage
+    """    
 
     @property
     def name(self):
@@ -124,15 +140,17 @@ class Workflow(object):
     def json(self,json):
         if json != self.json:
             self._json = json
+            #print ("uploaded workflow JSON"+ str( json))
             self.client.action('uploadWorkflowJSON',{'workflow':{'id':self.id,'json':base64.b64encode(self._json.encode()).decode()}})
 
 
-    def deploy(self, timeout=None):
+    def deploy(self, timeout=None): 
         """ deploy a workflow and optionally wait in linearly increasing multiples of 1000ms
         :timeout: By default returns after calling deploy on the workflow without waiting for it to be actually deployed.
             If timeout is set to a numeric <= 0, it waits indefinitely in intervals of 1000ms, 2000ms, 3000ms, ...
             If timeout is set to a numeric > 0, it waits for the workflow to be deployed in increasing multiples of 100ms, but no longer than the timeout. When the timeout expires and the workflow is not deployed, the function raises an Exception
         """
+
         s = self.status
         if s == 'deployed':
             log.debug("deploy: wf %s already deployed",self.name)
@@ -144,6 +162,7 @@ class Workflow(object):
             log.debug("deployment error: %s", self._deployment_error)
         else:
             self.client.action('deployWorkflow',{'workflow':{'id':self.id}})
+
 
         # if timeout is None, do not wait but return immediately even if it's not yet deployed
         if timeout is None:

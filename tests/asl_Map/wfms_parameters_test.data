@@ -2,7 +2,7 @@
 {
 "test_name": "Map State Parameters Test", 
 
-"workflow_name": "workflow_map_state_parameters_test/workflow_map_state_parameters_test.json",
+"workflow_name": "wfms_parameters_test/wfms_parameters_test.json",
 
 "event": [{"who": "bob"},{"who": "meg"},{"who": "joe"}],
 

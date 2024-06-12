@@ -39,4 +39,4 @@ push:
 	make -C ../../TriggersFrontend push
 
 deploy: push
-	helm install --name mfn microfunctions/
+	helm install mfn microfunctions/

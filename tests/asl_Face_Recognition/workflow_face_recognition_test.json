@@ -1,0 +1,11 @@
+{
+    "Comment": "Tensorflow State Machine Example",
+    "StartAt": "tensorf",
+    "States": {
+            "tensorf":{
+              "Resource":"facer",
+              "Type":"Task",
+              "End":true 
+            }
+   }
+}

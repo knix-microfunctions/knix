@@ -1,7 +1,7 @@
 {
 "test_name": "Map State Pirates Say Test", 
 
-"workflow_name": "workflow_map_state_thingspiratessay_test/workflow_map_state_thingspiratessay_test.json",
+"workflow_name": "wfms_thingspiratessay_test/wfms_thingspiratessay_test.json",
 
 "event" : {"ThingsPiratesSay": [{
                       "say": "Avast!"},{

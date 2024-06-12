@@ -19,13 +19,13 @@
 #------------------------------------------------------------------------------
 # MicroFunction management workflow
 #------------------------------------------------------------------------------
-imageRepo: "registry.kube-system.svc.cluster.local"
-# imageTag: "latest" <- set all KNIX image tags to latest
+imageRepo: "registry.kube-system.svc.cluster.local:5000"
+apiKey: "abcdef"
+#imageRepo: "localhost:5000" # kubespray deployment
 manager:
-  #httpProxy: "http://<host>:<port>"
-  #httpsProxy: "http://<host>:<port>"
-  #httpGatewayPort: 80
-  #httpsGatewayPort: 443
+  #httpProxy: "http://192.109.76.93:8080"
+  httpsProxy: "http://192.109.76.93:8080"
+  #httpGatewayPort: 31380 # kubespray deployment
   nameOverride: "microfunctions"
   newWorkflow:
     hpa:
@@ -51,14 +51,17 @@ manager:
     logLevel: "info"
     # imageTag: "latest" (default .Chart.AppVersion)
     imagePullPolicy: "Always"
+    env:
+      name: API_TOKEN
+      value: "123test"
     imagePullSecrets: []
     resources:
       limits:
         cpu: 1
-        memory: 2Gi
+        memory: 4Gi
       requests:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
   managementSandbox:
     resources:
       limits:
@@ -75,7 +78,8 @@ manager:
 # MicroFunction Datalayer
 #------------------------------------------------------------------------------
 datalayer:
-  replicas: 3
+  replicas: 1 # kubespray deployment
+  #replicas: 3
   imagePath: "/microfn/datalayer"
   # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
@@ -85,20 +89,21 @@ datalayer:
   javaOpts: "-Xmx4096m"
   resources:
     limits:
-      cpu: 4
-      memory: 4Gi
+      cpu: 1
+      memory: 8Gi
     requests:
       cpu: 1
-      memory: 2Gi
+      memory: 8Gi
   nodeSelector: {}
   tolerations: {}
-  
+
 
 #------------------------------------------------------------------------------
 # Riak global data storage
 #------------------------------------------------------------------------------
 riak:
-  replicas: 3
+  replicas: 1 # kubespray deployment
+  #replicas: 3
   imagePath: "/microfn/riak"
   # imageTag: "latest" (default .Chart.AppVersion)
   imagePullPolicy: "Always"
@@ -108,13 +113,13 @@ riak:
   ClientPortProtobuf: 8087
   resources:
     limits:
-      cpu: 4
+      cpu: 1
       memory: 8Gi
     requests:
-      cpu: 4
+      cpu: 1
       memory: 8Gi
   DataStorage: 8Gi
-  #DataStorageClass: local-volume 
+  DataStorageClass: manual
   ClusterName: "riak"
   WaitForErlang: 180
   ErlangDistributionPortRangeMinimum: 6000
@@ -125,8 +130,8 @@ riak:
   LevelDbMaximumMemory: 4294967296
   AntiEntropy: "passive"
   # Should be <= resources.limits.cpu
-  ErlangSchedulersTotal: 4
-  ErlangSchedulersOnline: 4
+  ErlangSchedulersTotal: 2
+  ErlangSchedulersOnline: 2
   ErlangSchedulersForceWakeupInterval: 500
   ErlangSchedulersCompactionOfLoad: "false"
   nodeSelector: {}
@@ -158,6 +163,12 @@ elastic:
 nginx:
   Replicas: 1
   nameOverride: "microfunctions-nginx"
+  # Knative Serving creates an FQDN for the management kservice "wf-{{ .Release.Name }}-management".
+  # In most installations, it would be {ksvc}.{namespace}.example.com
+  # Please use --set nginx.managementService to specify the FQDN that the service will get from your Knative setup
+  # _helpers.tpl would default it to wf-mfn1-management.knix.example.com
+  #managementService: wf-mfn1-management.knix.example.com
+  managementService: wf-mfn-management.default.192.168.8.161.xip.io
   imagePath: "/microfn/nginx"
   # imageTag: "latest" (default .Chart.AppVersion)
   httpPort: 32180
@@ -180,7 +191,7 @@ nginx:
   tolerations: {}
 
 #------------------------------------------------------------------------------
-# TriggersFrontend 
+# TriggersFrontend
 #------------------------------------------------------------------------------
 triggersFrontend:
   imagePath: "/microfn/triggers_frontend"
@@ -193,10 +204,10 @@ triggersFrontend:
   statusReportIntervalSec: 30
   resources:
     limits:
-      cpu: 4
+      cpu: 1
       memory: 8Gi
     requests:
-      cpu: 2
+      cpu: 1
       memory: 1Gi
   nodeSelector: {}
   tolerations: {}

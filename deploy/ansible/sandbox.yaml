@@ -43,6 +43,11 @@
       - sandbox installation directory {{ install_dir }}
       - riak_connect = {{ riak_connect }}
 
+  - name: get GPU environment
+    shell: "su - -c 'echo $KNIX_node_hasGPU'"
+    become: true
+    register: KNIX_node_hasGPU
+
   - name: get http_proxy
     shell: "su - -c 'echo $http_proxy'"
     become: true
@@ -62,12 +67,14 @@
       http_proxy: "{{ http_proxy.stdout }}"
       https_proxy: "{{ https_proxy.stdout }}"
       no_proxy: "{{ no_proxy.stdout }}"
+      KNIX_node_hasGPU: "{{ KNIX_node_hasGPU.stdout }}"
 
   - debug:
       msg:
       - http_proxy = {{ http_proxy }}
       - https_proxy = {{ https_proxy }}
       - no_proxy = {{ no_proxy }}
+      - KNIX_node_hasGPU = {{KNIX_node_hasGPU }}
 
   #################
   - name: create sandbox folder
@@ -161,6 +168,7 @@
         no_proxy={{ no_proxy }}
         HTTP_PROXY={{ http_proxy }}
         HTTPS_PROXY={{ https_proxy }}
+        KNIX_node_hasGPU={{ KNIX_node_hasGPU }}
       mode: '0755'
 
   - name: create available_hosts.sh
@@ -194,6 +202,7 @@
       no_proxy: "{{ no_proxy }}"
       HTTP_PROXY: "{{ http_proxy }}"
       HTTPS_PROXY: "{{ https_proxy }}"
+      KNIX_node_hasGPU: "{{ KNIX_node_hasGPU }}"
     register: availablehosts
 
   - debug:

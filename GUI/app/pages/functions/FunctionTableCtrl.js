@@ -171,7 +171,6 @@
       return selected.length ? mFunction.runtime : 'Not set';
     };
 
-
     function createTemporaryWorkflow(functionIndex) {
       var req = {
         method: 'POST',
@@ -636,7 +635,7 @@
 
           },
 
-          data:   JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : mFunction.name, "runtime" : mFunction.runtime } } })
+		data:   JSON.stringify({ "action" : "addFunction", "data" : { "user" : { "token" : token } , "function" : { "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage": mFunction.gpu_usage, "gpu_mem_usage": mFunction.gpu_mem_usage } } })
 
         }
         $http(req).then(function successCallback(response) {
@@ -646,7 +645,7 @@
               console.log('new function id:' + response.data.data.function.id);
               toastr.success('Your function has been created successfully!');
               $scope.reloadFunctions();
-              $scope.open('app/pages/functions/modals/codeEditorModal.html', 'lg', mFunction.id, mFunction.name, mFunction.status, mFunction.runtime);
+              $scope.open('app/pages/functions/modals/codeEditorModal.html', 'lg', mFunction.id, mFunction.name, mFunction.status, mFunction.runtime, mFunction.gpu_usage, mFunction.gpu_mem_usage);
 
             } else {
               console.log("Failure status returned by addFunction");
@@ -692,7 +691,7 @@
 
           },
 
-          data:   JSON.stringify({ "action" : "modifyFunction", "data" : { "user" : { "token" : token } , "function" : { "id": mFunction.id, "name" : mFunction.name, "runtime" : mFunction.runtime } } })
+		data:   JSON.stringify({ "action" : "modifyFunction", "data" : { "user" : { "token" : token } , "function" : { "id": mFunction.id, "name" : mFunction.name, "runtime" : mFunction.runtime, "gpu_usage" : mFunction.gpu_usage, "gpu_mem_usage": mFunction.gpu_mem_usage } } })
 
         }
         $http(req).then(function successCallback(response) {
@@ -738,6 +737,8 @@
         name: '',
         status: 'undeployed',
         runtime: 'Python 3.6',
+        gpu_usage: '0',
+        gpu_mem_usage: '0',
         modified: '0'
       };
       $scope.functions.push($scope.inserted);

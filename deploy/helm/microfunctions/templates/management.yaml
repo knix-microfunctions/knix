@@ -27,14 +27,14 @@ metadata:
   name: "{{ template "manager.fullname" . }}-role"
   namespace: {{ .Release.Namespace }}
 rules:
-  # Allow reading/writing "knative services" 
+  # Allow reading/writing "knative services"
   - apiGroups: ["serving.knative.dev"]
     resources: ["services"]
     verbs: ["get", "list", "create", "update", "delete"]
   - apiGroups: ["serving.knative.dev"]
     resources: ["configurations", "routes", "revisions"]
     verbs: ["get", "list"]
-  # Allow reading/writing "pods" 
+  # Allow reading/writing "pods"
   - apiGroups: [""]
     resources: ["pods", "pods/status", "pods/log"]
     verbs: ["*"]
@@ -67,10 +67,10 @@ metadata:
   name: "wf-{{ .Release.Name }}-role"
   namespace: {{ .Release.Namespace }}
 rules:
-  # Allow reading "endpoints" 
+  # Allow reading "endpoints" and "nodes"
   - apiGroups: [""]
     resources: ["endpoints","pods"]
-    verbs: ["get","list"]
+    verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -136,16 +136,16 @@ data:
               "workflowid": null
             }
           },
-          "spec": {                        
+          "spec": {
             {{/* not allowed in KNative
-            "nodeSelector": {{ toJson .Values.manager.nodeSelector }},                        
-            "tolerations": {{ toJson .Values.manager.tolerations  }},                         
+            "nodeSelector": {{ toJson .Values.manager.nodeSelector }},
+            "tolerations": {{ toJson .Values.manager.tolerations  }},
             */}}
             {{/* not allowed in KNative
-            "affinity": { 
-              "podAffinity": { 
+            "affinity": {
+              "podAffinity": {
                 "preferredDuringSchedulingIgnoredDuringExecution": [{
-                  "weight": 100, 
+                  "weight": 100,
                   "podAffinityTerm": {
                     "topologyKey":"kubernetes.io/hostname",
                     "labelSelector": {
@@ -162,8 +162,8 @@ data:
             "serviceAccountName": "wf-{{ .Release.Name }}",
     {{- else -}}
             "serviceAccountName": "default",
-    {{- end -}}                             
-            "imagePullSecrets": {{ toJson .Values.manager.setup.imagePullSecrets }},                  
+    {{- end -}}
+            "imagePullSecrets": {{ toJson .Values.manager.setup.imagePullSecrets }},
             "containers": [
               {
                 "securityContext": { "runAsUser": 1000 },
@@ -173,16 +173,17 @@ data:
                 "env": [
                 {{/* not allowed in KNative
                   {"name": "MFN_HOSTNAME", "valueFrom": { "fieldRef": { "fieldPath": "spec.nodeName" }}},
-                */}}
+                 */}}
                   {"name": "MFN_DATALAYER", "value": "datalayer.{{ .Release.Namespace }}.svc:{{ .Values.datalayer.port }}" },
                   {"name": "MFN_ELASTICSEARCH", "value": {{ include "esConnect.url" . | quote }} },
                   {"name": "MFN_MANAGEMENT", "value": "http://wf-{{ .Release.Name }}-management.{{ .Release.Namespace }}.svc" },
+                  {"name": "API_TOKEN", "value": "{{.Values.apiKey}}" },
                   {"name": "LOG_LEVEL", "value": "{{ .Values.manager.sandbox.logLevel }}" }
                 ],
                 {{/* not allowed in KNative
                 "lifecycle": {"preStop": {"exec":{"command":["python3","/sand/SandboxAgent/shutdown.py"]}}},
                 */}}
-                "resources": {{ toJson .Values.manager.sandbox.resources }},                
+                "resources": {{ toJson .Values.manager.sandbox.resources }},
                 "ports": [
                   {"containerPort":8080}
                 ]
@@ -195,6 +196,7 @@ data:
   new_workflow.conf: |-
     {
       "app.fullname.prefix": "wf-{{ .Release.Name }}",
+      "image.PythonGPU": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPythonGPU }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion}}",
       "image.Python": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathPython }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion }}",
       "image.Java": "{{ .Values.imageRepo }}{{ .Values.manager.sandbox.imagePathJava }}:{{ .Values.manager.sandbox.imageTag | default .Values.imageTag | default .Chart.AppVersion }}",
     {{- if (.Values.manager.createServiceAccounts) -}}
@@ -250,13 +252,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      imagePullSecrets: 
+      imagePullSecrets:
           {{- toYaml .Values.manager.setup.imagePullSecrets | nindent 8 }}
       containers:
       - name: management
         image: "{{ .Values.imageRepo }}{{ .Values.manager.setup.imagePath }}:{{ .Values.manager.setup.imageTag | default .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.manager.setup.imagePullPolicy }}"
-        
+
         env:
         - name: MFN_HOSTNAME
           valueFrom:

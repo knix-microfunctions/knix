@@ -242,7 +242,7 @@ handle_nometadata() ->
 
 generate_trigger_message(Key, Value, Table) ->
     Message = {[{<<"trigger_type">>, <<"storage">>},
-		{<<"key">>, Key}, {<<"value">>, Value},
+		{<<"key">>, Key},
 		{<<"source">>, list_to_binary(Table)}]},
     MessageEncoded = jiffy:encode(Message),
     MessageEncoded.
@@ -305,3 +305,4 @@ test() ->
     io:format((?LOG_PREFIX) ++ " ~p~n", [Message]),
     io:format((?LOG_PREFIX) ++ " ~p~n", [MessageEncoded]),
     io:format((?LOG_PREFIX) ++ "Execid ~p~n", [Execid]).
+

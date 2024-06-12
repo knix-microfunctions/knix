@@ -10,5 +10,8 @@ knix-test
 [nginx]
 knix-test
 
+[gpu_workstations]
+knix-test
+
 [triggers_frontend]
 knix-test

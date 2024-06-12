@@ -21,6 +21,8 @@ import json
 import sys
 import riak
 import socket
+import subprocess
+#import platform
 
 ### global variables set at runtime
 DLCLIENT=None
@@ -61,6 +63,13 @@ def add_host(hostname,hostip=None):
     if hostip is None:
         hostip = socket.gethostbyname(hostname)
     print("Adding host: " + str(hostname))
+
+    hasGPU = False
+    # get environment of current hostname
+    if os.environ['KNIX_node_hasGPU'] == "True":
+        print("found GPU environment: " +str(os.environ['KNIX_node_hasGPU']) )
+        hasGPU = True
+
     v = dl_get("available_hosts")
     if v.encoded_data is not None and len(v.encoded_data) > 0:
         hosts = json.loads((v.encoded_data).decode())
@@ -69,10 +78,26 @@ def add_host(hostname,hostip=None):
             hosts = {host: socket.gethostbyname(host) for host in hosts}
     else:
         hosts = {}
-    if hostname != None and hostname not in hosts:
-        hosts[hostname] = hostip
-        v.encoded_data = json.dumps(hosts).encode()
-        v.store()
+
+    cur_entry2 = {}
+
+    if hostname is not None and hostname in hosts:
+        cur_entry = hosts[hostname]
+        if isinstance(cur_entry, str):
+            hostip = cur_entry
+            del hosts[hostname]
+        elif isinstance(cur_entry, dict):
+            cur_entry2 = cur_entry
+
+    cur_entry2["ip"] = hostip
+    cur_entry2["has_gpu"] = hasGPU
+
+    hosts[hostname] = cur_entry2
+
+    v.encoded_data = json.dumps(hosts).encode()
+    v.store()
+
+    print("found hosts: " + str(hosts))
     return hosts
 
 
@@ -85,10 +110,13 @@ def remove_host(hostname):
             hosts = {host: socket.gethostbyname(host) for host in hosts}
     else:
         hosts = {}
+
     if hostname != None and hostname in hosts:
         del hosts[hostname]
         v.encoded_data = json.dumps(hosts).encode()
         v.store()
+
+    print("found hosts: " + str(hosts))
     return hosts
 
 
@@ -99,22 +127,24 @@ if __name__ == "__main__":
     workflowid = "Management"
     hosts = []
     set_bucket_name(sandboxid,workflowid)
-    try:
-        host=defaulthost
-        if len(sys.argv) > 2:
-            host = sys.argv[2]
-        if sys.argv[1] == "add":
-            hosts = add_host(host)
-        elif sys.argv[1] == "remove":
-            hosts = remove_host(host)
-        else:
-            raise Exception()
-    except Exception as e:
-        print(e)
+
+    host=defaulthost
+    if len(sys.argv) > 2:
+        host = sys.argv[2]
+
+    if len(sys.argv) <= 1:
         print("usage: python "+sys.argv[0]+" [add|remove] (<hostname>)")
         print("  optional <hostname> defaults to %s" % defaulthost)
+        sys.exit(1)
+
+    if sys.argv[1] == "add":
+        hosts = add_host(host)
+    elif sys.argv[1] == "remove":
+        hosts = remove_host(host)
+    else:
         v = dl_get("available_hosts")
         if v.encoded_data is not None and len(v.encoded_data) > 0:
             hosts = json.loads((v.encoded_data).decode())
-    print("Current available_hosts=" + str(hosts))
+
+        print("Current available_hosts=" + str(hosts))
 
