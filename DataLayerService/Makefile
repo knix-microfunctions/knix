@@ -32,7 +32,7 @@ src/main/java/org/microfunctions/data_layer/DataLayerService.java: \
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --rm -i --name datalayer-thrift \
 		--user $(UID):$(GID) \
-		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
+		-v "$(CURDIR)":/usr/src/datalayer -w /usr/src/datalayer \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen java -out ./src/main/java/ ./thrift/DataLayerMessage.thrift; thrift --gen java -out ./src/main/java/ ./thrift/DataLayerService.thrift'
 	touch src/main/java/org/microfunctions/data_layer/DataLayerService.java
@@ -45,7 +45,7 @@ PythonClient/data_layer: \
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	docker run --rm -i --name datalayer-thrift \
 		--user $(UID):$(GID) \
-		-v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
+		-v "$(CURDIR)":/usr/src/datalayer -w /usr/src/datalayer \
 		$(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) \
 		bash -c 'thrift --gen py -out ./PythonClient ./thrift/DataLayerMessage.thrift; thrift --gen py -out ./PythonClient ./thrift/DataLayerService.thrift'
 
@@ -75,7 +75,7 @@ target/datalayerservice.jar: $(JAVA_SOURCES) \
 	if [ ! -e .m2/repository ]; then mkdir -p .m2/repository; fi
 	docker run --rm -i --name datalayer-maven \
 		--user $(UID):$(GID) \
-		-e HOME=/usr/src/datalayer -v $(CURDIR):/usr/src/datalayer -w /usr/src/datalayer \
+		-e HOME=/usr/src/datalayer -v "$(CURDIR)":/usr/src/datalayer -w /usr/src/datalayer \
 		maven:3.6.1-jdk-8 \
 		mvn -Drevision=$(GIT_REVISION) -Dlibthrift.version=$(MVN_LIBTHRIFT_VERSION) -DargLine="-Duser.home=/tmp" -s /usr/src/datalayer/.m2/settings-docker.xml package
 

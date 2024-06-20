@@ -177,7 +177,7 @@
         python3 available_hosts.py add
         END
         chmod 775 dockerrun.sh
-        docker run -i --rm --network host --ulimit nofile=262144:262144 --env-file .env -v $(pwd):/code -w /code python:3.6 bash -c './dockerrun.sh'
+        docker run -i --rm --network host --ulimit nofile=262144:262144 --env-file .env -v "$(pwd)":/code -w /code python:3.6 bash -c './dockerrun.sh'
         rm dockerrun.sh
         cd -
       mode: '0775'

@@ -17,7 +17,7 @@ Python Imaging Library (`pillow`) needs to packaged along with the function code
 cd resize
 
 # install pillow alongside user function
-docker run -it --rm -e https_proxy=${http_proxy} -u $(id -u):$(id -g) -v $(pwd):/temp -w /temp python:3.6 pip3 install pillow -t .
+docker run -it --rm -e https_proxy=${http_proxy} -u $(id -u):$(id -g) -v "$(pwd)":/temp -w /temp python:3.6 pip3 install pillow -t .
 
 # create zip package
 zip -r ../resize.zip .
@@ -42,8 +42,8 @@ python3 request.py leaves.jpg
 
 ```bash
 # install pillow alongside user function
-docker run -it --rm -e https_proxy=${http_proxy} -u $(id -u):$(id -g) -v $(pwd):/temp -w /temp python:3.6 pip3 install pillow -t .
+docker run -it --rm -e https_proxy=${http_proxy} -u $(id -u):$(id -g) -v "$(pwd)":/temp -w /temp python:3.6 pip3 install pillow -t .
 
 # invoke the test script inside a python3.6 docker container
-docker run -it --rm -e https_proxy=${http_proxy} -u $(id -u):$(id -g) -v $(pwd):/temp -w /temp python:3.6 python3 test_local.py
+docker run -it --rm -e https_proxy=${http_proxy} -u $(id -u):$(id -g) -v "$(pwd)":/temp -w /temp python:3.6 python3 test_local.py
 ```

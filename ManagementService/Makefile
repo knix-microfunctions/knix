@@ -38,7 +38,7 @@ $(THRIFT): ../DataLayerService/thrift/DataLayerMessage.thrift \
 		../build_tools/thrift/$(THRIFT_VERSION)/build_thrift.sh
 	cd ../build_tools/thrift/$(THRIFT_VERSION)/; ./build_thrift.sh; cd -
 	mkdir -p data_layer
-	docker run --user $(UID):$(GID) --rm -v $(CURDIR)/..:/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
+	docker run --user $(UID):$(GID) --rm -v "$(CURDIR)/..":/root -w /root $(THRIFT_IMAGE_NAME):$(THRIFT_VERSION) bash -c '\
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerMessage.thrift; \
 		thrift --gen py -out ManagementService/ DataLayerService/thrift/DataLayerService.thrift'
 

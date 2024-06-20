@@ -14,10 +14,10 @@
 
 # Script for locally testing the resize function
 # pre-requisite (PIL module should be downloaded in the current folder)
-# docker run -it --rm -u $(id -u):$(id -g) -v $(pwd):/temp -w /temp python:3.6 pip3 install pillow -t .
+# docker run -it --rm -u $(id -u):$(id -g) -v "$(pwd)":/temp -w /temp python:3.6 pip3 install pillow -t .
 #
 # run as:
-# docker run -it --rm -u $(id -u):$(id -g) -v $(pwd):/temp -w /temp python:3.6 python3 test_local.py
+# docker run -it --rm -u $(id -u):$(id -g) -v "$(pwd)":/temp -w /temp python:3.6 python3 test_local.py
 
 import json, base64
 
